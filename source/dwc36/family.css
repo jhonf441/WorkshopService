@@ -66,11 +66,12 @@
 :is(.sidetabs, .wf-nav) .st-fold:hover { background: rgba(128, 128, 128, 0.12); }
 :is(.sidetabs, .wf-nav) .st-pinned { color: inherit; opacity: 1; }
 :is(.sidetabs, .wf-nav) .st-badge { background: transparent; color: inherit; border: 1px solid var(--wf-line-strong); }
-:is(.sidetabs, .wf-nav).st-collapsed .st-group { border-top: 1px solid var(--wf-line); }
+:is(.sidetabs, .wf-nav).st-collapsed .st-group { border-top: 1px solid var(--wf-line); font-size: 10px; }
 @media (max-width: 900px) {
 	:is(.sidetabs, .wf-nav), :is(.sidetabs, .wf-nav).st-collapsed { gap: 0 14px; border-right: 0; border-bottom: 1px solid var(--wf-line); }
 	:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item), :is(.sidetabs, .wf-nav).st-collapsed :is(button.st-item, .wf-nav-item) { border-left: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 2px; }
 	:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item):is(.st-on, .on) { border-bottom-color: var(--wf-sec-now); }
+	:is(.sidetabs, .wf-nav).st-collapsed .st-group { font-size: 11px; }
 }
 
 /* ================= second level tabs: text, a thin line, the open one in 600 with a 2 px line; they wrap, never scroll ================= */
