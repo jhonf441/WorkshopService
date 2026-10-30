@@ -4,11 +4,18 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
-## Unreleased
+## 2.21.36 -- 2026-10-30
 
+- Machine: the work offsets G54..G59.3 are the work zones of the Workbench (`0:/sys/workshop/zones/p<N>.g`), one source of truth: the plan kind `config.workplaces` is gone (`0:/sys/workshop-offsets.g` is no longer written, config.g is not touched for it) and `machine.history.restore` refuses an `offsets.snapshot` with reason `work_offsets_in_workbench` (a snapshot is for comparing). `machine.offsets.get` and `machine.offsets.snapshot` stay; `config.g10` (tool offsets) stays.
 - Camera relay: optional `bind` in `camera_relay` (default all interfaces, `"127.0.0.1"` keeps it on the Pi). Vision: `WORKSHOP_VISION_BIND`.
 - `bridge/install.sh uninstall` removes the unit, the polkit rule and `/opt/workshop-bridge`.
 - `security.md`: every permission is explained, plus a table of changes made outside DSF and how to undo them, and the open-access warning while no user exists.
+
+## 2.21.35 -- 2026-10-30
+
+- `health.history` takes `since` and `until` (epoch seconds) for any stretch of the Pi health history, not only `1h`, `6h`, `24h`, `7d`; the answer also carries `until`.
+- API and keys: the request, the curl and the macro line of an operation have a copy button.
+- `bridge/install.sh` never leaves an empty unit file (a missing template had left it at 0 bytes and systemd reported the bridge as masked).
 
 ## 2.21.34 -- 2026-10-30
 

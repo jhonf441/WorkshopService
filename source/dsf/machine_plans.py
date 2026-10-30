@@ -1,4 +1,4 @@
-"""Planners of the phase 2 configuration kinds for machine.config.plan (Machine v2): G31, M208, M92, G10 (tool offsets), work offsets.
+"""Planners of the phase 2 configuration kinds for machine.config.plan (Machine v2): G31, M208, M92, G10 (tool offsets).
 
 Each planner is pure like the ones of machine_config.py: it reads the files, builds the new text with the patchers of machine_patch.py and returns
 the plan body (files with their diff, warnings, action) WITHOUT writing. `machine_config.make_plan` stores it under a plan id and
@@ -14,17 +14,14 @@ Kinds and values:
     config.m208        {axes: {"X": {min, max}, ...}}                                       ADMIN (permissions.MACHINE_ADMIN_KINDS)
     config.m92         {axes: {"X": steps per mm, ...}}                                     ADMIN
     config.g10         {tool: 0-49, offsets: {"X": v, "Y": v, "Z": v}}                      technician (G10 L1)
-    config.workplaces  {systems: {"1": {"X": v, ...}, ...}, target?: "macro" | "config"}    technician (G10 L2)
-The persistence helper of the work offsets (`target` "macro", default) writes `0:/sys/workshop-offsets.g` and makes sure config.g calls it;
-`M500` is not used and its behaviour is not assumed.
+The work offsets G54..G59.3 (G10 L2) have NO planner: they are the work zones of the Workbench (WorkshopWorkbench writes
+`0:/sys/workshop/zones/p<N>.g`, one per system, with the laser <-> pointer correction inside; `workplaces.g` loads them at start-up).
+Machine only reads them (machine.offsets.get) and keeps snapshots to compare. `M500` is not used and its behaviour is not assumed.
 """
 import config_scan
 import machine_config as mc
 import machine_patch as pt
 
-WORK_MACRO = "0:/sys/workshop-offsets.g"
-WORK_CALL = 'M98 P"workshop-offsets.g"'
-MACRO_HEADER = "; workshop-offsets.g -- work offsets G54..G59.3 (G10 L2), written by Machine. Called from config.g with M98.\n"
 MAX_TOOL = 49
 
 
@@ -152,97 +149,6 @@ def plan_g10(values, env):
     return _body(path, before, res, scan, hits, now, {"tool": tool, "offsets": old} if old else None, {"tool": tool, "offsets": pick(res["text"])})
 
 
-# ---- G10: work offsets (L2) ----
-
-def _systems(values):
-    raw = values.get("systems")
-    if not isinstance(raw, dict) or not raw:
-        raise _bad("systems")
-    out = {}
-    for key, offs in raw.items():
-        try:
-            n = int(key)
-        except (TypeError, ValueError):
-            raise _bad("systems." + str(key))
-        if not 1 <= n <= 9 or str(n) != str(key) or not isinstance(offs, dict) or not offs:
-            raise _bad("systems." + str(key))
-        out[n] = _axis_map({"o": offs}, "o", lambda v, f: _number(v, -99999, 99999, f))
-    return out
-
-
-def _work_pick(text, systems):
-    cur = pt.read_work_offsets(text)
-    return {str(n): {c: v for c, v in cur.get(n, {}).items() if c in systems[n]} for n in systems if n in cur}
-
-
-def _patch_all(text, systems):
-    notices, action, line = [], "same", None
-    for n in sorted(systems):
-        r = pt.patch_work_offset(text, n, systems[n], "G%s" % (53 + n if n <= 6 else "59.%d" % (n - 6)))
-        text = r["text"]
-        notices += [x for x in r["notices"] if x not in notices]
-        if r["action"] != "same" and action != "added":
-            action = r["action"]
-        line = line or (r["line"] if r["action"] != "same" else None)
-    return {"text": text, "action": action, "line": line or 1, "notices": notices}
-
-
-def _ensure_call(root_text, scan_calls):
-    """config.g text with the M98 of the macro: before an M501 line if there is one, else at the end."""
-    if WORK_MACRO.lower() in scan_calls:
-        return root_text, False
-    eol, ls = pt.split_lines(root_text)
-    at = next((n for n, code in pt.live_lines(ls) if pt.command_word(code)[0] == "M501"), None)
-    if at is None:
-        end = len(ls) - 1 if ls and ls[-1] == "" else len(ls)
-        ls.insert(end, WORK_CALL + " ; work offsets (Machine)")
-    else:
-        ls.insert(at, WORK_CALL + " ; work offsets (Machine)")
-    return eol.join(ls), True
-
-
-def plan_workplaces(values, env):
-    systems = _systems(values)
-    target = values.get("target", "macro")
-    if target not in ("macro", "config"):
-        raise _bad("target")
-    scan = config_scan.scan(env["read"])
-    if not scan["read"]:
-        raise mc.PlanError("no_config")
-    if target == "config":
-        return _plan_work_in_config(systems, env, values)
-    root_before = mc.read_bytes(config_scan.ROOT)
-    macro_before = mc.read_bytes(WORK_MACRO)
-    macro_old = mc._decode(macro_before) if macro_before is not None else ""
-    inline = [p for p in scan["files"] if p.lower() != WORK_MACRO.lower() and pt.read_work_offsets(env["read"](p) or "")]
-    try:
-        res = _patch_all(macro_old if macro_before is not None else MACRO_HEADER, systems)
-    except pt.PatchError as e:
-        raise mc.PlanError("patch_" + e.code, e.field)
-    files = [mc._file_entry(WORK_MACRO, macro_before, res["text"])]
-    calls = {c.lower() for p in scan["files"] for c in config_scan.scan_text(env["read"](p) or "", p)["calls"]}
-    root_text, call_added = _ensure_call(mc._decode(root_before), calls)
-    if call_added:
-        files.append(mc._file_entry(config_scan.ROOT, root_before, root_text))
-    warnings = list(res["notices"]) + (["also_in_config"] if inline else []) + (["config_calls_macro"] if call_added else [])
-    if not any(f["changed"] for f in files):
-        warnings.append("nothing_changes")
-    now = [("g10_work_axis", {"n": n, "axis": c, "v": v}) for n in sorted(systems) for c, v in systems[n].items()]
-    return {"files": files, "warnings": warnings, "action": "added" if macro_before is None else res["action"], "line": res["line"],
-            "now": {"lines": now}, "set": list(scan["files"]) + [WORK_MACRO], "before": _wrap_work(_work_pick(macro_old, systems)),
-            "after": _wrap_work(_work_pick(res["text"], systems)), "restart_needed": True}
-
-
-def _wrap_work(systems):
-    return {"systems": systems} if systems else None
-
-
-def _plan_work_in_config(systems, env, values):
-    path, before, res, scan, hits = _edit(env, lambda t: any(n in pt.read_work_offsets(t) for n in systems), lambda t: _patch_all(t, systems))
-    now = [("g10_work_axis", {"n": n, "axis": c, "v": v}) for n in sorted(systems) for c, v in systems[n].items()]
-    return _body(path, before, res, scan, hits, now, _wrap_work(_work_pick(mc._decode(before), systems)), _wrap_work(_work_pick(res["text"], systems)))
-
-
 # ---- M671 (phase 1 planner): the values before / after, so it can be restored ----
 
 def m671_values(text):
@@ -260,4 +166,4 @@ def m671_values(text):
     return out if "x" in out and "y" in out else None
 
 
-PLANNERS = {"config.g31": plan_g31, "config.m208": plan_m208, "config.m92": plan_m92, "config.g10": plan_g10, "config.workplaces": plan_workplaces}
+PLANNERS = {"config.g31": plan_g31, "config.m208": plan_m208, "config.m92": plan_m92, "config.g10": plan_g10}

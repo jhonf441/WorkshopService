@@ -36,7 +36,7 @@ from workshop_api import ApiError, Arg, MOTION, READ, Op
 PLAN_TTL_S = 900
 MAX_PLANS = 20
 MAX_DIFF_LINES = 400
-SUPPORTED = ("config.m671", "config.bed", "config.g31", "config.m208", "config.m92", "config.g10", "config.workplaces")
+SUPPORTED = ("config.m671", "config.bed", "config.g31", "config.m208", "config.m92", "config.g10")
 BED = "0:/sys/bed.g"
 G28Z_LINE = "G28 Z ; levelling shifts the Z zero a little: home Z again"
 
@@ -668,7 +668,7 @@ def ops():
     a = Arg
     kinds = ("config.m671 (values {x: [..], y: [..], s, p, f}), config.bed (values {points: [{x, y}], k, s, passes, tol, rehome_z}), "
              "config.g31 ({k, p, x, y, z}), config.m208 (admin; {axes: {X: {min, max}}}), config.m92 (admin; {axes: {X: steps}}), "
-             "config.g10 ({tool, offsets: {X, Y, Z}}), config.workplaces ({systems: {\"1\": {X, Y, Z}}, target: macro | config})")
+             "config.g10 ({tool, offsets: {X, Y, Z}}). The work offsets G54..G59.3 have no kind: they are the work zones of the Workbench")
     return [
         Op("machine.config.plan", _plan_op, READ, {"kind": a(S, True, desc="Kind of change: " + kinds + "."),
                                                   "values": a(O, desc="The values of the kind.")},

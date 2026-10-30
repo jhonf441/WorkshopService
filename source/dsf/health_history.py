@@ -86,17 +86,25 @@ def maintain(now=None):
     return len(drop), deleted
 
 
-def history(range_name="1h", limit=300, now=None):
-    """{range, since, step_s, retention_days, series: {name: [{t: epoch ms, y: value}]}}. The rows of the range are averaged in
-    `limit` buckets at most; a bucket without a value for a series gives no point for it."""
-    seconds = RANGES.get(range_name) or RANGES["1h"]
+def history(range_name="1h", limit=300, now=None, since_s=None, until_s=None):
+    """{range, since, until, step_s, retention_days, series: {name: [{t: epoch ms, y: value}]}}. The rows of the range are averaged in
+    `limit` buckets at most; a bucket without a value for a series gives no point for it. The range is one of RANGES (back from now) or,
+    when `since_s` (epoch seconds) is given, any stretch from `since_s` to `until_s` (default: now): range comes back as "custom"."""
     limit = max(10, min(int(limit), MAX_LIMIT))
     now = time.time() if now is None else now
-    since = now - seconds
+    if since_s is not None:
+        until = min(now, float(until_s)) if until_s is not None else now
+        since = min(float(since_s), until - 1)
+        range_name = "custom"
+        seconds = max(1, int(until - since))
+    else:
+        seconds = RANGES.get(range_name) or RANGES["1h"]
+        since = now - seconds
+        until = now
     step = max(1, seconds // limit)
     with db._lock, db._connect() as conn:
-        rows = conn.execute("SELECT ts, cpu, temp, ram, disk, wifi FROM health_samples WHERE ts >= ? ORDER BY ts",
-                            (time.strftime(FMT, time.localtime(since)),)).fetchall()
+        rows = conn.execute("SELECT ts, cpu, temp, ram, disk, wifi FROM health_samples WHERE ts >= ? AND ts <= ? ORDER BY ts",
+                            (time.strftime(FMT, time.localtime(since)), time.strftime(FMT, time.localtime(until)))).fetchall()
     acc = {k: {} for k in SERIES}
     for row in rows:
         t = time.mktime(time.strptime(row[0], FMT))
@@ -108,18 +116,20 @@ def history(range_name="1h", limit=300, now=None):
                 s[1] += 1
                 s[2] += t
     series = {k: [{"t": int(s[2] / s[1] * 1000), "y": round(s[0] / s[1], 1)} for _, s in sorted(acc[k].items())] for k in SERIES}
-    return {"range": range_name if range_name in RANGES else "1h", "since": time.strftime(FMT, time.localtime(since)), "step_s": step,
-            "retention_days": RETENTION_DAYS, "series": series}
+    return {"range": range_name if range_name in RANGES or range_name == "custom" else "1h", "since": time.strftime(FMT, time.localtime(since)),
+            "until": time.strftime(FMT, time.localtime(until)), "step_s": step, "retention_days": RETENTION_DAYS, "series": series}
 
 
 def _op(args, ctx):
-    return history(args.get("range") or "1h", args.get("limit") or 300)
+    return history(args.get("range") or "1h", args.get("limit") or 300, since_s=args.get("since"), until_s=args.get("until"))
 
 
 def ops():
     return [
         Op("health.history", _op, READ,
            {"range": Arg("str", choices=tuple(RANGES), desc="How far back: 1h (default), 6h, 24h or 7d (the retention is 7 days by default)."),
+            "since": Arg("int", min=0, desc="Epoch seconds, from: with it the range is a stretch from here to `until` instead of `range`."),
+            "until": Arg("int", min=0, desc="Epoch seconds, until (default: now); only with `since`."),
             "limit": Arg("int", min=10, max=MAX_LIMIT, desc="Most points per series (default 300); the samples are averaged in buckets.")},
            "Returns the history of the Pi health kept by the service: series cpu (% use), temp (C), ram (% in use), disk (% in use) and wifi "
            "(% signal, 0 when down), each a list of {t: epoch milliseconds, y: value} averaged in buckets of step_s seconds.", log=False),

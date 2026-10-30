@@ -13,6 +13,7 @@
  },
  "dwc36_vs_master": {
   "differs": [
+   "ApiDetail.vue",
    "ApiKeys.vue",
    "AuditCard.vue",
    "BlackBoxCard.vue",

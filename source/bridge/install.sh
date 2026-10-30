@@ -72,7 +72,20 @@ do_install() {
   ensure_sd_dir "$SD/sys/workshop/data" "$user"
 
   echo "3. Unit"
-  sed -e "s#__USER__#$user#" -e "s#__DIR__#$DEST#" -e "s#__SD__#$SD#" "$HERE/$UNIT.service" > "$UNIT_DIR/$UNIT.service"
+  # the unit is written to a temporary file first: a missing template or a failed sed must never leave an EMPTY unit file, which systemd
+  # reports as "masked" (it happened once: the folder had no $UNIT.service and the redirection truncated the real unit)
+  if [ ! -s "$HERE/$UNIT.service" ]; then
+    echo "The template $HERE/$UNIT.service is missing or empty: nothing was changed." >&2
+    exit 1
+  fi
+  tmp="$UNIT_DIR/.$UNIT.service.new"
+  sed -e "s#__USER__#$user#" -e "s#__DIR__#$DEST#" -e "s#__SD__#$SD#" "$HERE/$UNIT.service" > "$tmp"
+  if [ ! -s "$tmp" ]; then
+    rm -f "$tmp"
+    echo "Could not write the unit: nothing was changed." >&2
+    exit 1
+  fi
+  mv "$tmp" "$UNIT_DIR/$UNIT.service"
   systemctl daemon-reload
   systemctl enable "$UNIT"
   systemctl restart "$UNIT"

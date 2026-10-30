@@ -36,12 +36,27 @@
 			<div v-if="op.extra_args">{{ $t('plugins.WorkshopService.apiDetail.extra_args') }}</div>
 		</div>
 
-		<div class="text-caption grey--text mb-1">{{ $t('plugins.WorkshopService.apiDetail.request') }}</div>
+		<div class="d-flex align-center mb-1" style="gap:8px">
+			<span class="text-caption grey--text">{{ $t('plugins.WorkshopService.apiDetail.request') }}</span>
+			<v-btn x-small text :aria-label="$t('plugins.WorkshopService.apiDetail.copy_what', { what: $t('plugins.WorkshopService.apiDetail.request') })" @click="doCopy(request, 'request')">
+				<v-icon x-small left>{{ copied === 'request' ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>{{ copied === 'request' ? $t('plugins.WorkshopService.apiDetail.copied') : $t('plugins.WorkshopService.apiDetail.copy') }}
+			</v-btn>
+		</div>
 		<pre class="pa-2 svc-use" style="white-space:pre-wrap;word-break:break-all">{{ request }}</pre>
-		<div class="text-caption grey--text mb-1 mt-2">{{ $t('plugins.WorkshopService.apiDetail.curl') }}</div>
+		<div class="d-flex align-center mb-1 mt-2" style="gap:8px">
+			<span class="text-caption grey--text">{{ $t('plugins.WorkshopService.apiDetail.curl') }}</span>
+			<v-btn x-small text :aria-label="$t('plugins.WorkshopService.apiDetail.copy_what', { what: $t('plugins.WorkshopService.apiDetail.curl') })" @click="doCopy(curl, 'curl')">
+				<v-icon x-small left>{{ copied === 'curl' ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>{{ copied === 'curl' ? $t('plugins.WorkshopService.apiDetail.copied') : $t('plugins.WorkshopService.apiDetail.copy') }}
+			</v-btn>
+		</div>
 		<pre class="pa-2 svc-use" style="white-space:pre-wrap;word-break:break-all">{{ curl }}</pre>
 		<template v-if="op.macro">
-			<div class="text-caption grey--text mb-1 mt-2">{{ $t('plugins.WorkshopService.apiDetail.from_a_macro') }}</div>
+		<div class="d-flex align-center mb-1 mt-2" style="gap:8px">
+			<span class="text-caption grey--text">{{ $t('plugins.WorkshopService.apiDetail.from_a_macro') }}</span>
+			<v-btn x-small text :aria-label="$t('plugins.WorkshopService.apiDetail.copy_what', { what: $t('plugins.WorkshopService.apiDetail.from_a_macro') })" @click="doCopy(macro, 'macro')">
+				<v-icon x-small left>{{ copied === 'macro' ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>{{ copied === 'macro' ? $t('plugins.WorkshopService.apiDetail.copied') : $t('plugins.WorkshopService.apiDetail.copy') }}
+			</v-btn>
+		</div>
 			<pre class="pa-2 svc-use" style="white-space:pre-wrap;word-break:break-all">{{ macro }}</pre>
 		</template>
 		<div class="text-caption grey--text mt-2">{{ $t('plugins.WorkshopService.apiDetail.answer') }}</div>
@@ -55,10 +70,23 @@
 // Detail of one API operation, built from api.describe (nothing is written by hand per operation):
 // the arguments with their rules, who can call it, what it asks before running and the exact
 // request / curl / macro line to use it.
+import { copyText } from './copy.js'
+
 export default {
 	name: 'ApiDetail',
 	props: {
 		op: { type: Object, default: null }
+	},
+	data() {
+		return { copied: '' };
+	},
+	methods: {
+		// the request, the curl and the macro line copy to the clipboard (copy.js works over http too)
+		async doCopy(text, id) {
+			if (!(await copyText(text))) return;
+			this.copied = id;
+			setTimeout(() => { if (this.copied === id) this.copied = ''; }, 1500);
+		}
 	},
 	computed: {
 		admin() { return !!this.op && this.op.kind === 'admin'; },

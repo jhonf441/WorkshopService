@@ -36,12 +36,27 @@
 			<div v-if="op.extra_args">{{ $t('plugins.WorkshopService.apiDetail.extra_args') }}</div>
 		</div>
 
-		<div class="text-body-small text-medium-emphasis mb-1">{{ $t('plugins.WorkshopService.apiDetail.request') }}</div>
+		<div class="d-flex align-center mb-1" style="gap:8px">
+			<span class="text-body-small text-medium-emphasis">{{ $t('plugins.WorkshopService.apiDetail.request') }}</span>
+			<v-btn size="x-small" variant="text" :aria-label="$t('plugins.WorkshopService.apiDetail.copy_what', { what: $t('plugins.WorkshopService.apiDetail.request') })" @click="doCopy(request, 'request')">
+				<v-icon size="x-small" start>{{ copied === 'request' ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>{{ copied === 'request' ? $t('plugins.WorkshopService.apiDetail.copied') : $t('plugins.WorkshopService.apiDetail.copy') }}
+			</v-btn>
+		</div>
 		<pre class="pa-2 svc-use" style="white-space:pre-wrap;word-break:break-all">{{ request }}</pre>
-		<div class="text-body-small text-medium-emphasis mb-1 mt-2">{{ $t('plugins.WorkshopService.apiDetail.curl') }}</div>
+		<div class="d-flex align-center mb-1 mt-2" style="gap:8px">
+			<span class="text-body-small text-medium-emphasis">{{ $t('plugins.WorkshopService.apiDetail.curl') }}</span>
+			<v-btn size="x-small" variant="text" :aria-label="$t('plugins.WorkshopService.apiDetail.copy_what', { what: $t('plugins.WorkshopService.apiDetail.curl') })" @click="doCopy(curl, 'curl')">
+				<v-icon size="x-small" start>{{ copied === 'curl' ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>{{ copied === 'curl' ? $t('plugins.WorkshopService.apiDetail.copied') : $t('plugins.WorkshopService.apiDetail.copy') }}
+			</v-btn>
+		</div>
 		<pre class="pa-2 svc-use" style="white-space:pre-wrap;word-break:break-all">{{ curl }}</pre>
 		<template v-if="op.macro">
-			<div class="text-body-small text-medium-emphasis mb-1 mt-2">{{ $t('plugins.WorkshopService.apiDetail.from_a_macro') }}</div>
+		<div class="d-flex align-center mb-1 mt-2" style="gap:8px">
+			<span class="text-body-small text-medium-emphasis">{{ $t('plugins.WorkshopService.apiDetail.from_a_macro') }}</span>
+			<v-btn size="x-small" variant="text" :aria-label="$t('plugins.WorkshopService.apiDetail.copy_what', { what: $t('plugins.WorkshopService.apiDetail.from_a_macro') })" @click="doCopy(macro, 'macro')">
+				<v-icon size="x-small" start>{{ copied === 'macro' ? 'mdi-check' : 'mdi-content-copy' }}</v-icon>{{ copied === 'macro' ? $t('plugins.WorkshopService.apiDetail.copied') : $t('plugins.WorkshopService.apiDetail.copy') }}
+			</v-btn>
+		</div>
 			<pre class="pa-2 svc-use" style="white-space:pre-wrap;word-break:break-all">{{ macro }}</pre>
 		</template>
 		<div class="text-body-small text-medium-emphasis mt-2">{{ $t('plugins.WorkshopService.apiDetail.answer') }}</div>
@@ -50,8 +65,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { i18n } from './dwc-host.js'
+import { copyText } from './copy.js'
 
 // Detail of one API operation, built from api.describe (nothing is written by hand per operation):
 // the arguments with their rules, who can call it, what it asks before running and the exact
@@ -59,6 +75,14 @@ import { i18n } from './dwc-host.js'
 const props = defineProps({
 	op: { type: Object, default: null }
 })
+
+// the request, the curl and the macro line copy to the clipboard (copy.js works over http too)
+const copied = ref('')
+async function doCopy(text, id) {
+	if (!(await copyText(text))) return
+	copied.value = id
+	setTimeout(() => { if (copied.value === id) copied.value = '' }, 1500)
+}
 
 const admin = computed(() => !!props.op && props.op.kind === 'admin')
 const args = computed(() => {

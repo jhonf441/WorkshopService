@@ -15,21 +15,21 @@ found it (sha_before) the file changed since: the restore is REFUSED with `reaso
 had before / after / what the file has now, per value). The person looks at it (or at machine.history.compare) and asks again with
 `accept_current: true`: the plan is then made over the CURRENT file, replacing only the values of the record.
 
-Restorable kinds: config.m671, config.g31, config.m208, config.m92 (admin kinds), config.g10, config.workplaces, and offsets.snapshot (its
-work offsets become a config.workplaces plan). Not restorable: config.bed (the whole bed.g is the value; use the config history snapshot),
-calibration runs (there is nothing to put back) and records whose line did not exist before (`before` is null).
+Restorable kinds: config.m671, config.g31, config.m208, config.m92 (admin kinds), config.g10. Not restorable: config.bed (the whole bed.g
+is the value; use the config history snapshot), calibration runs (there is nothing to put back), records whose line did not exist before
+(`before` is null) and offsets.snapshot (reason `work_offsets_in_workbench`: the work offsets G54..G59.3 are the work zones of the
+Workbench, `0:/sys/workshop/zones/p<N>.g`; a snapshot is kept to compare, the person edits the zones there).
 """
 import identity
 import machine_config as mc
 import machine_diff
 import machine_heightmap as hm
-import machine_offsets
 import machine_store
 import permissions
 from messages import M
 from workshop_api import ApiError, Arg, READ, WRITE, Op
 
-RESTORABLE = ("config.m671", "config.g31", "config.m208", "config.m92", "config.g10", "config.workplaces",
+RESTORABLE = ("config.m671", "config.g31", "config.m208", "config.m92", "config.g10",
               # phase 3: the values of `before` / `after` are the shape the planner takes
               "config.m556", "config.m425", "config.m593", "config.m906", "config.m913", "config.m917", "config.m203", "config.m201",
               "config.m205", "config.m566", "config.m569")
@@ -45,8 +45,7 @@ def brief(rec):
 
 def role_for(kind):
     """The role a restore (and the apply of its plan) of a record of this kind needs."""
-    target = "config.workplaces" if kind == "offsets.snapshot" else kind
-    return permissions.needed_role("machine.config.apply", {"args": {"kind": target}})
+    return permissions.needed_role("machine.config.apply", {"args": {"kind": kind}})
 
 
 def restore_info(rec):
@@ -54,12 +53,8 @@ def restore_info(rec):
     kind, res = rec["kind"], rec.get("results") or {}
     out = {"restorable": False, "reason": None, "which": [], "role_needed": role_for(kind)}
     if kind == "offsets.snapshot":
-        if res.get("work"):
-            out.update(restorable=True, which=["after"])
-        else:
-            out["reason"] = "no_value"
-        return out
-    if kind not in RESTORABLE:
+        out["reason"] = "work_offsets_in_workbench"        # the page sends the person to the Workbench (Zones) instead
+    elif kind not in RESTORABLE:
         out["reason"] = "not_restorable"
     elif rec["state"] != "done" or not rec.get("applied"):
         out["reason"] = "not_applied"
@@ -131,34 +126,28 @@ def _three_way(rec, plan):
     return [{"key": k, "before": fb.get(k), "after": fa.get(k), "now": fn.get(k)} for k in sorted(set(fb) | set(fa)) if not (fb.get(k) == fa.get(k) == fn.get(k))]
 
 
-def _values_of(rec, which):
-    if rec["kind"] == "offsets.snapshot":
-        return "config.workplaces", machine_offsets.workplaces_values((rec.get("results") or {}).get("work") or {})
-    return rec["kind"], (rec.get("results") or {}).get(which)
-
-
 def _restore(args, ctx):
     rec = _record_or_404(args["id"])
     if args.get("kind") and args["kind"] != rec["kind"]:
         raise ApiError("invalid_args", M("machine_history_kind_mismatch", a=args["kind"], b=rec["kind"]), field="kind", reason="kind_mismatch")
-    ok, need = mc._role_ok(ctx, "config.workplaces" if rec["kind"] == "offsets.snapshot" else rec["kind"])
+    ok, need = mc._role_ok(ctx, rec["kind"])
     if not ok:
         raise ApiError("forbidden", M("machine_config_needs_role", role=need), reason="role", needed_role=need)
     info = restore_info(rec)
-    which = args.get("which") or ("after" if rec["kind"] == "offsets.snapshot" else "before")
+    which = args.get("which") or "before"
     if not info["restorable"]:
         raise ApiError("refused", M("machine_history_not_restorable", reason=info["reason"]), reason=info["reason"])
     if which not in info["which"]:
         raise ApiError("refused", M("machine_history_no_value", which=which), reason="no_value")
-    states = file_states(rec) if rec["kind"] != "offsets.snapshot" else []
+    states = file_states(rec)
     dirty = any(s["state"] != "clean" for s in states)
-    kind, values = _values_of(rec, which)
+    kind, values = rec["kind"], (rec.get("results") or {}).get(which)
     who = identity.actor(ctx)
     try:
         plan = mc.make_plan(kind, values, mc._env(), who)
     except mc.PlanError as e:
         raise ApiError("failed", M("machine_history_plan_failed", reason=e.code), reason=e.code)
-    three = _three_way(rec, plan) if rec["kind"] != "offsets.snapshot" else []
+    three = _three_way(rec, plan)
     if dirty and not args.get("accept_current"):
         mc.drop_plan(plan["id"])
         raise ApiError("conflict", M("machine_history_file_changed"), reason="file_changed", three_way=three, files=states)
@@ -185,10 +174,11 @@ def ops():
            "Compares two records of the same kind: the values that differ (results and inputs, with the difference b - a) and, for height "
            "maps, the difference grid with its statistics (same grid required).", log=False),
         Op("machine.history.restore", _restore, WRITE,
-           {"id": a(S, True, desc="Record id."), "which": a(S, choices=("before", "after"), desc="before = undo (default), after = re-apply. A snapshot of offsets only has after."),
+           {"id": a(S, True, desc="Record id."), "which": a(S, choices=("before", "after"), desc="before = undo (default), after = re-apply."),
             "kind": a(S, desc="The kind of the record (the registry asks for the administrator role from it). The service checks it against the record."),
             "accept_current": a(B, desc="The files changed since the record: make the plan over the current file after looking at the three-way table.")},
            "Builds a PLAN that puts back the values of a configuration record (nothing is written): show its diff and send plan_id to "
            "machine.config.apply with the plan's kind. Refused with reason file_changed (and the three-way table) when a file is neither as "
-           "the record left it nor as it found it, unless accept_current."),
+           "the record left it nor as it found it, unless accept_current. An offsets.snapshot is refused with reason work_offsets_in_workbench: "
+           "the work offsets are edited in the Workbench (zones)."),
     ]

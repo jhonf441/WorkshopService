@@ -270,7 +270,7 @@ The exact shapes the plugin builds against are in `docs/MACHINE-PHASE2-CONTRACT.
 | `machine.history.list {kind?, user?, state?, since?, until?, limit?, offset?}` | technician | the calibration records newest first (who, when, how they ended, restorable). |
 | `machine.history.get {id}` | technician | one record complete, and what a restore would need (values `before` / `after`, role needed, state of the files the record wrote). |
 | `machine.history.compare {a, b}` | technician | two records of the SAME kind: the table of values that differ (`results`, `inputs`, with `delta = b - a`) and, for `mesh.probe`, the difference grid and its statistics (same grid required, no resampling). |
-| `machine.history.restore {id, which?, kind?, accept_current?}` | technician (admin for the hardware-risk kinds) | builds a PLAN (writes nothing) that puts the `before` (undo) or `after` values of a configuration record back; `machine.config.apply` writes it (fresh snapshot, sha check). Refused with `conflict` / `file_changed` and a three-way table when a file is neither as the record left it nor as it found it, unless `accept_current`. An `offsets.snapshot` becomes a `config.workplaces` plan. |
+| `machine.history.restore {id, which?, kind?, accept_current?}` | technician (admin for the hardware-risk kinds) | builds a PLAN (writes nothing) that puts the `before` (undo) or `after` values of a configuration record back; `machine.config.apply` writes it (fresh snapshot, sha check). Refused with `conflict` / `file_changed` and a three-way table when a file is neither as the record left it nor as it found it, unless `accept_current`. An `offsets.snapshot` is refused with reason `work_offsets_in_workbench`: the work offsets G54..G59.3 are the work zones of the Workbench (`0:/sys/workshop/zones/p<N>.g`), a snapshot is only for comparing. |
 | `machine.report {id}` / `{full: true}` | technician | the DATA of a printable report (the page draws it): one calibration (values, who, when, mesh grid or level residual) or the status of the whole machine (newest record of every kind, limits, offsets, active mesh, a fresh safety check). No SVG on the server. |
 | `machine.offsets.get` | operator | tool offsets (per tool and axis, probed axes) and the nine work offsets G54..G59.3 from the object model, the work system selected now, the last snapshot. |
 | `machine.offsets.snapshot {note?}` | technician | stores both tables as a record `offsets.snapshot` and returns the differences with the previous snapshot. |
@@ -289,8 +289,8 @@ The exact shapes the plugin builds against are in `docs/MACHINE-PHASE2-CONTRACT.
 | `machine.workarea.step {action, x?, y?}` | technician | MOTION, reserved like `machine.height.step`: `capture` (`handcorner.g`, answers `{x, y}`), `goto` (`gotobed.g` X Y), `frame` (`framecutarea.g`, walks the saved area of the mode in use with the pointer, laser off) |
 
 New `machine.config.plan` kinds (all show the diff first, the plan also carries `before` and `after`): `config.g31` (`k`, `p`, `x`, `y`, `z`), `config.m208`
-(admin; `axes {X: {min, max}}`), `config.m92` (admin; `axes {X: steps}`), `config.g10` (tool offsets, `tool`, `offsets`), `config.workplaces` (`systems
-{"1": {X, Y, Z}}`, `target` macro | config: the G10 L2 block goes to `0:/sys/workshop-offsets.g`, which config.g calls; `M500` is not used). The patchers
+(admin; `axes {X: {min, max}}`), `config.m92` (admin; `axes {X: steps}`), `config.g10` (tool offsets, `tool`, `offsets`). The work offsets
+G54..G59.3 have no kind: WorkshopWorkbench writes them as work zones (`0:/sys/workshop/zones/p<N>.g`, loaded by `workplaces.g`; `M500` is not used). The patchers
 (`dsf/machine_patch.py`) keep the user's spacing, comments and line endings, edit the last definition of a value, add a missing line after a sensible
 anchor, never replace an expression (`X{...}`) and never rewrite `M208 S..` lines; golden files in `dsf/golden/patch/`.
 
@@ -404,8 +404,9 @@ are only returned without the filter. A client that gets `unknown_arg`/`unknown_
 the loaded page.
 
 `health.history` (viewer) returns the history of the Pi health kept in the database (table `health_samples`, schema 6):
-`range` = `1h` (default) | `6h` | `24h` | `7d`, `limit` = most points per series (10 to 1000, default 300). The answer is
-`{range, since, step_s, retention_days, series: {cpu, temp, ram, disk, wifi}}`, each series a list of `{t: epoch milliseconds,
+`range` = `1h` (default) | `6h` | `24h` | `7d`, or `since` (epoch seconds) with an optional `until` (default now) for any stretch (then `range`
+comes back as `custom`), `limit` = most points per series (10 to 1000, default 300). The answer is
+`{range, since, until, step_s, retention_days, series: {cpu, temp, ram, disk, wifi}}`, each series a list of `{t: epoch milliseconds,
 y: value}` averaged in buckets of `step_s` seconds (cpu, ram, disk, wifi in %, temp in degrees C; wifi is 0 when the link is down).
 The poller records a sample every cycle (at most one per 5 s); the last 2 hours are kept complete, older ones are thinned to one
 per 30 s, and rows older than `health.history_days` of `config.json` (default 7) are deleted by the database maintenance.

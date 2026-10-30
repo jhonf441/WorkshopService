@@ -49,7 +49,7 @@ RETRIES = 6
 RUN_KINDS = ("probe.read", "probe.repeat", "probe.accuracy", "probe.trigger", "probe.offset", "level.g32", "level.g30", "level.measure",
              "mesh.probe", "homing.verify", "homing.repeat", "offsets.verify", "safety.check", "shaping.tune")
 CONFIG_KINDS = ("config.g31", "config.m671", "config.bed", "config.g10", "config.m557", "config.m593", "config.m425", "config.m556",
-                "config.m376", "config.workplaces", "config.m203", "config.m201", "config.m205", "config.m566") + tuple(permissions.MACHINE_ADMIN_KINDS)
+                "config.m376", "config.m203", "config.m201", "config.m205", "config.m566") + tuple(permissions.MACHINE_ADMIN_KINDS)
 RECORD_KINDS = ("offsets.snapshot", "laser.pointer", "calc.steps", "calc.skew", "calc.backlash", "calc.ringing")      # records that are not a machine.run (machine.offsets.snapshot, machine.mark_cross)
 KINDS = RUN_KINDS + RECORD_KINDS + CONFIG_KINDS
 FIELDS = ("id", "kind", "ts", "user", "role", "device", "origin", "run_id", "machine", "inputs", "results", "applied", "notes", "state")

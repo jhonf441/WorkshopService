@@ -54,8 +54,8 @@ the file has now; for a clean restore `now == after`, so the page can show it as
 record wrote is neither as the record left it (`sha_after`) nor as it found it (`sha_before`). Show the three-way table (and `machine.history.compare`),
 and ask again with `accept_current: true`: the plan is made over the CURRENT file replacing only the values of the record. Other `reason`s:
 `not_restorable`, `not_applied`, `no_value` (the line did not exist before: there is no `before`), `kind_mismatch`, `role` (403 with `needed_role`).
-Restorable: `config.m671`, `config.g31`, `config.m208`, `config.m92`, `config.g10`, `config.workplaces` and `offsets.snapshot` (becomes a
-`config.workplaces` plan). Not restorable: `config.bed` (use the configuration history snapshot), runs.
+Restorable: `config.m671`, `config.g31`, `config.m208`, `config.m92`, `config.g10`. Not restorable: `config.bed` (use the configuration
+history snapshot), runs, and `offsets.snapshot` (reason `work_offsets_in_workbench`: the work offsets are the work zones of the Workbench).
 
 ## Plan kinds added to `machine.config.plan` (values)
 
@@ -65,10 +65,9 @@ Restorable: `config.m671`, `config.g31`, `config.m208`, `config.m92`, `config.g1
 | `config.m208` | `{axes: {"X": {min, max}}}` | ADMIN | edits `M208` per axis (the last line that has the axis) | `M208 X<min>:<max>` per axis |
 | `config.m92` | `{axes: {"X": steps_per_mm}}` (letters X Y Z U V W A B C and E for the extruder) | ADMIN | edits `M92` per axis; warning `big_change` when the ratio is outside 0.5-2 | `M92 X..` per axis |
 | `config.g10` | `{tool: 0-49, offsets: {"X": v, "Y": v, "Z": v}}` | technician | edits `G10 L1 P<tool>` (adds it after the `M563` of the tool) | `G10 L1 P<tool> X..` per axis |
-| `config.workplaces` | `{systems: {"1": {"X": v}}, target?: "macro" (default) or "config"}` | technician | `macro`: writes the G10 L2 lines into `0:/sys/workshop-offsets.g` and makes sure config.g calls it (`M98 P"workshop-offsets.g"`, before an `M501` line if there is one); `config` edits the file that already has the lines. `M500` is NOT used | `G10 L2 P<n> X..` per axis |
 
 Warnings (codes) in `plan.warnings`: `several_definitions`, `defined_in_several_files`, `nothing_changes`, `no_anchor`, `no_m558`, `no_m558_for_probe`,
-`multi_driver_value`, `also_in_config`, `config_calls_macro`, `big_change`, `new_line_resets_defaults`. Plan errors (`error.reason`):
+`multi_driver_value`, `big_change`, `new_line_resets_defaults`. Plan errors (`error.reason`):
 `bad_value` (+`field`), `no_config`, `not_utf8`, `patch_expression` (the token is an expression `X{...}`: not replaced), `patch_unsupported_form`
 (M208 with `S`), `patch_bad_axis`. `apply` answers `restart_needed: true` for all of them (the file is read at the next start; `apply_now` makes it valid at once).
 

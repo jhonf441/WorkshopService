@@ -3,14 +3,13 @@
 machine.offsets.get        (operator, read only) the table from the object model: the tool offsets (tools[].offsets, in the order of move.axes) and
                            the nine work offsets G54..G59.3 (move.axes[].workplaceOffsets[]), the system selected now and the last snapshot.
 machine.offsets.snapshot   (technician) stores both tables in the calibration history as a record of kind `offsets.snapshot`, compares them with the
-                           previous snapshot and returns the differences. A snapshot can be put back with machine.history.restore (the work offsets:
-                           it becomes a plan of kind `config.workplaces`).
+                           previous snapshot and returns the differences. A snapshot is for comparing: machine.history.restore refuses it
+                           (reason `work_offsets_in_workbench`).
 
-Persisting is NOT done here: RRF keeps G10 L2 in RAM (the reference says M500 stores them in config-override.g; Machine does not rely on it).
-The persistence helper is `machine.config.plan` kind `config.workplaces` (writes a G10 block into `0:/sys/workshop-offsets.g`, called from
-config.g, or into the file that already holds the G10 L2 lines) and `config.g10` for tool offsets: both show the diff first and go through
-config.commit with a snapshot of the files. Sign convention of the firmware (offsets are SUBTRACTED from the machine position) is kept as the
-board reports it.
+Persisting is NOT done here. The work offsets G54..G59.3 are the work zones of the Workbench: WorkshopWorkbench writes one
+`0:/sys/workshop/zones/p<N>.g` per system (G10 L2 with the laser <-> pointer correction inside) and `workplaces.g` loads them at start-up;
+Machine only reads them. The tool offsets persist through `machine.config.plan` kind `config.g10` (diff first, then config.commit with a
+snapshot of the files). Sign convention of the firmware (offsets are SUBTRACTED from the machine position) is kept as the board reports it.
 
 Table shape (the same in machine.offsets.get and in the record):
     tools    {"<number>": {"name", "offsets": {"X": v, ...}, "probed": ["X", ...]}}
@@ -76,11 +75,6 @@ def snapshot_data(om, caps):
     return {"tools": tool_table(om), "work": work_table(om), "current": current_system(om, caps)}
 
 
-def workplaces_values(work):
-    """The `values` of a config.workplaces plan from a work table (the snapshot's, or the live one)."""
-    return {"systems": {n: dict(row["offsets"] if "offsets" in row else row) for n, row in work.items()}, "target": "macro"}
-
-
 def _last_snapshot():
     got, _ = machine_store.query(kind="offsets.snapshot", limit=1)
     return got[0] if got else None
@@ -128,5 +122,6 @@ def ops():
            "system selected now and the last snapshot stored.", log=False),
         Op("machine.offsets.snapshot", _snapshot, WRITE, {"note": a("str", desc="Free note up to 500 characters.")},
            "Stores the tool and work offset tables in the calibration history (kind offsets.snapshot) and returns the differences with the "
-           "previous snapshot. Persisting offsets in a file is machine.config.plan kind config.workplaces / config.g10."),
+           "previous snapshot. A snapshot is for comparing (it is not restored): the work offsets are the zones of the Workbench, the tool "
+           "offsets persist through machine.config.plan kind config.g10."),
     ]

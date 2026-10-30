@@ -165,17 +165,17 @@
     "work_state.py"
   ],
   "dwcFiles": [
-    "css/WorkshopService.dd1151f4.css",
-    "css/WorkshopService.dd1151f4.css.gz",
-    "js/WorkshopService.61756f23.js",
-    "js/WorkshopService.61756f23.js.gz"
+    "css/WorkshopService.6c6523b7.css",
+    "css/WorkshopService.6c6523b7.css.gz",
+    "js/WorkshopService.b8bf72c0.js",
+    "js/WorkshopService.b8bf72c0.js.gz"
   ],
   "sdFiles": [],
   "pid": -1,
   "id": "WorkshopService",
   "name": "Workshop Service",
   "author": "jhonf441",
-  "version": "2.21.34",
+  "version": "2.21.36",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopService",
   "tags": [
