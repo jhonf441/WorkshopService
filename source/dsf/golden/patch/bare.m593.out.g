@@ -1,0 +1,6 @@
+G21
+M584 X0 Y1 Z2
+M558 P9 C"io3.in" H5 F500
+M563 P1 S"Pointer"
+M575 P1 S1 B57600
+M593 P"zvd" F40 ; input shaping

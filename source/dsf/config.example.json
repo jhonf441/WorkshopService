@@ -1,0 +1,58 @@
+{
+  "air_assist": {
+    "gpout_index": 7,
+    "physical_port": "out2",
+    "off_delay_s": 2,
+    "auto_enabled": false
+  },
+  "job_in_live": {
+    "stop_idle_s": 15
+  },
+  "status_light": {
+    "led_count": 17,
+    "idle_brightness": 40,
+    "mode_colors": {
+      "FFF": {
+        "r": 0,
+        "u": 255,
+        "b": 0,
+        "w": 0
+      },
+      "CNC": {
+        "r": 0,
+        "u": 0,
+        "b": 255,
+        "w": 0
+      },
+      "Laser": {
+        "r": 140,
+        "u": 0,
+        "b": 255,
+        "w": 0
+      }
+    },
+    "active": false,
+    "strip": {
+      "present": false
+    },
+    "led_strip": 0,
+    "led_start": 0
+  },
+  "shutdown": {
+    "on_finish": false,
+    "method": "auto"
+  },
+  "consumption_tariff": {
+    "currency": "",
+    "value_kwh": 0
+  },
+  "camera_relay": {
+    "active": false,
+    "url": "",
+    "port": 8090
+  },
+  "communication": {
+    "channel": "auto",
+    "channel_jog": "auto"
+  }
+}

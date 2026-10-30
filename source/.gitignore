@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+node_modules/
+dist/
+
+# datos y secretos de cada instalacion (no van a git)
+dsf/config.json
+dsf/*.db
+dsf/*.csv
+dsf/*.log
+dsf/jog_g91_abierto.json
+
+dsf/secrets.json
+
+dsf/secrets.json.bak
+*secrets*.bak

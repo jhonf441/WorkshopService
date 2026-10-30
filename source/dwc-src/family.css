@@ -1,0 +1,193 @@
+/* THE design family of the workshop plugins (2026-10-28). ONE canonical file: tools/build-family.js copies it, byte for byte, to
+   vue/_shared/family.css, vue/_shared36/family.css, WorkshopService/dwc-src/family.css, WorkshopService/dwc36/family.css and wraps it in
+   src/_shared/05-family-css.js (the JS pages). Never edit a copy: edit this file and run `node tools/build-family.js`.
+   Rules: DESIGN.md section 3. tests/family-design.test.js keeps the copies equal and the plugins from redeclaring any of this.
+
+   How a plugin uses it: its page root carries the class `workshop-theme` (Vue) and declares only two variables:
+     --wf-badge  the color of the plugin (vue/_shared/plugin-colors.js), the badge of the page bar
+     --wf-sec    the color of the open section (section-colors.js), the 2 px line of cards, menu item and tabs
+   Everything else (bar, menu, tabs, cards, buttons, chips, notes) is here. The JS pages use the wf-* classes (no Vuetify).
+   Two themes: neutral rgba(128,128,128,x) lines and `inherit` text work in both; only the surface needs a value per theme.
+   Two DWC lines: Vuetify 3 (.v-card-title, .v-btn--variant-*, .v-theme--light) and Vuetify 2 (.v-card__title, .v-btn--contained,
+   .theme--light) are both written. Type scale: 10, 11, 12, 13, 14, 16, 18, 20, 22+. */
+
+/* ================= tokens ================= */
+:root {
+	--wf-line: rgba(128, 128, 128, 0.3);
+	--wf-line-strong: rgba(128, 128, 128, 0.5);
+	--wf-icon: rgba(128, 128, 128, 0.95);
+	--wf-soft: rgba(128, 128, 128, 0.07);
+	--wf-surface: #1e1e1e;
+	--wf-accent: #1976d2;
+	--wf-badge: #1976d2;
+	--wf-ok: #43a047;
+	--wf-warn: #fb8c00;
+	--wf-err: #e53935;
+	--wf-info: #1e88e5;
+	--wf-armed: #ff8f00;
+}
+.theme--light.v-application, .theme--light .workshop-theme, .theme--light .wf-bar { --wf-surface: #fff; }
+.v-theme--light.v-application { --wf-surface: rgb(var(--v-theme-surface, 255, 255, 255)); }
+.v-theme--dark.v-application { --wf-surface: rgb(var(--v-theme-surface, 30, 30, 30)); }
+/* the color of the section in use: --wf-sec, else the --sec an older page still sets, else the color of the plugin */
+.workshop-theme, .wf-bar, .sidetabs, .wf-nav, .wf-tabs, .wf-card, .st-layout, .st-body, .workshop-theme .v-card { --wf-sec-now: var(--wf-sec, var(--sec, var(--wf-badge))); }
+
+/* ================= page bar (ONE per page, always visible, outside the sections) ================= */
+.wf-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--wf-line); border-radius: 12px; background: var(--wf-surface); background-image: none; box-shadow: none; color: inherit; }
+.wf-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin: 0; border-radius: 10px; background: var(--wf-badge); color: #fff; }
+/* the badge icon is ALWAYS white: the long selector and the !important are there so no other rule can repaint it */
+.wf-bar.wf-bar .wf-badge.wf-badge :is(.v-icon, .mdi, i, svg, .wf-badge-icon) { color: #fff !important; caret-color: #fff !important; fill: #fff; font-size: 22px; width: auto; height: auto; line-height: 1; opacity: 1; margin: 0; }
+.wf-bar-txt { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.wf-bar .wf-title { margin: 0; font-size: 18px !important; font-weight: 600; line-height: 1.3; letter-spacing: 0; text-transform: none; color: inherit; }
+.wf-bar .wf-lead { margin: 0; max-width: 80ch; font-size: 13px; font-weight: 400; line-height: 1.4; letter-spacing: 0; opacity: 0.7; }
+.wf-bar-right { margin-left: auto; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+/* state = a dot + the word, no border; a data pill (counter, "T1") = a 1 px border */
+.wf-state { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+.wf-state::before, .wf-dot { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: rgba(128, 128, 128, 0.6); }
+.wf-dot { display: inline-block; }
+.wf-state.ok::before, .wf-dot.ok { background: var(--wf-ok); }
+.wf-state.warn::before, .wf-dot.warn { background: var(--wf-warn); }
+.wf-state.err::before, .wf-dot.err { background: var(--wf-err); }
+.wf-state.info::before, .wf-dot.info { background: var(--wf-info); }
+.wf-pill { display: inline-flex; align-items: center; gap: 6px; padding: 1px 10px; border: 1px solid var(--wf-line); border-radius: 999px; font-size: 12px; font-weight: 500; opacity: 0.85; }
+.wf-bar .page-health { cursor: pointer; }
+/* old pages that still draw the bar as a v-card: the same look, so a page being migrated does not jump */
+.workshop-theme .v-card.page-header { border: 1px solid var(--wf-line); border-radius: 12px; background: var(--wf-surface); background-image: none; box-shadow: none; }
+
+/* ================= section menu (side bar) ================= */
+:is(.sidetabs, .wf-nav) { border-right-color: var(--wf-line); }
+:is(.sidetabs, .wf-nav) :is(.st-group, .wf-nav-group) { margin-top: 6px; border-top: 1px solid var(--wf-line); color: inherit; opacity: 0.65; font-size: 11px; font-weight: 600; }
+:is(.sidetabs, .wf-nav) .st-group[data-group='0'] { margin-top: 0; border-top: 0; }
+:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item) { color: inherit; opacity: 0.8; font-size: 13px; font-weight: 400; letter-spacing: 0; text-transform: none; border-left: 2px solid transparent; border-radius: 0; background: transparent; }
+:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item):hover { opacity: 1; background: rgba(128, 128, 128, 0.08); }
+:is(.sidetabs, .wf-nav) :is(.st-icon, .wf-nav-icon) { color: var(--wf-icon) !important; font-size: 18px; }
+:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item):is(.st-on, .on) { opacity: 1; font-weight: 600; background: transparent; border-left-color: var(--wf-sec-now); }
+:is(.sidetabs, .wf-nav) .st-item.st-off { opacity: 0.35; }
+:is(.sidetabs, .wf-nav) .st-fold:hover { background: rgba(128, 128, 128, 0.12); }
+:is(.sidetabs, .wf-nav) .st-pinned { color: inherit; opacity: 1; }
+:is(.sidetabs, .wf-nav) .st-badge { background: transparent; color: inherit; border: 1px solid var(--wf-line-strong); }
+:is(.sidetabs, .wf-nav).st-collapsed .st-group { border-top: 1px solid var(--wf-line); }
+@media (max-width: 900px) {
+	:is(.sidetabs, .wf-nav), :is(.sidetabs, .wf-nav).st-collapsed { gap: 0 14px; border-right: 0; border-bottom: 1px solid var(--wf-line); }
+	:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item), :is(.sidetabs, .wf-nav).st-collapsed :is(button.st-item, .wf-nav-item) { border-left: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 2px; }
+	:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item):is(.st-on, .on) { border-bottom-color: var(--wf-sec-now); }
+}
+
+/* ================= second level tabs: text, a thin line, the open one in 600 with a 2 px line; they wrap, never scroll ================= */
+.wf-tabs { display: flex; flex-wrap: wrap; gap: 0 18px; border-bottom: 1px solid var(--wf-line); }
+.wf-tab { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; margin-bottom: -1px; padding: 8px 2px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: inherit; opacity: 0.75; font: inherit; font-size: 14px; font-weight: 400; text-transform: none; letter-spacing: 0; cursor: pointer; }
+.wf-tab:hover { opacity: 1; }
+.wf-tab:is(.on, [aria-selected='true']) { opacity: 1; font-weight: 600; border-bottom-color: var(--wf-sec-now); }
+.wf-tab :is(.v-icon, .mdi) { color: var(--wf-icon); font-size: 16px; }
+.workshop-theme .v-tabs { height: auto !important; border-bottom: 1px solid var(--wf-line); background: transparent !important; }
+.workshop-theme .v-tabs :is(.v-slide-group__content, .v-tabs-bar__content) { flex-wrap: wrap; }
+.workshop-theme .v-tabs :is(.v-tabs-bar, .v-slide-group__wrapper) { color: inherit !important; caret-color: inherit !important; background: transparent !important; height: auto !important; }
+.workshop-theme .v-tabs :is(.v-slide-group__prev, .v-slide-group__next, .v-tabs-slider-wrapper, .v-tab__slider) { display: none !important; }
+.workshop-theme .v-tabs .v-tab { min-height: 36px; padding: 8px 2px; margin-right: 18px; border-bottom: 2px solid transparent; border-radius: 0; text-transform: none; letter-spacing: 0; font-size: 14px; font-weight: 400; opacity: 0.75; color: inherit !important; }
+.workshop-theme .v-tabs .v-tab .v-icon:not(.text-error):not(.error--text) { color: var(--wf-icon) !important; font-size: 16px; }
+.workshop-theme .v-tabs .v-tab:is(.v-tab--selected, .v-tab--active) { opacity: 1; font-weight: 600; border-bottom-color: var(--wf-sec-now); }
+
+/* ================= cards ================= */
+/* a top level card: neutral, 1 px border, ONE 2 px line of the section color on top, no shadow */
+.workshop-theme .v-card, .wf-card, .workshop-theme .st-body { border: 1px solid var(--wf-line); border-top: 2px solid var(--wf-sec-now); border-radius: 10px; background: var(--wf-surface); background-image: none; box-shadow: none !important; color: inherit; }
+.wf-card, .workshop-theme .st-body { padding: 16px; }
+/* a card inside a card: a soft sub-card, no line on top, no side bar, no tint */
+.workshop-theme :is(.v-card, .wf-card, .st-body) .v-card, .wf-card .wf-card { border: 1px solid var(--wf-line); border-radius: 8px; background: var(--wf-soft); }
+/* a third level is only a divider */
+.workshop-theme :is(.v-card, .wf-card, .st-body) .v-card .v-card { border: 0; border-top: 1px solid var(--wf-line); border-radius: 0; background: transparent; }
+.workshop-theme :is(.v-card-title, .v-card__title), .wf-card-title { font-size: 16px; font-weight: 600; line-height: 1.4; letter-spacing: 0; }
+.workshop-theme :is(.v-card-title, .v-card__title) .v-icon, .wf-card-title :is(.v-icon, .mdi) { font-size: 20px; margin-right: 8px; }
+.workshop-theme :is(.v-card-subtitle, .v-card__subtitle) { font-size: 13px; opacity: 0.7; letter-spacing: 0; }
+/* the head of a section and the parts inside a card: a title 16/600 or 14/600 with a gray icon and a line of help */
+.wf-section-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.wf-section-head > :is(h2, h3, .wf-h) { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; }
+.wf-section-head .wf-lead { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 1.4; opacity: 0.7; }
+.wf-sub { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--wf-line); }
+.wf-sub > :is(h4, .wf-subt) { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.wf-index { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 2px solid var(--wf-sec-now); border-radius: 50%; color: var(--wf-sec-now); font-size: 12px; font-weight: 700; }
+
+/* ================= buttons ================= */
+.workshop-theme .v-btn, .wf-btn { box-shadow: none !important; letter-spacing: 0; text-transform: none; }
+.workshop-theme .v-btn:not(.v-btn--icon):not(.v-btn--fab), .wf-btn { min-height: 32px; border-radius: 6px; font-size: 13px; font-weight: 500; }
+.wf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 14px; border: 1px solid var(--wf-line-strong); background: transparent; color: inherit; font-family: inherit; cursor: pointer; }
+.wf-btn:hover { background: rgba(128, 128, 128, 0.1); }
+.wf-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+/* secondary: a gray outline (any filled button that is not the main one, danger or armed) */
+.workshop-theme .v-btn.v-btn--variant-flat:not(.bg-primary):not([class*='bg-amber']):not(.wf-keep):not(.v-btn--icon),
+.workshop-theme .v-btn.v-btn--variant-elevated:not(.bg-primary):not([class*='bg-amber']):not(.wf-keep):not(.v-btn--icon),
+.workshop-theme .v-btn.v-btn--variant-tonal:not(.wf-keep):not(.v-btn--icon),
+.workshop-theme .v-btn.v-btn--variant-outlined:not(.bg-primary):not(.wf-keep):not(.v-btn--icon),
+.workshop-theme .v-btn.v-btn--contained:not(.primary):not([class*='amber']):not(.wf-keep):not(.v-btn--icon):not(.v-btn--fab):not(.v-btn--disabled),
+.workshop-theme .v-btn.v-btn--outlined:not(.wf-keep):not(.v-btn--icon) { background: transparent !important; color: inherit !important; border: 1px solid var(--wf-line-strong); }
+.workshop-theme .v-btn:is(.v-btn--variant-text, .v-btn--text):not(.v-btn--icon) { border: 0; }
+/* danger: outline and text in red */
+.workshop-theme .v-btn:is(.bg-error, .error, .text-error, .error--text):not(.v-btn--icon):not(.v-btn--fab) { color: var(--wf-err) !important; border: 1px solid var(--wf-err); background: transparent !important; }
+/* the main button (one per card): filled with the accent */
+.workshop-theme .v-btn:is(.bg-primary, .primary):not(.v-btn--icon):not(.v-btn--fab):not(.v-btn--disabled):not(.v-btn--variant-outlined):not(.v-btn--variant-text):not(.v-btn--text):not(.v-btn--outlined),
+.wf-btn.wf-main { background: var(--wf-accent) !important; color: #fff !important; border: 0; }
+/* armed (the second tap pending): filled amber */
+.workshop-theme .v-btn[class*='bg-amber'], .workshop-theme .v-btn.amber, .workshop-theme .v-btn[class*='amber darken'], .wf-btn.wf-armed { background: var(--wf-armed) !important; color: #000 !important; border: 0; }
+.workshop-theme .v-btn :is(.v-btn__overlay, .v-btn__underlay) { display: none; }
+.workshop-theme .v-btn:not(.v-btn--icon):hover { background-color: rgba(128, 128, 128, 0.1); }
+.workshop-theme .v-btn:is(.bg-primary, .primary):hover { background-color: var(--wf-accent) !important; filter: brightness(1.1); }
+.workshop-theme .v-btn .v-icon { color: inherit; }
+
+/* ================= chips and states: a neutral outline; a state shows as a colored dot + the word ================= */
+.workshop-theme .v-chip { --wf-dotd: none; --wf-dotc: transparent; background: transparent !important; color: inherit !important; border: 1px solid rgba(128, 128, 128, 0.4) !important; font-weight: 500; box-shadow: none; }
+.workshop-theme .v-chip :is(.v-chip__underlay, .v-chip__overlay) { display: none; }
+.workshop-theme .v-chip::before { opacity: 1 !important; background: transparent; }
+.workshop-theme .v-chip :is(.v-chip__content, .v-icon) { color: inherit !important; }
+.workshop-theme .v-chip:is(.bg-success, .text-success, .success, .success--text) { --wf-dotd: inline-block; --wf-dotc: var(--wf-ok); }
+.workshop-theme .v-chip:is(.bg-warning, .text-warning, .warning, .warning--text) { --wf-dotd: inline-block; --wf-dotc: var(--wf-warn); }
+.workshop-theme .v-chip:is(.bg-error, .text-error, .error, .error--text) { --wf-dotd: inline-block; --wf-dotc: var(--wf-err); }
+.workshop-theme .v-chip:is(.bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text) { --wf-dotd: inline-block; --wf-dotc: var(--wf-info); }
+.workshop-theme .v-chip .v-chip__content::before { content: ''; display: var(--wf-dotd, none); flex: none; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--wf-dotc); }
+/* a state chip with an icon: the ICON carries the state color and there is no dot (dot + icon said the same thing twice) */
+.workshop-theme .v-chip:is(.bg-success, .text-success, .success, .success--text, .bg-warning, .text-warning, .warning, .warning--text, .bg-error, .text-error, .error, .error--text, .bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text):has(.v-icon) .v-chip__content::before { display: none; }
+.workshop-theme .v-chip:is(.bg-success, .text-success, .success, .success--text):has(.v-icon) .v-icon { color: var(--wf-ok) !important; }
+.workshop-theme .v-chip:is(.bg-warning, .text-warning, .warning, .warning--text):has(.v-icon) .v-icon { color: var(--wf-warn) !important; }
+.workshop-theme .v-chip:is(.bg-error, .text-error, .error, .error--text):has(.v-icon) .v-icon { color: var(--wf-err) !important; }
+.workshop-theme .v-chip:is(.bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text):has(.v-icon) .v-icon { color: var(--wf-info) !important; }
+.workshop-theme .v-chip:is(.v-chip--active, .wf-on) { border-color: var(--wf-icon) !important; background: rgba(25, 118, 210, 0.2) !important; font-weight: 600; }
+/* in the page bar a state has no border (dot + word); a chip with no state stays a data pill with its border */
+.workshop-theme .wf-bar .v-chip:is(.bg-success, .text-success, .success, .success--text, .bg-warning, .text-warning, .warning, .warning--text, .bg-error, .text-error, .error, .error--text, .bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text) { border-color: transparent !important; padding-left: 0; padding-right: 0; }
+
+/* ================= icons: gray everywhere except the badge (white) and the ones that mean a state ================= */
+.workshop-theme :is(.v-card, .st-body, .wf-card) :is(.text-primary, .text-info, .primary--text, .info--text).v-icon:not(.v-btn .v-icon):not(.v-chip .v-icon):not(.wf-badge .v-icon) { color: var(--wf-icon) !important; caret-color: var(--wf-icon) !important; }
+
+/* ================= notes and help: one gray line of 12-13 px; the long explanation sits in a "How it works" fold, never under the page title ================= */
+.wf-help, .workshop-theme .wf-note { margin-top: 4px; font-size: 12px; line-height: 1.45; opacity: 0.75; }
+.wf-more { margin-top: 12px; font-size: 13px; }
+.wf-more summary { cursor: pointer; font-weight: 600; opacity: 0.85; }
+.wf-more > :not(summary) { margin: 6px 0 0; opacity: 0.8; }
+.wf-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.workshop-theme .v-alert { border-radius: 10px; box-shadow: none; background-image: none; }
+.workshop-theme .v-alert:is(.v-alert--variant-tonal, .v-alert--text) { background: transparent !important; border: 1px solid currentColor; }
+.workshop-theme .v-alert .v-alert__underlay, .workshop-theme .v-alert--text::before { opacity: 0; }
+
+/* ================= type scale (10, 11, 12, 13, 14, 16, 18, 20, 22+) ================= */
+.workshop-theme :is(.text-body-small, .text-caption) { font-size: 12px !important; line-height: 1.45; letter-spacing: 0; }
+.workshop-theme :is(.text-body-medium, .text-body-2) { font-size: 13px !important; line-height: 1.45; letter-spacing: 0; }
+.workshop-theme :is(.text-title-small, .text-title-medium, .text-subtitle-2, .text-subtitle-1) { font-size: 14px !important; letter-spacing: 0; }
+.workshop-theme :is(.text-title-large, .text-h6) { font-size: 16px !important; letter-spacing: 0; }
+.workshop-theme :is(code, kbd, .v-code), .wf-mono { font-family: var(--tp-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 12px; }
+.workshop-theme table thead th, .wf-table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; }
+.workshop-theme :is(.v-table, .v-data-table) { background: transparent; }
+
+/* ================= the ONE colored label: quick filters by category (e.g. Service > API operations) =================
+   Tinted pill with a colored outline; solid in its color when chosen. Valid for any page that filters by category; nothing else is a colored label. */
+.wf-cat { --wf-cat: #1976d2; display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border: 1px solid color-mix(in srgb, var(--wf-cat) 55%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--wf-cat) 14%, transparent); color: inherit; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
+.wf-cat:hover { background: color-mix(in srgb, var(--wf-cat) 26%, transparent); }
+.wf-cat:is(.on, [aria-pressed='true'], [aria-selected='true']) { background: var(--wf-cat); border-color: var(--wf-cat); color: #fff; font-weight: 600; }
+
+/* ================= touch screens: what is touched is at least 44 px high ================= */
+@media (pointer: coarse) {
+	.workshop-theme .v-btn:not(.v-btn--icon):not(.v-btn--fab):not(.v-btn--variant-text):not(.v-btn--text), .wf-btn { min-height: 44px; }
+	.wf-actions, .wf-bar-right { gap: 12px; }
+}
+/* the section bars and tabs are touched with a finger on a touch screen and on any phone-width window */
+@media (pointer: coarse), (max-width: 599px) {
+	:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item) { min-height: 44px; }
+	.wf-tab, .workshop-theme .v-tabs .v-tab { min-height: 44px; }
+}
+.workshop-theme .v-btn--size-x-small, .workshop-theme .v-btn.v-size--x-small { font-size: 12px; } /* Vuetify 3 / Vuetify 2 name */

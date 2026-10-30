@@ -1,0 +1,27 @@
+# Kiosk Chromium without finger zoom (2026-10-12: "sliding with one
+# finger zooms").
+#
+# The kiosk is opened with launch-dwc (DuetPi image): "chromium --app=http://localhost
+# --app-auto-launched ...". The "chromium" launcher of Raspberry Pi OS reads all
+# the files in /etc/chromium.d/ before starting and adds up CHROMIUM_FLAGS, so
+# launch-dwc does not need to be touched.
+#
+# --disable-pinch : no pinch zoom (nor the touch panel's zoom gestures).
+#                   One-finger scrolling stays the same; Ctrl+mouse wheel does
+#                   not change either. The maps/charts that do their own
+#                   two-finger zoom (Zones, Motors/Consumption charts) keep
+#                   doing it: they handle it, not the browser.
+#
+# It affects ALL of the Pi's Chromium (also the screensaver window,
+# which does not use zoom). The plugins already put touch-action:pan-x
+# pan-y on the kiosk page; this closes it on the browser side too.
+#
+# Install (on the Pi, once):
+#   sudo cp chromium-no-zoom /etc/chromium.d/98-no-zoom
+#   and relaunch the kiosk (launch-dwc)
+# Remove:
+#   sudo rm /etc/chromium.d/98-no-zoom
+# Check after relaunching:
+#   ps aux | grep -- '--app=http://localhost' | grep -c -- '--disable-pinch'
+
+export CHROMIUM_FLAGS="$CHROMIUM_FLAGS --disable-pinch"

@@ -1,0 +1,68 @@
+@import './family.css'; /* THE design family (design/family.css, copied by tools/build-family.js): bar, menu, tabs, cards, buttons, chips */
+/* Tema claro / oscuro de DWC (2026-10-10, pedido: "revisar si los plugins son
+ * compatibles con el boton de DWC Tema oscuro"). Los textos tenues y el ambar
+ * se escribieron para fondo oscuro; con el tema claro quedaban casi invisibles
+ * (gris #9e9e9e sobre blanco). Cada pagina usa var(--tp-...) con el color
+ * oscuro de respaldo, y aca se oscurecen cuando DWC esta en tema claro.
+ * Lo importa el index.js de cada plugin Vue (copia en WorkshopService/dwc-src).
+ * DWC 3.7 (Vuetify 4): el tema es la clase .v-theme--light / .v-theme--dark y los textos tenues son .text-medium-emphasis
+ * (opacidad sobre el color del tema, legible en los dos temas: ya no hace falta pisar el gris). */
+.v-application.v-theme--light {
+	/* the one monospace stack of the pages (codes, values, G-code): see DESIGN.md section 4 */
+	--tp-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+	--tp-faint: #5f5f5f;
+	--tp-faint2: #616161;
+	--tp-gray-blue: #546e7a;
+	--tp-amber: #b26a00;
+	--tp-amarillo: #9a6700;
+	--tp-blue-bright: #1565c0;
+	--tp-orange-bright: #e65100;
+	--tp-green-bright: #2e7d32;
+	--tp-red-bright: #c62828;
+	--tp-bar: rgba(255, 255, 255, 0.97);
+	--tp-superficie: #e3f2fd;
+	--tp-card: #ffffff;
+}
+
+/* Clases de Vuetify dentro de las paginas de los plugins (no en el resto de DWC). */
+.v-theme--light .workshop-theme .text-orange,
+.v-theme--light .lights-page .text-orange,
+.v-theme--light .consumption-page .text-orange,
+.v-theme--light .motors-page .text-orange,
+.v-theme--light .rs485-page .text-orange,
+.v-theme--light .workshop-theme .text-warning,
+.v-theme--light .lights-page .text-warning,
+.v-theme--light .consumption-page .text-warning,
+.v-theme--light .motors-page .text-warning,
+.v-theme--light .rs485-page .text-warning {
+	color: #d84315 !important;
+	caret-color: #d84315 !important;
+}
+/* Dentro de algo oscuro a proposito (chips/tarjetas dark), se respeta. */
+.v-theme--light .v-theme--dark .text-orange,
+.v-theme--light .v-theme--dark .text-warning {
+	color: #ff9800 !important;
+}
+
+/* Contrast (QA 3.7 #07, WCAG 4.5:1). The theme colours are tuned for big surfaces; as TEXT on the page they fell short (success green
+ * 2.8:1, warning orange 3:1 on white; white on the light blue button of the dark theme 3.1:1; red text on the dark cards 4.5:1).
+ * Inside the pages of the plugins the theme variables are replaced by values that pass; the rest of DWC is not touched. */
+.v-theme--light :is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) {
+	--v-theme-success: 46, 125, 50;
+	--v-theme-warning: 163, 93, 0;
+	--v-theme-info: 21, 101, 192;
+	--v-theme-error: 198, 40, 40;
+}
+.v-theme--dark :is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) {
+	--v-theme-error: 255, 118, 118;
+}
+
+/* Touch targets and small text (QA 3.7 #09, real page QA-12). DESIGN.md: nothing that is touched is less than 32 px high; the x-small
+ * buttons were 20 px with a 10 px label and the icon buttons 28 px. On a touch screen (coarse pointer) 44 px. */
+:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-btn { min-height: 32px; }
+:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-btn--icon { min-width: 32px; }
+:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-chip--link { min-height: 32px; }
+@media (pointer: coarse) {
+	:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-btn, :is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-chip--link, :is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .st-item, :is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .st-fold { min-height: 44px; }
+	:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-btn--icon, :is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .st-fold { min-width: 44px; }
+}

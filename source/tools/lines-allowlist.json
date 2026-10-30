@@ -1,0 +1,49 @@
+{
+ "_comment": "Intended differences between the DWC 3.7 page (dwc-src, Vue 3) and the DWC 3.6 page (dwc36, Vue 2), read by tests/lines-divergence.test.js. only37 = exists only in dwc-src, only36 = only in dwc36. Exact sets: an entry that matches nothing any more fails the test (the lines converged: delete it); anything not listed is drift and fails. dwc36_vs_master lists the files of dwc36 that are not byte-equal to master's dwc-src. Porting the 3.7 fixes to 3.6 is an owner decision (docs/DWC-LINES.md).",
+ "files": {
+  "only37": [
+   "dwc-host.js",
+   "expand-transition.js",
+   "use-role.js"
+  ],
+  "only36": [
+   "role-mixin.js"
+  ],
+  "reason": "3.7-only modules of the Vue 3 port: dwc-host.js (the one place that touches DWC 3.7 internals), the role composable use-role.js and expand-transition.js (<v-expand-transition> is not registered in DWC 3.7; Vue 2 / DWC 3.6 registers it, so dwc36 keeps the plain tag). 3.6-only: role-mixin.js, the Vue 2 mixin that does what use-role.js does for the page bar (PageHeader.vue). role-view.js and plugin-id.js (shared by PageHeader.vue) exist on both lines. Porting is an owner decision (docs/DWC-LINES.md)"
+ },
+ "dwc36_vs_master": {
+  "differs": [
+   "ApiKeys.vue",
+   "AuditCard.vue",
+   "BlackBoxCard.vue",
+   "BridgeCard.vue",
+   "ConfigPackage.vue",
+   "Database.vue",
+   "PageHeader.vue (not in master)",
+   "ProcessRow.vue",
+   "ProcessesSummary.vue",
+   "ReceivedCommands.vue",
+   "SideTabs.vue",
+   "StartupMaster.vue",
+   "UsersCard.vue",
+   "WorkshopService.vue",
+   "family.css (not in master)",
+   "i18n/en.json",
+   "i18n/es.json",
+   "page-health.js (not in master)",
+   "plugin-colors.js (not in master)",
+   "plugin-id.js (not in master)",
+   "role-mixin.js (not in master)",
+   "role-view.js (not in master)",
+   "service-problem.js (not in master)",
+   "service-text.js",
+   "shared-t.js (not in master)",
+   "startup-groups.js (not in master)",
+   "theme.css",
+   "workshop-api.js",
+   "workshop-auth.js",
+   "workshop-ids.js"
+  ],
+  "reason": "both lines share the texts: the catalogs are copied from dwc-src/i18n (written by dsf/published_texts.py), master's are older; the startup card was redesigned on both lines (StartupMaster.vue, startup-groups.js; ProcessesSummary.vue and WorkshopService.vue: one count list for the processes strip, chips and title chip, 'not available' while the service is not connected (U-05); 'master' here is the tag pre-dwc-3.7, the last state of the old 3.6 page); design family (2026-10-28, Service 2.21.13): family.css / plugin-colors.js / theme.css / SideTabs.vue and the new shared pieces PageHeader.vue, page-health.js, service-problem.js, shared-t.js, plugin-id.js, role-mixin.js, role-view.js (copies of TallerPlugins vue/_shared36), and every component restyled to the family (no side bars, tints, shadows or colored icons; page bar instead of the title card)"
+ }
+}
