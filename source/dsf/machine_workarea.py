@@ -11,6 +11,7 @@ height calibration it is a calibration of the MACHINE, so it lives in Machine no
 
 Operations:
     machine.workarea.get    (operator, read)  the areas of the three modes, the travel of X and Y, the mode in use and which macros are on the SD
+    machine.workarea.positions (operator, read)  the positions saved by the jog, to take two of them as the corners
     machine.workarea.save   (technician)      one mode: a rectangle (checked like the old card did) or `remove`; the other modes are kept as they are;
                                               the file is written with a copy of the previous one and reloaded now when no job runs
     machine.workarea.release (technician, motion, level 4 confirmation)  X and Y motors off so the pointer can be taken to a corner by hand
@@ -21,6 +22,7 @@ Every G-code line is a template of machine_gcode.py (area_*). A step reserves th
 else holds the machine. The pointer walks with the laser off (the macros send S0); framing WITH the laser is not here.
 """
 import fs_atomic
+import json
 import job_states
 import os
 import re
@@ -40,6 +42,7 @@ from workshop_api import ApiError, Arg, MOTION, READ, WRITE, Op
 MODES = ("Laser", "CNC", "FFF")
 EDIT_MODES = MODES                    # all three: workplaces.g / saveworkplace.g / framecutarea.g only READ the area, FFF included (nobody else writes it)
 CUTAREA_G = "sys/workshop/zones/cutarea.g"
+POSITIONS_JSON = "sys/workshop/data/positions.json"   # the saved positions of the jog: [{name, x, y, z}] in machine coordinates (where the tool was)
 MIN_MM = 10.0                         # an area smaller than this is almost surely a capture error
 TRAVEL_TOL = 0.001
 MACROS = {"release": "sys/workshop/macros/handfree.g", "capture": "sys/workshop/macros/handcorner.g", "goto": "sys/workshop/macros/gotobed.g",
@@ -178,6 +181,29 @@ def _state(args, ctx):
         "reach": None if not lim else {k: lim[k] for k in KEYS}, "macros": macros_present(), "file": _read_text(CUTAREA_G) is not None,
         "homed": {k: bool((ax.get(k) or {}).get("homed")) for k in "XY"},
     }
+
+
+def read_positions():
+    """The saved positions (the jog and the other pages write them): [{name, x, y, z}], only the ones with a number for X and Y. Never raises."""
+    text = _read_text(POSITIONS_JSON)
+    try:
+        raw = json.loads(text) if text else []
+    except ValueError:
+        raw = []
+    out = []
+    for q in raw if isinstance(raw, list) else []:
+        if not isinstance(q, dict):
+            continue
+        x, y, z = q.get("x"), q.get("y"), q.get("z")
+        if isinstance(x, bool) or isinstance(y, bool) or not isinstance(x, (int, float)) or not isinstance(y, (int, float)) or x != x or y != y:
+            continue
+        out.append({"name": str(q.get("name") or "")[:60], "x": round(float(x), 2), "y": round(float(y), 2),
+                    "z": round(float(z), 2) if isinstance(z, (int, float)) and not isinstance(z, bool) and z == z else None})
+    return out
+
+
+def _positions(args, ctx):
+    return {"positions": read_positions()}
 
 
 # ---- save ----
@@ -350,6 +376,8 @@ def ops():
     return [
         Op("machine.workarea.get", _state, READ, {}, "The work area of each mode (Laser, CNC, FFF; null = not measured) read from cutarea.g, the travel of X and Y, "
            "the mode in use, which of the corner macros are on the SD and whether X and Y are homed.", log=False),
+        Op("machine.workarea.positions", _positions, READ, {}, "The positions the jog saved ({name, x, y, z} in machine coordinates, where the tool was): two of them can be the "
+           "opposite corners of a work area. Read only.", log=False),
         Op("machine.workarea.save", _save, WRITE, {
             "mode": a("str", True, choices=EDIT_MODES, desc="Laser, CNC or FFF."),
             "rect": a("obj", False, desc="{xmin, xmax, ymin, ymax} in bed coordinates (where the pointer lands): at least 10 mm each way, inside the travel of X and Y."),

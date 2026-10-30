@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Please do NOT open a public issue with details of a vulnerability. Use the **Security** tab of this repository ("Report a vulnerability", a private
-advisory) or contact the maintainer through his GitHub profile. A report that says what you saw, which version (WorkshopService 2.21.33) and how to repeat it is
+advisory) or contact the maintainer through his GitHub profile. A report that says what you saw, which version (WorkshopService 2.21.34) and how to repeat it is
 enough; there is no need for an exploit.
 
 ## What this plugin can do to your machine

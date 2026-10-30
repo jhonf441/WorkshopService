@@ -139,7 +139,7 @@ OP_ROLES = {
     # height calibration of the tool (was a card of the Workbench): reading is an operator's, everything that changes or moves a technician's
     "machine.height.get": OPERATOR, "machine.height.save": TECHNICIAN, "machine.height.hook": TECHNICIAN, "machine.height.step": TECHNICIAN,
     # work area of each mode (was a card of the Workbench): reading is an operator's, saving and moving a technician's
-    "machine.workarea.get": OPERATOR, "machine.workarea.save": TECHNICIAN, "machine.workarea.step": TECHNICIAN, "machine.workarea.release": TECHNICIAN,
+    "machine.workarea.get": OPERATOR, "machine.workarea.positions": OPERATOR, "machine.workarea.save": TECHNICIAN, "machine.workarea.step": TECHNICIAN, "machine.workarea.release": TECHNICIAN,
     # phase 3: calibration arithmetic (may store a record), motion parameters and input shaping (reads), the ringing-test text
     "machine.calc": TECHNICIAN, "machine.motion.get": OPERATOR, "machine.shaping.get": OPERATOR, "machine.shaping.test": TECHNICIAN,
     # phase 4: maintenance counters and plan (the plan only drives reminders, so a technician edits it)

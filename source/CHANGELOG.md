@@ -10,6 +10,10 @@ and its control page. Before 1.3.0 it was not versioned: versions
 - `bridge/install.sh uninstall` removes the unit, the polkit rule and `/opt/workshop-bridge`.
 - `security.md`: every permission is explained, plus a table of changes made outside DSF and how to undo them, and the open-access warning while no user exists.
 
+## 2.21.34 -- 2026-10-30
+
+- `machine.workarea.positions` (read only, operator): the positions saved by the jog, so Machine can take two of them as the corners of a work area.
+
 ## 2.21.33 -- 2026-10-30
 
 - Work area: measuring a corner, going to a point and walking the area now ask for a level 3 confirmation before the machine moves.
