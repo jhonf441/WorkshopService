@@ -4,6 +4,10 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.22.1 -- 2026-10-31
+
+- The camera relay no longer counts a screen that has left. A stream whose camera was reconnecting (no frame to send) wrote nothing, so it never saw the screen close and showed "1 watching" for hours with every page closed (and kept the camera awake for it); it now looks at the socket on each idle wake-up (`camera_http.peer_closed`, test `test_camera_peer_closed`).
+
 ## 2.22.0 -- 2026-10-31 (informe 06, plan B, round 2: the camera moves into the service)
 
 - One list of cameras (B-P4). `cameras.json` is THE list and the service owns it: the relay reads it through the settings store (`camera_sources.camera_list`), `main` is one more record with its own address, and `service.json` `camera_relay` keeps only `{active, bind}` (`url` is gone; `active` defaults to true). The service decides which cameras go through the relay and says it with each camera (`via_relay`): the main camera and the ESP32-CAMs that have an address of their own and are not set to the direct way. `camera.status` carries the whole list (`cameras`, `cameras_rev`: the revision a page writes the list back with) instead of `{id, name}` of the served ones, and no longer has `url` or `other`. The relay starts by itself as soon as the main camera has an address, and stops when it loses it.

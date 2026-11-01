@@ -4,7 +4,9 @@ import http.server
 import json
 import os
 import re
+import select
 import shutil
+import socket
 import socketserver
 import threading
 import time
@@ -31,6 +33,18 @@ from messages import M
 
 
 BOUNDARY = b"123456789000000000000987654321"  # the same as the ESP32-camera's
+
+
+def peer_closed(sock):
+    """True when the screen has already closed its end. A stream that has no frame to send (the camera is reconnecting) writes nothing, so it would never see the
+    screen leave and the relay would count a viewer that is gone (and keep the camera, its flash and its timers awake for it)."""
+    try:
+        ready, _, _ = select.select([sock], [], [], 0)
+        if not ready:
+            return False
+        return sock.recv(1, socket.MSG_PEEK) == b""
+    except (OSError, ValueError):
+        return True
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
@@ -263,6 +277,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     with f.lock:
                         if cli not in f.clients:
                             break  # the camera was removed or changed address
+                    if peer_closed(self.connection):
+                        break  # nothing to send, so only this tells that the screen left
                     continue
                 if not cli.local and camera_context.load["level"] >= 1:
                     missing = 1.0 / max(1, service.get("load_fps", 5)) - (time.time() - cli.last_sending)

@@ -192,7 +192,7 @@
   "id": "WorkshopService",
   "name": "Workshop Service",
   "author": "jhonf441",
-  "version": "2.22.0",
+  "version": "2.22.1",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopService",
   "tags": ["laser", "cnc", "automation", "api", "workshop"],

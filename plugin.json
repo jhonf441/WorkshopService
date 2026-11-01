@@ -183,15 +183,15 @@
   "dwcFiles": [
     "css/WorkshopService.4033ff41.css",
     "css/WorkshopService.4033ff41.css.gz",
-    "js/WorkshopService.6a3d8465.js",
-    "js/WorkshopService.6a3d8465.js.gz"
+    "js/WorkshopService.a12c8e80.js",
+    "js/WorkshopService.a12c8e80.js.gz"
   ],
   "sdFiles": [],
   "pid": -1,
   "id": "WorkshopService",
   "name": "Workshop Service",
   "author": "jhonf441",
-  "version": "2.22.0",
+  "version": "2.22.1",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopService",
   "tags": [
