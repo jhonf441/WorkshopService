@@ -2,7 +2,7 @@
 Probes and job context of the protection guard (protection_guard.py): how it sees that a process outside the service
 (Vision, RS485) is alive, whether a plugin is installed, and whether a laser / CNC job is running.
 
-Vision answers HTTP on 127.0.0.1:8095 (any answer, even an error status, is a sign of life; a refused or timed out
+Vision answers HTTP on 127.0.0.1 (ports.VISION; any answer, even an error status, is a sign of life; a refused or timed out
 connection is not). RS485 publishes its state in its own plugin data every few seconds with a small "seq" counter
 that changes on every publication; a value that stops changing is a plugin that stopped (the last data stays in the
 object model after the process dies, so the value alone proves nothing).
@@ -13,10 +13,11 @@ import urllib.error
 import urllib.request
 
 import paths
+import ports
 import service_modules
 
 PLUGINS_DIR = paths.PLUGINS
-VISION_URL = "http://127.0.0.1:8095/state"
+VISION_URL = "http://127.0.0.1:%d/state" % ports.VISION
 VISION_TIMEOUT_S = 3
 RS485_EVERY_S = 10
 RS485_FILTER = "plugins.%s.data.rs485.**" % service_modules.RS485

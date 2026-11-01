@@ -1,7 +1,12 @@
 """Who may call what on the camera relay (port 8090) once the machine has users (G-A of the redesign, 2026-10-21).
 
-The pages talk to the relay directly (stream, captures, timelapse), so the roles of the API (permissions.py) would not reach it. The relay
-runs INSIDE the service, so it asks the user store in process (no HTTP, no local key): `bind(lambda: users_store)` is called by api_ops.init.
+The pages read the relay directly (stream, photos, the lists and the files of the captures and the videos: an <img> and a <video> cannot carry
+the headers of the API), so the roles of the API (permissions.py) would not reach those reads. The relay runs INSIDE the service, so it asks the
+user store in process (no HTTP, no local key): `bind(lambda: users_store)` is called by api_ops.init.
+
+Everything that CHANGES something is an operation of the API (camera.capture, burst, remove, keep, rename, edit, rerender, timelapse, schedule,
+flash, image.set...): its role is in permissions.py and every call is in the audit. This port only reads media, with two exceptions that do not
+fit the API: the upload of a look file (POST /luts: up to 6 MB, the body of the API is 1 MB) and its removal (POST /luts/remove).
 
 Rules (the table is ROUTES / `classify`; a route that is not in it needs admin, and test_camera_access.py fails if the relay has a route
 that is not classified):
@@ -10,8 +15,8 @@ that is not classified):
     a POST, and the kiosk page on the Pi is checked like any other screen;
   - reads (state, stream, snapshot, mosaic, images, videos): a viewer only with the camera (`camera_for_viewer`, the same calculation as
     permissions.py: user flag or global setting); operator and above always;
-  - capture, burst, timelapse begin / stop, rename: operator;
-  - delete, keep, edit, rerender, timelapse schedule, /control (camera settings), /detect (camera search): technician;
+  - /control (camera settings, passed to the ESP32-camera), POST /luts and POST /luts/remove: technician; /control with ONLY the flash value
+    (led_intensity): operator;
   - users exist and the store cannot answer (damaged file, error): 503 `service_unreachable`, never let through;
   - no session and no anonymous viewer allowed: 401 `login_required`; not enough role / no camera: 403 `forbidden`.
 
@@ -33,7 +38,7 @@ TECHNICIAN = ("technician", False)
 ADMIN = ("admin", False)
 ANY = ("viewer", False)          # any identity (loopback-only /key)
 
-# exact path -> rule, per method (the paths are the ones camera_proto.upgrade returns)
+# exact path -> rule, per method
 ROUTES = {
     ("GET", "/state"): VIEW,
     ("GET", "/captures"): VIEW,
@@ -43,14 +48,6 @@ ROUTES = {
     ("GET", "/luts"): VIEW,
     ("GET", "/timelapse/preview"): VIEW,
     ("GET", "/key"): ANY,
-    ("GET", "/detect"): TECHNICIAN,
-    ("POST", "/capture"): OPERATOR,
-    ("POST", "/rename"): OPERATOR,
-    ("POST", "/remove"): TECHNICIAN,
-    ("POST", "/keep"): TECHNICIAN,
-    ("POST", "/edit"): TECHNICIAN,
-    ("POST", "/rerender"): TECHNICIAN,
-    ("POST", "/burst"): OPERATOR,
     ("POST", "/luts"): TECHNICIAN,
     ("POST", "/luts/remove"): TECHNICIAN,
 }
@@ -59,9 +56,6 @@ PREFIXES = (("/captures/", VIEW), ("/timelapses/", VIEW))
 # the camera routes the handler tests on `rest` (the path after /c/<id>), by prefix: the same startswith the handler uses
 CAMERA_REST_EXACT = {"/stream": VIEW, "/": VIEW, "/snapshot": VIEW}
 CAMERA_REST_PREFIX = (("/control", TECHNICIAN), ("/status", VIEW))
-# POST /timelapse by ?action=
-TIMELAPSE_ACTIONS = {"begin": OPERATOR, "stop": OPERATOR, "schedule": TECHNICIAN, "unschedule": TECHNICIAN}
-TIMELAPSE_DEFAULT = TECHNICIAN
 
 _store_of = [None]
 
@@ -79,6 +73,15 @@ def _camera_rest(path):
     return path
 
 
+FLASH_VAR = "led_intensity"   # the one setting of /control that the operator may change
+
+
+def _flash_only(query):
+    """True when every `var` of the /control query is the flash intensity (and there is at least one)."""
+    names = (query or {}).get("var") or []
+    return bool(names) and all(n == FLASH_VAR for n in names)
+
+
 def classify(method, path, query=None):
     """(lowest role, viewer needs the camera) for a call. Not in the table -> admin."""
     method = str(method).upper()
@@ -89,13 +92,13 @@ def classify(method, path, query=None):
             return CAMERA_REST_EXACT[rest]
         for prefix, rule in CAMERA_REST_PREFIX:
             if rest.startswith(prefix):
+                # ONLY the flash value is the operator's, never another setting of the camera
+                if prefix == "/control" and _flash_only(query):
+                    return OPERATOR
                 return rule
         for prefix, rule in PREFIXES:
             if path.startswith(prefix):
                 return rule
-    if method == "POST" and path == "/timelapse":
-        action = ((query or {}).get("action") or [""])[0]
-        return TIMELAPSE_ACTIONS.get(action, TIMELAPSE_DEFAULT)
     return ROUTES.get((method, path), ADMIN)
 
 

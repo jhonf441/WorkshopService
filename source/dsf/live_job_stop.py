@@ -118,7 +118,9 @@ def _mode():
 def _boot_mark():
     try:
         up = machine_state.read_in("state.upTime")
-        return round(time.time() - float(up), 1) if up is not None else None
+        # whole seconds: this value travels through json.dump, and dsf-python writes floats with 6 significant digits (an epoch
+        # 1793456272.3 would arrive as 1793460000 and every record would look "rebooted" against the board's real boot mark)
+        return int(round(time.time() - float(up))) if up is not None else None
     except Exception:  # noqa: BLE001
         return None
 

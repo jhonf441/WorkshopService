@@ -13,11 +13,12 @@ Usage: <params>                             -> query (JSON)
      <params> C"probar"                     -> sends a test one
      <params> C"silenciar" D60              -> do not send for 60 min (D, NOT M: "M1" would run as another command)
      <params> C"silenciar" D0               -> reactivate now
-     <params> C"opcion" T"job_end" [A"nada"|"foto"|"video"] [R"min"|"low"|"default"|"high"|"urgent"|"auto"] [H1|0] [K"<camera id>"|"auto"]
+     <params> C"opcion" T"job_end" [A"none"|"photo"|"video"] [R"min"|"low"|"default"|"high"|"urgent"|"auto"] [H1|0] [K"<camera id>"|"auto"]
                                                            -> per type: attachment, ntfy priority (auto = the factory one),
                                                               whether it respects the scheduled silence and which camera sends the photo
-     <params> C"horario" [V1|0] [F"22:00"] [U"07:00"] [Q"callar"|"suave"]
-                                                           -> scheduled silence (callar: does not send; suave: without sound)
+     <params> C"opcion" Z"<camera id>"|Z"auto"           -> (without T) the camera every type uses when it does not choose its own ("auto" = the main one)
+     <params> C"horario" [V1|0] [F"22:00"] [U"07:00"] [Q"mute"|"soft"]
+                                                           -> scheduled silence (mute: does not send; soft: without sound)
      <params> C"video" D5                   -> seconds of the short video (2 to 10)
 Always returns the updated JSON ({config, catalogo, ultimo}).
 
@@ -63,6 +64,10 @@ def run(params, bridge, config):
             return json.dumps({"error": M("notifications_unknown_type", type=type_name)})
         cfg["kinds"][type_name] = float(params.get("V", 1)) != 0
         change = None  # changes per type: no event (there would be many)
+    elif action == "option" and not str(params.get("T", "")).strip() and params.get("Z") is not None:
+        z = str(params.get("Z")).strip()
+        cfg["default_camera"] = "" if z.lower() == "auto" else notifier.camera_id_clean(z)
+        change = None
     elif action == "option":
         type_name = str(params.get("T", "")).strip()
         if type_name not in cfg["options"]:

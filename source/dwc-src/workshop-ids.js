@@ -54,17 +54,21 @@ export function idInstalled(key) {
 // Rule: a plugin that refers to another one shows nothing about it (no button, link, text or card:
 // hidden, not disabled) when the other one is not installed or not enabled in DWC.
 // true when the plugin of that key is installed and enabled. Reactive (it reads the model's plugin list and the enabled list),
-// so call it inside computed() or a template. A JS plugin that loaded in this page counts as active.
+// so call it inside computed() or a template. A JS plugin that loaded in this page counts as active, unless the enabled list is loaded
+// and does not have it: the registry keeps the entry of a plugin that was stopped for the seconds its poll takes to notice, and for ever
+// when DWC loaded it from a list the plugins page does not change. An empty list counts as not read yet for a JS plugin (it is running).
+// Same answer as workshopPluginActive of src/_shared/13-presence.js.
 export function pluginActive(key) {
 	const ids = IDS[key] || [key];
-	const loaded = window.__workshop && window.__workshop.versions;
-	if (loaded && ids.some(id => loaded[id])) return true;
-	if (!pluginOf(modelPlugins(), key)) return false;
 	const enabled = enabledPlugins();
+	const loaded = window.__workshop && window.__workshop.versions;
+	if (loaded && ids.some(id => loaded[id] && (!enabled || !enabled.length || enabled.includes(id)))) return true;
+	if (!pluginOf(modelPlugins(), key)) return false;
 	if (!enabled) return true; // list not loaded yet: do not hide
 	return ids.some(id => enabled.includes(id));
 }
 
-// true when DWC has a page at that route (the plugin that owns it is installed and enabled).
-// router = useRouter() of the component. Not reactive: call it from a computed that depends on something else, or from methods.
+// true when DWC has a page at that route. router = useRouter() of the component. It asks the router when it is called (call it from a computed
+// or a method): a route says only that a page was registered, not that its plugin is on. DWC 3.6 cannot remove a route, so for a stopped plugin
+// the answer stays true until the page is reloaded: to know whether a PLUGIN is there use pluginActive.
 export { pathExists }

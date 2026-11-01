@@ -69,6 +69,6 @@ def ops():
            "Validates and saves the machine profile (sys/workshop/config/machine.json, atomic). Invalid fields answer invalid_args with one message per field."),
         Op("preflight.run", _preflight_run, READ,
            {"features": a(L, desc="Optional features to check as well: camera, vision (default: those enabled in DWC).")},
-           "Checks this installation (DSF and Python versions, SBC, folders, AppArmor, pip dependencies, power rules, ffmpeg/OpenCV, ports 8090/8095, DWC password, free space) "
+           "Checks this installation (DSF and Python versions, SBC, folders, AppArmor, pip dependencies, power rules, ffmpeg/OpenCV, camera and Vision ports, DWC password, free space) "
            "and answers one item per check with ok, warn or error plus the fix in words.", slow=True, log=False),
     ]

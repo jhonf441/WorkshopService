@@ -7,7 +7,8 @@ machine.offsets.snapshot   (technician) stores both tables in the calibration hi
                            (reason `work_offsets_in_workbench`).
 
 Persisting is NOT done here. The work offsets G54..G59.3 are the work zones of the Workbench: WorkshopWorkbench writes one
-`0:/sys/workshop/zones/p<N>.g` per system (G10 L2 with the laser <-> pointer correction inside) and `workplaces.g` loads them at start-up;
+`0:/sys/workshop/zones/p<N>.g` per system (G10 L2; the laser <-> pointer correction is not inside: the zone names the globals of
+`macros/lasercorrection.g`, which the service mirrors from the settings store `laser`) and `workplaces.g` loads them at start-up;
 Machine only reads them. The tool offsets persist through `machine.config.plan` kind `config.g10` (diff first, then config.commit with a
 snapshot of the files). Sign convention of the firmware (offsets are SUBTRACTED from the machine position) is kept as the board reports it.
 

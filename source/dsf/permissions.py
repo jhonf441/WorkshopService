@@ -39,7 +39,7 @@ MODE_GATED = frozenset({"jog.xy", "jog.z", "jog.axis", "jog.free", "frame.start"
 # a viewer may call these only when it has the camera (the camera relay key and the Vision answers)
 CAMERA_OPS = frozenset({"camera.status", "camera.token", "vision.get"})
 # some operations are an operator's until the arguments say they CHANGE settings: then they need more
-#   vision.post: the paths that only look (operator); the rest (/config) is a technician's
+#   vision.post: the paths that only look (operator: all that handlers/vision_call.py forwards today); a path added there and not listed here stays a technician's
 #   camera.service: without `changes` it only reads the settings of the camera service (operator)
 ESCALATE = {
     "vision.post": {"arg": "path", "unless_in": ["/photo", "/detect", "/record/search", "/measure"], "role": "technician"},
@@ -86,7 +86,7 @@ OP_ROLES = {
     "risk.start": OPERATOR, "risk.end": OPERATOR, "motors.enable": OPERATOR,
     "light.set": OPERATOR, "lights.zone": OPERATOR, "lights.scene": OPERATOR,
     "air.set": OPERATOR, "air.auto": OPERATOR, "air.delay": OPERATOR, "sound.beep": OPERATOR,
-    "camera.start": OPERATOR, "camera.stop": OPERATOR, "camera.capture": OPERATOR, "camera.timelapse": OPERATOR,
+    "camera.capture": OPERATOR, "camera.timelapse": OPERATOR, "camera.flash": OPERATOR, "camera.burst": OPERATOR, "camera.rename": OPERATOR,
     "vision.post": OPERATOR, "camera.service": OPERATOR,
     "bigpart.read": OPERATOR, "bigpart.counts": OPERATOR, "bigpart.marks": OPERATOR, "bigpart.part": OPERATOR, "bigpart.fit": OPERATOR,
     "jobs.preview": OPERATOR, "history.list": OPERATOR, "trace.since": OPERATOR,
@@ -95,7 +95,11 @@ OP_ROLES = {
     "notifications.mute": OPERATOR, "notifications.test": OPERATOR, "notifications.send": OPERATOR,
     # -- technician: calibrate, configuration of the plugins, RS485, Motors, offsets, mode / head --
     "motors.disable": TECHNICIAN, "pid.start": TECHNICIAN, "movement.lock": TECHNICIAN, "job.timeout": TECHNICIAN,
-    "camera.url": TECHNICIAN,
+    "camera.detect": TECHNICIAN, "camera.image.get": TECHNICIAN, "camera.image.set": TECHNICIAN,
+    # deleting, keeping, editing and scheduling were technician routes of :8090 (camera_access.ROUTES): the operations keep that level
+    "camera.remove": TECHNICIAN, "camera.keep": TECHNICIAN, "camera.edit": TECHNICIAN, "camera.rerender": TECHNICIAN, "camera.schedule": TECHNICIAN,
+    # starting / stopping the SYSTEM relay cuts the camera for everybody watching and stops captures and timelapse: the Camera page and its README say technician
+    "camera.start": TECHNICIAN, "camera.stop": TECHNICIAN,
     "lights.save": TECHNICIAN, "lights.pi_pins": TECHNICIAN, "lights.pi_test": TECHNICIAN, "lights.test": TECHNICIAN,
     "lights.identify": TECHNICIAN, "lights.animation": TECHNICIAN, "lights.preview": TECHNICIAN,
     "lights.schedule": TECHNICIAN, "lights.test_state": TECHNICIAN, "lights.import": TECHNICIAN,
@@ -119,6 +123,8 @@ OP_ROLES = {
     "guard.status": VIEWER, "guard.set": ADMIN,
     # machine profile and discovery: pages of every role need them to hide what the machine does not have
     "workstate.get": VIEWER, "workstate.set": OPERATOR, "safety.status": VIEWER,
+    # plugins stopped on purpose (the kiosk does not put them back): every screen reads, the one that stops or starts one writes
+    "plugins.stopped.get": VIEWER, "plugins.stopped.set": OPERATOR,
     "package.export": TECHNICIAN, "package.preview": TECHNICIAN, "package.apply": ADMIN,
     "readiness.report": OPERATOR, "readiness.list": VIEWER,
     "capabilities.get": VIEWER, "profile.get": VIEWER, "preflight.run": TECHNICIAN, "profile.set": ADMIN,

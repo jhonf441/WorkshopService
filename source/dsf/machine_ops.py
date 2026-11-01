@@ -28,6 +28,7 @@ import time
 import audit
 import capabilities
 import identity
+import job_states
 import machine_gcode
 import machine_procedures as procs
 import motion_owner
@@ -79,6 +80,29 @@ def channel():
         return _hooks["channel"]()
     import communication
     return communication.channel_jog()
+
+
+def apply_template(om, template):
+    """Sends ONE template of the closed list (machine_gcode.py) to the board now, unless a job is on (what it applies must not change under it).
+    The one place for "the new numbers work now": the height calibration (zcal_apply) and the laser correction (work_origins_apply) both end
+    here. Never raises: the files are saved, so a board that cannot be reached only means the numbers apply later. -> (applied, reason) with
+    reason "" | "job_running" | "no_connection:<detail>"."""
+    status = str(((om or {}).get("state") or {}).get("status") or "")
+    if status in job_states.ACTIVE_OR_TOOL_CHANGE:
+        return False, "job_running"
+    conn = None
+    try:
+        conn = open_connection()
+        conn.perform_simple_code(machine_gcode.render(template), channel=channel(), async_exec=False)
+        return True, ""
+    except Exception as e:  # noqa: BLE001
+        return False, "no_connection:" + str(e)[:80]
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:  # noqa: BLE001
+                pass
 
 
 def machine_status():

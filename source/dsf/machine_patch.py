@@ -1,4 +1,4 @@
-"""Pure patchers of the configuration lines Machine v2 edits in phase 2: G31, M208, M92, G10 L1 (tool offsets) and G10 L2 (work offsets).
+"""Pure patchers of the configuration lines Machine v2 edits in phase 2: G31, M208, M92 and G10 L1 (tool offsets). The work offsets (G10 L2) are not edited here: they are the zones of the Workbench.
 
 Every function takes the TEXT of a file and returns the new text, never touching the disk. Same contract as machine_config.replace_m671:
 
@@ -232,10 +232,6 @@ def is_tool_offset(code, tool):
     return _l_of(code) in (None, 1.0) and not ({"R", "S"} & set(t))
 
 
-def is_work_offset(code, system):
-    return command_word(code)[0] == "G10" and _l_of(code) == 2.0 and _p_of(code) == system
-
-
 def _axis_tokens(offsets):
     out = {}
     for letter, v in offsets.items():
@@ -259,27 +255,6 @@ def read_tool_offset(text, tool):
     _, ls = split_lines(text)
     found = [code for _, code in live_lines(ls) if is_tool_offset(code, tool)]
     return {c: _float(v) for c, v in tmap(found[-1]).items() if c in AXIS_LETTERS and _float(v) is not None} if found else None
-
-
-def patch_work_offset(text, system, offsets, comment=""):
-    """G10 L2 P<system> X.. Y.. Z.. (system 1..9 = G54..G59.3). A new line goes after the last G10 L2 line, else at the end."""
-    tokens = _axis_tokens(offsets)
-
-    def anchor(code):
-        return command_word(code)[0] == "G10" and _l_of(code) == 2.0
-    return _edit_one(text, lambda c: is_work_offset(c, system), tokens,
-                     lambda: "G10 L2 P%d" % system + "".join(" %s%s" % (c, tokens[c]) for c in AXIS_LETTERS if c in tokens), anchor, comment)
-
-
-def read_work_offsets(text):
-    """{system: {LETTER: float}} of the effective G10 L2 lines."""
-    _, ls = split_lines(text)
-    out = {}
-    for _, code in live_lines(ls):
-        if command_word(code)[0] == "G10" and _l_of(code) == 2.0 and _p_of(code) is not None:
-            vals = {c: _float(v) for c, v in tmap(code).items() if c in AXIS_LETTERS and _float(v) is not None}
-            out.setdefault(_p_of(code), {}).update(vals)
-    return out
 
 
 # ---- one letter per axis on a shared line (M208, M92) ----

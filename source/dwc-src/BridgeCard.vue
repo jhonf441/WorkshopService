@@ -12,12 +12,12 @@
 			</div>
 			<v-spacer />
 			<div class="d-flex flex-wrap align-center pc-chips">
-				<v-chip v-if="e && sec" size="small" label variant="outlined" :color="sec.password ? 'success' : 'blue-grey'" class="mr-1" :title="(sec.password ? $t('plugins.WorkshopService.bridgeCard.untrusted_connections_need_bridge_key') : $t('plugins.WorkshopService.bridgeCard.anyone_on_the_network_can_send')) + ' ' + $t('plugins.WorkshopService.bridgeCard.tap_to_go_to_the_key')" @click="goAKey()">
+				<v-chip v-if="e && !stopped && sec" size="small" label variant="outlined" :color="sec.password ? 'success' : 'blue-grey'" class="mr-1" :title="(sec.password ? $t('plugins.WorkshopService.bridgeCard.untrusted_connections_need_bridge_key') : $t('plugins.WorkshopService.bridgeCard.anyone_on_the_network_can_send')) + ' ' + $t('plugins.WorkshopService.bridgeCard.tap_to_go_to_the_key')" @click="goAKey()">
 					<v-icon start size="small">{{ sec.password ? 'mdi-shield-lock' : 'mdi-shield-outline' }}</v-icon>{{ sec.local_only ? $t('plugins.WorkshopService.bridgeCard.local_network') : $t('plugins.WorkshopService.bridgeCard.chosen_ips') }} · {{ sec.password ? $t('plugins.WorkshopService.bridgeCard.with_key') : $t('plugins.WorkshopService.bridgeCard.no_key') }}
 				</v-chip>
-				<v-chip v-if="e" size="small" label variant="outlined" class="mr-1" :title="t('version')">v{{ e.version }} · {{ $t('plugins.WorkshopService.bridgeCard.up_for_t', { t: dur(e.uptime_s) }) }}</v-chip>
+				<v-chip v-if="e && !stopped" size="small" label variant="outlined" class="mr-1" :title="t('version')">v{{ e.version }} · {{ $t('plugins.WorkshopService.bridgeCard.up_for_t', { t: dur(e.uptime_s) }) }}</v-chip>
 				<v-chip size="small" label variant="flat" :color="stateChip.color" :title="t('state')">{{ stateChip.text }}</v-chip>
-				<v-btn variant="text" v-if="e" icon size="small" class="ml-1" :color="armed === 'restart' ? 'warning' : ''" :disabled="!!bridgeInUse" :loading="actionInProgress === 'restart'" :title="bridgeInUse || (armed === 'restart' ? $t('plugins.WorkshopService.bridgeCard.restart_bridge_confirm') : $t('plugins.WorkshopService.bridgeCard.restart_bridge'))" @click="restartBridge()">
+				<v-btn variant="text" v-if="e && !stopped" icon size="small" class="ml-1" :color="armed === 'restart' ? 'warning' : ''" :disabled="!!bridgeInUse" :loading="actionInProgress === 'restart'" :title="bridgeInUse || (armed === 'restart' ? $t('plugins.WorkshopService.bridgeCard.restart_bridge_confirm') : $t('plugins.WorkshopService.bridgeCard.restart_bridge'))" @click="restartBridge()">
 					<v-icon>mdi-restart</v-icon>
 				</v-btn>
 				<v-btn variant="text" icon size="small" class="ml-1" :color="help ? 'primary' : ''" :title="help ? $t('plugins.WorkshopService.bridgeCard.hide_the_explanations') : $t('plugins.WorkshopService.bridgeCard.show_what_each_button_does')" @click="help = !help">
@@ -702,8 +702,11 @@ const debugItemsClient = computed(() => {
 	if (debugClient.value && list.indexOf(debugClient.value) < 0) list.push(debugClient.value)
 	return [{ text: i18n.t('plugins.WorkshopService.bridgeCard.all_clients'), value: '' }].concat(list.map(n => ({ text: n, value: n })))
 })
+// the unit of this Pi is installed and stopped (the switch above): what the state file still holds is from before it stopped
+const stopped = computed(() => !!(unit.value && unit.value.installed && !unit.value.active))
 const stateChip = computed(() => {
 	if (noInstalled.value) return { text: i18n.t('plugins.WorkshopService.bridgeCard.not_installed'), color: 'grey' }
+	if (stopped.value) return { text: i18n.t('plugins.WorkshopService.bridgeCard.stopped_chip'), color: 'grey' }
 	if (!e.value) return { text: '...', color: 'grey' }
 	if (e.value.error) return { text: i18n.t('plugins.WorkshopService.bridgeCard.port_error'), color: 'error' }
 	if (!received.value || now.value - received.value > 10000) return { text: i18n.t('plugins.WorkshopService.common.no_data_2'), color: 'warning' }
@@ -902,7 +905,7 @@ function eject(cl) {
 }
 // double tap: it cuts every connection (they come back by themselves when the bridge is up again)
 function restartBridge() {
-	if (bridgeInUse.value) return
+	if (bridgeInUse.value || stopped.value) return
 	twice('restart', () => action({ action: 'restart' }, 'restart'))
 }
 function block(cl) {

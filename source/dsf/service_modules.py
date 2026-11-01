@@ -94,18 +94,19 @@ def configure(route=None, clock=None):
 
 
 def _read_items(route):
-    """Union of the enabledPlugins lists of the file, or None if they are not there."""
+    """The enabledPlugins list of the file, or None if it is not there. The machine list decides: DWC
+    drops a plugin from it when the plugin is stopped, while the `main` list (the interface's own) keeps
+    it, so a stopped plugin still looked enabled. `main` is only used when there is no machine list."""
     with open(route, "r", encoding="utf-8") as f:
         payload = json.load(f)
     if not isinstance(payload, dict):
         return None
-    entries = None
     for key in ("machine", "main"):
         sec = payload.get(key)
         l = sec.get("enabledPlugins") if isinstance(sec, dict) else None
         if isinstance(l, list):
-            entries = (entries or set()) | {str(x) for x in l}
-    return entries
+            return {str(x) for x in l}
+    return None
 
 
 def enabled():

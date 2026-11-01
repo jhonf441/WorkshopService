@@ -17,6 +17,10 @@
 #    load DWC plugin X").
 #  - It writes through DSF's file API (the file belongs to the dsf user),
 #    like _reactivate in TallerPlugins/build.py.
+#  - It does NOT reactivate a plugin the person stopped on purpose: the ids of
+#    0:/sys/workshop/data/stopped-plugins.json ({"v": 1, "stopped": ["WorkshopX", ...]},
+#    written by the service operation plugins.stopped.set) are skipped. Without that
+#    file (or if it cannot be read) it behaves as before.
 #
 # Log: ~/ensure-emergencyfab.log (trimmed by itself) and the journal
 #      (journalctl -t ensure-emergencyfab).
@@ -51,6 +55,7 @@ WorkshopMotors WorkshopLights WorkshopPiHealth WorkshopPrinting WorkshopRS485
 WorkshopConfig"
 
 API="http://localhost/machine/file/0:/sys/dwc-settings.json"
+STOPPED_FILE="/opt/dsf/sd/sys/workshop/data/stopped-plugins.json" # plugins stopped on purpose (they are not put back)
 LOG="$HOME/ensure-emergencyfab.log"
 DSF_WAIT=90 # maximum seconds waiting for DSF to answer when the Pi boots
 
@@ -132,16 +137,20 @@ for p in $PLUGINS; do
     [ -f "/opt/dsf/plugins/$p.json" ] && installed="$installed $p"
 done
 
-missing="$(python3 - "$tmp" $installed <<'EOF'
+missing="$(python3 - "$tmp" "$STOPPED_FILE" $installed <<'EOF'
 import json, sys
-f, wanted = sys.argv[1], sys.argv[2:]
+f, stopped_file, wanted = sys.argv[1], sys.argv[2], sys.argv[3:]
 try:
     d = json.load(open(f, encoding="utf-8"))
     enabled = d["machine"]["enabledPlugins"]
 except Exception as e:
     print("ERROR " + type(e).__name__)
     sys.exit(0)
-missing = [p for p in wanted if p not in enabled]
+try:
+    stopped = {str(x) for x in json.load(open(stopped_file, encoding="utf-8")).get("stopped") or []}
+except Exception:
+    stopped = set()  # no file, or not readable: nothing was stopped on purpose
+missing = [p for p in wanted if p not in enabled and p not in stopped]
 if missing:
     enabled.extend(missing)
     with open(f + ".new", "w", encoding="utf-8") as o:

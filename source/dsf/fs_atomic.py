@@ -5,10 +5,12 @@ revision, the config history) keep them on top of this; the plain ones call it d
 """
 import json
 import os
+import threading
 
 
 def _tmp(path):
-    return path + ".tmp-" + str(os.getpid())
+    """One temporary name per writer (process AND thread): two threads writing the same target at once must not share it."""
+    return path + ".tmp-%d-%d" % (os.getpid(), threading.get_ident())
 
 
 def write_bytes(path, data, make_dirs=True):

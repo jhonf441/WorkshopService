@@ -1,6 +1,6 @@
 """Cinema controls of the timelapse: output format, framing, grade, speed of the shutter and the interval ramp.
 
-Pure functions (no ffmpeg run, no files except `list_luts` / `pack_frames`): `camera_relay.py` calls them while it records and assembles, and
+Pure functions (no ffmpeg run, no files except `list_luts` / `pack_frames`): `camera_timelapse.py` and `camera_assembly.py` call them while they record and assemble, and
 `test_timelapse_look.py` checks the filter strings. Every key lives in the `timelapse` block of `camera_service` (the defaults of the
 service) and can also be given for ONE take (`overrides`), which is frozen when the take starts.
 

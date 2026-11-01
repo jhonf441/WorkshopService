@@ -28,6 +28,7 @@ import workshop_api as wa
 from workshop_api import ADMIN, MOTION, POWER, READ, STOP, WRITE, Arg, ApiError, Op
 import messages
 import settings_ops
+import stopped_plugins
 import interlocks
 import live_job_stop
 import machine_ops
@@ -40,7 +41,6 @@ HANDLERS_DIR = os.path.join(BASE_DIR, "handlers")
 # The local key of the system programs lives OUTSIDE the SD: DuetWebServer serves the SD as 0:/ to anybody who can read files through DWC.
 # Mode 640 group dsf: the service, Vision and RS485 run as dsf, the G-code bridge as the login user (member of dsf).
 TOKEN_FILE = paths.CONF + "/workshop-api-token"
-LEGACY_TOKEN_FILE = paths.DATA_DIR + "/.api-token"   # before 2026-10-26: on the SD, readable through DWC
 
 _ctx = {"bridge": None, "config": None, "log": print, "log_file": print, "registry": None, "keys": None, "users": None}
 KEYS_FILE = api_keys.KEYS_FILE
@@ -442,26 +442,76 @@ def _ops():
         Op("blackbox.show", H("blackbox", {"S": "show"}), WRITE, {}, "Shows again the card with the report of the last unclean shutdown of the system (the report is never deleted)."),
         # camera
         Op("camera.status", H("camera_relay", {"S": "state"}), READ, {},
-           "State of the camera relay (the process that serves the camera stream to the screens), with the number of viewers."),
+           "State of the camera relay (the process that serves the camera stream to the screens), with the number of viewers and the list of cameras "
+           "(cameras.json: id, name, address, photo, esp32, relay, flash_source, open and via_relay, which says whether the relay serves that camera) and cameras_rev, "
+           "the revision of that file."),
         Op("camera.start", H("camera_relay", {"S": "start"}), WRITE, {},
            "Starts the camera relay again; fails without a configured camera. Not saved: after a restart the saved setting applies."),
         Op("camera.stop", H("camera_relay", {"S": "stop"}), WRITE, {},
            "Stops the camera relay: the stream is cut for every screen watching it. Not saved: after a restart the saved setting applies."),
-        Op("camera.url", H("camera_relay", {"S": "url"}, {"url": "U"}), WRITE,
+        Op("camera.detect", H("camera_relay", {"S": "detect"}, {"url": "U"}), READ,
            {"url": a(S, True, desc="Stream address starting with http:// or https://, for example http://192.168.1.50:81/stream.")},
-           "Changes the address of the main camera stream, saves it and restarts the relay with it (the screens reconnect by themselves)."),
+           "Asks a camera on the local network whether it is an ESP32-camera and whether it has a flash: {ok, reachable, esp32, flash, framesize}. "
+           "reachable false means the camera did not answer (busy, Wi-Fi drop), which says nothing about what it is. Public and link-local addresses are refused.",
+           log=False, slow=True),
         Op("camera.service", H("camera_relay", {"S": "service"}, {"changes": "J"}), WRITE,
-           {"changes": a(O, desc="Settings to change, with the names of a read (for example {\"notice_camera\": \"main\"} or "
+           {"changes": a(O, desc="Settings to change, with the names of a read (for example {\"notice_drop\": true} or "
                                  "{\"timelapse\": {\"each_s\": 10}}). Empty: only read.")},
-           "Reads or changes the camera service settings (photo in notifications and its camera, warning when a camera stops answering, "
+           "Reads or changes the camera service settings (warning when a camera stops answering, "
            "limits of captures and timelapses, timelapse options). Without changes it only reads; with changes it saves them.", exclusive=False),
         Op("camera.capture", H("camera_relay", {"S": "capture"}, {"camera": "C"}), WRITE,
            {"camera": a(S, desc="Id of the camera; empty: the main camera (main).")},
            "Takes a photo from a camera and saves it with the date in the captures folder (0:/workshop/camera/captures)."),
-        Op("camera.timelapse", H("camera_relay", {"S": "timelapse"}, {"action": "C", "name": "N"}, {"action": {"start": "begin", "stop": "stop", "status": ""}}),
+        Op("camera.flash", H("camera_relay", {"S": "flash"}, {"camera": "C", "on": "O"}), WRITE,
+           {"camera": a(S, desc="Id of the camera; empty: the main camera (main)."),
+            "on": a(B, True, desc="true switches the flash on, false switches it off.")},
+           "Switches the flash of a camera on or off: the LED of the ESP32-camera or the work lights, as the flash_source of that camera says. The service remembers it "
+           "(camera.status: flash {capable, on}) and switches it off by itself when nobody looks at the camera any more or after 10 minutes. "
+           "Answers {ok, camera, flash} or {ok: false, error}.", exclusive=False),
+        Op("camera.image.get", H("camera_relay", {"S": "image"}, {"camera": "C"}), READ,
+           {"camera": a(S, desc="Id of the camera; empty: the main camera (main).")},
+           "The image settings of an ESP32-camera: what is saved for it (profile, fine values, auto), what the camera says now (live: its own /status, null if it does "
+           "not answer), the profile that fits the machine now (suggested), the profiles with their values and the resolutions of its firmware "
+           "({name, number, width, height}). Answers {ok: false, error} for a camera that is not an ESP32-camera.", log=False, slow=True),
+        Op("camera.image.set", H("camera_relay", {"S": "image_set"}, {"camera": "C", "profile": "P", "settings": "J", "auto": "A"}), WRITE,
+           {"camera": a(S, desc="Id of the camera; empty: the main camera (main)."),
+            "profile": a(S, choices=("balanced", "cut", "detail", "little_light", "smooth"), desc="A profile: it is applied, saved and the fine values are dropped."),
+            "settings": a(O, desc="Fine values over the profile, for example {\"brightness\": 1, \"framesize\": \"SVGA\"} (framesize by name: QVGA, CIF, VGA, SVGA, XGA, HD, SXGA)."),
+            "auto": a(B, desc="true: the service switches to the profile that fits what the machine is doing (laser job: cut, else balanced).")},
+           "Applies image settings to an ESP32-camera and saves them in camera.json for every screen. The service applies them again by itself when the camera restarts, "
+           "which resets it. Nothing is saved when the camera did not take them. Answers like camera.image.get.", exclusive=False, slow=True),
+        Op("camera.burst", H("camera_relay", {"S": "burst"}, {"camera": "C", "count": "N", "gap": "G"}), WRITE,
+           {"camera": a(S, desc="Id of the camera; empty: the main camera (main)."),
+            "count": a(I, min=2, max=30, default=5, desc="How many photos (2 to 30)."), "gap": a(N, min=0.3, max=10, default=1, desc="Seconds between photos (0.3 to 10).")},
+           "Takes several dated photos in a row from a camera; they are made in the background and appear in the captures.", exclusive=False),
+        Op("camera.remove", H("camera_relay", {"S": "remove"}, {"file": "F"}), WRITE,
+           {"file": a(S, True, desc="File name of a capture (.jpg) or a timelapse (.mp4 / .mov), as listed by the relay.")},
+           "Deletes a capture or a timelapse video with what travels with it (thumbnail, data, kept stills). It stays in the audit with who asked.", exclusive=False),
+        Op("camera.keep", H("camera_relay", {"S": "keep"}, {"file": "F", "value": "V"}), WRITE,
+           {"file": a(S, True, desc="File name of a capture or a timelapse."),
+            "value": a(B, True, desc="true: it is never deleted by itself (the caps skip it); false: it counts again.")},
+           "Marks or unmarks a capture or a timelapse as kept, and checks the caps again.", exclusive=False),
+        Op("camera.rename", H("camera_relay", {"S": "rename"}, {"file": "F", "name": "N"}), WRITE,
+           {"file": a(S, True, desc="File name of a capture or a timelapse."), "name": a(S, True, desc="The visible name (up to 80 characters).")},
+           "Changes the visible name of a capture or a timelapse (the file keeps its name).", exclusive=False),
+        Op("camera.edit", H("camera_relay", {"S": "edit"}, {"file": "F", "since": "D", "until": "U", "speed": "E"}), WRITE,
+           {"file": a(S, True, desc="File name of a timelapse video."), "since": a(N, min=0, default=0, desc="Seconds from the start of the video where the new one starts."),
+            "until": a(N, min=0, desc="Seconds where it ends (empty: to the end)."), "speed": a(N, min=0.25, max=8, default=1, desc="Speed multiplier, 0.25 to 8.")},
+           "Makes a NEW video from a timelapse, trimmed and with another speed; the original stays. It is assembled in the background.", exclusive=False, slow=True),
+        Op("camera.rerender", H("camera_relay", {"S": "rerender"}, {"file": "F", "cfg": "J"}), WRITE,
+           {"file": a(S, True, desc="File name of a timelapse video whose stills were kept."),
+            "cfg": a(O, desc="The look to apply over the one the video was made with (the keys of a timelapse take: codec, framing, grade, speed...).")},
+           "Makes a NEW video from the stills kept with a timelapse, with another look; the original stays. It is assembled in the background.", exclusive=False, slow=True),
+        Op("camera.timelapse", H("camera_relay", {"S": "timelapse"}, {"action": "C", "name": "N", "cfg": "J"}, {"action": {"start": "begin", "stop": "stop", "status": ""}}),
            WRITE, {"action": a(S, choices=("start", "stop", "status"), default="status", desc="start, stop, or status (default: only returns the state)."),
-                   "name": a(S, desc="Name of the timelapse when starting (default \"Timelapse HH:MM\").")},
+                   "name": a(S, desc="Name of the timelapse when starting (default \"Timelapse HH:MM\")."),
+                   "cfg": a(O, desc="Settings of this take when starting (the keys of the timelapse settings of camera.service: cameras, each_s, fps, armed...); the rest come from the service settings.")},
            "Starts or stops a manual timelapse recording, or returns its state. Starting fails if one is already recording or less than 2 GB are free."),
+        Op("camera.schedule", H("camera_relay", {"S": "schedule"}, {"action": "C", "since": "D", "until": "U", "name": "N"}), WRITE,
+           {"action": a(S, True, choices=("schedule", "unschedule"), desc="schedule: record from a time to a time; unschedule: forget the schedule."),
+            "since": a(N, min=0, desc="Start, epoch seconds (empty: now, when until is given)."), "until": a(N, min=0, desc="Stop, epoch seconds (empty: until stopped)."),
+            "name": a(S, desc="Name of the timelapse.")},
+           "Schedules a timelapse to start and / or stop at a time, or removes the schedule. It is kept across restarts.", exclusive=False),
         Op("camera.token", H("camera_relay", {"S": "token"}), READ, {},
            "Returns the key of the day (valid today and tomorrow) to watch the relay from another screen when DWC has a password."),
         # Vision service (OpenCV, port 8095): the pages ask here instead of calling the port from the browser
@@ -470,9 +520,9 @@ def _ops():
            "Reads a JSON answer of the Vision service (state, camera orientation, head position, lens calibration). Fails with a clear message if Vision is off.",
            log=False),
         Op("vision.post", H("vision_call", {"M": "post"}, {"path": "P", "body": "J"}), WRITE,
-           {"path": a(S, True, desc="Vision path to call: /photo, /detect, /record/search, /measure (only where Vision announces the measure capability, see docs/MACHINE-PHASE4-CONTRACT.md) or /config."),
+           {"path": a(S, True, desc="Vision path to call: /photo, /detect, /record/search, /measure (only where Vision announces the measure capability, see docs/MACHINE-PHASE4-CONTRACT.md). Vision's own settings are not changed here: they go through settings.set (name vision)."),
             "body": a(O, desc="JSON body of the request (the arguments of that Vision path). Empty: no arguments.")},
-           "Calls the Vision service: takes a photo, detects shapes, searches the record or changes its settings. A detection may take several seconds.",
+           "Calls the Vision service: takes a photo, detects shapes or searches the record. A detection may take several seconds.",
            exclusive=False, slow=True),
         # history of received commands
         Op("history.list", H("commands_query", {}, {"from": "D", "to": "A", "name": "N", "errors": "E", "query": "Q", "limit": "L", "offset": "O",
@@ -706,16 +756,16 @@ def _ops():
            {"type": a(S, True, desc="Event type id, for example job_end, error, power, fuego (catalogue in notifications.get)."),
             "on": a(B, True, desc="true sends this type to the phone, false does not.")},
            "Turns the phone notifications of one event type on or off. Saved."),
-        Op("notifications.option", H("notifications", {"C": "option"}, {"type": "T", "attachment": "A", "priority": "R", "quiet_hours": "H", "camera": "K"},
-                                     {"attachment": {"none": "nothing", "photo": "photo", "video": "video"}}), WRITE,
-           {"type": a(S, True, desc="Event type id (catalogue in notifications.get)."),
+        Op("notifications.option", H("notifications", {"C": "option"}, {"type": "T", "attachment": "A", "priority": "R", "quiet_hours": "H", "camera": "K", "default_camera": "Z"}), WRITE,
+           {"type": a(S, desc="Event type id (catalogue in notifications.get). Without it only default_camera is changed."),
             "attachment": a(S, choices=("none", "photo", "video"), desc="What is attached to the notification: none, a photo or a short video."),
             "priority": a(S, choices=("min", "low", "default", "high", "urgent", "auto"), desc="ntfy priority; auto goes back to the default of the type."),
             "quiet_hours": a(B, desc="Whether the quiet hours apply to this type."),
-            "camera": a(S, desc="Camera of the photo or video: a camera id, or \"auto\" / \"\" for the default of the service.")},
-           "Changes the options of one event type (attachment, priority, quiet hours, camera); only the arguments given change. Saved."),
-        Op("notifications.quiet_hours", H("notifications", {"C": "schedule"}, {"on": "V", "from": "F", "to": "U", "mode": "Q"},
-                                          {"mode": {"mute": "callar", "soft": "soft"}}), WRITE,
+            "camera": a(S, desc="Camera of the photo or video of this type: a camera id, or \"auto\" / \"\" for the default camera of the notices."),
+            "default_camera": a(S, desc="Without type: the camera of the photo or video of every type that does not choose its own: a camera id, or \"auto\" for the main one.")},
+           "Changes the options of one event type (attachment, priority, quiet hours, camera); only the arguments given change. Without type, default_camera sets the camera "
+           "the notices use unless their type chooses another. Whether a notice carries a photo or a video is decided here (the attachment of each type), not by the camera service. Saved."),
+        Op("notifications.quiet_hours", H("notifications", {"C": "schedule"}, {"on": "V", "from": "F", "to": "U", "mode": "Q"}), WRITE,
            {"on": a(B, desc="Quiet hours on or off."), "from": a(S, desc="Start time HH:MM, for example 22:00."),
             "to": a(S, desc="End time HH:MM, for example 07:00."),
             "mode": a(S, choices=("mute", "soft"), desc="mute: nothing is sent; soft: sent without sound.")},
@@ -884,7 +934,7 @@ def _ops():
         Op("frame.status", _frame_status, READ, {}, "State of the frame: active, mode, lap, how many laps, how it ended and the error if any.", log=False),
         Op("motion.release", _motion_release, MOTION, {"token": a(S, True, desc="Token returned by motion.reserve.")},
            "Ends a reservation so the others can move again.", exclusive=False),
-    ] + profile_ops.ops() + config_package.ops() + startup_summary.ops() + work_state.ops() + interlocks.ops() + live_job_stop.ops() + machine_ops.ops() + trace_since.ops()
+    ] + profile_ops.ops() + config_package.ops() + startup_summary.ops() + work_state.ops() + interlocks.ops() + live_job_stop.ops() + machine_ops.ops() + trace_since.ops() + stopped_plugins.ops()
 
 
 # ---- history of received calls ("Comandos recibidos") ----
@@ -1011,37 +1061,7 @@ def current_mode():
 
 # ---- start ----
 
-def migrate_token(token_file, legacy_file, log=print):
-    """Moves the local key from the old SD file to token_file: the same key (the programs that already hold it keep working), then the SD copy
-    is removed. Logs once, only when it did something. Returns True when a legacy file was found."""
-    if not legacy_file or not os.path.isfile(legacy_file):
-        return False
-    try:
-        with open(legacy_file, encoding="utf-8") as f:
-            old = f.read().strip()
-    except OSError as e:
-        log(f"api: could not read the old local key file ({e})")
-        return True
-    try:
-        if len(old) >= 32 and not os.path.isfile(token_file):
-            os.makedirs(os.path.dirname(token_file), exist_ok=True)
-            tmp = token_file + ".tmp"
-            with open(tmp, "w", encoding="utf-8") as f:
-                f.write(old + "\n")
-            try:
-                os.chmod(tmp, 0o640)
-            except OSError:
-                pass
-            os.replace(tmp, token_file)
-        os.remove(legacy_file)
-        log("api: the local key moved out of the SD card to " + token_file + " (the SD copy was removed)")
-    except OSError as e:
-        log(f"api: could not move the local key off the SD ({e}); the old file stays")
-    return True
-
-
-def init(bridge, config, plugin_id, version="", log=print, log_file=print, token_file=TOKEN_FILE, keys_file=KEYS_FILE, users_file=users.USERS_FILE,
-         legacy_token_file=LEGACY_TOKEN_FILE):
+def init(bridge, config, plugin_id, version="", log=print, log_file=print, token_file=TOKEN_FILE, keys_file=KEYS_FILE, users_file=users.USERS_FILE):
     """Builds the registry of the service. Does not open any connection."""
     _ctx.update(bridge=bridge, config=config, log=log, log_file=log_file)
     reg = identity.AuthRegistry(plugin_id, version, log_file)
@@ -1059,7 +1079,6 @@ def init(bridge, config, plugin_id, version="", log=print, log_file=print, token
         _ctx["keys"] = api_keys.KeyStore(keys_file, log=log_file)
         reg.key_lookup = _ctx["keys"].lookup
     if token_file:
-        migrate_token(token_file, legacy_token_file, log_file)
         reg.load_token(token_file)
     return reg
 

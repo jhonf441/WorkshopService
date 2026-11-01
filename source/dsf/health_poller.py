@@ -25,6 +25,7 @@ repeating; when it returns to normal "OK again" is recorded.
 
 """
 import paths
+import ports
 import json
 import os
 import socket
@@ -579,7 +580,7 @@ def run_loop(bridge, config):
                     "internet_ms": ping_ms("1.1.1.1"),
                     "meter_ms": ping_ms(tuya_ip),
                     "notices_ms": http_ms("https://ntfy.sh/"),
-                    "camera": port_open(8090),
+                    "camera": port_open(ports.CAMERA_RELAY),
                 }
             if current_time - t_jour >= JOURNAL_EACH_S:
                 t_jour = current_time

@@ -91,7 +91,7 @@ import { pluginActive } from './workshop-ids.js'
 
 const D = 'plugins.WorkshopService.procDocs.'
 // the plugin whose page or panel each process serves: the "where" line names it only when that plugin is there
-const PLUGIN_OF = { status_light: 'lights', consumption: 'consumption', motors: 'motors', jog: 'jog', health: 'health', events: 'activity', jobs: 'activity' }
+const PLUGIN_OF = { status_light: 'lights', consumption: 'consumption', motors: 'motors', jog: 'jog', health: 'health', events: 'activity', jobs: 'activity', camera: 'camera' }
 
 // One internal process of the service: what the backend publishes about it (state, heartbeat,
 // pace, CPU, loops, errors, relaunches) and, unfolded, what it is, what it is for, what happens if

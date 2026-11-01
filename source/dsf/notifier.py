@@ -78,14 +78,13 @@ _KIND = {t[0]: t for t in KINDS}
 # "horario": {"activo", "desde": "HH:MM", "hasta": "HH:MM", "modo": "mute"|"soft"}
 # scheduled silence (it crosses midnight if desde > hasta). It affects the
 # types with "horario": true; "mute" does not send, "soft" sends without sound (min)
-# "video_s": seconds of the short video (camera_relay.video_for_notice)
+# "default_camera": the camera of the photo or video of every type that does not choose its own ("" = the main camera)
+# "video_s": seconds of the short video (camera_relay.clip)
 # By default everything stays as before: photo attachment in _KINDS_WITH_PHOTO, priority
 # the one in KINDS, schedule off (the urgent ones do not respect it even if it is turned on).
 ATTACHMENTS = ("none", "photo", "video")
-ATTACHMENT_ALIAS = {"nothing": "none", "none": "none", "photo": "photo", "clip": "video", "no": "none"}
 PRIORITIES = ("min", "low", "default", "high", "urgent")
 MODES_SCHEDULE = ("mute", "soft")
-MODE_ALIAS = {"callar": "mute", "silencio": "mute", "soft": "soft", "without_sound": "soft"}
 SCHEDULE_DEFAULT = {"active": False, "since": "22:00", "until": "07:00", "mode": "mute"}
 VIDEO_S_DEFAULT = 5
 VIDEO_S_MIN, VIDEO_S_MAX = 2, 10
@@ -96,15 +95,19 @@ def options_default(type_name):
     return {"attachment": "photo" if type_name in _KINDS_WITH_PHOTO else "none", "priority": t[3], "schedule": t[3] != "urgent", "camera": ""}
 
 
+def camera_id_clean(v):
+    """A camera id as the list writes it: letters, digits, "_" and "-" (up to 40); "" when there is none."""
+    import re
+    return re.sub(r"[^A-Za-z0-9_-]", "", str(v or ""))[:40]
+
+
 def attachment_valid(v):
     v = str(v or "").strip().lower()
-    v = ATTACHMENT_ALIAS.get(v, v)
     return v if v in ATTACHMENTS else None
 
 
 def mode_valid(v):
     v = str(v or "").strip().lower()
-    v = MODE_ALIAS.get(v, v)
     return v if v in MODES_SCHEDULE else None
 
 
@@ -129,9 +132,8 @@ def _option_clean(type_name, saved):
         o["priority"] = p
     if "schedule" in g:
         o["schedule"] = bool(g["schedule"])
-    # camera of the photo / video of this type ("" = the notifications default)
-    import re
-    o["camera"] = re.sub(r"[^A-Za-z0-9_-]", "", str(g.get("camera") or ""))[:40]
+    # camera of the photo / video of this type ("" = the default camera of the notices)
+    o["camera"] = camera_id_clean(g.get("camera"))
     return o
 
 
@@ -165,7 +167,7 @@ def plan_sending(cfg, type_name, current_time=None):
     if not cfg["active"] or not cfg["topic"] or not cfg["kinds"].get(type_name) or muted(cfg, current_time):
         return None
     o = cfg["options"].get(type_name) or options_default(type_name)
-    plan = {"priority": o["priority"], "attachment": o["attachment"], "schedule": False, "camera": o.get("camera") or ""}
+    plan = {"priority": o["priority"], "attachment": o["attachment"], "schedule": False, "camera": o.get("camera") or cfg.get("default_camera") or ""}
     if o["schedule"] and in_schedule(cfg, current_time):
         if cfg["schedule"]["mode"] == "mute":
             return None
@@ -221,6 +223,7 @@ def get_cfg(config):
         # the same; it reactivates by itself when it expires.
         "silence_until": int(n.get("silence_until") or 0),
         "options": {t[0]: _option_clean(t[0], (n.get("options") or {}).get(t[0])) for t in KINDS},
+        "default_camera": camera_id_clean(n.get("default_camera")),
         "schedule": _schedule_clean(n.get("schedule")),
         "video_s": max(VIDEO_S_MIN, min(VIDEO_S_MAX, int(n.get("video_s") or VIDEO_S_DEFAULT))),
     }
@@ -245,6 +248,7 @@ def set_cfg(config, cfg):
         "kinds": cfg["kinds"],
         "silence_until": int(cfg.get("silence_until") or 0),
         "options": _only_changes(cfg.get("options")),
+        "default_camera": camera_id_clean(cfg.get("default_camera")),
         "schedule": _schedule_clean(cfg.get("schedule")),
         "video_s": int(cfg.get("video_s") or VIDEO_S_DEFAULT),
     }
@@ -337,7 +341,7 @@ def _register_sending(type_name, title, ok, err):
 def _photo(camera=None):
     try:
         import camera_relay
-        return camera_relay.photo_for_notice(camera or None)
+        return camera_relay.snapshot(camera or None)
     except Exception:
         return None
 
@@ -345,7 +349,7 @@ def _photo(camera=None):
 def _video(seconds, camera=None):
     try:
         import camera_relay
-        return camera_relay.video_for_notice(seconds, camera or None)
+        return camera_relay.clip(seconds, camera or None)
     except Exception:
         return None
 
@@ -396,7 +400,7 @@ def probe_kind(config, type_name):
     if not cfg.get("topic"):
         return {"ok": False, "error": "no topic: set the destination first"}
     o = cfg["options"].get(type_name) or options_default(type_name)
-    plan = {"priority": o["priority"], "attachment": o["attachment"], "schedule": False, "camera": o.get("camera") or ""}
+    plan = {"priority": o["priority"], "attachment": o["attachment"], "schedule": False, "camera": o.get("camera") or cfg.get("default_camera") or ""}
     import messages
     lang = messages.language(config)
     title = t[1].text(lang) + " " + M("notice_test_suffix").text(lang)

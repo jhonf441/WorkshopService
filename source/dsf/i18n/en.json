@@ -348,7 +348,6 @@
  "camera_relay_camera_process_started_again": "Camera process started again",
  "camera_relay_error_starting_relay_no_camera_configured": "Error starting the relay: no camera is configured (config.json \"camera_relay\": {{\"url\": ...}})",
  "camera_relay_error_address_has_start_http_e": "Error: the address has to start with http:// (e.g. http://192.168.1.50:81/stream)",
- "camera_relay_error_address_not_private_network": "Error: the address must be http(s) to a device on the local network (public and link-local addresses are not accepted)",
  "communication_plugin_codes_over_jog_over": "Plugin codes over {channel}, jog over {channel_jog}",
  "communication_communication_use_c_auto_c_aux2": "Communication: use C\"auto\", C\"Aux2\", C\"Aux\" or C\"SBC\"",
  "communication_communication_cannot_used": "Communication: {chan} cannot be used ({reason})",
@@ -437,7 +436,6 @@
  "camera_relay_start_time_already_passed": "the start time has already passed",
  "camera_relay_timelapse_action_must_be": "action: begin | stop | schedule | unschedule",
  "camera_relay_high_load": "high load",
- "camera_relay_relay_now_reads": "Camera: the relay now reads {url}",
  "api_ops_power_off_now": "Power off now",
  "api_ops_restart_everything": "Restart everything",
  "api_ops_restarts_board_m999_system_whatever": "Restarts the board (M999) and the system. Whatever it is doing is cut and homing is lost.",
@@ -1089,5 +1087,16 @@
  "livejob_blocked_not_homed": "Home X and Y first",
  "camera_relay_frames_not_kept": "That video did not keep its stills: only one recorded with \"keep the stills\" can be rebuilt",
  "camera_relay_new_look": "new look",
- "camera_relay_burst_running": "A burst is already running"
+ "camera_relay_burst_running": "A burst is already running",
+ "camera_relay_video_does_not_exist": "that video does not exist",
+ "camera_relay_main_camera_name": "Main",
+ "camera_relay_stamp_layer": "layer {layer}",
+ "stopped_plugins_invalid_id": "The plugin id is not valid (only the workshop plugins, which start with Workshop): {id}",
+ "camera_control_unknown_camera": "unknown camera",
+ "camera_control_no_flash": "this camera has no flash",
+ "camera_control_no_address": "the service has no address of this camera that it can reach",
+ "camera_control_not_answered": "the camera did not answer ({error})",
+ "camera_image_not_esp32": "this camera is not an ESP32-CAM: it has no image settings",
+ "camera_image_unknown_profile": "unknown image profile",
+ "camera_image_bad_setting": "not a valid image setting: {name}"
 }

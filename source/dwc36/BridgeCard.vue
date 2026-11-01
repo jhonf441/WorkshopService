@@ -12,12 +12,12 @@
 			</div>
 			<v-spacer />
 			<div class="d-flex flex-wrap align-center pc-chips">
-				<v-chip v-if="e && sec" small label outlined :color="sec.password ? 'success' : 'blue-grey'" class="mr-1" :title="(sec.password ? $t('plugins.WorkshopService.bridgeCard.untrusted_connections_need_bridge_key') : $t('plugins.WorkshopService.bridgeCard.anyone_on_the_network_can_send')) + ' ' + $t('plugins.WorkshopService.bridgeCard.tap_to_go_to_the_key')" @click="goAKey()">
+				<v-chip v-if="e && !stopped && sec" small label outlined :color="sec.password ? 'success' : 'blue-grey'" class="mr-1" :title="(sec.password ? $t('plugins.WorkshopService.bridgeCard.untrusted_connections_need_bridge_key') : $t('plugins.WorkshopService.bridgeCard.anyone_on_the_network_can_send')) + ' ' + $t('plugins.WorkshopService.bridgeCard.tap_to_go_to_the_key')" @click="goAKey()">
 					<v-icon left small>{{ sec.password ? 'mdi-shield-lock' : 'mdi-shield-outline' }}</v-icon>{{ sec.local_only ? $t('plugins.WorkshopService.bridgeCard.local_network') : $t('plugins.WorkshopService.bridgeCard.chosen_ips') }} · {{ sec.password ? $t('plugins.WorkshopService.bridgeCard.with_key') : $t('plugins.WorkshopService.bridgeCard.no_key') }}
 				</v-chip>
-				<v-chip v-if="e" small label outlined class="mr-1" :title="t('version')">v{{ e.version }} · {{ $t('plugins.WorkshopService.bridgeCard.up_for_t', { t: dur(e.uptime_s) }) }}</v-chip>
+				<v-chip v-if="e && !stopped" small label outlined class="mr-1" :title="t('version')">v{{ e.version }} · {{ $t('plugins.WorkshopService.bridgeCard.up_for_t', { t: dur(e.uptime_s) }) }}</v-chip>
 				<v-chip small label dark :color="stateChip.color" :title="t('state')">{{ stateChip.text }}</v-chip>
-				<v-btn v-if="e" icon small class="ml-1" :color="armed === 'restart' ? 'warning' : ''" :disabled="!!bridgeInUse" :loading="actionInProgress === 'restart'" :title="bridgeInUse || (armed === 'restart' ? $t('plugins.WorkshopService.bridgeCard.restart_bridge_confirm') : $t('plugins.WorkshopService.bridgeCard.restart_bridge'))" @click="restartBridge()">
+				<v-btn v-if="e && !stopped" icon small class="ml-1" :color="armed === 'restart' ? 'warning' : ''" :disabled="!!bridgeInUse" :loading="actionInProgress === 'restart'" :title="bridgeInUse || (armed === 'restart' ? $t('plugins.WorkshopService.bridgeCard.restart_bridge_confirm') : $t('plugins.WorkshopService.bridgeCard.restart_bridge'))" @click="restartBridge()">
 					<v-icon>mdi-restart</v-icon>
 				</v-btn>
 				<v-btn icon small class="ml-1" :color="help ? 'primary' : ''" :title="help ? $t('plugins.WorkshopService.bridgeCard.hide_the_explanations') : $t('plugins.WorkshopService.bridgeCard.show_what_each_button_does')" @click="help = !help">
@@ -718,9 +718,16 @@ export default {
 			if (this.debugClient && names.indexOf(this.debugClient) < 0) names.push(this.debugClient);
 			return [{ text: i18n.t('plugins.WorkshopService.bridgeCard.all_clients'), value: '' }].concat(names.map(n => ({ text: n, value: n })));
 		},
+		// the unit of this Pi is installed and stopped (the switch above): what the state file still holds is from before it stopped
+		stopped() {
+			return !!(this.unit && this.unit.installed && !this.unit.active);
+		},
 		stateChip() {
 			if (this.noInstalled) {
 				return { text: i18n.t('plugins.WorkshopService.bridgeCard.not_installed'), color: 'grey' };
+			}
+			if (this.stopped) {
+				return { text: i18n.t('plugins.WorkshopService.bridgeCard.stopped_chip'), color: 'grey' };
 			}
 			if (!this.e) {
 				return { text: '...', color: 'grey' };
@@ -930,7 +937,7 @@ export default {
 		},
 		// double tap: it cuts every connection (they come back by themselves when the bridge is up again)
 		restartBridge() {
-			if (this.bridgeInUse) {
+			if (this.bridgeInUse || this.stopped) {
 				return;
 			}
 			if (this.armed !== 'restart') {

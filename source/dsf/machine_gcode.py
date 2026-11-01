@@ -76,7 +76,6 @@ TEMPLATES = {
     "limits_set": ("M208 {axis}{lo}:{hi}", re.compile(r"^M208 [XYZUVWABC]%s:%s$" % (_NUM, _NUM))),
     "steps_set": ("M92 {axis}{v}", re.compile(r"^M92 [XYZUVWABCE]%s$" % _NUM)),
     "g10_tool_axis": ("G10 L1 P{tool} {axis}{v}", re.compile(r"^G10 L1 P[0-9]{1,2} [XYZUVWABC]%s$" % _NUM)),
-    "g10_work_axis": ("G10 L2 P{n} {axis}{v}", re.compile(r"^G10 L2 P[1-9] [XYZUVWABC]%s$" % _NUM)),
     # homing verification and the reads it needs
     "home_axis": ("G28 {axis}", re.compile(r"^G28 [XYZUVWABC]$")),
     "endstops_om": ('M409 K"sensors.endstops" F"d99"', re.compile(r'^M409 K"sensors\.endstops" F"d99"$')),
@@ -125,6 +124,8 @@ TEMPLATES = {
     "area_corner_x": ('M409 K"global.handCornerX"', re.compile(r'^M409 K"global\.handCornerX"$')),
     "area_corner_y": ('M409 K"global.handCornerY"', re.compile(r'^M409 K"global\.handCornerY"$')),
     "area_reload": ('M98 P"0:/sys/workshop/zones/cutarea.g"', re.compile(r'^M98 P"0:/sys/workshop/zones/cutarea\.g"$')),
+    # laser <-> pointer correction (laser_correction.py): the zones take the new correction now (G10 L2 of every p<N>.g, numbers in memory, no move)
+    "work_origins_apply": ('M98 P"0:/sys/workshop/macros/wpload.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/wpload\.g"$')),
 }
 
 # range of each named value: ("int", lo, hi), ("num", lo, hi) (decimals, at most 3 places) or ("list", lo, hi, n_min, n_max) (a:b:c).

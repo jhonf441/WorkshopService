@@ -44,22 +44,27 @@ export function idInstalled(key) {
 
 // Rule: a plugin that refers to another one shows nothing about it (no button, link, text or card:
 // hidden, not disabled) when the other one is not installed or not enabled in DWC.
-// true when the plugin of that key is installed and enabled. store = this.$store (reactive: it reads the
-// plugin list and the enabled list). A JS plugin that loaded in this page counts as active.
+// true when the plugin of that key is installed and enabled. store = this.$store (reactive: it reads the plugin list and the enabled list).
+// A JS plugin that loaded in this page counts as active, unless the enabled list is loaded and does not have it: the registry keeps the entry of
+// a plugin that was stopped for the seconds its poll takes to notice, and for ever when DWC loaded it from the global list. An empty list counts
+// as not read yet for a JS plugin (it is running). Same answer as workshopPluginActive of src/_shared/13-presence.js.
 export function pluginActive(store, key) {
 	const ids = IDS[key] || [key];
-	const cargados = window.__workshop && window.__workshop.versions;
-	if (cargados && ids.some(id => cargados[id])) return true;
 	const st = store && store.state;
+	// only the machine list: it is the one the plugins page changes when a plugin is stopped. DWC also loads the ids of the global (`main`)
+	// list, and a stop never removes them from there, so counting that list would show a stopped plugin as active for ever.
+	const ms = st && st.machine.settings && st.machine.settings.enabledPlugins;
+	const enabled = Array.isArray(ms) ? ms : null;
+	const loaded = window.__workshop && window.__workshop.versions;
+	if (loaded && ids.some(id => loaded[id] && (!enabled || !enabled.length || enabled.includes(id)))) return true;
 	if (!st || !pluginOf(st.machine.model.plugins, key)) return false;
-	const ms = st.machine.settings && st.machine.settings.enabledPlugins;
-	const gs = st.settings && st.settings.enabledPlugins;
-	if (!Array.isArray(ms) && !Array.isArray(gs)) return true; // list not loaded yet: do not hide
-	return ids.some(id => (ms || []).includes(id) || (gs || []).includes(id));
+	if (!enabled) return true; // list not loaded yet: do not hide
+	return ids.some(id => enabled.includes(id));
 }
 
-// true when DWC has a page at that route (the plugin that owns it is installed and enabled).
-// router = this.$router; unknown routes fall on the catch-all '*'. Not reactive: call it from render or methods.
+// true when DWC has a page at that route. router = this.$router; unknown routes fall on the catch-all '*'. Call it from render or methods. A route
+// says only that a page was registered, not that its plugin is on: DWC 3.6 cannot remove a route, so for a stopped plugin the answer stays true
+// until the page is reloaded. To know whether a PLUGIN is there use pluginActive.
 export function pathExists(router, path) {
 	try {
 		const m = router && router.resolve(path).route.matched;

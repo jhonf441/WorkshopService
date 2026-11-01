@@ -168,9 +168,8 @@ class Paths:
         self.state = os.path.join(sysdir, "workshop", "data", "bridge-state.json")
         self.action = os.path.join(sysdir, "workshop", "data", "bridge-action.json")
         self.viewer = os.path.join(sysdir, "workshop", "data", "bridge-viewer.json")
-        # the local key of the service lives outside the SD (DWC serves the SD); the old SD file is read only until the service has moved it
+        # the local key of the service lives outside the SD (DWC serves the SD)
         self.api_token = os.path.join(os.path.dirname(os.path.abspath(root)), "conf", "workshop-api-token")
-        self.api_token_legacy = os.path.join(sysdir, "workshop", "data", ".api-token")
         self.interrupted = os.path.join(sysdir, "workshop", "data", "live-interrupted.json")
 
 
@@ -285,15 +284,11 @@ class ServiceNotifier:
             self.log(f"service API queue full: {op} dropped")
 
     def _token(self):
-        for path in (self.paths.api_token, self.paths.api_token_legacy):
-            try:
-                with open(path, encoding="utf-8") as f:
-                    t = f.read().strip()
-                if t:
-                    return t
-            except OSError:
-                continue
-        return ""
+        try:
+            with open(self.paths.api_token, encoding="utf-8") as f:
+                return f.read().strip()
+        except OSError:
+            return ""
 
     def post(self, op, args, timeout=5):
         import urllib.error
@@ -1185,6 +1180,7 @@ class Client:
         if not is_query and not b.can_order(self):
             with b.lock:
                 b.totals["rejects"] += 1
+                b.totals["rejects_password"] = b.totals.get("rejects_password", 0) + 1  # why, so it shows without the debug
                 self.rejects += 1
                 b.count("rejects")
                 n = self.rejects
@@ -1202,6 +1198,7 @@ class Client:
                 owner_label = b.label(b.owner)
                 if rejected:
                     b.totals["rejects"] += 1
+                    b.totals["rejects_control"] = b.totals.get("rejects_control", 0) + 1  # why, so it shows without the debug
                     self.rejects += 1
                     b.count("rejects")
                     n = self.rejects
@@ -1220,6 +1217,7 @@ class Client:
                 else:
                     with b.lock:
                         b.totals["rejects"] += 1
+                        b.totals["rejects_live_stop"] = b.totals.get("rejects_live_stop", 0) + 1  # why, so it shows without the debug
                         self.rejects += 1
                         b.count("rejects")
                     self.reply_local("Error: " + why + ". Your order was not executed.")
@@ -1229,6 +1227,7 @@ class Client:
             left = int(self.failed_until - b.clock.mono()) + 1
             with b.lock:
                 b.totals["rejects"] += 1
+                b.totals["rejects_failed_job"] = b.totals.get("rejects_failed_job", 0) + 1  # why, so it shows without the debug
                 self.rejects += 1
                 b.count("rejects")
                 n = self.rejects
@@ -1247,6 +1246,7 @@ class Client:
             if why:
                 with b.lock:
                     b.totals["rejects"] += 1
+                    b.totals["rejects_machine"] = b.totals.get("rejects_machine", 0) + 1  # why, so it shows without the debug
                     self.rejects += 1
                     b.count("rejects")
                     n = self.rejects

@@ -22,6 +22,7 @@ import subprocess
 import sys
 
 import paths
+import ports
 from messages import M
 
 OK, WARN, ERROR = "ok", "warn", "error"
@@ -33,7 +34,7 @@ DOTNET_DIRS = ("/usr/share/dotnet", "/usr/lib/dotnet", "/opt/dotnet")
 CGROUP_CONTROLLERS = "/sys/fs/cgroup/cgroup.controllers"
 PROC_CMDLINE = "/proc/cmdline"
 MIN_PYTHON = (3, 9)
-PORTS = (("camera", 8090), ("vision", 8095))
+PORTS = (("camera", ports.CAMERA_RELAY), ("vision", ports.VISION))
 MIN_FREE_MB = 200
 WARN_FREE_MB = 2000
 SUDOERS_FILE = "/etc/sudoers.d/dsf-power"

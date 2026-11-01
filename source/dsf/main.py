@@ -531,6 +531,34 @@ if __name__ == "__main__":
     # daily database backups and maintenance (db_backup.py, API db.*)
     import db_backup
     db_backup.launch(config, bridge, log_file)
+    # the macro the zones read (macros/lasercorrection.g) follows the settings store "laser": written again at start (laser_correction.py)
+    try:
+        import laser_correction
+        if laser_correction.sync():
+            log_file("macros/lasercorrection.g written from the settings store laser")
+    except Exception as e:
+        log_file(f"could not write macros/lasercorrection.g: {e}")
+
+    # focus.g (the geometry focusrule.g loads) follows the store "focus": created when missing, never replaced behind the owner's back (focus_geometry.py)
+    try:
+        import focus_geometry
+        state = focus_geometry.sync_at_start()
+        if state == "written":
+            log_file("config/focus.g written from the settings store focus")
+        elif state == "differs":
+            log_file("config/focus.g differs from the settings store focus: left as it is (saving the store rewrites it)")
+    except Exception as e:
+        log_file(f"could not check config/focus.g: {e}")
+
+    def _apply_laser_correction():
+        # the board's memory takes the stored correction (wpload.g) once it answers and is free; it never waits the start of the service
+        try:
+            import laser_correction
+            applied, why = laser_correction.apply_at_start()
+            log_file("laser correction applied to the board's zones" if applied else f"laser correction not applied at start: {why}")
+        except Exception as e:
+            log_file(f"could not apply the laser correction at start: {e}")
+    threading.Thread(target=_apply_laser_correction, name="laser-correction-apply", daemon=True).start()
     # API of the service (workshop_api.py / api_ops.py): the registry first, the
     # endpoint and the macro mailbox once the threads below are running
     import api_ops

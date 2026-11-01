@@ -6,8 +6,9 @@ It replaces the macros lasermark.g + the browser's G-code. Three actions:
              long strokes, then G90) and remembers the head position. Returns {"head": {x, y}, ...}.
     capture  the person has brought the POINTER to the centre of the cross with the jog: reads the head now and computes
              correction = head when marking - head now (the beam hits the bed at machine position - correction). With `save: true` the
-             correction is written to the settings store `laser` (key `correction` {x, y, date}: the same field the Workbench and the Jog read)
-             and stored in the calibration history (kind `laser.pointer`).
+             correction is written to the settings store `laser` (key `correction` {x, y, date}: the ONE value the Workbench, the Jog and the
+             board read; laser_correction.py mirrors it into macros/lasercorrection.g and runs wpload.g so the zones G54..G59.3 take it now,
+             no zone file holds a number of its own) and stored in the calibration history (kind `laser.pointer`).
     clear    forgets the mark.
 
 What it honours (laser_guard.py and the macro laserguard.g that it replaces): Laser mode, X and Y homed, power 1 to 10 % (more is refused),
@@ -23,6 +24,7 @@ import time
 
 import audit
 import identity
+import laser_correction
 import laser_guard
 import machine_geometry as geo
 import machine_parsers as parsers
@@ -181,7 +183,11 @@ def _save(corr, previous, m, head, ctx):
     import machine_ops as mo
     who = identity.actor(ctx)
     value = dict(corr, date=time.strftime("%Y-%m-%d %H:%M"))
-    settings_store.merge("laser", {"correction": value})
+    settings_store.merge("laser", {"correction": value})                  # the store write also rewrites macros/lasercorrection.g (settings_store)
+    if laser_correction.in_step():                                          # the file on the card says what the store says: only then is the board told to apply it
+        applied, why = laser_correction.apply_now(mo.model())               # the zones take it now; a running job keeps its origin
+    else:
+        applied, why = False, "mirror_failed"                               # the correction is saved in the store but lasercorrection.g is not: wpload.g would apply the old one
     rec_id = None
     try:
         rec = machine_store.make_record("laser.pointer", who, machine=machine_store.fingerprint_of(mo._caps()),
@@ -190,8 +196,8 @@ def _save(corr, previous, m, head, ctx):
         rec_id = machine_store.append(rec)["id"]
     except Exception as e:  # noqa: BLE001 - the correction is saved; a missing record must not hide it
         print("machine.mark_cross: could not store the record: %s" % e)
-    audit.event("machine.mark_cross.saved", {"correction": corr}, who)
-    return {"saved": True, "record_id": rec_id}
+    audit.event("machine.mark_cross.saved", {"correction": corr, "zones_applied": applied}, who)
+    return {"saved": True, "record_id": rec_id, "zones_applied": applied, "zones_reason": why}
 
 
 def _op(args, ctx):

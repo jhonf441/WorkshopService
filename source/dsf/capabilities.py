@@ -249,9 +249,6 @@ def _led_strip(model, env):
 
 def _cameras(env):
     cams = [c for c in env.get("cameras") or [] if isinstance(c, dict)]
-    relay = (env.get("settings") or {}).get("camara_relay") or (env.get("settings") or {}).get("camera_relay") or {}
-    if relay.get("url") and not any(c.get("id") == "main" for c in cams):
-        cams = [{"id": "main", "name": "main", "url": relay["url"]}] + cams
     if not cams:
         return _absent(items=[])
     return cap(True, DECLARED, items=[{"id": c.get("id"), "name": c.get("name") or c.get("id")} for c in cams])

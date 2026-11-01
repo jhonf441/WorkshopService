@@ -15,7 +15,8 @@ Kinds and values:
     config.m92         {axes: {"X": steps per mm, ...}}                                     ADMIN
     config.g10         {tool: 0-49, offsets: {"X": v, "Y": v, "Z": v}}                      technician (G10 L1)
 The work offsets G54..G59.3 (G10 L2) have NO planner: they are the work zones of the Workbench (WorkshopWorkbench writes
-`0:/sys/workshop/zones/p<N>.g`, one per system, with the laser <-> pointer correction inside; `workplaces.g` loads them at start-up).
+`0:/sys/workshop/zones/p<N>.g`, one per system; the laser <-> pointer correction is the one of the settings store `laser` through
+`macros/lasercorrection.g`; `workplaces.g` loads them at start-up).
 Machine only reads them (machine.offsets.get) and keeps snapshots to compare. `M500` is not used and its behaviour is not assumed.
 """
 import config_scan

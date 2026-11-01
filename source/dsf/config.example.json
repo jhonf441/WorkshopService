@@ -47,9 +47,7 @@
     "value_kwh": 0
   },
   "camera_relay": {
-    "active": false,
-    "url": "",
-    "port": 8090
+    "active": true
   },
   "communication": {
     "channel": "auto",

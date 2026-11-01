@@ -30,7 +30,8 @@ AREA = "svc"
 # modules whose messages reach plugin data or the process details (servicesInternal), or that the pages render
 # from an answer of the camera relay
 MODULES = [
-    "black_box.py", "camera_load.py", "camera_relay.py", "communication.py", "config_guard.py", "consumption_poller.py", "event_watcher.py",
+    "black_box.py", "camera_assembly.py", "camera_captures.py", "camera_config.py", "camera_context.py", "camera_http.py", "camera_key.py", "camera_limits.py",
+    "camera_load.py", "camera_notice.py", "camera_relay.py", "camera_sources.py", "camera_timelapse.py", "communication.py", "config_guard.py", "consumption_poller.py", "event_watcher.py",
     "health_poller.py", "heartbeats.py", "job_poller.py", "job_trace.py", "jog_move.py", "lights_config.py",
     "lights_runtime.py", "live_job.py", "machine_state.py", "main.py", "motion_owner.py", "motor_poller.py",
     "motor_status.py", "notifier.py", "protection_guard.py", "risk_rules.py", "shutdown_method.py", "shutdown_timer.py", "status_light.py",

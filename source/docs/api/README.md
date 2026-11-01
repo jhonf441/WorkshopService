@@ -68,7 +68,7 @@ curl -s http://duet3.local/machine/disconnect -H "X-Session-Key: 12345678"
 ```
 
 - Programs running on the same computer as DSF (the G-code bridge, the Vision service) may
-  send the header `X-Workshop-Token` with the content of `/opt/dsf/conf/workshop-api-token` (older installs: `0:/sys/workshop/data/.api-token`)
+  send the header `X-Workshop-Token` with the content of `/opt/dsf/conf/workshop-api-token`
   instead of a session (not for the `admin` operations: password and channels).
 
 - An external service (an app, a phone, another computer) should have its own **key** instead of the
@@ -132,8 +132,12 @@ curl -s -X POST .../machine/WorkshopService/api -H "X-Workshop-Token: <token>" -
 
 ### Camera relay (port 8090)
 
-The pages talk to the relay directly, so it applies the roles itself (`dsf/camera_access.py`, in process: it asks the user
-store, no HTTP). The browser sends `X-Workshop-Token` / `X-Workshop-Device` (the relay answers them in the CORS preflight).
+The pages read the relay directly (an `<img>` and a `<video>` cannot carry the headers of the API), so it applies the roles itself
+(`dsf/camera_access.py`, in process: it asks the user store, no HTTP). The port only SERVES media; everything that changes something
+(`camera.capture`, `camera.burst`, `camera.remove`, `camera.keep`, `camera.rename`, `camera.edit`, `camera.rerender`,
+`camera.timelapse`, `camera.schedule`, `camera.flash`, `camera.image.set`) is an operation of the API, with its level in
+`dsf/permissions.py` and its line in the audit. The one exception is the look files of the timelapse studio (up to 6 MB, the body of the API is
+1 MB): `POST /luts` and `POST /luts/remove`. The browser sends `X-Workshop-Token` / `X-Workshop-Device` (the relay answers them in the CORS preflight).
 Without users nothing changes. A request from the Pi itself (loopback, no `Origin`, no token: macros, Vision, the service)
 passes. Users exist and the store cannot answer: `503 service_unreachable`. No session: `401 login_required`; not enough
 role (or a viewer without `camera_for_viewer`): `403 forbidden`. Body: `{"ok": false, "code": "...", "error": "..."}`.
@@ -142,8 +146,7 @@ A route that is not in the table needs `admin`; a test fails if the relay has a 
 | Role | Routes |
 |------|--------|
 | viewer with the camera (`camera_for_viewer`) | `GET /state`, `/stream`, `/snapshot`, `/c/<id>[/snapshot]`, `/status`, `/captures`, `/captures/<file>`, `/timelapses`, `/timelapses/<file>`, `/timelapse/last`, `/per_delete` |
-| operator | `POST /capture`, `POST /rename`, `POST /timelapse?action=begin` and `action=stop` |
-| technician | `POST /remove`, `/keep`, `/edit`, `POST /timelapse?action=schedule` and `unschedule`, `GET /control` (camera settings), `GET /detect` (camera search) |
+| technician | `POST /luts`, `POST /luts/remove` (look files), `GET /control` (camera settings, passed to the ESP32-camera) |
 | admin | anything not listed |
 
 A viewer without the camera gets nothing from the relay (not even `/state`). `<img>`, `<video>` and downloads cannot carry
@@ -277,7 +280,7 @@ The exact shapes the plugin builds against are in `docs/MACHINE-PHASE2-CONTRACT.
 | `machine.limits.get` | operator | the M208 limits of every axis, the endstops and where the configuration defines M208. |
 | `machine.layout {mode, probe?, x0 x1 y0 y1?, nx?, ny?, points?, margin?}` | operator | READ, no motion, nothing sent to the board: data for the bed view of Mesh and Level (axis limits, probe and offsets, reach of the probe, M671 leadscrews, which mesh / level points are taken or excluded and why, last mesh and level measurements). Exact keys: `docs/MACHINE-LAYOUT-CONTRACT.md`. |
 | `machine.try {gcode_kind, action?, values, seconds?, try_id?}` | technician (admin for M208, M92, M906, M913, M917) | VOLATILE trial with automatic revert. Phase 2: `M208` (`values {axes: {X: {min, max}}}`); phase 3 adds M92, M906, M913, M917, M203, M201, M205, M566, M425, M556, M593 (below); `M376` answers `not_implemented`. `action` start / keep / revert. The previous limits are written to `sys/workshop/data/machine/try-pending.json` first and put back after `seconds` (5-600, default 60) even if the page closed; `recover_pending` (started by main.py) puts them back after a restart. Class `geometry`, level 3 confirmation, one trial at a time. |
-| `machine.mark_cross {action?, power?, save?}` | technician | laser <-> pointer assistant on the server: `mark` fires a 4 mm cross (Laser mode, X and Y homed, 1-10 %, interlocks closed, movement reserved, level 3 confirmation; the laser guard is armed and M5 always follows), `capture` computes the correction once the pointer is over the cross (`save` writes it to the settings store `laser` key `correction` and to the history), `clear` forgets the mark. |
+| `machine.mark_cross {action?, power?, save?}` | technician | laser <-> pointer assistant on the server: `mark` fires a 4 mm cross (Laser mode, X and Y homed, 1-10 %, interlocks closed, movement reserved, level 3 confirmation; the laser guard is armed and M5 always follows), `capture` computes the correction once the pointer is over the cross (`save` writes it to the settings store `laser` key `correction` and to the history; the store is the ONE source: the service mirrors it into `0:/sys/workshop/macros/lasercorrection.g` (`global.workshopLaserCorrX/Y/Known`; `Known` is true only for a measured correction, and `saveworkplace.g` saves no origin without it; read by `workplaces.g`, `wpload.g`, `saveworkplace.g` and every zone file) and runs `wpload.g` so the zones take it at once, only when the file on the card is what the store says and no job runs; the answer carries `zones_applied` and `zones_reason`: `job_running`, `mirror_failed` or `no_connection:<detail>` when it is false), `clear` forgets the mark. |
 | `machine.height.get` | operator | READ: the height calibration of the tool (it was a card of the Workbench): per mode `{general: {method, setting}, k0, szp}`, the paper thickness, the `rev` to save against, the hooks of the mode files, whether `zcal.g` exists, the probes of the object model (trigger height, offsets), the macros present and what is homed. |
 | `machine.height.save {base_rev, changes}` | technician | `changes {paper?, modes: {Laser|CNC|FFF: {method?, setting?, k0?, szp?}}}` (fine adjustment -3..3 mm; `k0 {p, x, y, z, date}`; `szp` only FFF; `null` removes). Revisioned like `settings.set` (409 `conflict` returns the current value). Rewrites `sys/workshop/macros/zcal.g` and applies it now unless a job runs (`applied`, `apply_reason`). Audited. |
 | `machine.height.hook` | technician | adds `M98 P"0:/sys/workshop/macros/zcal.g"` to `modelaser.g`, `modecnc.g`, `modefff.g` when missing (a `.bak-<stamp>` copy of each first). Audited. |
@@ -379,6 +382,17 @@ settings file `work_state` (so it has a rev and a backup). `workstate.set` merge
 `{state, rev, changed}` with the merged state. Any unknown key, boolean, text or out of range number refuses the whole call with
 `invalid_args` and `error.field`. At most 32 zones. The write goes to the audit like any other. `settings.set` of `focus`
 stays a technician's.
+
+## Plugins stopped on purpose
+
+`plugins.stopped.get` (viewer) returns `{stopped: [ids]}`; `plugins.stopped.set {id, stopped}` (operator) records (`stopped: true`) or
+forgets (`false`) that a workshop plugin was stopped on purpose. It exists because DWC takes a plugin out of `machine.enabledPlugins`
+both when a person stops it and when it cannot load it, and `kiosk/ensure-emergencyfab.sh` puts the missing ones back: the plugin that
+a person stops (from the page of the kiosk, for example) is recorded here and the script skips it. The list is the file
+`0:/sys/workshop/data/stopped-plugins.json` (`{"v": 1, "stopped": ["WorkshopCamera"]}`, written atomically; a missing or damaged file
+means nothing was stopped on purpose). Only ids that start with `Workshop` are accepted (anything else answers `invalid_args` with
+`error.field` `id`). The answer of `set` is `{stopped, changed}`; a call that changes nothing writes nothing. The write goes to the
+audit like any other.
 
 ## Laser interlocks (optional)
 

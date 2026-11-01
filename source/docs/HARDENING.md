@@ -68,22 +68,15 @@ until the first person is created.
   Owner step (no sudo; edit `0:/sys/workshop/config/bridge.json`, or the Services page): set
   `"allowed": ["192.168.1.16"]` (the PC) and, if the program can send it, a password; keep `trusted` for the PC if it cannot
   send `BRIDGE KEY`. Loopback is always allowed. The change is picked up without a restart (settings reload when the file changes).
-- `0:/sys/workshop/data/.api-token` (the local key of the system programs, mode 640, group dsf): it lives on the SD, and the SD is
-  what DuetWebServer serves as `0:/` through `/machine/file/...`. So anybody who can read files through DWC can read the key; with
-  DWC without password that is the whole LAN, with a DWC password any session. The key opens every operation except `admin` as
-  "the system" (VIA_TOKEN), without a PIN. Confirmed by reading `workshop_api.py`; it is a real escalation once people exist.
-  Fixed in the code (2026-10-26), applied on the machine only when you install the new service: the key lives in
-  `/opt/dsf/conf/workshop-api-token` (outside the SD, never served by DWC). Mode 640 and group dsf, not 600: the service, Vision and RS485
-  run as dsf, but the G-code bridge runs as the login user (member of dsf) and must read it too. On its first start the new service
-  moves the old file (same key, so programs that hold it keep working), removes the SD copy and logs one line
-  "api: the local key moved out of the SD card". Install steps:
-  1. Update Vision and RS485 FIRST (their readers: see fix-service-report.md, they read the new path and fall back to the old one), or accept
-     that they answer 401 to the service until you do.
-  2. `sudo -u dsf ls -l /opt/dsf/conf` must show the folder writable by dsf (workshop-secrets.json already lives there).
-  3. Install the service (tools/install.sh), then check: `ls -l /opt/dsf/conf/workshop-api-token` is `-rw-r----- dsf dsf`, and
-     `ls /opt/dsf/sd/sys/workshop/data/.api-token` no longer exists. Restart the bridge: `sudo systemctl restart workshop-gcode-bridge`
-     (it reads the new path and falls back to the old file until then).
-  4. Rollback: copy the contents of the new file back to the old SD path; the old service reads it and does not delete it.
+- `/opt/dsf/conf/workshop-api-token` (the local key of the system programs, mode 640, group dsf). It used to live on the SD
+  (`0:/sys/workshop/data/.api-token`), and the SD is what DuetWebServer serves as `0:/` through `/machine/file/...`: anybody who can read
+  files through DWC could read the key (the whole LAN with DWC without password, any session with one), and the key opens every operation
+  except `admin` as "the system" (VIA_TOKEN), without a PIN. Since 2026-10-26 the key lives outside the SD, never served by DWC. Mode 640
+  and group dsf, not 600: the service, Vision and RS485 run as dsf, but the G-code bridge runs as the login user (member of dsf) and must
+  read it too. Only that path is read: the service no longer moves a key found on the SD and the bridge no longer reads it. A machine that
+  still has `0:/sys/workshop/data/.api-token` gets a new key at the first start; delete the old file by hand
+  (`rm /opt/dsf/sd/sys/workshop/data/.api-token`) and restart the bridge (`sudo systemctl restart workshop-gcode-bridge`). Check with
+  `ls -l /opt/dsf/conf/workshop-api-token` (`-rw-r----- dsf dsf`) and `sudo -u dsf ls -l /opt/dsf/conf` (writable by dsf).
 
 
 ## Phone notices topic (A-24)

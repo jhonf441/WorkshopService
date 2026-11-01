@@ -348,7 +348,6 @@
  "camera_relay_camera_process_started_again": "Proceso de cámara arrancado de nuevo",
  "camera_relay_error_starting_relay_no_camera_configured": "Error arrancando el relay: no hay cámara configurada (config.json \"camera_relay\": {{\"url\": ...}})",
  "camera_relay_error_address_has_start_http_e": "Error: la dirección tiene que empezar con http:// (ej. http://192.168.1.50:81/stream)",
- "camera_relay_error_address_not_private_network": "Error: la dirección debe ser http(s) hacia un equipo de la red local (no se aceptan direcciones públicas ni link-local)",
  "communication_plugin_codes_over_jog_over": "Códigos del plugin por {channel}, jog por {channel_jog}",
  "communication_communication_use_c_auto_c_aux2": "Comunicación: usa C\"auto\", C\"Aux2\", C\"Aux\" o C\"SBC\"",
  "communication_communication_cannot_used": "Comunicación: {chan} no se puede usar ({reason})",
@@ -437,7 +436,6 @@
  "camera_relay_start_time_already_passed": "la hora de empezar ya pasó",
  "camera_relay_timelapse_action_must_be": "acción: begin | stop | schedule | unschedule",
  "camera_relay_high_load": "carga alta",
- "camera_relay_relay_now_reads": "Cámara: ahora el relay lee {url}",
  "api_ops_power_off_now": "Apagar ahora",
  "api_ops_restart_everything": "Reiniciar todo",
  "api_ops_restarts_board_m999_system_whatever": "Reinicia la placa (M999) y el sistema. Se corta lo que esté haciendo y se pierde el homing.",
@@ -1089,5 +1087,16 @@
  "livejob_blocked_not_homed": "Hay que hacer home de X e Y primero",
  "camera_relay_frames_not_kept": "Ese video no guardó sus fotos: solo se puede rehacer uno grabado con \"guardar las fotos\"",
  "camera_relay_new_look": "otro look",
- "camera_relay_burst_running": "Ya hay una ráfaga en marcha"
+ "camera_relay_burst_running": "Ya hay una ráfaga en marcha",
+ "camera_relay_video_does_not_exist": "no existe ese video",
+ "camera_relay_main_camera_name": "Principal",
+ "camera_relay_stamp_layer": "capa {layer}",
+ "stopped_plugins_invalid_id": "El id del complemento no es válido (solo los complementos del taller, que empiezan por Workshop): {id}",
+ "camera_control_unknown_camera": "cámara desconocida",
+ "camera_control_no_flash": "esta cámara no tiene flash",
+ "camera_control_no_address": "el servicio no tiene una dirección de esta cámara a la que pueda llegar",
+ "camera_control_not_answered": "la cámara no respondió ({error})",
+ "camera_image_not_esp32": "esta cámara no es una ESP32-CAM: no tiene ajustes de imagen",
+ "camera_image_unknown_profile": "perfil de imagen desconocido",
+ "camera_image_bad_setting": "ajuste de imagen no válido: {name}"
 }

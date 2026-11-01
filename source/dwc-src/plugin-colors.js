@@ -18,7 +18,7 @@ export const PLUGIN_COLORS = {
 	WorkshopPiHealth: { badge: '#2e7d32', section: '#2e7d32' },
 	WorkshopRS485: { badge: '#3f51b5', section: '#3f51b5' },
 	WorkshopCamera: { badge: '#6d4c41', section: '#6d4c41' },
-	WorkshopService: { badge: '#37474f', section: '#37474f' }
+	WorkshopService: { badge: '#827717', section: '#827717' }
 }
 
 const FALLBACK = '#1976d2'

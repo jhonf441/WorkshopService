@@ -2,7 +2,7 @@
 Internal implementation of the API operation(s) vision.get and vision.post (api_ops.py maps their named arguments to the one-letter
 parameters below).
 
-The Vision service (OpenCV, runs inside the WorkshopVision plugin, port 8095) answers JSON to a few requests. The pages of the other
+The Vision service (OpenCV, runs inside the WorkshopVision plugin, port ports.VISION) answers JSON to a few requests. The pages of the other
 plugins (Workbench) used to call that port from the browser; now they ask the service API and this handler makes the call from the
 Pi itself, so the browser needs no second port, no CORS and no camera key, and a Vision that is off gives a clear answer.
 
@@ -18,11 +18,12 @@ import json
 import urllib.error
 import urllib.request
 
+import ports
 from messages import M
 
-VISION_URL = "http://127.0.0.1:8095"
+VISION_URL = "http://127.0.0.1:%d" % ports.VISION
 GET_PATHS = ("/state", "/orientation", "/head", "/lens")
-POST_PATHS = ("/photo", "/detect", "/record/search", "/config", "/measure")
+POST_PATHS = ("/photo", "/detect", "/record/search", "/measure")
 TIMEOUT_S = 90  # a detection with a new photo takes some seconds
 
 

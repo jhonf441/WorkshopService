@@ -18,7 +18,6 @@ Every G-code line is a template of machine_gcode.py. A step reserves the movemen
 or somebody else holds the machine.
 """
 import fs_atomic
-import job_states
 import os
 import re
 import threading
@@ -254,24 +253,9 @@ def _conflict(exc):
 
 
 def _apply_now(om):
-    """M98 of zcal.g so the new numbers work now. Not while a job runs (it would change the trigger height under it)."""
-    mo = _mo()
-    status = str(((om or {}).get("state") or {}).get("status") or "")
-    if status in job_states.ACTIVE_OR_TOOL_CHANGE:
-        return False, "job_running"
-    conn = None
-    try:
-        conn = mo.open_connection()
-        conn.perform_simple_code(machine_gcode.render("zcal_apply"), channel=mo.channel(), async_exec=False)
-        return True, ""
-    except Exception as e:  # noqa: BLE001 - the files are saved: the numbers apply at the next mode change
-        return False, "no_connection:" + str(e)[:80]
-    finally:
-        if conn is not None:
-            try:
-                conn.close()
-            except Exception:  # noqa: BLE001
-                pass
+    """M98 of zcal.g so the new numbers work now. Not while a job runs (it would change the trigger height under it); the files are saved, so
+    the numbers apply at the next mode change if the board cannot take them now (machine_ops.apply_template)."""
+    return _mo().apply_template(om, "zcal_apply")
 
 
 def _save(args, ctx):

@@ -26,7 +26,7 @@ CONFIG_DIR = "sys/workshop/config"
 DATA_DIR = "sys/workshop/data"
 # name -> folder (relative to the SD). Whitelist: nothing else can be read or written through the API.
 NAMES = {n: CONFIG_DIR for n in (
-    "bridge", "buttons", "camera", "camera-map", "cameras", "clamps", "current", "focus", "jog", "jog-macros",
+    "bridge", "buttons", "camera", "cameras", "clamps", "current", "focus", "jog", "jog-macros",
     "laser", "materials", "motors", "printing", "rs485", "step-ceiling", "vision", "zcal",
     "work_state", "zone-extra", "zone-sizes", "zone-zpoints")}
 NAMES["laser-designs"] = DATA_DIR
@@ -134,6 +134,37 @@ def _encode(value):
     return raw
 
 
+def _mirror(name, value):
+    """Files the board reads that are a copy of one store (the store stays the ONLY source): `laser` -> macros/lasercorrection.g
+    (laser_correction.py), `focus` -> config/focus.g (focus_geometry.py). Runs after every changed write, whoever writes. A failure is logged
+    and never undoes the saved value; the service writes the mirror again at start."""
+    if name not in ("laser", "focus"):
+        return False
+    try:
+        if name == "laser":
+            import laser_correction
+            return bool(laser_correction.sync(value))
+        import focus_geometry
+        return bool(focus_geometry.sync(value))
+    except Exception as e:  # noqa: BLE001
+        print("settings_store: could not write the macro mirror of %s: %s" % (name, e))
+        return False
+
+
+def with_value(name, fn):
+    """fn(value) under the per-file lock of the store, with the value the card holds NOW (None when it cannot be read): what a mirror needs,
+    so it never runs against a value another writer has already replaced."""
+    path = path_of(name)
+    with lock_of(name):
+        value, _rev = _read(path)
+        return fn(value)
+
+
+def resync(name):
+    """Writes the mirror of the store again from what the card holds (start of the service). True when the mirror file changed."""
+    return with_value(name, lambda value: _mirror(name, value))
+
+
 def set(name, value, base_rev):
     """Writes value if base_rev is the current rev. Returns {"rev", "changed"}; raises Conflict or SettingsError."""
     path = path_of(name)
@@ -146,6 +177,7 @@ def set(name, value, base_rev):
         if new_rev == rev:
             return {"rev": rev, "changed": False}
         _write_atomic(path, raw)
+        _mirror(name, _read(path)[0])           # under the lock, from what the card holds: two writers cannot leave the mirror of the older value
     return {"rev": new_rev, "changed": True}
 
 
@@ -168,4 +200,5 @@ def merge(name, patch):
         if new_rev == rev:
             return {"value": merged, "rev": rev, "changed": False}
         _write_atomic(path, raw)
+        _mirror(name, _read(path)[0])
     return {"value": merged, "rev": new_rev, "changed": True}
