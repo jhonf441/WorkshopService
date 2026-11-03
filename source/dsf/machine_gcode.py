@@ -125,6 +125,9 @@ TEMPLATES = {
     "area_corner_y": ('M409 K"global.handCornerY"', re.compile(r'^M409 K"global\.handCornerY"$')),
     "area_reload": ('M98 P"0:/sys/workshop/zones/cutarea.g"', re.compile(r'^M98 P"0:/sys/workshop/zones/cutarea\.g"$')),
     # laser <-> pointer correction (laser_correction.py): the zones take the new correction now (G10 L2 of every p<N>.g, numbers in memory, no move)
+    # resume after a power cut (machine_power.py): RRF runs resurrect-prologue.g and then resurrect.g; only after the checks of the service and the
+    # acknowledgements of the person (the prologue of laser / CNC asks again on the machine)
+    "resume_print": ("M916", re.compile(r"^M916$")),
     "work_origins_apply": ('M98 P"0:/sys/workshop/macros/wpload.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/wpload\.g"$')),
 }
 

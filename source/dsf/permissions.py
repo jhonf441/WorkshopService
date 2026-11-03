@@ -48,7 +48,7 @@ ESCALATE = {
 
 # Machine v2 (decisions of the owner, 2026-10-21): only an administrator writes the parameters that can hurt the hardware.
 # The kinds are the `kind` of a configuration record / plan (machine_store.KINDS); the gcode kinds are those of machine.try.
-MACHINE_ADMIN_KINDS = ("config.m208", "config.m92", "config.m906", "config.m913", "config.m917", "config.m569", "config.m584")
+MACHINE_ADMIN_KINDS = ("config.m208", "config.m92", "config.m906", "config.m913", "config.m917", "config.m911", "config.prologue", "config.m569", "config.m584")
 MACHINE_ADMIN_TRY = ("M208", "M92", "M906", "M913", "M917")
 # an operation whose role depends on the value of an argument: {op: {"arg", "when_in": [...], "role"}}. Kept apart from ESCALATE
 # because the pages of 2026-10 only know that one (unless_in / when_present): they publish this one as `escalate_in`.
@@ -139,7 +139,7 @@ OP_ROLES = {
     # phase 2: history (list / get / compare / restore-plan), report data, offsets, limits, the volatile trial, the laser cross
     "machine.history.list": TECHNICIAN, "machine.history.get": TECHNICIAN, "machine.history.compare": TECHNICIAN,
     "machine.history.restore": TECHNICIAN, "machine.report": TECHNICIAN,
-    "machine.offsets.get": OPERATOR, "machine.offsets.snapshot": TECHNICIAN, "machine.limits.get": OPERATOR,
+    "machine.offsets.get": OPERATOR, "machine.offsets.snapshot": TECHNICIAN, "machine.limits.get": OPERATOR, "machine.power.get": OPERATOR, "machine.power.resume": TECHNICIAN,
     "machine.layout": OPERATOR,
     "machine.try": TECHNICIAN, "machine.try.pending": TECHNICIAN, "machine.mark_cross": TECHNICIAN,
     # height calibration of the tool (was a card of the Workbench): reading is an operator's, everything that changes or moves a technician's

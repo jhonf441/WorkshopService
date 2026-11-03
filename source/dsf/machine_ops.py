@@ -579,10 +579,11 @@ def phase2_ops():
     import machine_layout
     import machine_limits
     import machine_offsets
+    import machine_power
     import machine_report
     import machine_try
     import machine_workarea
-    return machine_history.ops() + machine_report.ops() + machine_offsets.ops() + machine_limits.ops() + machine_layout.ops() + machine_try.ops() + machine_cross.ops() + machine_height.ops() + machine_workarea.ops() + phase3_ops()
+    return machine_history.ops() + machine_report.ops() + machine_offsets.ops() + machine_limits.ops() + machine_power.ops() + machine_layout.ops() + machine_try.ops() + machine_cross.ops() + machine_height.ops() + machine_workarea.ops() + phase3_ops()
 
 
 def phase3_ops():

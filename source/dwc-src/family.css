@@ -57,6 +57,8 @@
 /* ================= section menu (side bar) ================= */
 :is(.sidetabs, .wf-nav) { border-right-color: var(--wf-line); }
 :is(.sidetabs, .wf-nav) :is(.st-group, .wf-nav-group) { margin-top: 6px; border-top: 1px solid var(--wf-line); color: inherit; opacity: 0.65; font-size: 11px; font-weight: 600; }
+:is(.sidetabs, .wf-nav)::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.45); border-radius: 2px; }
+@supports not selector(::-webkit-scrollbar) { :is(.sidetabs, .wf-nav) { scrollbar-color: rgba(128, 128, 128, 0.45) transparent; } }
 :is(.sidetabs, .wf-nav) .st-group[data-group='0'] { margin-top: 0; border-top: 0; }
 :is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item) { color: inherit; opacity: 0.8; font-size: 13px; font-weight: 400; letter-spacing: 0; text-transform: none; border-left: 2px solid transparent; border-radius: 0; background: transparent; }
 :is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item):hover { opacity: 1; background: rgba(128, 128, 128, 0.08); }
@@ -150,8 +152,12 @@
 .workshop-theme .v-chip:is(.bg-error, .text-error, .error, .error--text):has(.v-icon) .v-icon { color: var(--wf-err) !important; }
 .workshop-theme .v-chip:is(.bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text):has(.v-icon) .v-icon { color: var(--wf-info) !important; }
 .workshop-theme .v-chip:is(.v-chip--active, .wf-on) { border-color: var(--wf-icon) !important; background: rgba(25, 118, 210, 0.2) !important; font-weight: 600; }
-/* in the page bar a state has no border (dot + word); a chip with no state stays a data pill with its border */
-.workshop-theme .wf-bar .v-chip:is(.bg-success, .text-success, .success, .success--text, .bg-warning, .text-warning, .warning, .warning--text, .bg-error, .text-error, .error, .error--text, .bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text) { border-color: transparent !important; padding-left: 0; padding-right: 0; }
+/* in the page bar a state has no border (dot + word); a chip with no state stays a data pill with its border. A chip whose state has a color of
+   its own (the dot through --wf-dotc / --wf-dotd, e.g. the light state of Lights) says so with .wf-state-chip: it is a state too */
+.workshop-theme .wf-bar .v-chip:is(.bg-success, .text-success, .success, .success--text, .bg-warning, .text-warning, .warning, .warning--text, .bg-error, .text-error, .error, .error--text, .bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text, .wf-state-chip) { border-color: transparent !important; padding-left: 0; padding-right: 0; }
+/* the chip above has no side padding, but Vuetify pulls the leading icon 6 px to the left of the chip (v-icon--left) and the chip clips it: the icon
+   would show cut (the check of the Service page). */
+.workshop-theme .wf-bar .v-chip:is(.bg-success, .text-success, .success, .success--text, .bg-warning, .text-warning, .warning, .warning--text, .bg-error, .text-error, .error, .error--text, .bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text, .wf-state-chip) .v-icon--left { margin-left: 0; }
 
 /* ================= icons: gray everywhere except the badge (white) and the ones that mean a state ================= */
 .workshop-theme :is(.v-card, .st-body, .wf-card) :is(.text-primary, .text-info, .primary--text, .info--text).v-icon:not(.v-btn .v-icon):not(.v-chip .v-icon):not(.wf-badge .v-icon) { color: var(--wf-icon) !important; caret-color: var(--wf-icon) !important; }

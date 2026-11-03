@@ -8,12 +8,16 @@ SAME shape `values` takes, so machine.history.restore can feed them back; `now` 
     config.m906   {axes?: {"X": mA}, idle_percent?: 0-100, idle_timeout?: s}   ADMIN        every current <= the cap of the profile (never above 6300 mA)
     config.m913   {axes: {"X": 0-100}}   config.m917 the same                  ADMIN
     config.m203 / m201 / m205 / m566  {axes: {"X": v}}                         technician   speed mm/min, accel mm/s2, job jerk mm/s, jerk mm/min
+    config.prologue {}                                                       ADMIN        creates resurrect-prologue.g (standard text) when it does not exist
+    config.m911   {s: 10-28, r: 10-30}                                       ADMIN        power-loss voltages (V) of the EXISTING M911 line; its P command is never written; r > s
     config.m569   {drivers: {"0.0": {direction?: 0|1, mode?: spreadcycle|stealthchop}}}   ADMIN   only S and D of an existing line; no volatile line
 """
 import machine_config as mc
 import machine_patch as pt
 import machine_patch_motion as pm
 import machine_plans as plans
+import machine_power as power
+import config_scan
 import machine_profile
 
 ALL = pm.LETTERS
@@ -30,8 +34,8 @@ def _run(env, word, tokens, now, picks, shape, extra=()):
     """The common path: edit the last file that defines `word` for one of the letters, return the plan body with before / after in the shape of the kind."""
     letters = set(tokens)
     path, before, res, scan, hits = plans._edit(
-        env, lambda t: bool(set(pm.read_letters(t, word, ALL + "ITSPF")) & letters), lambda t: pm.patch_word(t, word, tokens))
-    pick = lambda text: {c: v for c, v in pm.read_letters(text, word, ALL + "ITSPF").items() if c in picks}                   # noqa: E731
+        env, lambda t: bool(set(pm.read_letters(t, word, ALL + "ITSPFR")) & letters), lambda t: pm.patch_word(t, word, tokens))
+    pick = lambda text: {c: v for c, v in pm.read_letters(text, word, ALL + "ITSPFR").items() if c in picks}                   # noqa: E731
     old, new = pick(mc._decode(before)), pick(res["text"])
     body = plans._body(path, before, res, scan, hits, now, shape(old) if old else None, shape(new))
     body["warnings"] += list(extra)
@@ -188,6 +192,39 @@ def plan_m593(values, env):
     return body
 
 
+# ---- M911 (power loss: voltages only) ----
+
+def plan_m911(values, env):
+    """`M911 S<cut> R<restore> P"..."`: only S and R are written, in a line that already exists (a new line without its P command would do nothing)."""
+    s = plans._number(values.get("s"), 10, 28, "s") if values.get("s") is not None else None
+    r = plans._number(values.get("r"), 10, 30, "r") if values.get("r") is not None else None
+    if s is None and r is None:
+        raise _bad("values")
+    tokens = {k.upper(): pt.num_text(v) for k, v in (("s", s), ("r", r)) if v is not None}
+    current = {}
+    for path in config_scan.scan(env["read"])["files"]:
+        current = power.read_m911(env["read"](path) or "") or current   # the effective (last) line of the configuration
+    if "s" not in current or "r" not in current:
+        raise _bad("m911", "no_m911")  # no complete M911 line: a new one would lack its P commands and do nothing
+    if (r if r is not None else current["r"]) <= (s if s is not None else current["s"]):
+        raise _bad("r", "restore_not_above_cut")
+    return _run(env, "M911", tokens, None, set(tokens), lambda d: {k.lower(): v for k, v in d.items()})
+
+
+# ---- resurrect-prologue.g (created when missing, never overwritten) ----
+
+def plan_prologue(values, env):
+    """Creates `0:/sys/resurrect-prologue.g` with the standard text (machine_power.PROLOGUE_TEMPLATE) when the machine has none. An existing file is never
+    replaced from here: whoever wrote it keeps it."""
+    if values:
+        raise _bad("values")
+    if mc.read_bytes(power.PROLOGUE) is not None:
+        raise _bad("prologue", "prologue_exists")
+    entry = mc._file_entry(power.PROLOGUE, None, power.PROLOGUE_TEMPLATE)
+    return {"files": [entry], "warnings": [], "action": "created", "line": 1, "now": None, "set": [], "before": None,
+            "after": {"exists": True}, "restart_needed": False}
+
+
 # ---- M569 (basic parameters only) ----
 
 def _drivers(values):
@@ -246,6 +283,6 @@ def plan_m569(values, env):
     return body
 
 
-PLANNERS = {"config.m556": plan_m556, "config.m425": plan_m425, "config.m593": plan_m593, "config.m906": plan_m906, "config.m569": plan_m569}
+PLANNERS = {"config.m556": plan_m556, "config.m425": plan_m425, "config.m593": plan_m593, "config.m906": plan_m906, "config.m569": plan_m569, "config.m911": plan_m911, "config.prologue": plan_prologue}
 for _kind in AXIS_KINDS:
     PLANNERS[_kind] = (lambda k: lambda values, env: plan_axes_kind(k, values, env))(_kind)

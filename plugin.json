@@ -128,6 +128,7 @@
     "machine_patch_motion.py",
     "machine_plans.py",
     "machine_plans_motion.py",
+    "machine_power.py",
     "machine_probe.py",
     "machine_procedures.py",
     "machine_profile.py",
@@ -181,17 +182,17 @@
     "work_state.py"
   ],
   "dwcFiles": [
-    "css/WorkshopService.4033ff41.css",
-    "css/WorkshopService.4033ff41.css.gz",
-    "js/WorkshopService.a12c8e80.js",
-    "js/WorkshopService.a12c8e80.js.gz"
+    "css/WorkshopService.a0a5d2d8.css",
+    "css/WorkshopService.a0a5d2d8.css.gz",
+    "js/WorkshopService.814dad6e.js",
+    "js/WorkshopService.814dad6e.js.gz"
   ],
   "sdFiles": [],
   "pid": -1,
   "id": "WorkshopService",
   "name": "Workshop Service",
   "author": "jhonf441",
-  "version": "2.22.1",
+  "version": "2.22.5",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopService",
   "tags": [

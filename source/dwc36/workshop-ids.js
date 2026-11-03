@@ -17,6 +17,8 @@ export const IDS = {
 	printing: ['WorkshopPrinting'],
 	workbench: ['WorkshopWorkbench'],
 	machine: ['WorkshopMachine'],
+	model: ['WorkshopModel'],
+	modelAgent: ['WorkshopModelAgent'],
 	config: ['WorkshopConfig']
 };
 

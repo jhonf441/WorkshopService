@@ -31,7 +31,7 @@ from workshop_api import ApiError, Arg, READ, WRITE, Op
 
 RESTORABLE = ("config.m671", "config.g31", "config.m208", "config.m92", "config.g10",
               # phase 3: the values of `before` / `after` are the shape the planner takes
-              "config.m556", "config.m425", "config.m593", "config.m906", "config.m913", "config.m917", "config.m203", "config.m201",
+              "config.m556", "config.m425", "config.m593", "config.m906", "config.m913", "config.m917", "config.m911", "config.m203", "config.m201",
               "config.m205", "config.m566", "config.m569")
 MAX_LIMIT = 200
 

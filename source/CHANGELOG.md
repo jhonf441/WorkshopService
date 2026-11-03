@@ -4,6 +4,22 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.22.5 -- 2026-11-03
+
+- Power loss (Machine page): the page can resume the job left by a power cut. `machine.power.get` now carries `resume` (checks: resurrect.g complete, job file on the card, machine idle, mode known, supply above the restore voltage, prologue present; `can_resume`, `needs_ack`) and the new operation `machine.power.resume` (technician) sends `M916` (template `resume_print` of the closed list, through `machine_ops.apply_template`) only when every blocking check passes and, in laser / CNC, the three acknowledgements (`piece`, `tool`, `area`) are true; it checks again on its own and records the resume in the audit. Tests in `dsf/test_machine_power.py`.
+
+## 2.22.4 -- 2026-11-03
+
+- Power loss (Machine page): `machine.power.get` now also returns the content of `resurrect.g` and `resurrect-prologue.g` (cut at 8000 characters), what a `resurrect.g` says (job, file position, saved axes) and what a prologue does (modes it speaks of, whether it asks before resuming, switches the tool off, cancels); `is_standard` tells whether the prologue is the workshop one. New plan kind `config.prologue` (administrator): creates `resurrect-prologue.g` with the standard text when the machine has none; it never replaces an existing file (`prologue_exists`). Tests in `dsf/test_machine_power.py`.
+
+## 2.22.3 -- 2026-11-02
+
+- Power loss (Machine page): new operation `machine.power.get` (the M911 line of the configuration, whether `resurrect.g` and `resurrect-prologue.g` exist, the supply voltage) and the plan kind `config.m911` (administrator): changes only S and R of an existing M911 line (S 10-28 V, R 10-30 V, R above S); the P commands are never written and a missing line is not invented.
+
+## 2.22.2 -- 2026-11-02
+
+- The leading icon of the status chips of the bar is no longer clipped (the check of "System service"); thin scrollbar colour of the side tabs (`family.css` of the design family).
+
 ## 2.22.1 -- 2026-10-31
 
 - The camera relay no longer counts a screen that has left. A stream whose camera was reconnecting (no frame to send) wrote nothing, so it never saw the screen close and showed "1 watching" for hours with every page closed (and kept the camera awake for it); it now looks at the socket on each idle wake-up (`camera_http.peer_closed`, test `test_camera_peer_closed`).

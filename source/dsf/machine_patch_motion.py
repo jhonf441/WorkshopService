@@ -16,10 +16,10 @@ import machine_patch as pt
 LETTERS = pt.AXIS_LETTERS + "E"
 # where a new line goes (after the last line of one of these words); no anchor = the end of the file with the notice no_anchor
 ANCHORS = {"M556": ("M566", "M201", "M203", "M92"), "M425": ("M556", "M566", "M201", "M203", "M92"), "M593": ("M425", "M556", "M566", "M201", "M203"),
-           "M906": ("M350", "M584"), "M913": ("M906", "M350"), "M917": ("M913", "M906"), "M203": ("M201", "M92", "M584"),
+           "M906": ("M350", "M584"), "M913": ("M906", "M350"), "M917": ("M913", "M906"), "M911": ("M550", "M913"), "M203": ("M201", "M92", "M584"),
            "M201": ("M203", "M92", "M584"), "M205": ("M566", "M201", "M203"), "M566": ("M201", "M203", "M92")}
 COMMENTS = {"M556": "skew", "M425": "backlash", "M593": "input shaping", "M906": "motor current", "M913": "motor current percent",
-            "M917": "standstill current percent", "M203": "maximum speeds", "M201": "accelerations", "M205": "job jerk", "M566": "jerk"}
+            "M917": "standstill current percent", "M911": "power loss", "M203": "maximum speeds", "M201": "accelerations", "M205": "job jerk", "M566": "jerk"}
 DRIVER_MODES = {"spreadcycle": 2, "stealthchop": 3}
 MODE_NAMES = {2: "spreadcycle", 3: "stealthchop"}
 _DRIVER = re.compile(r"^(?:([0-9]{1,3})\.)?([0-9]{1,2})$")

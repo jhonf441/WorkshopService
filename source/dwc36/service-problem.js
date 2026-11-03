@@ -6,7 +6,17 @@
 
 import { pluginOf } from './workshop-ids.js'
 
+// A page that does not use the workshop service (WorkshopModel: it talks to the board through DWC itself) switches the check off for
+// its own bundle, so its bar never reports a missing service, or a Duet without a Raspberry, as a fault. Module level: every plugin
+// ships its own copy of this file, so the switch of one bundle never reaches another page.
+let serviceOptional = false
+
+export function markServiceOptional(v) {
+	serviceOptional = v === undefined ? true : !!v
+}
+
 export function serviceProblemKind(store) {
+	if (serviceOptional) return null
 	if (!store.getters.isConnected) return null
 	const model = store.state.machine.model
 	if (!model.sbc) return 'no_sbc'
