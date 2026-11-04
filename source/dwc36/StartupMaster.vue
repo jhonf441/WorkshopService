@@ -53,7 +53,7 @@ const PLUGINS = [
 	{ key: 'consumption', id: 'WorkshopPower', path: '/Plugins/Power' },
 	{ key: 'motors', id: 'WorkshopMotors', path: '/Plugins/Motors' },
 	{ key: 'jog', id: 'WorkshopJog' },
-	{ key: 'camera', id: 'WorkshopCamera' },
+	{ key: 'camera', id: 'WorkshopCamera', path: '/Plugins/Timelapses' },
 	{ key: 'vision', id: 'WorkshopVision', path: '/Plugins/Vision' },
 	{ key: 'workbench', id: 'WorkshopWorkbench', path: '/Plugins/Workbench' },
 	{ key: 'printing', id: 'WorkshopPrinting', path: '/Plugins/Printing' },

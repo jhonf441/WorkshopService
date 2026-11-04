@@ -4,6 +4,27 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.22.15 -- 2026-11-04
+
+- Camera relay card: a token the service no longer accepts (it forgets them on restart) counts as no session, like the header of the pages (it said "the service did not answer"); it reads the camera again as soon as the person signs in.
+
+## 2.22.14 -- 2026-11-04
+
+- Camera relay card: it hung from the process id 'camera_relay' (the module) but the service reports the process as 'camera', so the Stop / Start card never appeared in the row. Fixed, with a test that the id has process docs.
+
+## 2.22.13 -- 2026-11-04
+
+- Camera relay card: without a session it says so (a state, not a failure), offers neither button and does not read the camera, so it no longer sits on "Reading the state..." nor asks for the PIN every 15 s.
+
+## 2.22.12 -- 2026-11-04
+
+- Machine setup list: Camera now points at its page (Timelapses) instead of saying it lives in the side bar.
+
+## 2.22.11 -- 2026-11-04
+
+- The camera relay is controlled from the service: its row in the processes list has the state and Stop relay (two taps) / Start relay for technician and admin, and the control bar can show the same card as an optional tile (off until a screen turns it on in the gear of the bar). Before, Camera offered the card and it vanished with that plugin. New texts `api.relay_*` (es / en, both lines), `camera-relay.js` + `RelayCard.vue` in `dwc-src/` and `dwc36/`.
+- Keys page: without a session nothing of the keys is shown or offered, only the standard sign-in notice; reads again when the person signs in.
+
 ## 2.22.10 -- 2026-11-03
 
 - One wording for every refusal: the messages of the service for a missing session or role now start with "Sin permiso:" / "Not authorized:" (`api.signInNeeded`, `api.forbidden_*`) and say what is needed ("hace falta tecnico"). New texts `api.permissionTitle` and `api.close` for the notice card (TallerPlugins `src/_shared/09-session-notice.js`), which shows every refusal the same way on every page.

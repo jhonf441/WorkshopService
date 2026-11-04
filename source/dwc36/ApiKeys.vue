@@ -3,9 +3,17 @@
 		<v-card-title>
 			<v-icon small class="mr-2 svx-ico">mdi-key-chain</v-icon>{{ $t('plugins.WorkshopService.keys.title') }}
 			<v-spacer />
-			<v-btn small color="primary" @click="openNew"><v-icon left small>mdi-plus</v-icon>{{ $t('plugins.WorkshopService.keys.new_key') }}</v-btn>
+			<v-btn small color="primary" :disabled="out" @click="openNew"><v-icon left small>mdi-plus</v-icon>{{ $t('plugins.WorkshopService.keys.new_key') }}</v-btn>
 		</v-card-title>
-		<v-card-text>
+		<v-card-text v-if="out">
+			<v-alert dense text type="info" icon="mdi-lock" class="mb-0">
+				<div class="d-flex align-center flex-wrap">
+					<span class="flex-grow-1 mr-2">{{ $t('plugins.WorkshopService.api.signedOut') }}</span>
+					<v-btn small color="primary" @click="askLogin()">{{ $t('plugins.WorkshopService.api.signInAction') }}</v-btn>
+				</div>
+			</v-alert>
+		</v-card-text>
+		<v-card-text v-else>
 			<div class="wf-help mb-2">{{ $t('plugins.WorkshopService.keys.intro') }}</div>
 			<details class="wf-more mb-3">
 				<summary>{{ $t('plugins.WorkshopService.servicePage.how_it_works') }}</summary>
@@ -150,7 +158,9 @@
 <script>
 'use strict'
 
-import { api } from './workshop-api.js'
+import { api, askLogin, currentIdentity, whoami } from './workshop-api.js'
+import { signedOut } from './workshop-auth.js'
+import { roleMixin } from './role-mixin.js'
 import { copyText } from './copy.js'
 
 // Same rule as Registry._key_allows / api_keys.allows (workshop_api.py): the class or a pattern allows,
@@ -173,6 +183,7 @@ function norm(v) {
 
 export default {
 	name: 'ApiKeys',
+	mixins: [roleMixin],
 	props: {
 		// api.describe of the service: [{op, kind, desc, args...}]
 		operations: { type: Array, default: () => [] }
@@ -186,6 +197,12 @@ export default {
 		};
 	},
 	computed: {
+		// no session (or a token the service no longer accepts): nothing of the keys is shown or offered; the standard notice says why
+		out() {
+			void this.identityTick;
+			const id = currentIdentity();
+			return signedOut() || !!(id && id.configured && id.login_required);
+		},
 		classes() { return CLASES; },
 		menuProps() { return { maxWidth: 600, contentClass: 'ws-keys-menu' }; },
 		presetTitle() {
@@ -208,7 +225,23 @@ export default {
 			return "curl -s -X POST http://" + host + "/machine/WorkshopService/api \\\n  -H 'Content-Type: application/json' -H 'X-Workshop-Key: " + this.keyNew + "' \\\n  -d '{\"op\":\"api.ping\",\"args\":{}}'";
 		}
 	},
-	mounted() { this.read(); },
+	mounted() {
+		if (!currentIdentity()) whoami().catch(() => {});
+		if (!this.out) this.read();
+	},
+	watch: {
+		// signed in: read the keys now (not the old refusal); signed out: forget them
+		out(now) {
+			if (now) {
+				this.keys = [];
+				this.error = '';
+				this.errorForm = '';
+				this.dlg = false;
+			} else {
+				this.read();
+			}
+		}
+	},
 	methods: {
 		nameClass(c) { return this.$t('plugins.WorkshopService.keys.class_' + c); },
 		colorClass(c) { return colors[c] || 'grey'; },
@@ -243,11 +276,13 @@ export default {
 			this.loading = false;
 		},
 		openNew() {
+			if (this.out) return askLogin();
 			this.errorForm = '';
 			this.form = { id: '', name: '', preset: 'read', kinds: ['read'], ops: [], deny: [], days: '' };
 			this.dlg = true;
 		},
 		openEdit(k) {
+			if (this.out) return askLogin();
 			this.errorForm = '';
 			this.form = { id: k.id, name: k.name, preset: 'custom', kinds: k.kinds.slice(), ops: k.ops.slice(), deny: k.deny.slice(), days: '' };
 			this.dlg = true;

@@ -51,6 +51,9 @@
 			<v-progress-linear :value="Math.min(100, step.pct / 2)" height="5" rounded :color="step.color" background-color="grey darken-3" class="mt-1" />
 		</div>
 
+		<!-- the control of the camera relay: the relay is a process of this service (camera-relay.js) -->
+		<relay-card v-if="p.id === 'camera'" />
+
 		<div v-if="p.error && p.errorRecent" class="text-caption ml-10 mt-1 svc-err">
 			<v-icon x-small color="error">mdi-alert-circle</v-icon>
 			{{ p.error_hour }}: {{ p.error }}
@@ -85,6 +88,7 @@
 'use strict'
 
 import Spark from './Spark.vue'
+import RelayCard from './RelayCard.vue'
 import { sec, duration, age, rhythm } from './format.js'
 
 import { pluginActive } from './workshop-ids.js'
@@ -98,7 +102,7 @@ const PLUGIN_OF = { status_light: 'lights', consumption: 'consumption', motors: 
 // it stops, what it relies on and where it is adjusted, plus the history of its last minutes.
 export default {
 	name: 'ProcessRow',
-	components: { Spark },
+	components: { Spark, RelayCard },
 	props: {
 		p: { type: Object, required: true },
 		hist: { type: Object, default: null },

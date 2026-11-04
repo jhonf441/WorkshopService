@@ -12,6 +12,7 @@ import { onPluginUnload, removePluginRoute } from './dwc-host.js'
 import './language-reload.js' // the page loads again when the DWC language changes
 import './safe-saving.js' // power cut: save with a backup and in one step (copy of TallerPlugins vue/_shared)
 
+import { registerBarTile } from './camera-relay.js'
 import WorkshopService from './WorkshopService.vue'
 import './theme.css'
 
@@ -27,6 +28,10 @@ registerRoute(WorkshopService, {
 
 // DWC 3.7 does not undo anything when a plugin is stopped: take the page and its "System service" menu entry out, so that a stopped
 // service leaves no dead route and a later start registers the page again (registerRoute is idempotent by path).
+// The camera relay is a process of this service: it offers the control bar an optional tile for it (off until the person turns it on in the gear of the bar).
+const takeRelayTileBack = registerBarTile()
+
 onPluginUnload('WorkshopService', () => {
 	removePluginRoute('/Plugins/WorkshopService')
+	takeRelayTileBack()
 })

@@ -3,9 +3,17 @@
 		<v-card-title>
 			<v-icon size="small" class="mr-2 svx-ico">mdi-key-chain</v-icon>{{ $t('plugins.WorkshopService.keys.title') }}
 			<v-spacer />
-			<v-btn size="small" color="primary" variant="flat" @click="openNew"><v-icon size="small" start>mdi-plus</v-icon>{{ $t('plugins.WorkshopService.keys.new_key') }}</v-btn>
+			<v-btn size="small" color="primary" variant="flat" :disabled="out" @click="openNew"><v-icon size="small" start>mdi-plus</v-icon>{{ $t('plugins.WorkshopService.keys.new_key') }}</v-btn>
 		</v-card-title>
-		<v-card-text>
+		<v-card-text v-if="out">
+			<v-alert density="compact" variant="tonal" type="info" icon="mdi-lock" class="mb-0">
+				<div class="d-flex align-center flex-wrap">
+					<span class="flex-grow-1 mr-2">{{ $t('plugins.WorkshopService.api.signedOut') }}</span>
+					<v-btn size="small" variant="flat" color="primary" @click="askLogin()">{{ $t('plugins.WorkshopService.api.signInAction') }}</v-btn>
+				</div>
+			</v-alert>
+		</v-card-text>
+		<v-card-text v-else>
 			<div class="wf-help mb-2">{{ $t('plugins.WorkshopService.keys.intro') }}</div>
 			<details class="wf-more mb-3">
 				<summary>{{ $t('plugins.WorkshopService.servicePage.how_it_works') }}</summary>
@@ -148,9 +156,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { i18n } from './dwc-host.js'
-import { api } from './workshop-api.js'
+import { api, askLogin, currentIdentity, whoami } from './workshop-api.js'
+import { signedOut } from './workshop-auth.js'
+import { useRole } from './use-role.js'
 import { copyText } from './copy.js'
 
 // Same rule as Registry._key_allows / api_keys.allows (workshop_api.py): the class or a pattern allows,
@@ -200,7 +210,28 @@ const exampleCurl = computed(() => {
 	return "curl -s -X POST http://" + host + "/machine/WorkshopService/api \\\n  -H 'Content-Type: application/json' -H 'X-Workshop-Key: " + keyNew.value + "' \\\n  -d '{\"op\":\"api.ping\",\"args\":{}}'"
 })
 
-onMounted(() => { read() })
+// no session (or a token the service no longer accepts): nothing of the keys is shown or offered; the standard notice says why
+const { identityTick } = useRole()
+const out = computed(() => {
+	void identityTick.value
+	const id = currentIdentity()
+	return signedOut() || !!(id && id.configured && id.login_required)
+})
+onMounted(() => {
+	if (!currentIdentity()) whoami().catch(() => {})
+	if (!out.value) read()
+})
+// signed in: read the keys now (not the old refusal); signed out: forget them
+watch(out, now => {
+	if (now) {
+		keys.value = []
+		error.value = ''
+		errorForm.value = ''
+		dlg.value = false
+	} else {
+		read()
+	}
+})
 
 function nameClass(c) { return i18n.t('plugins.WorkshopService.keys.class_' + c) }
 function colorClass(c) { return colors[c] || 'grey' }
@@ -235,11 +266,13 @@ async function read() {
 	loading.value = false
 }
 function openNew() {
+	if (out.value) return askLogin()
 	errorForm.value = ''
 	form.value = { id: '', name: '', preset: 'read', kinds: ['read'], ops: [], deny: [], days: '' }
 	dlg.value = true
 }
 function openEdit(k) {
+	if (out.value) return askLogin()
 	errorForm.value = ''
 	form.value = { id: k.id, name: k.name, preset: 'custom', kinds: k.kinds.slice(), ops: k.ops.slice(), deny: k.deny.slice(), days: '' }
 	dlg.value = true

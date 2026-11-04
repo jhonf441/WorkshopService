@@ -51,6 +51,9 @@
 			<v-progress-linear :model-value="Math.min(100, step.pct / 2)" height="5" rounded :color="step.color" bg-color="grey-darken-3" class="mt-1" />
 		</div>
 
+		<!-- the control of the camera relay: the relay is a process of this service (camera-relay.js) -->
+		<relay-card v-if="p.id === 'camera'" />
+
 		<div v-if="p.error && p.errorRecent" class="text-body-small ml-10 mt-1 svc-err">
 			<v-icon size="x-small" color="error">mdi-alert-circle</v-icon>
 			{{ p.error_hour }}: {{ p.error }}
@@ -85,6 +88,7 @@
 import { computed, ref } from 'vue'
 import { i18n } from './dwc-host.js'
 import Spark from './Spark.vue'
+import RelayCard from './RelayCard.vue'
 import { sec, duration, age, rhythm } from './format.js'
 import { pluginActive } from './workshop-ids.js'
 
