@@ -4,6 +4,10 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.22.7 -- 2026-11-03
+
+- Tool creation wizard (Machine page, DWC 3.6): new read operations `machine.tool.get` (operator), `machine.tool.pins` and `machine.tool.preview` (technician) and the plan kind `config.tool` (`machine.config.plan` / `machine.config.apply`, technician). It writes M308, M950 (heaters, fans, spindle), M143, M563 and G10 into the configuration after the last tool line, with a backup, and the machine restarts to read them. A pin is accepted only if the Duet 3 6HC has it, it can do what the use needs and no live line of the configuration uses it. Nothing is sent to the board. Tests: `test_machine_tool.py`. Not tested on the real machine.
+
 ## 2.22.6 -- 2026-11-03
 
 - Calibration (Machine page): new operation `machine.test_move` (technician, level 3 confirmation): the test move of the steps-per-mm assistant can be sent from the page. It renders one template of the closed list (`rel_move`: `G1 X100 F600 S0`, always S0) between `G91` and `G90`, asks the movement owner for the bed and puts the machine back in absolute mode whatever happens. Refused when the machine is not idle, the axis is missing or not homed, the move would leave the travel, or the distance (0.1 to 200 mm) or the feed (1 to 6000) is out of range. Tests in `dsf/test_machine_testmove.py`.

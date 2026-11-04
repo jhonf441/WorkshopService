@@ -456,7 +456,8 @@ def planners():
     """Every planner: the ones of this module and the phase 2 ones of machine_plans.py (imported late: it imports this module)."""
     import machine_plans
     import machine_plans_motion
-    return dict(PLANNERS, **machine_plans.PLANNERS, **machine_plans_motion.PLANNERS)
+    import machine_tool
+    return dict(PLANNERS, **machine_plans.PLANNERS, **machine_plans_motion.PLANNERS, **machine_tool.PLANNERS)
 
 
 def make_plan(kind, values, env, who=None, now=None):
@@ -577,7 +578,8 @@ def _plan_op(args, ctx):
 def _msg_code(code):
     return code if code in ("no_config", "not_utf8", "bad_value", "no_points", "too_many_points", "too_few_points", "out_of_reach",
                             "duplicate_point", "no_limits", "patch_expression", "patch_unsupported_form", "patch_bad_axis",
-                            "patch_missing_line", "current_over_limit", "bad_type", "no_frequency") else "other"
+                            "patch_missing_line", "current_over_limit", "bad_type", "no_frequency", "tool_exists", "pin_used", "pin_unknown", "pin_capability", "driver_unknown",
+                            "driver_used", "laser_mode", "tool_name") else "other"
 
 
 def _role_ok(ctx, kind):

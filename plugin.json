@@ -138,6 +138,7 @@
     "machine_state.py",
     "machine_store.py",
     "machine_testmove.py",
+    "machine_tool.py",
     "machine_try.py",
     "machine_try_kinds.py",
     "machine_tune.py",
@@ -185,15 +186,15 @@
   "dwcFiles": [
     "css/WorkshopService.a0a5d2d8.css",
     "css/WorkshopService.a0a5d2d8.css.gz",
-    "js/WorkshopService.4b6b1659.js",
-    "js/WorkshopService.4b6b1659.js.gz"
+    "js/WorkshopService.71c43db1.js",
+    "js/WorkshopService.71c43db1.js.gz"
   ],
   "sdFiles": [],
   "pid": -1,
   "id": "WorkshopService",
   "name": "Workshop Service",
   "author": "jhonf441",
-  "version": "2.22.6",
+  "version": "2.22.7",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopService",
   "tags": [
