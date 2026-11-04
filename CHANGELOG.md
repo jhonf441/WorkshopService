@@ -4,6 +4,10 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.22.6 -- 2026-11-03
+
+- Calibration (Machine page): new operation `machine.test_move` (technician, level 3 confirmation): the test move of the steps-per-mm assistant can be sent from the page. It renders one template of the closed list (`rel_move`: `G1 X100 F600 S0`, always S0) between `G91` and `G90`, asks the movement owner for the bed and puts the machine back in absolute mode whatever happens. Refused when the machine is not idle, the axis is missing or not homed, the move would leave the travel, or the distance (0.1 to 200 mm) or the feed (1 to 6000) is out of range. Tests in `dsf/test_machine_testmove.py`.
+
 ## 2.22.5 -- 2026-11-03
 
 - Power loss (Machine page): the page can resume the job left by a power cut. `machine.power.get` now carries `resume` (checks: resurrect.g complete, job file on the card, machine idle, mode known, supply above the restore voltage, prologue present; `can_resume`, `needs_ack`) and the new operation `machine.power.resume` (technician) sends `M916` (template `resume_print` of the closed list, through `machine_ops.apply_template`) only when every blocking check passes and, in laser / CNC, the three acknowledgements (`piece`, `tool`, `area`) are true; it checks again on its own and records the resume in the audit. Tests in `dsf/test_machine_power.py`.

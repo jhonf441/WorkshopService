@@ -68,6 +68,7 @@ CONFIRM_TEXTS = {
     "machine.config.apply": _confirm("machine_confirm_apply_title", "machine_confirm_apply_text"),
     "machine.try": _confirm("machine_confirm_try_title", "machine_confirm_try_text"),
     "machine.mark_cross": _confirm("machine_confirm_cross_title", "machine_confirm_cross_text"),
+    "machine.test_move": _confirm("machine_confirm_testmove_title", "machine_confirm_testmove_text"),
     "workarea.step": _confirm("machine_confirm_area_step_title", "machine_confirm_area_step_text"),
 }
 

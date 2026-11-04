@@ -141,7 +141,7 @@ OP_ROLES = {
     "machine.history.restore": TECHNICIAN, "machine.report": TECHNICIAN,
     "machine.offsets.get": OPERATOR, "machine.offsets.snapshot": TECHNICIAN, "machine.limits.get": OPERATOR, "machine.power.get": OPERATOR, "machine.power.resume": TECHNICIAN,
     "machine.layout": OPERATOR,
-    "machine.try": TECHNICIAN, "machine.try.pending": TECHNICIAN, "machine.mark_cross": TECHNICIAN,
+    "machine.try": TECHNICIAN, "machine.try.pending": TECHNICIAN, "machine.mark_cross": TECHNICIAN, "machine.test_move": TECHNICIAN,
     # height calibration of the tool (was a card of the Workbench): reading is an operator's, everything that changes or moves a technician's
     "machine.height.get": OPERATOR, "machine.height.save": TECHNICIAN, "machine.height.hook": TECHNICIAN, "machine.height.step": TECHNICIAN,
     # work area of each mode (was a card of the Workbench): reading is an operator's, saving and moving a technician's

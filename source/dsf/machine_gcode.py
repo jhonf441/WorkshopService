@@ -84,6 +84,8 @@ TEMPLATES = {
     "abs_mode": ("G90", re.compile(r"^G90$")),
     "cross_move": ("G1 {axis}{d} F{feed} S{power}", re.compile(r"^G1 [XY]%s F[0-9]{1,5} S[0-9]{1,3}(?:\.[0-9]{1,3})?$" % _NUM)),
     "laser_off": ("M5", re.compile(r"^M5$")),
+    # the test move of the steps-per-mm assistant (machine_testmove.py): relative, one axis, always S0 (the laser never fires), between rel_mode and abs_mode
+    "rel_move": ("G1 {axis}{dist} F{feed} S0", re.compile(r"^G1 [XYZUVWABC]%s F[0-9]{1,5} S0$" % _NUM)),
     # phase 3: motion parameters. Volatile values of machine.try / apply_now: ONE axis or one value per line, no M569 anywhere (the
     # plan edits the FILE for that), no M955 beyond the bare report, no M956 without A0 (the only form the firmware implements).
     "current_set": ("M906 {axis}{v}", re.compile(r"^M906 [XYZUVWABCE]%s$" % _NUM)),
@@ -138,7 +140,7 @@ PARAMS = {
     "x": ("num", -5000, 5000), "y": ("num", -5000, 5000), "z": ("num", -5000, 5000),
     "x0": ("num", -5000, 5000), "x1": ("num", -5000, 5000), "y0": ("num", -5000, 5000), "y1": ("num", -5000, 5000),
     "h": ("num", 0, 100), "paper": ("num", 0, 3), "a": ("int", 1, 2),
-    "trig": ("int", 0, 1023), "axis": ("letter",), "lo": ("num", -5000, 5000), "hi": ("num", -5000, 5000), "v": ("num", -99999, 99999),
+    "trig": ("int", 0, 1023), "dist": ("num", -500, 500), "axis": ("letter",), "lo": ("num", -5000, 5000), "hi": ("num", -5000, 5000), "v": ("num", -99999, 99999),
     "tool": ("int", 0, 49), "n": ("int", 1, 9), "d": ("num", -50, 50), "feed": ("int", 1, 30000), "power": ("num", 0, 255),
     # phase 3
     "idle": ("int", 0, 100), "secs": ("int", 1, 3600), "pct": ("num", 0, 100), "mult": ("num", 1, 100), "samples": ("int", 100, 3000),
