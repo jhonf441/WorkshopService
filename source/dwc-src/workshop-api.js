@@ -55,7 +55,7 @@ const EN = {
 	pinMissing: 'Write your name and PIN.',
 	pinWrong: 'Wrong name or PIN.',
 	loginCancelled: 'Identification is needed to continue.',
-	signInNeeded: 'This action needs you to sign in.',
+	signInNeeded: 'Not authorized: you need to sign in.',
 	forbidden_role: 'Your role ({role}) does not allow this: {needed} is needed.',
 	forbidden_mode: 'Your role cannot operate in {mode} mode: ask the administrator to enable it.',
 	forbidden_mode_unknown: 'The mode of the machine is not known and your role only operates some modes.',

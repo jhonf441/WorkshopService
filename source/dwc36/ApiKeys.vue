@@ -62,14 +62,14 @@
 		</v-card-text>
 
 		<!-- create / edit -->
-		<v-dialog v-model="dlg" max-width="640" scrollable>
+		<v-dialog v-model="dlg" max-width="640" width="100%" scrollable content-class="ws-keys-dialog">
 			<v-card>
 				<v-card-title class="text-subtitle-1">{{ form.id ? $t('plugins.WorkshopService.keys.edit_title') : $t('plugins.WorkshopService.keys.new_title') }}</v-card-title>
-				<v-card-text>
+				<v-card-text class="ws-keys-body">
 					<v-text-field v-model="form.name" :label="$t('plugins.WorkshopService.keys.service_name')" dense outlined counter="40" :rules="[v => !!v || '']" />
 					<v-select
 						v-if="!form.id" v-model="form.preset" :items="presetItems" :label="$t('plugins.WorkshopService.keys.starting_point')"
-						dense outlined hide-details class="mb-3" @change="applyPreset"
+						dense outlined hide-details class="mb-3" :menu-props="menuProps" :title="presetTitle" @change="applyPreset"
 					/>
 					<div class="text-caption grey--text mb-1">{{ $t('plugins.WorkshopService.keys.classes') }}</div>
 					<div class="d-flex flex-wrap mb-2">
@@ -82,7 +82,7 @@
 					<v-combobox
 						v-model="form.ops" :items="opItems" item-text="text" item-value="value" multiple chips small-chips deletable-chips
 						:label="$t('plugins.WorkshopService.keys.extra_operations')" :hint="$t('plugins.WorkshopService.keys.patterns_help')"
-						persistent-hint dense outlined :return-object="false" @change="form.ops = norm(form.ops)"
+						persistent-hint dense outlined :menu-props="menuProps" :return-object="false" @change="form.ops = norm(form.ops)"
 					>
 						<template v-slot:item="{ item }">
 							<v-list-item-content>
@@ -94,7 +94,7 @@
 					<v-combobox
 						v-model="form.deny" :items="opItems" item-text="text" item-value="value" multiple chips small-chips deletable-chips
 						:label="$t('plugins.WorkshopService.keys.refused_operations')" :hint="$t('plugins.WorkshopService.keys.patterns_help')"
-						persistent-hint dense outlined class="mt-2" :return-object="false" @change="form.deny = norm(form.deny)"
+						persistent-hint dense outlined class="mt-2" :menu-props="menuProps" :return-object="false" @change="form.deny = norm(form.deny)"
 					>
 						<template v-slot:item="{ item }">
 							<v-list-item-content>
@@ -123,7 +123,7 @@
 		</v-dialog>
 
 		<!-- the key, shown once -->
-		<v-dialog v-model="dlgKey" max-width="640" persistent>
+		<v-dialog v-model="dlgKey" max-width="640" width="100%" persistent content-class="ws-keys-dialog">
 			<v-card>
 				<v-card-title class="text-subtitle-1">{{ $t('plugins.WorkshopService.keys.your_key') }}</v-card-title>
 				<v-card-text>
@@ -187,6 +187,11 @@ export default {
 	},
 	computed: {
 		classes() { return CLASES; },
+		menuProps() { return { maxWidth: 600, contentClass: 'ws-keys-menu' }; },
+		presetTitle() {
+			const it = this.presetItems.find(i => i.value === this.form.preset);
+			return it ? it.text : '';
+		},
 		presetItems() {
 			return PRESETS.map(p => ({ value: p, text: this.$t('plugins.WorkshopService.keys.preset_' + p) }));
 		},
@@ -304,3 +309,17 @@ export default {
 	}
 };
 </script>
+
+<style>
+/* both key modals (new and edit): stay inside the modal at any width, nothing cut at the top, long texts cut with an ellipsis */
+.ws-keys-dialog { width: 100%; max-width: 640px; overflow-x: hidden; }
+.ws-keys-dialog .v-card { min-width: 0; max-width: 100%; }
+.ws-keys-dialog .ws-keys-body { padding-top: 24px !important; overflow-x: hidden; }
+.ws-keys-dialog .v-input, .ws-keys-dialog .v-input__control, .ws-keys-dialog .v-input__slot, .ws-keys-dialog .v-select__slot { min-width: 0; max-width: 100%; }
+.ws-keys-dialog .v-select__selections { min-width: 0; flex-wrap: wrap; }
+.ws-keys-dialog .v-select__selection { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ws-keys-dialog .v-chip { max-width: 100%; }
+.ws-keys-dialog .v-chip .v-chip__content { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.ws-keys-menu { max-width: calc(100vw - 32px); }
+.ws-keys-menu .v-list-item__title, .ws-keys-menu .v-list-item__subtitle { white-space: normal; overflow-wrap: anywhere; }
+</style>

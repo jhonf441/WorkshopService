@@ -451,15 +451,18 @@ variables (`global.wsRequest`) that the service reads in its object model subscr
 ## G-code bridge (live jobs)
 
 Put these lines in the start / end G-code of the program that sends the live job through the
-G-code bridge; the bridge answers them itself and tells the service:
+G-code bridge. They are `M118` messages, so the G-code is valid for DWC and the Duet; the bridge
+recognises the message, tells the service and does not send that `M118` to the board:
 
 ```
-BRIDGE JOB START <name>
-BRIDGE JOB END
+M118 P0 S"BRIDGE JOB START Live job"
+M118 P0 S"BRIDGE JOB END"
 ```
 
-`BRIDGE JOB CANCEL` marks a cut job. Run `BRIDGE HELP` in a terminal connected to the bridge for
-the rest of its commands.
+`M118 P0 S"BRIDGE JOB CANCEL"` marks a cut job. The bare form (`BRIDGE JOB START <name>`, without
+`M118`) is still understood by the bridge as a shortcut, but if it ever reaches the board it is an
+error there, so use the `M118` form in any G-code that is also uploaded to the Duet. Run
+`BRIDGE HELP` in a terminal connected to the bridge for the rest of its commands.
 
 ## Safe stop and resume of the live job (`livejob.*`, 2026-10-22)
 

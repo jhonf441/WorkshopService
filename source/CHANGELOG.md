@@ -4,6 +4,20 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.22.10 -- 2026-11-03
+
+- One wording for every refusal: the messages of the service for a missing session or role now start with "Sin permiso:" / "Not authorized:" (`api.signInNeeded`, `api.forbidden_*`) and say what is needed ("hace falta tecnico"). New texts `api.permissionTitle` and `api.close` for the notice card (TallerPlugins `src/_shared/09-session-notice.js`), which shows every refusal the same way on every page.
+- CLAUDE.md: the sudoers rule documented is the real one (`shutdown` and `reboot`).
+
+## 2.22.9 -- 2026-11-03
+
+- Live job text and docs: the G-code that marks a live job through the bridge is `M118 P0 S"BRIDGE JOB START <name>"` / `M118 P0 S"BRIDGE JOB END"` / `M118 P0 S"BRIDGE JOB CANCEL"` (valid for DWC and the Duet; the bridge recognises the message and does not send that M118 to the board). The bare form stays only as a bridge shortcut. Fixed in the page text (`liveJobDesc`) and in docs/api/README.md, docs/api/DESIGN.md and docs/PROCESSES.md.
+- API keys dialogs (new key / edit key): fields and long option texts fit inside the modal (branch apikeys-modal-fit).
+
+## 2.22.8 -- 2026-11-03
+
+- The standard message when a call needs a session (`signInNeeded`) is now "Necesitas iniciar sesion (usa el boton de abajo)." / "You need to sign in (use the button below).": it reads well inside any sentence the pages build ("No se pudo leer el historial: ...") and points to the sign-in chip. The chip itself (src/_shared/09-session-notice.js of TallerPlugins) now shows what was refused and blinks, instead of a second notice on top of it.
+
 ## 2.22.7 -- 2026-11-03
 
 - Tool creation wizard (Machine page, DWC 3.6): new read operations `machine.tool.get` (operator), `machine.tool.pins` and `machine.tool.preview` (technician) and the plan kind `config.tool` (`machine.config.plan` / `machine.config.apply`, technician). It writes M308, M950 (heaters, fans, spindle), M143, M563 and G10 into the configuration after the last tool line, with a backup, and the machine restarts to read them. A pin is accepted only if the Duet 3 6HC has it, it can do what the use needs and no live line of the configuration uses it. Nothing is sent to the board. Tests: `test_machine_tool.py`. Not tested on the real machine.

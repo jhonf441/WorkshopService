@@ -318,10 +318,30 @@ Risk: **High (backend with broad permissions; it can shut the system down)**. Re
 - `/opt/dsf/conf/workshop-secrets.json` and `workshop-users.json` (mode 600), `workshop-camera.key`
 
 **What it needs outside the zip** (each one is a separate step you do on purpose and can undo):
-- `/etc/sudoers.d/dsf-power`, only if you want the shutdown / restart buttons: you create it by hand (see the security document)
+- `/etc/sudoers.d/dsf-power`, only if you want the shutdown / restart buttons: you create it by hand (steps below)
 - the G-code bridge (`sudo bridge/install.sh`): systemd unit, polkit rule and `/opt/workshop-bridge`; `sudo bridge/install.sh uninstall` removes them
 - ports: the camera relay (8090 by default, all interfaces; `camera_relay.bind` keeps it on the Pi) and the G-code bridge (23)
 - `ffmpeg` for timelapses and snapshots; `tinytuya` for a Tuya energy meter
+
+**How to: the shutdown / restart rule (sudoers)**
+
+1. On the Pi run `sudo visudo -f /etc/sudoers.d/dsf-power` and write this single line, then save:
+   `dsf ALL=(root) NOPASSWD: /usr/sbin/shutdown, /usr/sbin/reboot`
+2. Check the syntax: `sudo visudo -c` (it must report that the files parsed OK). Check what `dsf` may run: `sudo -l -U dsf`.
+3. Test without shutting down: `sudo -u dsf sudo -n -l /usr/sbin/shutdown` prints the path when the rule works and an error when it does not. The real test is the *Shut down now* button, which powers the Pi off.
+4. Undo: `sudo rm /etc/sudoers.d/dsf-power`. Without the file those buttons log an error and the system keeps running.
+
+**How to: the G-code bridge**
+
+1. From the `bridge` folder of the WorkshopService sources, on the Pi: `sudo ./install.sh` (the same command updates it later). It copies the code to `/opt/workshop-bridge`, writes and starts the unit `workshop-gcode-bridge.service` and writes the polkit rule `49-workshop-gcode-bridge.rules`, which lets the `dsf` user start and stop only that unit.
+2. Check: `systemctl status workshop-gcode-bridge`, or the "G-code bridge" section of the System service page.
+3. Undo: `sudo ./install.sh uninstall` removes the unit, the rule and `/opt/workshop-bridge` (your data in `0:/sys/workshop` stays); `sudo ./install.sh no-control` removes only the polkit rule (the page can then no longer start or stop the bridge).
+
+**About AppArmor**
+
+- DSF writes the profile `/etc/apparmor.d/dsf.<PluginId>` from the manifest when the plugin is INSTALLED, not when it is only reloaded or restarted. The permissions you approve in DWC become its lines (details and measurements: `docs/PERMISSIONS.md` of the WorkshopService repository).
+- To see whether it blocks something: `journalctl -k | grep DENIED | grep Workshop` (no output means no denial).
+- If the profile is old or a feature is denied after an update that changed the permissions, install the plugin again from DWC so DSF rewrites the profile, then check the command above once more.
 
 **Safety notes:**
 - Without users, everybody who reaches DWC is an administrator and the relay and the bridge are open to the network: create the first administrator in the Users section.

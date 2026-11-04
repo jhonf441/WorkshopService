@@ -254,11 +254,12 @@ shutdown-all.g); `sys/driver-stall.g` is rewritten by the service; the heartbeat
 
 ## 8. G-code bridge and external programs
 
-- The bridge (`bridge/gcode_bridge.py`) understands `BRIDGE JOB START [name]`,
-  `BRIDGE JOB END` and `BRIDGE JOB CANCEL` as its own orders (they do not go to the board), notes
-  them in `bridge-state.json` (`activity.live_job`, as today) and calls `job.start` /
+- The bridge (`bridge/gcode_bridge.py`) recognises the messages `M118 P0 S"BRIDGE JOB START [name]"`,
+  `M118 P0 S"BRIDGE JOB END"` and `M118 P0 S"BRIDGE JOB CANCEL"` as its own orders: that `M118` is not
+  sent to the board (the bare form without `M118` is only a shortcut of the bridge and is an error if it reaches
+  the board). It notes them in `bridge-state.json` (`activity.live_job`, as today) and calls `job.start` /
   `job.end` / `job.cancel` of the API with the local key, in the background and with retries.
-  The live job program puts those lines in its Start/End G-code.
+  The live job program puts those `M118` lines in its Start/End G-code, so the G-code stays valid for DWC and the Duet.
 - External programs (another PC, scripts): `POST /machine/WorkshopService/api` with DWC's
   session. Examples in README.md.
 

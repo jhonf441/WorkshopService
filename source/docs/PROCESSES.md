@@ -159,5 +159,5 @@ loops, errors, relaunches and the last minutes of CPU and interval.
 ### Live job
 
 - **What it does:** Marks the live job sent by an external program through the G-code bridge.
-- **When it acts:** With BRIDGE JOB START at the start and BRIDGE JOB END at the end, or with the same message inside an M118.
+- **When it acts:** With `M118 P0 S"BRIDGE JOB START <name>"` at the start and `M118 P0 S"BRIDGE JOB END"` at the end (the bare form is only a shortcut of the bridge).
 - **Good to know:** The idle timeout closes a job that was left open and adds its hours and kWh. While there is one, jog and zones are locked so nothing moves the machine in the middle of the cut.
