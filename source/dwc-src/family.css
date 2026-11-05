@@ -57,8 +57,8 @@
 /* ================= section menu (side bar) ================= */
 :is(.sidetabs, .wf-nav) { border-right-color: var(--wf-line); }
 :is(.sidetabs, .wf-nav) :is(.st-group, .wf-nav-group) { margin-top: 6px; border-top: 1px solid var(--wf-line); color: inherit; opacity: 0.65; font-size: 11px; font-weight: 600; }
-:is(.sidetabs, .wf-nav)::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.45); border-radius: 2px; }
-@supports not selector(::-webkit-scrollbar) { :is(.sidetabs, .wf-nav) { scrollbar-color: rgba(128, 128, 128, 0.45) transparent; } }
+:is(.sidetabs, .sidetabs .st-scroll, .wf-nav)::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.45); border-radius: 2px; }
+@supports not selector(::-webkit-scrollbar) { :is(.sidetabs, .sidetabs .st-scroll, .wf-nav) { scrollbar-color: rgba(128, 128, 128, 0.45) transparent; } }
 :is(.sidetabs, .wf-nav) .st-group[data-group='0'] { margin-top: 0; border-top: 0; }
 :is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item) { color: inherit; opacity: 0.8; font-size: 13px; font-weight: 400; letter-spacing: 0; text-transform: none; border-left: 2px solid transparent; border-radius: 0; background: transparent; }
 :is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item):hover { opacity: 1; background: rgba(128, 128, 128, 0.08); }

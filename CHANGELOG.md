@@ -4,6 +4,12 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.22.16 -- 2026-11-04
+
+- Camera relay: its card of the control bar is shown from the start (it was off until a screen turned it on in the gear); it can still be turned off there.
+- Audit and Received commands: the date fields are the shared time-range picker (quick ranges, last N units, absolute range) like the rest of the pages, not the browser date input.
+- build_release.py builds and checks only the 3.6 zip (DWC 3.7 is paused; --paused-37 brings it back).
+
 ## 2.22.15 -- 2026-11-04
 
 - Camera relay card: a token the service no longer accepts (it forgets them on restart) counts as no session, like the header of the pages (it said "the service did not answer"); it reads the camera again as soon as the person signs in.

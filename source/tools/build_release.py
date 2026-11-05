@@ -31,6 +31,8 @@ import build_37 as b37  # noqa: E402
 import release_zips  # noqa: E402
 
 RELEASE = os.path.join(ROOT, "dist", "release")
+# DWC 3.7 is PAUSED (owner, 2026-11-04; TallerPlugins/CLAUDE.md): only the 3.6 zip is built and checked unless --paused-37 is given
+PAUSED = ("3.7",)
 
 
 def run(script):
@@ -51,11 +53,15 @@ def release_path(version, line):
     return os.path.join(RELEASE, release_zips.release_name("WorkshopService", version, line))
 
 
+def active_lines():
+    return [l for l in release_zips.LINES if "--paused-37" in sys.argv[1:] or l not in PAUSED]
+
+
 def check(version):
     """Problems of the two release zips and of SHA256SUMS.txt (empty list = clean)."""
     perms = release_zips._sbc_permissions(os.environ.get("TALLER_DWC_SRC_36") or os.path.join(os.path.expanduser("~"), "Projects", "dwc-src"))
     problems = []
-    for line in release_zips.LINES:
+    for line in active_lines():
         path = release_path(version, line)
         if not os.path.isfile(path):
             problems.append("missing " + path)
@@ -74,9 +80,10 @@ def main():
     if "--check" not in args:
         if "--reuse" not in args:
             run("build_36.py")
-            run("build_37.py")
+            if "3.7" in active_lines():
+                run("build_37.py")
         os.makedirs(RELEASE, exist_ok=True)
-        for line in release_zips.LINES:
+        for line in active_lines():
             src = line_zip(version, line)
             if not os.path.isfile(src):
                 raise SystemExit("missing " + src)

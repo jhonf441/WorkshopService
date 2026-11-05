@@ -190,7 +190,7 @@ export function barTile() {
 		order: 10,
 		help: t('relay_help'),
 		plugin: 'service',
-		defaultShown: false,
+		defaultShown: true, // on the bar from the start (the owner wants the relay control there); a screen can still turn it off in the gear
 		visible: () => workshopCan('camera.stop'),
 		state: () => {
 			const v = view();

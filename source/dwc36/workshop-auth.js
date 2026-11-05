@@ -136,10 +136,13 @@ const RANK = { viewer: 0, operator: 1, technician: 2, admin: 3 }
 // only a courtesy, the service decides. ctx: { mode: 'laser' | 'cnc' | 'fff', args: {...} } for the rules that depend on it.
 export function workshopCan(op, ctx = {}) {
 	const id = shared().identity
-	if (!id || !id.table || !id.role) return true
+	if (!id || !id.table) return true
+	// The service has users and nobody is signed in (role null): the person is a VISITOR, who can only look and stop. It used to
+	// say yes to everything here, so a signed-out page looked fully usable and every button failed with a 401.
+	if (!id.role && !id.configured) return true
 	const t = id.table
 	if ((t.stop || []).includes(op)) return true
-	const role = id.role
+	const role = id.role || 'viewer'
 	let need = (t.ops || {})[op] || 'admin'
 	const esc = (t.escalate || {})[op] // some operations need more when their arguments change settings
 	if (esc) {
@@ -190,7 +193,15 @@ export async function logoutWith(call) {
 // The service has users and this browser has no session (a visitor, or nothing allowed yet).
 export function signedOut() {
 	const id = shared().identity
-	return !!(id && id.configured && !getToken())
+	// no token, or a token the service no longer accepts (expired, the service restarted): its whoami says login_required
+	return !!(id && id.configured && (!getToken() || id.login_required))
+}
+
+// Why the person cannot do something: '' (they can), 'signed_out' (nobody is signed in: signing in may fix it) or 'role' (signed in,
+// but the role is too low: only another role fixes it). The pages say which one next to the thing that does not move.
+export function accessReason(op, ctx) {
+	if (workshopCan(op, ctx)) return ''
+	return signedOut() ? 'signed_out' : 'role'
 }
 
 // The person touched the page a moment ago: what fails now is probably their action (so it is worth telling them).

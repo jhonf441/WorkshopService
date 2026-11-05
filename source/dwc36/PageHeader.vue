@@ -30,7 +30,7 @@
 				</v-menu>
 				<slot />
 				<slot name="right" />
-				<v-chip v-if="signedOutNow" small outlined color="info" :title="ts('header_sign_in_help')" @click="signIn">
+				<v-chip v-if="signedOutNow" small outlined color="info" class="wf-session-chip" :title="ts('header_sign_in_help')" @click="signIn">
 					<v-icon x-small left>mdi-account-lock-outline</v-icon>{{ ts('header_sign_in') }}
 				</v-chip>
 				<v-chip v-else-if="viewerNow" small outlined :title="ts('header_read_only_help')">

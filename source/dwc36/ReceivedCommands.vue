@@ -54,14 +54,7 @@
 			<!-- cuando -->
 			<div class="d-flex align-center flex-wrap mt-3" style="gap:6px">
 				<v-chip v-for="r in spans" :key="r.id" small :color="range === r.id ? 'primary' : undefined" :outlined="range !== r.id" @click="chooseSpan(r.id)">{{ r.text }}</v-chip>
-				<v-menu v-model="datesMenu" :close-on-content-click="false" offset-y min-width="auto">
-					<template v-slot:activator="{ on, attrs }">
-						<v-chip small :color="range === 'other' ? 'primary' : undefined" :outlined="range !== 'other'" v-bind="attrs" v-on="on">
-							<v-icon left small>mdi-calendar-range</v-icon>{{ range === 'other' ? textDates : $t('plugins.WorkshopService.commandsReceived.pick_dates') }}
-						</v-chip>
-					</template>
-					<v-date-picker v-model="dates" range no-title color="primary" @input="onChooseDates" />
-				</v-menu>
+				<range-picker v-model="picked" @input="onPick" />
 			</div>
 
 			<!-- que -->
@@ -161,6 +154,11 @@ import i18n from '../../i18n'
 import { mapActions } from 'vuex'
 import { api } from './workshop-api.js'
 import { copyText } from './copy.js'
+import RangePicker from './RangePicker.vue'
+import { resolve, localText, absolute } from './range-picker.js'
+
+// the picker holds moments; this list filters by day
+const pickedOf = (since, until) => absolute(since + 'T00:00', until + 'T23:59');
 
 function day(daysBack) {
 	const d = new Date(Date.now() - (daysBack || 0) * 86400000);
@@ -195,6 +193,7 @@ const fields = [
 ];
 
 export default {
+	components: { RangePicker },
 	props: {
 		// (row) => { color, icon }: the same category as the API operations list
 		colorOf: { type: Function, default: null },
@@ -207,8 +206,7 @@ export default {
 			range: 'today',
 			since: day(0),
 			until: day(0),
-			dates: [day(0), day(0)],
-			datesMenu: false,
+			picked: pickedOf(day(0), day(0)),
 			kind: 1,
 			name: null,
 			via: null,
@@ -266,10 +264,6 @@ export default {
 		counters() {
 			const k = (this.lastHour && this.lastHour.kind) || {};
 			return Object.keys(k).sort((a, b) => k[b] - k[a]).map(id => ({ id, n: k[id], text: this.textOrigin(id) }));
-		},
-		textDates() {
-			const f = s => s.slice(8, 10) + '/' + s.slice(5, 7);
-			return this.since === this.until ? f(this.since) : f(this.since) + ' - ' + f(this.until);
 		},
 		// agrupado por dia y hora: "Hoy 22:00", "09/10 14:00"
 		groups() {
@@ -388,16 +382,15 @@ export default {
 			this.range = id;
 			this.since = day(r.since);
 			this.until = day(r.until);
-			this.dates = [this.since, this.until];
+			this.picked = pickedOf(this.since, this.until);
 			this.load(0);
 		},
-		onChooseDates(v) {
-			if (!v || v.length < 2) return;
-			const [a, b] = v.slice().sort();
+		onPick(v) {
+			const m = v ? resolve(v, new Date()) : null;
+			if (!m) return;
 			this.range = 'other';
-			this.since = a;
-			this.until = b;
-			this.datesMenu = false;
+			this.since = localText(m.from).slice(0, 10);
+			this.until = localText(m.to).slice(0, 10);
 			this.load(0);
 		},
 		clean(s) {

@@ -10,30 +10,7 @@
 			<v-alert v-if="!isAdmin" dense text type="info" class="mb-0">{{ $t('plugins.WorkshopService.users.admin_only') }}</v-alert>
 			<template v-else>
 				<v-row dense class="mb-1">
-					<v-col cols="6" sm="3">
-						<v-menu v-model="fromMenu" :close-on-content-click="false" transition="scale-transition" offset-y min-width="auto">
-							<template v-slot:activator="{ on, attrs }">
-								<v-text-field v-model="f.from" :label="$t('plugins.WorkshopService.audit.from')" readonly dense hide-details color="primary" v-bind="attrs" v-on="on">
-									<template v-slot:prepend-inner>
-										<v-icon color="primary">mdi-calendar-outline</v-icon>
-									</template>
-								</v-text-field>
-							</template>
-							<v-date-picker v-model="f.from" no-title color="primary" @input="fromMenu = false" />
-						</v-menu>
-					</v-col>
-					<v-col cols="6" sm="3">
-						<v-menu v-model="toMenu" :close-on-content-click="false" transition="scale-transition" offset-y min-width="auto">
-							<template v-slot:activator="{ on, attrs }">
-								<v-text-field v-model="f.to" :label="$t('plugins.WorkshopService.audit.to')" readonly dense hide-details color="primary" v-bind="attrs" v-on="on">
-									<template v-slot:prepend-inner>
-										<v-icon color="primary">mdi-calendar-outline</v-icon>
-									</template>
-								</v-text-field>
-							</template>
-							<v-date-picker v-model="f.to" no-title color="primary" @input="toMenu = false" />
-						</v-menu>
-					</v-col>
+					<v-col cols="12" sm="6"><range-picker v-model="range" clearable /></v-col>
 					<v-col cols="6" sm="3"><v-select v-model="f.user" :items="userItems" :label="$t('plugins.WorkshopService.audit.person')" dense hide-details clearable /></v-col>
 					<v-col cols="6" sm="3"><v-text-field v-model="f.op" :label="$t('plugins.WorkshopService.audit.operation')" dense hide-details clearable /></v-col>
 				</v-row>
@@ -87,6 +64,8 @@
 'use strict'
 
 import { api, currentIdentity, onIdentity } from './workshop-api.js'
+import RangePicker from './RangePicker.vue'
+import { resolve, localText, relative } from './range-picker.js'
 
 const PAGE = 50;
 
@@ -98,14 +77,17 @@ function day(offsetDays) {
 
 export default {
 	name: 'AuditCard',
+	components: { RangePicker },
 	data() {
-		return { fromMenu: false, toMenu: false, f: { from: day(7), to: day(0), user: null, op: '', errors: false }, rows: [], total: 0, users: [], offset: 0, loading: false, error: '', identity: currentIdentity(), off: null, PAGE };
+		return { range: relative(7, 'days'), f: { from: day(7), to: day(0), user: null, op: '', errors: false }, rows: [], total: 0, users: [], offset: 0, loading: false, error: '', identity: currentIdentity(), off: null, PAGE };
 	},
 	computed: {
 		isAdmin() { return !!this.identity && this.identity.role === 'admin'; },
 		userItems() { return this.users; }
 	},
 	watch: {
+		// the picker gives moments; the service filters by day
+		range: { immediate: true, handler(r) { const m = r ? resolve(r, new Date()) : null; this.f.from = m ? localText(m.from).slice(0, 10) : ''; this.f.to = m ? localText(m.to).slice(0, 10) : ''; } },
 		f: { deep: true, handler() { this.offset = 0; this.read(); } }
 	},
 	mounted() {
