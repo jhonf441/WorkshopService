@@ -4,6 +4,10 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.22.17 -- 2026-11-04
+
+- Sign out no longer reopens the PIN dialog at once: after signing out the touch is forgotten and nothing opens the dialog by itself for 20 s (the shared client of the pages, copied from TallerPlugins 1294722b).
+
 ## 2.22.16 -- 2026-11-04
 
 - Camera relay: its card of the control bar is shown from the start (it was off until a screen turned it on in the gear); it can still be turned off there.

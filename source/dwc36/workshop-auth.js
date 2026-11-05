@@ -19,6 +19,7 @@ const DEVICE_KEY = 'workshop-device'
 const KEEPALIVE_MS = 60000
 const GESTURE_MS = 1500 // a call that fails this soon after a touch is the person's action: it asks even in the quiet period
 const CANCEL_QUIET_MS = 600000 // after cancelling the PIN dialog, calls fail quietly this long instead of asking again
+const AFTER_LOGOUT_MS = 20000 // after signing out, a failing call does not open the PIN dialog by itself this long
 
 function watchGestures(s) {
 	if (s.gestures || typeof document === 'undefined' || typeof document.addEventListener !== 'function') return
@@ -182,10 +183,17 @@ export async function loginWith(call, name, pin) {
 }
 
 export async function logoutWith(call) {
+	// The tap on "sign out" is a touch, and signing out makes the pages reload what they show: those reads fail (nobody is signed in)
+	// inside the window of that touch and used to open the PIN dialog again, so the session seemed never to close. After signing out the
+	// touch is forgotten and nothing opens the dialog by itself for a while; the "sign in" button and a later touch still do.
+	const s = shared()
+	s.gestureAt = 0
+	s.quietUntil = Date.now() + AFTER_LOGOUT_MS
 	try {
 		await call('auth.logout', {})
 	} finally {
 		setToken('')
+		s.gestureAt = 0
 		await refreshIdentity(call)
 	}
 }
