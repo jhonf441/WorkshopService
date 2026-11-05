@@ -12,6 +12,7 @@ layers, power or depth range), its bounding box and the convex hull of what it w
 The path is simplified to at most N vertices (default 30000) so the answer stays small; the numbers are exact.
 Only one file is read at a time and nothing is kept in memory afterwards.
 """
+import real_mode
 import json
 import os
 import threading
@@ -122,7 +123,7 @@ def run(params, bridge, config):
         om = machine_state.get_status(timeout=2) or {}
     except Exception:
         om = {}
-    kind = str(params.get("M", "")).strip() or str(((om.get("global") or {}).get("selectedMode")) or "Laser")
+    kind = str(params.get("M", "")).strip() or str(real_mode.of_model(om) or "Laser")
     if kind not in ("Laser", "CNC", "FFF"):
         kind = "Laser"
     if not _lock.acquire(blocking=False):

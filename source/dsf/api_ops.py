@@ -7,6 +7,7 @@ Generic part (transport, validation, permissions, confirmations, errors):
 workshop_api.py. Single owner of the movement: motion_owner.py. Macros of the
 SD: api_macros.py. Design: docs/api/DESIGN.md.
 """
+import real_mode
 import paths
 import importlib.util
 import json
@@ -1054,7 +1055,7 @@ def current_mode():
     try:
         import machine_state
         m = machine_state.last_state() or {}
-        v = (m.get("global") or {}).get("selectedMode") or (m.get("state") or {}).get("machineMode")
+        v = real_mode.of_model(m)
         return str(v).strip().lower() if v else None
     except Exception:
         return None

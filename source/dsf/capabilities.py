@@ -31,6 +31,7 @@ env (all optional):
 
 get() (the I/O side) is in capabilities_io.py.
 """
+import real_mode
 import re
 
 import boards_table
@@ -202,13 +203,13 @@ def _modes(model, env):
         if n and n not in from_files:
             from_files.append(n)
     current = ((model or {}).get("state") or {}).get("machineMode") or None
-    selected = ((model or {}).get("global") or {}).get("selectedMode") or None
+    selected = ((model or {}).get("global") or {}).get("selectedMode")
     available = list(from_files)
     if current and current not in available:
         available.append(current)
     if not available:
         return _absent(available=[], current=None, selectable=False, files=[])
-    return cap(True, DISCOVERED, available=available, current=selected or current, machine_mode=current,
+    return cap(True, DISCOVERED, available=available, current=real_mode.pick(selected, current), machine_mode=current,
                selectable=bool(env.get("auto_mode") or len(from_files) > 1), files=sorted(env.get("mode_files") or []))
 
 

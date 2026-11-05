@@ -13,6 +13,7 @@ the job trace, and Pause / Cancel are the only way to stop it). Here the service
 
 The points are HEAD positions in machine coordinates (G53), already shifted by the page for the pointer or the laser.
 """
+import real_mode
 import math
 import threading
 import time
@@ -85,7 +86,7 @@ def validate(om, points, kind, pct, repeat):
         if not (0 < pct <= MAX_PCT):
             return None, "laser power must be between 0 and %g %%" % MAX_PCT
         glob = (om or {}).get("global") or {}
-        mode_machine = glob.get("selectedMode") or (om.get("state") or {}).get("machineMode")
+        mode_machine = real_mode.pick(glob.get("selectedMode"), (om.get("state") or {}).get("machineMode"))
         if mode_machine != "Laser":
             return None, "the machine is not in Laser mode"
     return pts, ""

@@ -36,6 +36,7 @@ The state stays in job_current.json (dsf/), the same one read by
 job_trace.py and the others.
 
 """
+import real_mode
 import fs_atomic
 import job_states
 import json
@@ -200,7 +201,7 @@ def _snapshot(status=None):
     g = s.get("global") or {}
     wn = (s.get("move") or {}).get("workplaceNumber")
     return {
-        "mode": g.get("selectedMode"),
+        "mode": real_mode.of_model(s),
         "kwh": g.get("consumptionKWh"),
         "zone": machine_state.zone_name(wn) if isinstance(wn, int) else None,
     }

@@ -21,6 +21,7 @@ Operations:
 Every G-code line is a template of machine_gcode.py (area_*). A step reserves the movement like machine.height.step: refused while a job runs or somebody
 else holds the machine. The pointer walks with the laser off (the macros send S0); framing WITH the laser is not here.
 """
+import real_mode
 import fs_atomic
 import json
 import job_states
@@ -161,8 +162,7 @@ def _clean_rect(raw):
 
 
 def _mode_of(om):
-    g = ((om or {}).get("global") or {}).get("selectedMode")
-    mode = g if g in MODES else ((om or {}).get("state") or {}).get("machineMode")
+    mode = real_mode.of_model(om)
     return mode if mode in MODES else None
 
 

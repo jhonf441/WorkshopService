@@ -41,6 +41,7 @@ HIST_MAX_BYTES in total; the oldest are deleted. The page can delete
 files: when archiving the next one, the index is cleaned of the missing ones.
 
 """
+import real_mode
 import fs_atomic
 import job_states
 import json
@@ -491,7 +492,7 @@ class Recorder:
             "origin": "live" if live else "file",
             "start": time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(t0)),
             "start_epoch": int(t0),
-            "mode": g.get("selectedMode") or (s.get("state") or {}).get("machineMode"),
+            "mode": real_mode.pick(g.get("selectedMode"), (s.get("state") or {}).get("machineMode")),
             "zone": (s.get("move") or {}).get("workplaceNumber"),
             "laserOffsetOn": g.get("laserOffsetOn"),
             "fields": ["t", "x", "y", "z", "pwm", "v", "air", "e", "layer", "rpm", "fpos"],

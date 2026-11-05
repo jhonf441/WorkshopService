@@ -4,6 +4,10 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.22.18 -- 2026-11-05
+
+- The mode of the machine is what the board applies (state.machineMode), not global.selectedMode: the select*.g macros write that variable before M452 and it stayed wrong when M452 failed, so the LEDs, job traces, activity, heights and work area could say Laser while the machine was in FFF. One module (real_mode.py) now decides it for the 12 places that read it.
+
 ## 2.22.17 -- 2026-11-04
 
 - Sign out no longer reopens the PIN dialog at once: after signing out the touch is forgotten and nothing opens the dialog by itself for 20 s (the shared client of the pages, copied from TallerPlugins 1294722b).

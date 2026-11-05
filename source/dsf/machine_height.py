@@ -17,6 +17,7 @@ Operations:
 Every G-code line is a template of machine_gcode.py. A step reserves the movement like machine.mark_cross, so it is refused while a job runs
 or somebody else holds the machine.
 """
+import real_mode
 import fs_atomic
 import os
 import re
@@ -225,8 +226,7 @@ def _probes(om):
 
 
 def _mode_of(om):
-    g = ((om or {}).get("global") or {}).get("selectedMode")
-    mode = g if g in MODES else ((om or {}).get("state") or {}).get("machineMode")
+    mode = real_mode.of_model(om)
     return mode if mode in MODES else None
 
 

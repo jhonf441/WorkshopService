@@ -23,7 +23,8 @@ def _context():
         st = (m.get("state") or {}).get("status")
         if st:
             ctx["machine"] = st
-        kind = ((m.get("global") or {}).get("selectedMode"))
+        import real_mode
+        kind = real_mode.of_model(m)
         if kind:
             ctx["mode"] = kind
         mv = m.get("move") or {}

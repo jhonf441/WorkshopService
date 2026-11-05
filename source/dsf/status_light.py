@@ -4,8 +4,8 @@ Paints the WHOLE LED strip from the Pi: the status zone (mode, states, progress 
 Since 2026-10-12 this module does NOT poll DSF: it reads the shared subscription model of machine_state.py (in memory, global.** included) and decides again only when that model changes (machine_state.on_change) or, while an animation needs frames, on a short timer that needs no IPC. It sends M150 only when the frame really changed and publishes plugin data only when a payload changed. Counters of what it still asks (ipc_stats) go to servicesInternal.luces. Before: one evaluate_expression every 0.4 s (2.5 calls/s) plus the RS485 reads (about 1 call/s).
 
 If this process dies, the strip keeps the last frame (nobody else paints, at the user's request: a single owner of the strip). On reconnecting, it repaints everything at once.
-
 """
+import real_mode
 import paths
 import os
 import time
@@ -1389,7 +1389,7 @@ def read_input(om):
     st = om.get("state") if isinstance(om.get("state"), dict) else {}
     job = om.get("job") if isinstance(om.get("job"), dict) else {}
     mv = om.get("move") if isinstance(om.get("move"), dict) else {}
-    mode = g.get("selectedMode") or st.get("machineMode") or "FFF"
+    mode = real_mode.pick(g.get("selectedMode"), st.get("machineMode")) or "FFF"
     illum = g.get("lightZoneColor")
     if not (isinstance(illum, list) and len(illum) >= 5):
         illum = [0, 0, 0, 0, 0]

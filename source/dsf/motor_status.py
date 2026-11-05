@@ -90,6 +90,7 @@ CS_ACTUAL (0-31, only in the raw value): current scale the driver applies
 NOW. See estimate_cs_actual_ma for the conversion to mA.
 
 """
+import real_mode
 import json
 import re
 import time
@@ -1011,7 +1012,7 @@ def compute_motor_report(status, full_steps_per_rev=200, m122_text=None, steps_p
         pct_of_board_capacity = (combined_current_freq_hz / loop_hz_max_ever) * 100.0
 
     return {
-        "mode": global_vars.get("selectedMode"),
+        "mode": real_mode.pick(global_vars.get("selectedMode"), (status.get("state") or {}).get("machineMode")),
         "kinematics": kinematics_name,
         "kinematics_note": kinematics_sharing_note(kinematics_name),
         "vector_speed_mm_s": vector_speed_mm_s,

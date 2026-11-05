@@ -23,6 +23,7 @@ It must never bring the plugin down if there is no state -- any exception
 is logged and retried in the next cycle.
 
 """
+import real_mode
 import job_states
 import json
 import os
@@ -125,7 +126,7 @@ def run_loop(bridge, config):
             # the API (airassist)), so airAssist stayed False for the whole
             # cut. In Laser mode the air is gpOut[7] (M42 P7): it is taken from there.
             try:
-                if (status.get("global") or {}).get("selectedMode") == "Laser":
+                if real_mode.of_model(status) == "Laser":
                     gp = state.get("gpOut") or []
                     if len(gp) > 7 and gp[7] is not None:
                         air = (gp[7].get("pwm") or 0) > 0
@@ -137,7 +138,7 @@ def run_loop(bridge, config):
             file_info = job.get("file") or {}
             file_name = file_info.get("fileName")
             duration = job.get("duration")
-            kind = global_vars.get("selectedMode")
+            kind = real_mode.pick(global_vars.get("selectedMode"), state.get("machineMode"))
             consumption_kwh = global_vars.get("consumptionKWh")
 
             now_active = machine_status in JOB_ACTIVE_STATES
