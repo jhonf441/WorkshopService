@@ -47,14 +47,13 @@
 					<v-btn small outlined @click="logout"><v-icon left small>mdi-logout</v-icon>{{ $t('plugins.WorkshopService.users.log_out') }}</v-btn>
 				</template>
 				<template v-else>
-					<span class="text-body-2 grey--text">{{ $t('plugins.WorkshopService.users.not_identified') }}</span>
-					<v-spacer />
-					<v-btn small color="primary" @click="logIn"><v-icon left small>mdi-login</v-icon>{{ $t('plugins.WorkshopService.users.log_in') }}</v-btn>
+					<span class="text-body-2">{{ $t('plugins.WorkshopService.users.not_identified') }}</span>
 				</template>
 			</v-card-text>
 		</v-card>
 
-		<v-alert v-if="state.configured && !isAdmin" dense text type="info" class="mb-3">{{ $t('plugins.WorkshopService.users.admin_only') }}</v-alert>
+		<!-- the list of people is for administrators: without a session the cover offers to sign in; with a lower role it names the role -->
+		<session-notice v-if="state.configured && !isAdmin" :kind="gateKind" variant="cover" needed="admin" class="mb-3" />
 
 		<template v-if="state.configured && isAdmin">
 			<!-- People -->
@@ -202,7 +201,10 @@
 <script>
 'use strict'
 
-import { api, adoptSession, askLogin, changePin, currentIdentity, logout, onIdentity, whoami } from './workshop-api.js'
+import { api, adoptSession, changePin, currentIdentity, logout, onIdentity, whoami } from './workshop-api.js'
+import { signedOut } from './workshop-auth.js'
+import { roleMixin } from './role-mixin.js'
+import SessionNotice from './SessionNotice.vue'
 
 const ROLE_COLORS = { viewer: 'blue-grey', operator: 'primary', technician: 'amber darken-3', admin: 'error' };
 const PIN_RE = /^[0-9]{4,12}$/;
@@ -213,6 +215,10 @@ function emptyForm() {
 
 export default {
 	name: 'UsersCard',
+	components: { SessionNotice },
+	mixins: [roleMixin],
+	// the people, the sessions and every open form or dialog came from the session that left (ESTANDAR 3.3): emptied on sign-out / change of role
+	sessionData: ['state', 'cfg', 'showPins', 'dlgOff', 'offPin', 'offError', 'first', 'form', 'dlg', 'pinForm', 'dlgPin', 'armed', 'busy', 'error', 'formError', 'msg'],
 	data() {
 		return {
 			state: { configured: null, users: [], settings: {}, roles: [], modes: [], min_pin: 4, max_pin: 12 },
@@ -226,6 +232,7 @@ export default {
 	},
 	computed: {
 		me() { return this.identity && this.identity.user && this.identity.user.name ? this.identity.user : null; },
+		gateKind() { void this.identityTick; return signedOut() ? 'session' : 'role'; },
 		isAdmin() { return !!this.identity && this.identity.role === 'admin'; },
 		roleItems() { return (this.state.roles || []).map(r => ({ value: r, text: this.roleName(r) })); },
 		firstValid() { return !!this.first.name.trim() && PIN_RE.test(this.first.pin) && this.first.pin === this.first.repeat; },
@@ -239,6 +246,7 @@ export default {
 			return PIN_RE.test(p.pin) && p.pin === p.repeat && (!p.own || !!p.old);
 		}
 	},
+	created() { this._gen = 0; },
 	async mounted() {
 		this.off = onIdentity(i => { this.identity = i; this.read(); });
 		await whoami().catch(() => null);
@@ -252,6 +260,8 @@ export default {
 		dlgPin(open) { if (!open) this.showPins = false; }
 	},
 	methods: {
+		// an answer of the old person that is still on its way must not fill the list again
+		onSessionChange() { this._gen++; },
 		roleName(r) { return this.$t('plugins.WorkshopService.users.role_' + r); },
 		modeName(m) { return this.$t('plugins.WorkshopService.users.mode_' + m); },
 		roleColor(r) { return ROLE_COLORS[r] || 'grey'; },
@@ -259,6 +269,7 @@ export default {
 		isMe(u) { return !!this.me && this.me.name.toLowerCase() === String(u.name).toLowerCase(); },
 		fail(e) { return e && e.code !== 'cancelled' ? (e.message || String(e)) : ''; },
 		async read() {
+			const gen = this._gen;
 			const id = this.identity;
 			if (id && id.configured === false) {
 				this.state = Object.assign({}, this.state, { configured: false });
@@ -270,6 +281,7 @@ export default {
 			}
 			try {
 				const r = await api('users.list', {}, { noLogin: true });
+				if (gen !== this._gen) return;
 				this.state = r;
 				Object.assign(this.cfg, r.settings);
 				this.error = '';
@@ -381,7 +393,6 @@ export default {
 			}
 			this.busy = false;
 		},
-		async logIn() { await askLogin(); this.identity = currentIdentity(); await this.read(); },
 		async logout() { await logout(); this.identity = currentIdentity(); await this.read(); }
 	}
 };

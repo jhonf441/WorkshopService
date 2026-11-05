@@ -13,7 +13,7 @@
 			<v-btn small color="primary" :loading="backingup" :disabled="!b || (r && r.busy)" @click="backup()"><v-icon small left>mdi-content-save-outline</v-icon>{{ $t('plugins.WorkshopService.database.back_up_now') }}</v-btn>
 		</v-card-title>
 		<v-card-text>
-			<div v-if="error" class="error--text text-body-2 mb-2">{{ error }}</div>
+			<error-notice :error="error" retry class="mb-2" @retry="read()" />
 			<div v-if="msg" class="text-body-2 mb-2" :class="msgOk ? 'success--text' : 'error--text'">{{ msg }}</div>
 			<div v-if="!b && !error" class="grey--text">{{ $t('plugins.WorkshopService.database.reading') }}</div>
 			<template v-if="b">
@@ -189,11 +189,17 @@ import i18n from '../../i18n'
 'use strict'
 
 import { api } from './workshop-api.js'
+import { roleMixin } from './role-mixin.js'
+import ErrorNotice from './ErrorNotice.vue'
 import { pluginActive } from './workshop-ids.js'
 
 const names = { activity: i18n.t('plugins.WorkshopService.database.activity_jobs_modes_alerts'), consumption: i18n.t('plugins.WorkshopService.database.energy_meter_readings'), commands: i18n.t('plugins.WorkshopService.common.received_commands') };
 
 export default {
+	components: { ErrorNotice },
+	mixins: [roleMixin],
+	// the state of the database and of the backups was read with the session that left (ESTANDAR 3.3): emptied on sign-out / change of role
+	sessionData: ['b', 'error', 'msg', 'places', 'armed', 'loading'],
 	data() {
 		return {
 			b: null,
@@ -238,6 +244,7 @@ export default {
 			return { text: i18n.t('plugins.WorkshopService.database.backups_on_2'), color: 'success', icon: 'mdi-shield-check' };
 		}
 	},
+	created() { this._gen = 0; },
 	mounted() {
 		this.read();
 		// only with the page in view (DWC keeps it alive with keep-alive when going to another)
@@ -260,10 +267,17 @@ export default {
 			clearTimeout(this.msgTimer);
 			this.msgTimer = setTimeout(() => { this.msg = ''; }, 8000);
 		},
+		// the identity changed: an answer still on its way belongs to the old person; the new one reads again
+		onSessionChange(kind) {
+			this._gen++;
+			if (kind !== 'signed-out') this.read();
+		},
 		async read(silencioso) {
+			const gen = this._gen;
 			if (!silencioso) this.loading = true;
 			try {
 				const d = await this.base('status');
+				if (gen !== this._gen) return;
 				if (d.error && !d.tables) throw new Error(d.error);
 				this.b = d;
 				this.error = null;
@@ -272,9 +286,12 @@ export default {
 					this.nWeekly = d.backup.weekly;
 				}
 			} catch (e) {
-				this.error = i18n.t('plugins.WorkshopService.database.could_not_read_the_database_x', { x: e.message || e });
+				if (gen !== this._gen) return;
+				// a refusal is shown as its cause (no session / role); the rest keeps the sentence of what could not be read
+				const refused = e && (e.code === 'login_required' || e.code === 'forbidden');
+				this.error = refused ? e : i18n.t('plugins.WorkshopService.database.could_not_read_the_database_x', { x: e.message || e });
 			} finally {
-				this.loading = false;
+				if (gen === this._gen) this.loading = false;
 			}
 		},
 		async backup() {

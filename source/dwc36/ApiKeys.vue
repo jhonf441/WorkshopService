@@ -6,20 +6,11 @@
 			<v-btn small color="primary" :disabled="out" @click="openNew"><v-icon left small>mdi-plus</v-icon>{{ $t('plugins.WorkshopService.keys.new_key') }}</v-btn>
 		</v-card-title>
 		<v-card-text v-if="out">
-			<v-alert dense text type="info" icon="mdi-lock" class="mb-0">
-				<div class="d-flex align-center flex-wrap">
-					<span class="flex-grow-1 mr-2">{{ $t('plugins.WorkshopService.api.signedOut') }}</span>
-					<v-btn small color="primary" @click="askLogin()">{{ $t('plugins.WorkshopService.api.signInAction') }}</v-btn>
-				</div>
-			</v-alert>
+			<session-notice kind="session" variant="section" class="mb-0" />
 		</v-card-text>
 		<v-card-text v-else>
-			<div class="wf-help mb-2">{{ $t('plugins.WorkshopService.keys.intro') }}</div>
-			<details class="wf-more mb-3">
-				<summary>{{ $t('plugins.WorkshopService.servicePage.how_it_works') }}</summary>
-				<p>{{ $t('plugins.WorkshopService.keys.how_to_use') }}</p>
-			</details>
-			<v-alert v-if="error" dense text type="error" class="mb-2">{{ error }}</v-alert>
+			<help-guide class="mb-3" :what="$t('plugins.WorkshopService.keys.intro')" :how="$t('plugins.WorkshopService.keys.how_to_use')" />
+			<error-notice :error="error" class="mb-2" />
 			<div v-if="!keys.length && !loading" class="text-body-2 grey--text">{{ $t('plugins.WorkshopService.keys.none') }}</div>
 			<v-simple-table v-else dense>
 				<thead>
@@ -87,34 +78,41 @@
 						/>
 					</div>
 					<div class="text-caption grey--text mb-2">{{ $t('plugins.WorkshopService.keys.classes_help') }}</div>
-					<v-combobox
-						v-model="form.ops" :items="opItems" item-text="text" item-value="value" multiple chips small-chips deletable-chips
-						:label="$t('plugins.WorkshopService.keys.extra_operations')" :hint="$t('plugins.WorkshopService.keys.patterns_help')"
-						persistent-hint dense outlined :menu-props="menuProps" :return-object="false" @change="form.ops = norm(form.ops)"
-					>
-						<template v-slot:item="{ item }">
-							<v-list-item-content>
-								<v-list-item-title><code>{{ item.value }}</code> <span class="text-caption grey--text">{{ item.cssClass }}</span></v-list-item-title>
-								<v-list-item-subtitle>{{ item.desc }}</v-list-item-subtitle>
-							</v-list-item-content>
+					<wf-field id="ws-key-ops" :label="$t('plugins.WorkshopService.keys.extra_operations')">
+						<template #help>
+							<help-tip :title="$t('plugins.WorkshopService.keys.extra_operations')" :what="$t('plugins.WorkshopService.keys.help_extra_what')" :why="$t('plugins.WorkshopService.keys.patterns_help')" :how="$t('plugins.WorkshopService.keys.help_patterns_how')" />
 						</template>
-					</v-combobox>
-					<v-combobox
-						v-model="form.deny" :items="opItems" item-text="text" item-value="value" multiple chips small-chips deletable-chips
-						:label="$t('plugins.WorkshopService.keys.refused_operations')" :hint="$t('plugins.WorkshopService.keys.patterns_help')"
-						persistent-hint dense outlined class="mt-2" :menu-props="menuProps" :return-object="false" @change="form.deny = norm(form.deny)"
-					>
-						<template v-slot:item="{ item }">
-							<v-list-item-content>
-								<v-list-item-title><code>{{ item.value }}</code> <span class="text-caption grey--text">{{ item.cssClass }}</span></v-list-item-title>
-								<v-list-item-subtitle>{{ item.desc }}</v-list-item-subtitle>
-							</v-list-item-content>
+						<v-combobox
+							id="ws-key-ops" v-model="form.ops" :items="opItems" item-text="text" item-value="value" multiple chips small-chips deletable-chips
+							:aria-label="$t('plugins.WorkshopService.keys.extra_operations')" hide-details dense outlined :menu-props="menuProps" :return-object="false" @change="form.ops = norm(form.ops)"
+						>
+							<template v-slot:item="{ item }">
+								<v-list-item-content>
+									<v-list-item-title><code>{{ item.value }}</code> <span class="text-caption grey--text">{{ item.cssClass }}</span></v-list-item-title>
+									<v-list-item-subtitle>{{ item.desc }}</v-list-item-subtitle>
+								</v-list-item-content>
+							</template>
+						</v-combobox>
+					</wf-field>
+					<wf-field id="ws-key-deny" :label="$t('plugins.WorkshopService.keys.refused_operations')" class="mt-2">
+						<template #help>
+							<help-tip :title="$t('plugins.WorkshopService.keys.refused_operations')" :what="$t('plugins.WorkshopService.keys.help_refused_what')" :why="$t('plugins.WorkshopService.keys.patterns_help')" :how="$t('plugins.WorkshopService.keys.help_patterns_how')" />
 						</template>
-					</v-combobox>
-					<v-text-field
-						v-model="form.days" type="number" min="0" :label="$t('plugins.WorkshopService.keys.valid_days')" :hint="$t('plugins.WorkshopService.keys.valid_days_help')"
-						persistent-hint dense outlined class="mt-2" style="max-width:280px"
-					/>
+						<v-combobox
+							id="ws-key-deny" v-model="form.deny" :items="opItems" item-text="text" item-value="value" multiple chips small-chips deletable-chips
+							:aria-label="$t('plugins.WorkshopService.keys.refused_operations')" hide-details dense outlined :menu-props="menuProps" :return-object="false" @change="form.deny = norm(form.deny)"
+						>
+							<template v-slot:item="{ item }">
+								<v-list-item-content>
+									<v-list-item-title><code>{{ item.value }}</code> <span class="text-caption grey--text">{{ item.cssClass }}</span></v-list-item-title>
+									<v-list-item-subtitle>{{ item.desc }}</v-list-item-subtitle>
+								</v-list-item-content>
+							</template>
+						</v-combobox>
+					</wf-field>
+					<wf-field id="ws-key-days" :label="$t('plugins.WorkshopService.keys.valid_days')" :message="$t('plugins.WorkshopService.keys.valid_days_help')" class="mt-2" style="max-width:280px">
+						<v-text-field id="ws-key-days" v-model="form.days" type="number" min="0" :aria-label="$t('plugins.WorkshopService.keys.valid_days')" hide-details dense outlined />
+					</wf-field>
 					<v-alert dense text type="info" class="mt-3 mb-0">
 						{{ $t('plugins.WorkshopService.keys.preview', { n: viewPreview.length }) }}
 						<div class="text-caption" style="max-height:110px;overflow:auto">{{ viewPreview.join(', ') || '-' }}</div>
@@ -162,6 +160,11 @@ import { api, askLogin, currentIdentity, whoami } from './workshop-api.js'
 import { signedOut } from './workshop-auth.js'
 import { roleMixin } from './role-mixin.js'
 import { copyText } from './copy.js'
+import SessionNotice from './SessionNotice.vue'
+import ErrorNotice from './ErrorNotice.vue'
+import HelpGuide from './HelpGuide.vue'
+import HelpTip from './HelpTip.vue'
+import WfField from './WfField.vue'
 
 // Same rule as Registry._key_allows / api_keys.allows (workshop_api.py): the class or a pattern allows,
 // a deny pattern refuses, administration never.
@@ -183,14 +186,18 @@ function norm(v) {
 
 export default {
 	name: 'ApiKeys',
+	components: { SessionNotice, ErrorNotice, HelpGuide, HelpTip, WfField },
 	mixins: [roleMixin],
+	// the keys, the forms and above all the dialog with the new key in the clear come from the person who left (ESTANDAR 3.3): emptied on
+	// sign-out and change of role; onSessionChange closes the dialogs in every identity change
+	sessionData: ['keys', 'presets', 'loading', 'error', 'dlg', 'saving', 'errorForm', 'form', 'dlgKey', 'keyNew', 'copied'],
 	props: {
 		// api.describe of the service: [{op, kind, desc, args...}]
 		operations: { type: Array, default: () => [] }
 	},
 	data() {
 		return {
-			keys: [], presets: {}, loading: true, error: '',
+			keys: [], presets: {}, loading: true, error: null,
 			dlg: false, saving: false, errorForm: '',
 			form: { id: '', name: '', preset: 'read', kinds: ['read'], ops: [], deny: [], days: '' },
 			dlgKey: false, keyNew: '', copied: ''
@@ -225,24 +232,24 @@ export default {
 			return "curl -s -X POST http://" + host + "/machine/WorkshopService/api \\\n  -H 'Content-Type: application/json' -H 'X-Workshop-Key: " + this.keyNew + "' \\\n  -d '{\"op\":\"api.ping\",\"args\":{}}'";
 		}
 	},
+	created() {
+		this._gen = 0;
+	},
 	mounted() {
 		if (!currentIdentity()) whoami().catch(() => {});
 		if (!this.out) this.read();
 	},
-	watch: {
-		// signed in: read the keys now (not the old refusal); signed out: forget them
-		out(now) {
-			if (now) {
-				this.keys = [];
-				this.error = '';
-				this.errorForm = '';
-				this.dlg = false;
-			} else {
-				this.read();
-			}
-		}
-	},
 	methods: {
+		// A secret does not survive a change of person: in ANY identity change both dialogs close and the key shown once is forgotten. An answer
+		// of the old person still on its way is dropped; for the new identity the keys are read again.
+		onSessionChange(kind) {
+			this._gen++;
+			this.dlg = false;
+			this.dlgKey = false;
+			this.keyNew = '';
+			this.errorForm = '';
+			if (kind !== 'signed-out' && !this.out) this.read();
+		},
 		nameClass(c) { return this.$t('plugins.WorkshopService.keys.class_' + c); },
 		colorClass(c) { return colors[c] || 'grey'; },
 		isExpired(k) { return !!k.expires && k.expires * 1000 < Date.now(); },
@@ -264,14 +271,17 @@ export default {
 			return this.$t('plugins.WorkshopService.keys.pattern_covers', { n });
 		},
 		async read() {
+			const gen = this._gen;
 			this.loading = true;
 			try {
 				const r = await api('keys.list');
+				if (gen !== this._gen) return;
 				this.keys = (r && r.keys) || [];
 				this.presets = (r && r.presets) || {};
-				this.error = '';
+				this.error = null;
 			} catch (e) {
-				this.error = e.message || String(e);
+				if (gen !== this._gen) return;
+				this.error = e;
 			}
 			this.loading = false;
 		},
@@ -294,6 +304,7 @@ export default {
 			this.form.ops = (d.ops || []).slice();
 		},
 		async save() {
+			const gen = this._gen;
 			this.saving = true;
 			this.errorForm = '';
 			const f = this.form;
@@ -307,6 +318,7 @@ export default {
 					const args = { name: f.name, kinds: f.kinds, ops: norm(f.ops), deny: norm(f.deny) };
 					if (f.days !== '' && f.days !== null && Number(f.days) > 0) args.days = Number(f.days);
 					const r = await api('keys.create', args);
+					if (gen !== this._gen) return; // the person changed meanwhile: the new key is not shown to anybody else
 					this.dlg = false;
 					this.keyNew = (r && r.key) || '';
 					this.dlgKey = !!this.keyNew;
@@ -321,7 +333,7 @@ export default {
 			try {
 				await api('keys.update', { id: k.id, enabled: !!v });
 			} catch (e) {
-				this.error = e.message || String(e);
+				this.error = e;
 			}
 			await this.read();
 		},
@@ -329,7 +341,7 @@ export default {
 			try {
 				await api('keys.revoke', { id: k.id });
 			} catch (e) {
-				if (e.code !== 'cancelled') this.error = e.message || String(e);
+				if (e.code !== 'cancelled') this.error = e;
 			}
 			await this.read();
 		},

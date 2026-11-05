@@ -7,7 +7,7 @@
 		</v-card-title>
 		<v-card-text>
 			<div class="text-caption grey--text mb-3">{{ $t('plugins.WorkshopService.audit.help') }}</div>
-			<v-alert v-if="!isAdmin" dense text type="info" class="mb-0">{{ $t('plugins.WorkshopService.users.admin_only') }}</v-alert>
+			<session-notice v-if="!isAdmin" :kind="gateKind" variant="cover" needed="admin" />
 			<template v-else>
 				<v-row dense class="mb-1">
 					<v-col cols="12" sm="6"><range-picker v-model="range" clearable /></v-col>
@@ -64,6 +64,9 @@
 'use strict'
 
 import { api, currentIdentity, onIdentity } from './workshop-api.js'
+import { signedOut } from './workshop-auth.js'
+import { roleMixin } from './role-mixin.js'
+import SessionNotice from './SessionNotice.vue'
 import RangePicker from './RangePicker.vue'
 import { resolve, localText, relative } from './range-picker.js'
 
@@ -77,11 +80,15 @@ function day(offsetDays) {
 
 export default {
 	name: 'AuditCard',
-	components: { RangePicker },
+	components: { RangePicker, SessionNotice },
+	mixins: [roleMixin],
+	// the rows and the people of the old session are emptied on sign-out / change of role (ESTANDAR 3.3); the filters are not data of the session
+	sessionData: ['rows', 'total', 'users', 'offset', 'error', 'loading'],
 	data() {
 		return { range: relative(7, 'days'), f: { from: day(7), to: day(0), user: null, op: '', errors: false }, rows: [], total: 0, users: [], offset: 0, loading: false, error: '', identity: currentIdentity(), off: null, PAGE };
 	},
 	computed: {
+		gateKind() { void this.identityTick; return signedOut() ? 'session' : 'role'; },
 		isAdmin() { return !!this.identity && this.identity.role === 'admin'; },
 		userItems() { return this.users; }
 	},
@@ -90,19 +97,24 @@ export default {
 		range: { immediate: true, handler(r) { const m = r ? resolve(r, new Date()) : null; this.f.from = m ? localText(m.from).slice(0, 10) : ''; this.f.to = m ? localText(m.to).slice(0, 10) : ''; } },
 		f: { deep: true, handler() { this.offset = 0; this.read(); } }
 	},
+	created() { this._gen = 0; },
 	mounted() {
 		this.off = onIdentity(i => { this.identity = i; if (this.isAdmin) this.read(); });
 		if (this.isAdmin) this.read();
 	},
 	beforeDestroy() { if (this.off) this.off(); },
 	methods: {
+		// an answer of the old person that is still on its way must not fill the table again
+		onSessionChange() { this._gen++; },
 		roleName(r) { const k = 'plugins.WorkshopService.users.role_' + r; return this.$te(k) ? this.$t(k) : r; },
 		move(dir) { this.offset = Math.max(0, this.offset + dir * PAGE); this.read(); },
 		async read() {
+			const gen = this._gen;
 			this.loading = true;
 			try {
 				const f = this.f;
 				const r = await api('audit.list', { from: f.from || undefined, to: f.to || undefined, user: f.user || undefined, op: f.op || undefined, errors: !!f.errors, limit: PAGE, offset: this.offset }, { noLogin: true });
+				if (gen !== this._gen) return;
 				this.rows = r.rows || [];
 				this.total = r.total || 0;
 				this.users = r.users || [];
@@ -110,7 +122,7 @@ export default {
 			} catch (e) {
 				this.error = e.code === 'cancelled' ? '' : (e.message || String(e));
 			}
-			this.loading = false;
+			if (gen === this._gen) this.loading = false;
 		}
 	}
 };

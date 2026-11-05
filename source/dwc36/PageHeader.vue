@@ -30,12 +30,12 @@
 				</v-menu>
 				<slot />
 				<slot name="right" />
-				<v-chip v-if="signedOutNow" small outlined color="info" class="wf-session-chip" :title="ts('header_sign_in_help')" @click="signIn">
-					<v-icon x-small left>mdi-account-lock-outline</v-icon>{{ ts('header_sign_in') }}
-				</v-chip>
-				<v-chip v-else-if="viewerNow" small outlined :title="ts('header_read_only_help')">
-					<v-icon x-small left>mdi-eye-outline</v-icon>{{ ts('header_read_only') }}
-				</v-chip>
+				<button v-if="signedOutNow" type="button" class="wf-session-chip" :aria-label="ts('notice_bar_chip_help')" :title="ts('notice_bar_chip_help')" @click="signIn">
+					<v-icon :size="16" class="wf-session-chip-icon">mdi-account-lock-outline</v-icon><span>{{ ts('notice_bar_chip') }}</span>
+				</button>
+				<span v-else-if="viewerNow" class="wf-session-chip is-role" :title="ts('header_read_only_help')">
+					<v-icon :size="16" class="wf-session-chip-icon">mdi-eye-outline</v-icon><span>{{ ts('header_read_only') }}</span>
+				</span>
 				<slot name="startup" />
 		</div>
 	</div>

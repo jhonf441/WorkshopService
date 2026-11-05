@@ -7,23 +7,28 @@
 //
 // The ticket `identityTick` is what makes the computed properties run again; the answer itself is workshopCan / roleAtLeast.
 
-import { onIdentity, workshopCan, workshopRole, signedOut } from './workshop-auth.js'
+import { onIdentity, workshopCan, workshopRole, signedOut, currentIdentity } from './workshop-auth.js'
 import { roleAtLeast } from './role-view.js'
 import { lockReason, lockReasonOp } from './lock-reason.js'
+import { sessionKey, sessionChangeKind, resetSessionData } from './session-reset.js'
 
+// A page that defines onSessionChange(kind) is told when the identity changes (not on every whoami); kind is 'signed-in' | 'signed-out' |
+// 'role-changed' | 'known' (the first time the identity is known). The component option `sessionData: ['users', ...]` names the data that
+// depends on who is signed in: it is put back to its initial value on 'signed-out' and 'role-changed', BEFORE onSessionChange runs.
 export const roleMixin = {
 	data() {
 		return { identityTick: 0 }
 	},
 	created() {
-		// a page that defines onSessionChange() is told when the person signs in or out or the role changes (not on every
-		// whoami): it reads its data again, so it does not stay empty with the error of the time it was signed out
-		let last = null
+		let last = currentIdentity() ? sessionKey(workshopRole(), signedOut()) : null
 		this.offIdentity = onIdentity(() => {
 			this.identityTick++
-			const key = workshopRole() + '|' + (signedOut() ? 'out' : 'in')
-			if (last !== null && last !== key && typeof this.onSessionChange === 'function') this.onSessionChange()
-			last = key
+			const key = sessionKey(workshopRole(), signedOut())
+			const kind = sessionChangeKind(last, key, !!currentIdentity())
+			if (currentIdentity()) last = key
+			if (!kind) return
+			if (kind === 'signed-out' || kind === 'role-changed') resetSessionData(this, this.$options.sessionData)
+			if (typeof this.onSessionChange === 'function') this.onSessionChange(kind)
 		})
 	},
 	beforeDestroy() {

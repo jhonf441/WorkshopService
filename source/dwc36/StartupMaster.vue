@@ -7,12 +7,11 @@
 			<span><v-icon small class="mr-2 svx-ico">mdi-rocket-launch-outline</v-icon>{{ $t(T + 'title') }}</span>
 			<v-chip small outlined :color="needsLogin ? undefined : summary.pending ? 'warning' : summary.unchecked ? undefined : 'success'">{{ summaryText }}</v-chip>
 			<v-spacer />
-			<v-btn v-if="needsLogin" small color="primary" @click="logIn()"><v-icon small left>mdi-login</v-icon>{{ $t(T + 'log_in') }}</v-btn>
 			<v-btn small text :loading="loading" @click="read()"><v-icon small left>mdi-refresh</v-icon>{{ $t('plugins.WorkshopService.common.refresh') }}</v-btn>
 		</v-card-title>
 		<v-card-text>
 			<div class="text-body-2 mb-3 svc-sm-intro">{{ $t(T + 'intro') }}</div>
-			<v-alert v-if="needsLogin" dense text type="info" class="mb-2">{{ $t(T + 'login_needed') }}</v-alert>
+			<session-notice v-if="needsLogin" kind="session" variant="section" />
 			<section v-for="g in groups" :key="g.id" class="svc-sm-group" :class="'svc-sm-group-' + g.id">
 				<div class="svc-sm-head">
 					<v-icon small :color="g.color">{{ g.icon }}</v-icon>
@@ -41,7 +40,9 @@
 <script>
 'use strict'
 
-import { api, askLogin, currentIdentity, onIdentity } from './workshop-api.js'
+import { api, currentIdentity, onIdentity } from './workshop-api.js'
+import { roleMixin } from './role-mixin.js'
+import SessionNotice from './SessionNotice.vue'
 import { buildGroups, doneSteps, donePercent } from './startup-groups.js'
 import { IDS, pluginActive, pathExists } from './workshop-ids.js'
 
@@ -63,6 +64,10 @@ const PLUGINS = [
 ];
 
 export default {
+	components: { SessionNotice },
+	mixins: [roleMixin],
+	// what each plugin reported was read with the session that left (ESTANDAR 3.3): emptied on sign-out / change of role, read again by the listener below
+	sessionData: ['reported', 'needsLogin', 'loading'],
 	data() {
 		return { T: 'plugins.WorkshopService.startup_master.', reported: {}, loading: false, needsLogin: false, off: null, identity: currentIdentity() };
 	},
@@ -103,7 +108,6 @@ export default {
 		done(r) { return doneSteps(r.entry); },
 		percent(r) { return donePercent(r.entry); },
 		hasPath(path) { return pathExists(this.$router, path); },
-		async logIn() { await askLogin(); await this.read(); },
 		color(r) { return !r.entry ? 'grey' : r.entry.pending ? 'warning' : 'success'; },
 		icon(r) { return !r.entry ? 'mdi-help-circle-outline' : r.entry.pending ? 'mdi-alert-circle-outline' : 'mdi-check-circle-outline'; },
 		stateText(r) {
@@ -113,21 +117,27 @@ export default {
 			if (r.entry.pending) return this.$t(this.T + 'pending', { n: r.entry.pending, total: r.entry.total });
 			return this.$t(this.T + 'ready');
 		},
+		// an answer of the old person that is still on its way must not fill the rows again
+		onSessionChange() { this._gen++; },
 		async read() {
+			const gen = this._gen;
 			this.loading = true;
 			try {
 				const r = await api('readiness.list', {}, { noLogin: true, quiet: true });
+				if (gen !== this._gen) return;
 				this.reported = (r && r.plugins) || {};
 				this.needsLogin = false;
 			} catch (e) {
+				if (gen !== this._gen) return;
 				// no session: say so, do not pass it off as 'not checked'
 				this.reported = {};
 				this.needsLogin = !!e && (e.code === 'login_required' || e.code === 'forbidden');
 			} finally {
-				this.loading = false;
+				if (gen === this._gen) this.loading = false;
 			}
 		}
 	},
+	created() { this._gen = 0; },
 	mounted() {
 		this.read();
 		this.off = onIdentity(i => { this.identity = i || currentIdentity(); this.read(); });

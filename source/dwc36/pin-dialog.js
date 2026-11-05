@@ -43,7 +43,7 @@ function field(label, type, mode) {
 	if (mode) input.setAttribute('inputmode', mode)
 	// Accent border while the field has the focus, red while the sign shows an error (paintError)
 	input.addEventListener('focus', () => {
-		input.style.borderColor = '#1976d2'
+		input.style.borderColor = 'var(--wf-accent, #1976d2)'
 	})
 	input.addEventListener('blur', () => {
 		input.style.borderColor = input.getAttribute('data-bad') ? '#ef9a9a' : 'rgba(255,255,255,0.23)'
@@ -112,9 +112,9 @@ export function pinDialog(login, t) {
 		box.setAttribute('aria-modal', 'true')
 		const head = el('div', 'display:flex;align-items:center;gap:12px;')
 		const badge = el('div', 'width:40px;height:40px;border-radius:50%;background:rgba(25,118,210,0.2);display:flex;align-items:center;justify-content:center;flex:none;')
-		badge.appendChild(icon(LOCK, 22, '#90caf9'))
+		badge.appendChild(icon(LOCK, 22, 'var(--wf-n-session, #1e88e5)'))
 		const titles = el('div', 'min-width:0;')
-		titles.appendChild(el('div', 'font-size:14px;font-weight:600;color:#90caf9;', t('pinTitle')))
+		titles.appendChild(el('div', 'font-size:14px;font-weight:600;color:var(--wf-n-session-text, #90caf9);', t('pinTitle')))
 		titles.appendChild(el('div', 'color:#b0bec5;font-size:12px;', t('pinHint')))
 		head.appendChild(badge)
 		head.appendChild(titles)
@@ -143,14 +143,14 @@ export function pinDialog(login, t) {
 		eye.addEventListener('click', () => {
 			const shown = pn.input.style.getPropertyValue('-webkit-text-security') === 'none'
 			pn.input.style.setProperty('-webkit-text-security', shown ? 'disc' : 'none')
-			eye.firstChild.style.fill = shown ? '#b0bec5' : '#90caf9'
+			eye.firstChild.style.fill = shown ? '#b0bec5' : 'var(--wf-n-session-text, #90caf9)'
 		})
 		pn.wrap.style.position = 'relative'
 		pn.wrap.appendChild(eye)
 		const msg = el('div', 'min-height:20px;margin-top:10px;font-size:12px;color:#ef9a9a;')
 		const row = el('div', 'display:flex;gap:8px;justify-content:flex-end;margin-top:6px;')
 		const bc = el('button', 'background:transparent;color:#eceff1;border:0;border-radius:6px;padding:8px 16px;min-height:44px;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;font-family:inherit;', t('cancel'))
-		const bo = el('button', 'background:#1976d2;color:#fff;border:0;border-radius:6px;padding:8px 20px;min-height:44px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;font-family:inherit;', t('pinEnter'))
+		const bo = el('button', 'background:var(--wf-accent, #1976d2);color:#fff;border:0;border-radius:6px;padding:8px 20px;min-height:44px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;font-family:inherit;', t('pinEnter'))
 		bc.type = bo.type = 'button'
 		const inputs = [nm.input, pn.input]
 		let busy = false

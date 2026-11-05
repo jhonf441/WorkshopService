@@ -25,10 +25,44 @@
 	--wf-err: #e53935;
 	--wf-info: #1e88e5;
 	--wf-armed: #ff8f00;
+	/* semantic colors of every notice (ESTANDAR 2.1): ONE color per meaning; --wf-c-<meaning> (border, icon), -text, -bg.
+	   info = needs the person to sign in (blue); neutral = no permission for the role / nothing to say (gray); warning = waiting, locked, service down (orange);
+	   error = a real failure (red); success = done / all fine (green). Nothing is red while the session is still being resolved. */
+	--wf-c-info: #1e88e5;
+	--wf-c-info-text: #90caf9;
+	--wf-c-info-bg: rgba(30, 136, 229, 0.1);
+	--wf-c-neutral: #90a4ae;
+	--wf-c-neutral-text: inherit;
+	--wf-c-neutral-bg: rgba(128, 128, 128, 0.08);
+	--wf-c-warning: #fb8c00;
+	--wf-c-warning-text: #ffcc80;
+	--wf-c-warning-bg: rgba(251, 140, 0, 0.1);
+	--wf-c-error: #e53935;
+	--wf-c-error-text: #ef9a9a;
+	--wf-c-error-bg: rgba(229, 57, 53, 0.1);
+	--wf-c-success: #43a047;
+	--wf-c-success-text: #a5d6a7;
+	--wf-c-success-bg: rgba(67, 160, 71, 0.1);
+	--wf-n-session: var(--wf-c-info); --wf-n-session-text: var(--wf-c-info-text); --wf-n-session-bg: var(--wf-c-info-bg);
+	--wf-n-role: var(--wf-c-neutral); --wf-n-role-text: var(--wf-c-neutral-text); --wf-n-role-bg: var(--wf-c-neutral-bg);
+	--wf-n-down: var(--wf-c-warning); --wf-n-down-text: var(--wf-c-warning-text); --wf-n-down-bg: var(--wf-c-warning-bg);
+	--wf-n-error: var(--wf-c-error); --wf-n-error-text: var(--wf-c-error-text); --wf-n-error-bg: var(--wf-c-error-bg);
 }
 .theme--light.v-application, .theme--light .workshop-theme, .theme--light .wf-bar { --wf-surface: #fff; }
 .v-theme--light.v-application { --wf-surface: rgb(var(--v-theme-surface, 255, 255, 255)); }
 .v-theme--dark.v-application { --wf-surface: rgb(var(--v-theme-surface, 30, 30, 30)); }
+/* tokens of the light theme; html:has() reaches what hangs from <body> (toast, PIN dialog) */
+.theme--light.v-application, .theme--light .workshop-theme, .theme--light .wf-bar, .v-theme--light.v-application, html:has(.theme--light), html:has(.v-theme--light) {
+	--wf-c-info: #1565c0; --wf-c-info-text: #0d47a1; --wf-c-info-bg: rgba(21, 101, 192, 0.08);
+	--wf-c-neutral: #546e7a;
+	--wf-c-warning: #e65100; --wf-c-warning-text: #bf360c; --wf-c-warning-bg: rgba(230, 81, 0, 0.08);
+	--wf-c-error: #c62828; --wf-c-error-text: #b71c1c; --wf-c-error-bg: rgba(198, 40, 40, 0.08);
+	--wf-c-success: #2e7d32; --wf-c-success-text: #1b5e20; --wf-c-success-bg: rgba(46, 125, 50, 0.08);
+	--wf-n-session: var(--wf-c-info); --wf-n-session-text: var(--wf-c-info-text); --wf-n-session-bg: var(--wf-c-info-bg);
+	--wf-n-role: var(--wf-c-neutral); --wf-n-role-text: var(--wf-c-neutral-text); --wf-n-role-bg: var(--wf-c-neutral-bg);
+	--wf-n-down: var(--wf-c-warning); --wf-n-down-text: var(--wf-c-warning-text); --wf-n-down-bg: var(--wf-c-warning-bg);
+	--wf-n-error: var(--wf-c-error); --wf-n-error-text: var(--wf-c-error-text); --wf-n-error-bg: var(--wf-c-error-bg);
+}
 /* the color of the section in use: --wf-sec, else the --sec an older page still sets, else the color of the plugin */
 .workshop-theme, .wf-bar, .sidetabs, .wf-nav, .wf-tabs, .wf-card, .st-layout, .st-body, .workshop-theme .v-card { --wf-sec-now: var(--wf-sec, var(--sec, var(--wf-badge))); }
 
@@ -49,6 +83,7 @@
 .wf-state.warn::before, .wf-dot.warn { background: var(--wf-warn); }
 .wf-state.err::before, .wf-dot.err { background: var(--wf-err); }
 .wf-state.info::before, .wf-dot.info { background: var(--wf-info); }
+.wf-state.info { background-color: transparent !important; border-color: transparent !important; }
 .wf-pill { display: inline-flex; align-items: center; gap: 6px; padding: 1px 10px; border: 1px solid var(--wf-line); border-radius: 999px; font-size: 12px; font-weight: 500; opacity: 0.85; }
 .wf-bar .page-health { cursor: pointer; }
 /* old pages that still draw the bar as a v-card: the same look, so a page being migrated does not jump */
@@ -132,7 +167,7 @@
 .workshop-theme .v-btn[class*='bg-amber'], .workshop-theme .v-btn.amber, .workshop-theme .v-btn[class*='amber darken'], .wf-btn.wf-armed { background: var(--wf-armed) !important; color: #000 !important; border: 0; }
 .workshop-theme .v-btn :is(.v-btn__overlay, .v-btn__underlay) { display: none; }
 .workshop-theme .v-btn:not(.v-btn--icon):hover { background-color: rgba(128, 128, 128, 0.1); }
-.workshop-theme .v-btn:is(.bg-primary, .primary):hover { background-color: var(--wf-accent) !important; filter: brightness(1.1); }
+.workshop-theme .v-btn:is(.bg-primary, .primary):hover { background-color: var(--wf-accent) !important; filter: brightness(0.92); }
 .workshop-theme .v-btn .v-icon { color: inherit; }
 
 /* ================= chips and states: a neutral outline; a state shows as a colored dot + the word ================= */
@@ -187,8 +222,88 @@
 .wf-cat:hover { background: color-mix(in srgb, var(--wf-cat) 26%, transparent); }
 .wf-cat:is(.on, [aria-pressed='true'], [aria-selected='true']) { background: var(--wf-cat); border-color: var(--wf-cat); color: #fff; font-weight: 600; }
 
+/* ================= notices by cause (ESTANDAR 2.2): N1 chip, N2 note, N3 reason, N4 cover, N5 toast ================= */
+/* the cause sets three variables: --wf-n-c (border, icon), --wf-n-t (text), --wf-n-bg (background); nothing else paints a notice */
+.wf-notice--session, .wf-reason--session, .wf-cover--session, .wf-toast--session { --wf-n-c: var(--wf-n-session); --wf-n-t: var(--wf-n-session-text); --wf-n-bg: var(--wf-n-session-bg); }
+.wf-notice--role, .wf-reason--role, .wf-cover--role, .wf-toast--role { --wf-n-c: var(--wf-n-role); --wf-n-t: var(--wf-n-role-text); --wf-n-bg: var(--wf-n-role-bg); }
+.wf-notice--down, .wf-reason--down, .wf-cover--down, .wf-toast--down { --wf-n-c: var(--wf-n-down); --wf-n-t: var(--wf-n-down-text); --wf-n-bg: var(--wf-n-down-bg); }
+.wf-notice--resolving, .wf-reason--resolving, .wf-cover--resolving, .wf-toast--resolving { --wf-n-c: var(--wf-c-neutral); --wf-n-t: var(--wf-c-neutral-text); --wf-n-bg: var(--wf-c-neutral-bg); }
+.wf-notice--success, .wf-reason--success, .wf-cover--success, .wf-toast--success { --wf-n-c: var(--wf-c-success); --wf-n-t: var(--wf-c-success-text); --wf-n-bg: var(--wf-c-success-bg); }
+.wf-notice--error, .wf-reason--error, .wf-cover--error, .wf-toast--error { --wf-n-c: var(--wf-n-error); --wf-n-t: var(--wf-n-error-text); --wf-n-bg: var(--wf-n-error-bg); }
+/* N1 the session chip of the page bar */
+.wf-session-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 12px; border: 1px solid var(--wf-n-session); border-radius: 14px; background: var(--wf-n-session-bg); color: var(--wf-n-session-text); font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1; cursor: pointer; }
+.wf-session-chip.is-role { border-color: var(--wf-n-role); background: var(--wf-n-role-bg); color: inherit; cursor: default; }
+.wf-session-chip-icon { flex: none; width: 16px; height: 16px; font-size: 16px; color: var(--wf-n-session); }
+.wf-session-chip.is-role .wf-session-chip-icon { color: var(--wf-n-role); }
+.wf-session-chip-icon svg { width: 16px; height: 16px; fill: currentColor; }
+/* N2 a section note */
+.wf-notice { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 12px; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--wf-n-c) 40%, transparent); border-left: 3px solid var(--wf-n-c); border-radius: 8px; background: var(--wf-n-bg); font-size: 13px; line-height: 1.4; }
+.wf-notice-icon, .wf-reason-icon, .wf-cover-icon { flex: none; width: 16px; height: 16px; font-size: 16px; color: var(--wf-n-c); }
+.wf-notice-icon { margin-top: 1px; }
+.wf-notice-icon svg, .wf-reason-icon svg, .wf-cover-icon svg { width: 100%; height: 100%; fill: currentColor; }
+.wf-notice-body { flex: 1 1 auto; min-width: 0; }
+.wf-notice-text { color: var(--wf-n-t); overflow-wrap: anywhere; }
+.wf-notice-action { margin-left: auto; flex: none; }
+/* N3 the reason next to a disabled control (or group): no box, one line of text */
+.wf-reason { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 13px; line-height: 1.4; color: var(--wf-n-t); }
+/* N4 a cover: the content of a zone is replaced by it */
+.wf-cover { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 160px; padding: 24px 16px; text-align: center; border: 1px dashed color-mix(in srgb, var(--wf-n-c) 50%, transparent); border-radius: 10px; background: var(--wf-n-bg); }
+.wf-cover-icon { width: 32px; height: 32px; font-size: 32px; }
+.wf-cover-title { font-size: 14px; font-weight: 600; }
+.wf-cover-text { max-width: 48ch; font-size: 13px; color: var(--wf-n-t); }
+.wf-cover--empty { --wf-n-c: var(--wf-line-strong); --wf-n-t: inherit; --wf-n-bg: var(--wf-soft); }
+.wf-cover--empty .wf-cover-icon { color: var(--wf-icon); }
+/* N5 the card of a refusal: always a dark window (it hangs from <body>), so the cause colors are the dark ones */
+.wf-toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 2147483645; width: min(560px, 92vw); box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px; background: #1e272c; color: #eceff1; border: 1px solid rgba(255, 255, 255, 0.12); border-left: 4px solid var(--wf-n-c); border-radius: 8px; font: 12px/1.4 Roboto, Helvetica, Arial, sans-serif; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5); }
+.wf-toast--session { --wf-n-c: #1e88e5; } .wf-toast--role { --wf-n-c: #90a4ae; } .wf-toast--down { --wf-n-c: #fb8c00; } .wf-toast--error { --wf-n-c: #e53935; }
+.wf-toast-icon { flex: none; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--wf-n-c) 18%, transparent); color: var(--wf-n-c); }
+.wf-toast-body { flex: 1 1 auto; min-width: 0; }
+.wf-toast-title { font: 600 13px/1.3 Roboto, Helvetica, Arial, sans-serif; color: #fff; }
+.wf-toast-desc { color: #cfd8dc; overflow-wrap: anywhere; }
+.wf-toast-close { flex: none; width: 32px; height: 32px; border: 0; background: transparent; color: #cfd8dc; font: 400 20px/1 Roboto, Arial, sans-serif; cursor: pointer; }
+.wf-toast .wf-btn { min-height: 36px; font-weight: 600; font-size: 12px; }
+/* a refusal printed by a page (marked by workshopPermissionMark): the role one is a calm note, the session one only while nobody is signed in */
+[data-workshop-permission='role'] { --wf-n-c: var(--wf-n-role); --wf-n-t: var(--wf-n-role-text); --wf-n-bg: var(--wf-n-role-bg); }
+html[data-workshop-signed-out] [data-workshop-permission='session'] { --wf-n-c: var(--wf-n-session); --wf-n-t: var(--wf-n-session-text); --wf-n-bg: var(--wf-n-session-bg); }
+[data-workshop-permission='role'], html[data-workshop-signed-out] [data-workshop-permission='session'] { color: var(--wf-n-t) !important; background-color: var(--wf-n-bg) !important; border: 1px solid color-mix(in srgb, var(--wf-n-c) 40%, transparent) !important; border-left: 3px solid var(--wf-n-c) !important; border-radius: 8px; }
+[data-workshop-permission='role'] *, html[data-workshop-signed-out] [data-workshop-permission='session'] * { color: inherit !important; }
+html:not([data-workshop-signed-out]) [data-workshop-permission='session'] { display: none !important; }
+
+/* ================= help: the "?" (H1), the field with its label outside, the guide (H3), the note (H4) ================= */
+button.help-tip.v-btn.v-btn, .help-tip { width: 24px; height: 24px; min-width: 24px; }
+.help-tip { display: inline-flex; align-items: center; justify-content: center; flex: none; margin: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--wf-icon); cursor: pointer; opacity: 1; font: inherit; }
+.help-tip :is(.v-icon, .mdi), .help-tip svg { color: var(--wf-icon); font-size: 18px; line-height: 1; opacity: 1; }
+.help-tip svg { width: 18px; height: 18px; fill: currentColor; }
+.wf-section-head .help-tip { margin: 0; }
+.help-tip-card, .wf-popover { max-width: 380px; }
+.wf-popover { position: fixed; z-index: 9999; box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--wf-line); border-radius: 8px; background: var(--wf-surface); color: inherit; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); }
+.help-tip-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.help-tip-list { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 6px 0 0; font-size: 13px; }
+.help-tip-list dt { font-weight: 600; }
+.help-tip-list dd { margin: 0; }
+.help-tip-row { display: flex; align-items: center; gap: 4px; justify-content: flex-start; }
+.help-tip-row > :first-child { flex: 0 1 auto; min-width: 0; }
+.wf-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.wf-field-label { display: flex; align-items: center; gap: 2px; min-height: 24px; font-size: 13px; font-weight: 500; line-height: 1.3; }
+.wf-field-label > label { min-width: 0; overflow-wrap: anywhere; }
+.wf-field-label .help-tip { flex: none; margin: -4px 0; }
+.wf-field-msg { font-size: 12px; line-height: 1.4; }
+.wf-field-msg.is-hint { opacity: 0.75; }
+.wf-field-msg.is-error { color: var(--wf-n-error-text); }
+.wf-guide { margin-top: 8px; font-size: 13px; }
+.wf-guide > summary { cursor: pointer; font-size: 13px; font-weight: 600; opacity: 0.85; min-height: 24px; }
+.wf-guide[open] > summary { margin-bottom: 6px; }
+.workshop-theme .wf-note, .wf-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 4px; font-size: 13px; line-height: 1.4; opacity: 1; }
+.wf-note-icon { flex: none; width: 16px; height: 16px; font-size: 16px; color: var(--wf-info); }
+.wf-note.is-warn { padding-left: 8px; border-left: 3px solid var(--wf-warn); }
+.wf-note.is-warn .wf-note-icon { color: var(--wf-warn); }
+/* the touch size of the "?" and of the guide summary lives in the coarse-pointer block below */
+
 /* ================= touch screens: what is touched is at least 44 px high ================= */
 @media (pointer: coarse) {
+	.wf-session-chip { min-height: 40px; }
+	button.help-tip.v-btn.v-btn, .help-tip { width: 40px; height: 40px; min-width: 40px; margin: -8px; }
+	.wf-guide > summary { min-height: 44px; display: flex; align-items: center; }
 	.workshop-theme .v-btn:not(.v-btn--icon):not(.v-btn--fab):not(.v-btn--variant-text):not(.v-btn--text), .wf-btn { min-height: 44px; }
 	.wf-actions, .wf-bar-right { gap: 12px; }
 }

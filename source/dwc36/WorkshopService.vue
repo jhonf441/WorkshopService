@@ -3,10 +3,7 @@
 		<!-- backend stopped (2026-10-10, test "what if a plugin is
 		     missing"): DSF keeps the data published the last time, so
 		     without this notice the page looked up to date with the service stopped -->
-		<v-alert v-if="!runs" outlined type="warning" dense icon="mdi-lan-disconnect" class="mb-3 notice-stopped">
-			<div class="font-weight-medium">{{ $t('plugins.WorkshopService.servicePage.the_system_service_is_stopped') }}</div>
-			<div class="text-body-2 mt-1">{{ $t('plugins.WorkshopService.servicePage.what_you_see_below_is_old', { list: withoutServiceList }) }}</div>
-		</v-alert>
+		<session-notice v-if="!runs" kind="down" variant="section" class="notice-stopped" :text="$t('plugins.WorkshopService.servicePage.the_system_service_is_stopped') + ' ' + $t('plugins.WorkshopService.servicePage.what_you_see_below_is_old', { list: withoutServiceList })" />
 		<!-- The ONE bar of the page (design family): badge, name, one line, and the state with the count of processes -->
 		<page-header icon="mdi-flash" :title="$t('plugins.WorkshopService.page.system_service')" :lead="$t('plugins.WorkshopService.page.service_lead')" loading>
 			<v-chip small outlined :color="headerChip.color">
@@ -578,16 +575,14 @@
 		<!-- Keys of the external services -->
 		<api-keys :operations="apiOps || []" />
 
-		<!-- Referencia de comandos -->
-		<v-card class="mb-3">
+		<!-- Referencia de comandos: without a session the service does not describe its API (api.describe), so nothing of it stays here -->
+		<session-notice v-if="apiRefKind" :kind="apiRefKind" variant="cover" class="mb-3 svc-api-cover" />
+		<v-card v-else class="mb-3">
 			<v-card-title>
 				<v-icon small class="mr-2 svx-ico">mdi-book-open-variant</v-icon>{{ $t('plugins.WorkshopService.page.apiTitle') }}
 			</v-card-title>
 			<v-card-text>
-				<details class="wf-more mb-3">
-					<summary>{{ $t('plugins.WorkshopService.servicePage.how_it_works') }}</summary>
-					<p>{{ $t('plugins.WorkshopService.page.apiHelp') }}</p>
-				</details>
+				<help-guide class="mb-3"><p>{{ $t('plugins.WorkshopService.page.apiHelp') }}</p></help-guide>
 				<div class="svx-cats">
 					<button v-for="c in categories" :key="c.id" type="button" class="wf-cat" :class="{ on: catFilter === c.id }" :aria-pressed="catFilter === c.id ? 'true' : 'false'" :style="{ '--wf-cat': c.color }" @click="pickCat(c.id)">
 						<v-icon small>{{ c.icon }}</v-icon>
@@ -691,6 +686,10 @@ import { pluginOf, IDS, pluginActive, pathExists } from './workshop-ids.js' // I
 import BridgeCard from './BridgeCard.vue'
 import SideTabs from './SideTabs.vue'
 import PageHeader from './PageHeader.vue'
+import SessionNotice from './SessionNotice.vue'
+import HelpGuide from './HelpGuide.vue'
+import { roleMixin } from './role-mixin.js'
+import { signedOut } from './workshop-auth.js'
 import { pluginBadge } from './plugin-colors.js'
 import { PLUGIN_ID } from './plugin-id.js'
 import { copyText } from './copy.js'
@@ -760,7 +759,10 @@ const CATS = [
 ];
 
 export default {
-	components: { PageHeader, BlackBoxCard: BlackBoxCard, ConfigPackage, StartupMaster, SideTabs, BridgeCard: BridgeCard, ReceivedCommands, Database: Database, ApiKeys: ApiKeys, UsersCard, AuditCard, ApiDetail: ApiDetail, ProcessRow: ProcessRow, ProcessesSummary: ProcessesSummary },
+	mixins: [roleMixin],
+	// what came from the session of the person who left (ESTANDAR 3.3): put back to its first value on sign-out and on a change of role
+	sessionData: ['apiOps', 'tests'],
+	components: { PageHeader, SessionNotice, HelpGuide, BlackBoxCard: BlackBoxCard, ConfigPackage, StartupMaster, SideTabs, BridgeCard: BridgeCard, ReceivedCommands, Database: Database, ApiKeys: ApiKeys, UsersCard, AuditCard, ApiDetail: ApiDetail, ProcessRow: ProcessRow, ProcessesSummary: ProcessesSummary },
 	data() {
 		return {
 			section: 'summary', // the section chosen in the side bar
@@ -1266,6 +1268,11 @@ export default {
 			if (c.notice) return { color: 'warning', icon: 'mdi-alert', text: this.$t('plugins.WorkshopService.servicePage.n_with_warnings', { n: c.notice }) };
 			return { color: 'success', icon: 'mdi-check-circle', text: this.$t('plugins.WorkshopService.servicePage.all_working') };
 		},
+		// why the reference of the API is not drawn: '' | 'session'
+		apiRefKind() {
+			void this.identityTick;
+			return signedOut() ? 'session' : '';
+		},
 		// API operations (api.describe): name, description, example of the arguments
 		handlers() {
 			return (this.apiOps || []).map(o => {
@@ -1309,6 +1316,9 @@ export default {
 				(!f || (x.name + ' ' + x.description).toLowerCase().includes(f)));
 		}
 	},
+	created() {
+		this._gen = 0;
+	},
 	mounted() {
 		this._clockSvc = setInterval(() => { this.nowSvc = Date.now(); }, 3000);
 		this._sampling = setInterval(() => { sample(this.processes, this.processInfo); }, 5000);
@@ -1336,13 +1346,24 @@ export default {
 		// api.describe fills the reference and the key permissions: if the service was busy or restarting when the page opened, try again
 		// until it answers (an empty list for good left the reference blank)
 		loadApiOps(n) {
+			if (signedOut()) return;
+			const gen = this._gen;
 			api('api.describe', {}, { quiet: true }).then(d => {
+				if (gen !== this._gen) return;
 				this.apiOps = (d && d.ops) || [];
 			}).catch(() => {
+				if (gen !== this._gen) return;
 				if (!this.apiOps) this.apiOps = [];
 				if (this._apiOpsGone || n >= 40) return;
 				this._apiOpsT = setTimeout(() => this.loadApiOps(n + 1), Math.min(30000, 3000 * (n + 1)));
 			});
+		},
+		// a change of identity (the mixin has already emptied sessionData on sign-out / change of role): an answer still on its way
+		// belongs to the old person and is dropped; signed in again, the reference is read again without reloading the page
+		onSessionChange(kind) {
+			this._gen++;
+			clearTimeout(this._apiOpsT);
+			if (kind !== 'signed-out') this.loadApiOps(0);
 		},
 		pickCat(id) {
 			this.catFilter = this.catFilter === id ? null : id;

@@ -8,7 +8,8 @@
 		</v-card-title>
 		<v-card-text>
 			<div class="text-body-2 mb-3">{{ $t(T + 'intro') }}</div>
-			<div v-if="msg" class="text-body-2 mb-2" :class="msgOk ? 'success--text' : 'error--text'">{{ msg }}</div>
+			<error-notice v-if="msg && !msgOk" :error="msg" class="mb-2" />
+			<div v-else-if="msg" class="text-body-2 mb-2 success--text">{{ msg }}</div>
 
 			<!-- export -->
 			<div class="text-subtitle-2">{{ $t(T + 'export_title') }}</div>
@@ -63,6 +64,8 @@
 'use strict'
 
 import { api, workshopCan } from './workshop-api.js'
+import { roleMixin } from './role-mixin.js'
+import ErrorNotice from './ErrorNotice.vue'
 
 const CATEGORIES = ['config', 'zones', 'macros', 'system'];
 const COLORS = { create: 'success', same: undefined, conflict: 'warning', reference: 'info', skip: undefined };
@@ -82,6 +85,10 @@ function fromBase64(text) {
 }
 
 export default {
+	components: { ErrorNotice },
+	mixins: [roleMixin],
+	// the package the person loaded and what the service answered about it are not for the next person (ESTANDAR 3.3)
+	sessionData: ['skipped', 'file', 'data', 'items', 'replace', 'msg', 'applying', 'exporting'],
 	data() {
 		return {
 			T: 'plugins.WorkshopService.package.',
@@ -124,7 +131,7 @@ export default {
 				setTimeout(() => URL.revokeObjectURL(url), 10000);
 				this.say(this.$t(this.T + 'exported', { n: r.manifest.files.length }));
 			} catch (e) {
-				this.say(e.message, false);
+				this.say(e, false);
 			} finally {
 				this.exporting = false;
 			}
@@ -139,7 +146,7 @@ export default {
 				const r = await api('package.preview', { data: this.data });
 				this.items = r.items;
 			} catch (e) {
-				this.say(e.message, false);
+				this.say(e, false);
 			}
 		},
 		async apply() {
@@ -150,7 +157,7 @@ export default {
 				await this.preview();
 				this.say(this.$t(this.T + 'applied', { created: r.created.length, replaced: r.replaced.length, kept: r.kept.length, reference: r.reference.length }) + (errors ? ' ' + this.$t(this.T + 'applied_errors', { n: errors }) : ''), !errors);
 			} catch (e) {
-				this.say(e.message, false);
+				this.say(e, false);
 			} finally {
 				this.applying = false;
 			}

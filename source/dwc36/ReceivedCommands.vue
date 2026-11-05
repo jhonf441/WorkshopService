@@ -74,7 +74,7 @@
 				<v-switch v-model="onlyErrors" :label="$t('plugins.WorkshopService.commandsReceived.errors_only')" dense hide-details class="mt-0 pt-0" @change="load(0)" />
 			</div>
 
-			<div v-if="error" class="error--text text-body-2 mt-3">{{ error }}</div>
+			<error-notice v-if="error" :error="error" retry class="mt-3" @retry="load(0)" />
 			<div v-else-if="!rows.length && !loading" class="cmd-empty mt-3">
 				<v-icon color="grey">mdi-inbox-outline</v-icon>
 				<div>{{ kind === 1 ? $t('plugins.WorkshopService.commandsReceived.no_command_that_changes_something_in') : $t('plugins.WorkshopService.commandsReceived.no_commands_in_this_range') }}</div>
@@ -155,6 +155,8 @@ import { mapActions } from 'vuex'
 import { api } from './workshop-api.js'
 import { copyText } from './copy.js'
 import RangePicker from './RangePicker.vue'
+import ErrorNotice from './ErrorNotice.vue'
+import { roleMixin } from './role-mixin.js'
 import { resolve, localText, absolute } from './range-picker.js'
 
 // the picker holds moments; this list filters by day
@@ -193,7 +195,10 @@ const fields = [
 ];
 
 export default {
-	components: { RangePicker },
+	components: { RangePicker, ErrorNotice },
+	mixins: [roleMixin],
+	// the history of the old session is emptied on sign-out / change of role and read again for the new one (ESTANDAR 3.3)
+	sessionData: ['rows', 'names', 'summary', 'lastHour', 'total', 'offset', 'error', 'loading', 'open', 'armed', 'copied'],
 	props: {
 		// (row) => { color, icon }: the same category as the API operations list
 		colorOf: { type: Function, default: null },
@@ -292,6 +297,9 @@ export default {
 			}
 		}
 	},
+	created() {
+		this._gen = 0;
+	},
 	mounted() {
 		this.load(0);
 	},
@@ -301,6 +309,12 @@ export default {
 	},
 	methods: {
 		...mapActions('machine', ['sendCode']),
+		// an answer of the old person that is still on its way is dropped; for the new identity the list is read again
+		onSessionChange() {
+			this._gen++;
+			clearTimeout(this.reload);
+			this.load(0);
+		},
 		style(f) {
 			return (this.colorOf && this.colorOf(f)) || { color: 'grey darken-1', icon: 'mdi-console-line' };
 		},
@@ -397,6 +411,7 @@ export default {
 			return String(s || '').replace(/"/g, "'");
 		},
 		async load(offset) {
+			const gen = this._gen;
 			this.loading = true;
 			this.error = null;
 			try {
@@ -427,6 +442,7 @@ export default {
 					a.query = String(this.search);
 				}
 				const r = await api('history.list', a);
+				if (gen !== this._gen) return;
 				if (r.error) {
 					throw new Error(r.error);
 				}
@@ -438,10 +454,12 @@ export default {
 				this.offset = offset;
 			} catch (e) {
 				// a refusal of the roles (login / forbidden) is not an old service: only the other errors get that hint
+				if (gen !== this._gen) return;
 				const refused = e && (e.code === 'login_required' || e.code === 'forbidden');
-				this.error = i18n.t('plugins.WorkshopService.commandsReceived.' + (refused ? 'could_not_read_the_history_refused' : 'could_not_read_the_history_x'), { x: e.message || e });
+				// a refusal is shown as its cause (no session / role); the rest keeps the sentence of what could not be read
+				this.error = refused ? e : i18n.t('plugins.WorkshopService.commandsReceived.could_not_read_the_history_x', { x: e.message || e });
 			} finally {
-				this.loading = false;
+				if (gen === this._gen) this.loading = false;
 			}
 		},
 		touchDelete() {
