@@ -235,7 +235,7 @@ A macro cannot do HTTP. Two ways, in this order:
    arm the shutdown at the end, notices):
 
 ```
-M98 P"0:/sys/workshop/macros/service-call.g" S"power.after_job" A"armed=toggle" W5
+M98 P"0:/sys/workshop/macros/system/service-call.g" S"power.after_job" A"armed=toggle" W5
 ```
 
 `service-call.g` (written by the service on startup, with a mark; if someone edits it and

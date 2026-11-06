@@ -5,7 +5,7 @@
 //
 //   lockReason('technician')   '' when the person may; "Requiere iniciar sesión." when nobody is signed in;
 //                              "Requiere el rol Técnico. Tu rol: Operador." when the role is too low
-//   lockReasonOp('light.set')  the same for one operation of the service table
+//   lockReasonOp('light.set')  the same for one operation of the service table; an operation denied by the person's own role says so (notice_role_denied)
 //   lockKind('technician')     the cause alone: '' | 'session' | 'role' (what <lock-reason> and <session-notice> are drawn with)
 //   lockKindOp('light.set')
 //
@@ -14,7 +14,7 @@
 
 import { ts } from './shared-t.js'
 import { RANK_OPS } from './role-view.js'
-import { accessReason, workshopCan, workshopRole } from './workshop-auth.js'
+import { accessReason, workshopCan, workshopDenied, workshopRole, workshopRoleName } from './workshop-auth.js'
 import { noticeKindOf, noticeText } from './notice-kind.js'
 
 function kindOf(reason) {
@@ -36,8 +36,11 @@ export function lockKind(min) {
 	return kindOf(workshopCan(op) ? '' : accessReason(op))
 }
 
+// An operation the person's own role denies although its base role allows it: the cause is the custom role, not a missing level
 export function lockReasonOp(op, need, ctx) {
-	return sentence(lockKindOp(op, need, ctx), need || 'technician')
+	const kind = lockKindOp(op, need, ctx)
+	if (kind === 'role' && workshopDenied(op)) return ts('notice_role_denied', { role: workshopRoleName() })
+	return sentence(kind, need || 'technician')
 }
 
 export function lockReason(min) {

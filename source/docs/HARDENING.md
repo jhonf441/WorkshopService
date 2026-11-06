@@ -52,8 +52,17 @@ Camera relay with users on (`dsf/camera_access.py`, tested in `test_camera_acces
 (reads: operator and above, or a viewer with the camera flag; writes by role; a route not in the table is admin; a failing user store
 answers 503 `service_unreachable`, never lets through). An `<img>`/`<video>` cannot send headers, so GET reads without a session token
 accept the day key (`?t=` or the cookie `workshop_camera`), which the page gets from the API `camera.token` (operator or a viewer
-with the camera). Without users, or from the Pi itself, the stream is open as before. Residual: the stream is open to the whole LAN
-until the first person is created.
+with the camera). Without users (2.28.4): the Pi itself (loopback) is not limited; from the network the reads stay open (the stream, the
+captures) but everything that changes something (`POST /luts`, `/luts/remove`, the camera settings under `/c/<id>/control`, a route that is
+not classified) answers `403 first_admin_required` until the first administrator exists. One exception, chosen by the owner: switching
+the roles off with the administrator's PIN (people exist, the switch is off) keeps the old open behaviour (`users.UserStore.network_open()`).
+Residual: the stream itself is readable by the whole LAN until the first person is created. The kiosk opens `http://localhost`, so its
+requests come from loopback and are not limited; a browser on the Pi opened by the LAN address is a network client for this rule.
+
+What the rule cannot do: the API (`/machine/WorkshopService/api`) reaches the service through DuetWebServer, which gives it no peer address,
+and the `X-Forwarded-For` header is written by the client, so the origin of an API call cannot be trusted and the service never uses it. With no
+users, API calls keep working as before for whoever DWC lets in (a DWC password, if set, is the protection there); the first administrator is
+created through that same door, so there is no separate "setup code".
 
 ## G-code bridge (A-10, A-11)
 
@@ -62,12 +71,15 @@ until the first person is created.
   It is NOT a root service.
 - Password: new passwords are stored as `scrypt$<hex>` (salted). A bridge that already has an old sha256 password keeps working
   (the old format is still verified); to move it to scrypt set the password again from the Services page.
-- Port 23 listens on every interface (`0.0.0.0`) and, with no `allowed` list, accepts every private address (10.x, 172.16-31.x,
-  192.168.x). The default was NOT changed (the cutting PC .16 sends live jobs through it and an upgrade must not cut it). The bridge
-  now logs a security event `open_to_lan` and the state file says `security.exposed: true` while there is no allow-list and no password.
-  Owner step (no sudo; edit `0:/sys/workshop/config/bridge.json`, or the Services page): set
-  `"allowed": ["192.168.1.16"]` (the PC) and, if the program can send it, a password; keep `trusted` for the PC if it cannot
-  send `BRIDGE KEY`. Loopback is always allowed. The change is picked up without a restart (settings reload when the file changes).
+- Port 23 listens on every interface (`0.0.0.0`) and, with no `allowed` list, still ACCEPTS the connection of every private address (10.x,
+  172.16-31.x, 192.168.x), but since 2.28.4 it only answers QUERIES to them: an order (any G-code that is not a query) is refused unless the
+  client is the Pi itself (loopback), a `trusted` address, has typed the password (`BRIDGE KEY <password>`), or - with no password - the
+  owner wrote an `allowed` list that contains it. With none of those set the state file says `security.exposed: true`, the bridge logs the event
+  `orders_refused_until_guard` and a client that tries to order is told why. `install.sh` (install or `install.sh guard`) asks for one at install time:
+  `BRIDGE_PASSWORD=...`, `BRIDGE_ALLOW=192.168.1.16` or `BRIDGE_TRUST=192.168.1.16` (environment, so a password never shows in the process list).
+  The cutting PC .16 must therefore be listed as `allowed` or `trusted` (if its program cannot send `BRIDGE KEY`) or send the password first: after an
+  upgrade of a bridge that had none, live jobs from the PC are refused until one of them is set (Services page, tab Security and key, or
+  `sudo BRIDGE_TRUST=192.168.1.16 ./install.sh guard`). The change is picked up without a restart (settings reload when the file changes).
 - `/opt/dsf/conf/workshop-api-token` (the local key of the system programs, mode 640, group dsf). It used to live on the SD
   (`0:/sys/workshop/data/.api-token`), and the SD is what DuetWebServer serves as `0:/` through `/machine/file/...`: anybody who can read
   files through DWC could read the key (the whole LAN with DWC without password, any session with one), and the key opens every operation
@@ -81,7 +93,11 @@ until the first person is created.
 
 ## Phone notices topic (A-24)
 
-On ntfy.sh the topic is the only secret: whoever knows it reads and sends the notices. A NEW installation now gets
+Phone notices are OFF by default (2.28.3): nothing is sent, no topic is created and ntfy.sh is not contacted until the owner turns them on
+(the Activity page asks for a confirmation; the API operation `notifications.active` refuses without `acknowledge_outbound: true`). The Pi Health
+page pings a public address only with `health.internet_check` true.
+
+On ntfy.sh the topic is the only secret: whoever knows it reads and sends the notices. When they are turned on, a NEW installation gets
 `workshop-` plus 160 random bits (it was `taller-<host>-` plus 40 bits). An existing topic is never replaced. To get a strong one on a
 machine that has the old kind: call the API operation `notifications.new_topic` (new random topic) and subscribe again on the phones (the old topic
 stops working), or use your own long random value. Never publish the topic (it is masked in logs and exports).

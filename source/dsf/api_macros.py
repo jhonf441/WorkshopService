@@ -6,7 +6,7 @@ its single object model subscription (state_machine, filter "global.**"):
 
 1. Mailbox for real orders (power off, restart, arm the power off after the
    job, notifications...): the helper macro
-       M98 P"0:/sys/workshop/macros/service-call.g" S"<op>" [A"key=value,..."] [W<s>]
+       M98 P"0:/sys/workshop/macros/system/service-call.g" S"<op>" [A"key=value,..."] [W<s>]
    writes "<n>|<op>|<args>" in global.wsRequest and waits. The service runs
    the operation (only the ones marked "macro" in api_ops.py, origin "macro";
    the macro already asked the person with M291 when it matters, so the
@@ -29,7 +29,7 @@ import time
 
 import workshop_api as wa
 
-HELPER_REL = "sys/workshop/macros/service-call.g"
+HELPER_REL = "sys/workshop/macros/system/service-call.g"
 HELPER_MARK = "WORKSHOP-SERVICE-CALL v1"
 SD_ROOT = paths.SD
 REPLY_MAX = 200
@@ -38,7 +38,7 @@ HELPER_TEXT = f"""; service-call.g -- call an operation of the WorkshopService A
 ; {HELPER_MARK} (written by WorkshopService at start; remove this line to keep your own version)
 ; A macro cannot use HTTP: the request goes through global variables that the
 ; service reads in its object model subscription.
-;   M98 P"0:/sys/workshop/macros/service-call.g" S"<operation>" [A"key=value,key=value"] [W<seconds>] [Q1]
+;   M98 P"0:/sys/workshop/macros/system/service-call.g" S"<operation>" [A"key=value,key=value"] [W<seconds>] [Q1]
 ;   S = operation (only the ones allowed for macros, see GET /machine/WorkshopService/api)
 ;   A = arguments; numbers and true/false are converted (example: A"armed=toggle")
 ;   W = seconds to wait for the answer (default 5; W0 = do not wait)
@@ -131,7 +131,7 @@ if exists(global.statusLedKey)
     set global.statusLedKey = ""
 """,
 }
-PI_STATUS_DIR = "sys/workshop/macros"
+PI_STATUS_DIR = "sys/workshop/macros/system"
 
 
 def ensure_pi_status_macros(sd_root=None, log=print):

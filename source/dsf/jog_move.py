@@ -817,7 +817,7 @@ def _drain_pending_g1():
 # cuts and exits; it only detects above crashSteps full steps/s;
 # 5. it exits by itself: timeoutS without movement, a job that starts, or a live job;
 # 6. backup on the board: while it lasts, a heartbeat is sent (global.jogFreeTs);
-# sys/workshop/macros/jogFreeFailsafe.g (called from sys/daemon.g) restores everything if 10 s pass
+# sys/workshop/macros/work/jogFreeFailsafe.g (called from sys/daemon.g) restores everything if 10 s pass
 # without a heartbeat (Pi or plugin down);
 # 7. lock (requested 2026-10-10): while it lasts, an InterceptConnection of its own checks
 # G0-G3/G28-G30/M32/M37 on all channels EXCEPT the jog's (jog_channel; intercepting its own channel
@@ -839,7 +839,7 @@ _FREE_CFG = dict(_FREE_DEF)
 STALL_MACRO = paths.SYS + "/driver-stall.g"
 STALL_MACRO_MARK = "workshop-JOG-free"
 DAEMON_G = paths.SYS + "/daemon.g"
-FAILSAFE_MACRO = "0:/sys/workshop/macros/jogFreeSet.g"
+FAILSAFE_MACRO = "0:/sys/workshop/macros/work/jogFreeSet.g"
 FREE_HEARTBEAT_S = 2.0
 FREE_PUBLISH_S = 1.0
 STALL_MACRO_TEXT = f"""; driver-stall.g -- RepRapFirmware runs it when a driver configured with
@@ -847,7 +847,7 @@ STALL_MACRO_TEXT = f"""; driver-stall.g -- RepRapFirmware runs it when a driver 
 ; "without limits" mode of the WorkshopJog jog. If you change it, delete the mark
 ; below and the jog never touches it again (and does not use the stall detection).
 ; {STALL_MACRO_MARK}
-; Crash calibration (Motors page, sys/workshop/macros/crash-cal.g): only counts. With the
+; Crash calibration (Motors page, sys/workshop/macros/axis/crash-cal.g): only counts. With the
 ; jog without limits active it ALWAYS stops (even if a calibration cut halfway
 ; left global.crashCal at true).
 if exists(global.crashCal) && global.crashCal && !(exists(global.jogFree) && global.jogFree)

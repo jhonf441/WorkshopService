@@ -6,7 +6,7 @@
 			<v-btn small text color="primary" :loading="lowering" @click="$emit('download')">
 				<v-icon small left>mdi-download</v-icon>{{ $t('plugins.WorkshopService.common.download') }}
 			</v-btn>
-			<v-btn small text :disabled="sending" @click="$emit('hide')">
+			<v-btn small text :disabled="sending || !canDo('blackbox.hide')" @click="$emit('hide')">
 				<v-icon small left>mdi-eye-off</v-icon>{{ $t(T + 'hide') }}
 			</v-btn>
 		</v-card-title>
@@ -72,6 +72,8 @@
 					</v-expansion-panel-content>
 				</v-expansion-panel>
 			</v-expansion-panels>
+			<!-- hiding the report is blackbox.hide (technician); the report itself comes with the status of the service (blackbox.status, viewer) -->
+			<lock-reason op="blackbox.hide" need="technician" class="mt-1" />
 			<div v-if="msg" class="text-caption mt-1">{{ msg }}</div>
 		</v-card-text>
 	</v-card>
@@ -81,6 +83,8 @@
 'use strict'
 
 import Spark from './Spark.vue'
+import LockReason from './LockReason.vue'
+import { roleMixin } from './role-mixin.js'
 import { analyzeBox, dateOf } from './black-box.js'
 import { duration } from './format.js'
 
@@ -88,7 +92,8 @@ import { duration } from './format.js'
 // raw lines one tap away. The numbers come from black-box.js (pure, tested); the words are here and in i18n (servicePage.caja_*).
 export default {
 	name: 'BlackBoxCard',
-	components: { Spark },
+	components: { Spark, LockReason },
+	mixins: [roleMixin],
 	props: {
 		report: { type: Object, required: true },
 		interval: { type: Number, default: 5 },

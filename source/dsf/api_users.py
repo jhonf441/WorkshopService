@@ -14,6 +14,7 @@ import time
 
 import db
 import identity
+import permission_caps
 import permissions
 import users
 from messages import M
@@ -48,7 +49,23 @@ def _actor(ctx):
 
 
 def _public_user(ident):
-    return {"name": ident.get("name", ""), "role": ident["role"], "modes": list(ident.get("modes") or []), "camera": bool(ident.get("camera"))}
+    out = {"name": ident.get("name", ""), "role": ident["role"], "modes": list(ident.get("modes") or []), "camera": bool(ident.get("camera"))}
+    out["role_name"] = identity.role_name(ident)
+    return out
+
+
+def role_view(ident):
+    """What the pages need about the role of an identity. `role` is the BASE role (pages that only know the four roles keep working);
+    `allow` / `deny` are the operations a custom role may call above its base role and the ones it may not call below it (the server
+    decides again on every call, with the whole custom role)."""
+    rd = ident.get("role_def")
+    allow, deny = permissions.resolved_lists(identity.role_name(ident), rd)
+    out = {"role": ident["role"], "role_name": identity.role_name(ident), "allow": allow, "deny": deny}
+    if rd:
+        out["hardware_params"] = permission_caps.HARDWARE_PARAMS in (rd.get("grant") or ())
+    elif ident["role"] not in permissions.RANK:
+        out["role_problem"] = "missing"  # a person whose custom role cannot be found: the server refuses everything
+    return out
 
 
 def make_ops(store_of):
@@ -88,13 +105,14 @@ def make_ops(store_of):
         st = store_of()
         if st is None or not st.configured():
             off = bool(st is not None and st.users and not st.damaged and not st.get_settings().get("enabled", True))
-            return {"configured": False, "damaged": False, "compat": True, "login_required": False, "users_disabled": off,
-                    "user": _public_user(identity.COMPAT_USER), "role": permissions.ADMIN, "table": permissions.table_for_client()}
+            return {"configured": False, "damaged": False, "compat": True, "login_required": False, "users_disabled": off, "network_open": off,
+                    "user": _public_user(identity.COMPAT_USER), "role": permissions.ADMIN, "role_name": permissions.ADMIN, "allow": [], "deny": [],
+                    "table": permissions.table_for_client()}
         ident = ctx.get("user") or st.anonymous()
         out = {"configured": True, "damaged": st.damaged, "compat": False, "table": permissions.table_for_client(),
                "login_required": ident is None, "anonymous_viewer": bool(st.get_settings()["anonymous_viewer"])}
         out["user"] = _public_user(ident) if ident else None
-        out["role"] = ident["role"] if ident else None
+        out.update(role_view(ident) if ident else {"role": None, "role_name": None, "allow": [], "deny": []})
         out["named"] = bool(ident and ident.get("name"))
         out["idle_minutes"] = st.get_settings()["idle_minutes"]
         return out
@@ -104,9 +122,11 @@ def make_ops(store_of):
         role only (no permission table); the token of the browser is the argument because that program is authenticated by its own key."""
         st = store_of()
         if st is None or not st.configured():
-            return {"configured": False, "compat": True, "role": permissions.ADMIN, "user": None}
+            return {"configured": False, "compat": True, "role": permissions.ADMIN, "user": None,
+                    "network_open": bool(st is not None and st.network_open())}
         ident = st.resolve(str(args.get("token") or "")) or st.anonymous()
-        return {"configured": True, "compat": False, "role": ident["role"] if ident else None, "user": _public_user(ident) if ident else None}
+        view = role_view(ident) if ident else {"role": None, "role_name": None, "allow": [], "deny": []}
+        return dict(view, configured=True, compat=False, user=_public_user(ident) if ident else None)
 
     def keepalive(args, ctx):
         u = ctx.get("user")
@@ -125,7 +145,7 @@ def make_ops(store_of):
         st = store()
         return {"configured": st.configured(), "enabled": bool(st.get_settings().get("enabled", True)), "damaged": st.damaged,
                 "users": st.list(), "settings": st.get_settings(),
-                "roles": list(permissions.ROLES), "modes": list(permissions.MODES), "min_pin": users.MIN_PIN, "max_pin": users.MAX_PIN}
+                "roles": list(permissions.ROLES), "custom_roles": [r["name"] for r in st.role_source.list()] if st.role_source else [], "modes": list(permissions.MODES), "min_pin": users.MIN_PIN, "max_pin": users.MAX_PIN}
 
     def users_add(args, ctx):
         st = store()
@@ -175,7 +195,7 @@ def make_ops(store_of):
 
     d_name = "Name of the person (1 to 32 letters, digits, spaces, dots or hyphens)."
     d_pin = "PIN: %d to %d digits." % (users.MIN_PIN, users.MAX_PIN)
-    d_role = "viewer, operator, technician or admin."
+    d_role = "viewer, operator, technician or admin, or the name of a custom role (roles.list)."
     d_modes = "Modes an operator may run: a list of laser, cnc, fff (default: only laser). Technicians and administrators have all."
     return [
         Op("auth.login", login, WRITE, {"name": a(S, True, desc=d_name), "pin": a(S, True, desc=d_pin)},
@@ -194,11 +214,11 @@ def make_ops(store_of):
            "The logged in person changes their own PIN.", exclusive=False),
         Op("users.list", users_list, ADMIN, {}, "Lists the people with their role, modes and last activity, and the session settings."),
         Op("users.add", users_add, ADMIN,
-           {"name": a(S, True, desc=d_name), "pin": a(S, True, desc=d_pin), "role": a(S, True, choices=permissions.ROLES, desc=d_role),
+           {"name": a(S, True, desc=d_name), "pin": a(S, True, desc=d_pin), "role": a(S, True, desc=d_role),
             "modes": a(L, desc=d_modes), "camera_for_viewer": a(B, default=False, desc="A viewer sees the camera.")},
            "Adds a person. The first one created turns the identity on and has to be an administrator."),
         Op("users.set", users_set, ADMIN,
-           {"name": a(S, True, desc="Person."), "role": a(S, choices=permissions.ROLES, desc=d_role), "modes": a(L, desc=d_modes),
+           {"name": a(S, True, desc="Person."), "role": a(S, desc=d_role), "modes": a(L, desc=d_modes),
             "camera_for_viewer": a(B, desc="A viewer sees the camera.")},
            "Changes role, modes or camera of a person. Nobody changes their own role and the last administrator stays."),
         Op("users.remove", users_remove, ADMIN, {"name": a(S, True, desc="Person.")},

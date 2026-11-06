@@ -4,6 +4,60 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.29.0 -- 2026-11-06
+
+- Service page: the session follows a sign-in made in another tab (the page reconciles its token when it comes back to the front); the package card redraws with the role; the family.css copies carry the shared pieces of the side bar (icon box with a lock mark, text column).
+
+## 2.28.4 -- 2026-11-07
+
+- "No users" no longer means "the whole network may change things" (Duet3D catalogue review, hardening): on the camera relay (port 8090) a request from
+  the network can only read until the first administrator exists (`403 first_admin_required` for the camera settings, the look files and any route not
+  classified); the Pi itself is not limited; a machine whose owner switched the roles off with the administrator's PIN keeps the old open behaviour
+  (`UserStore.network_open()`, also sent by `auth.resolve` and `auth.whoami` as `network_open`). Vision applies the same rule (WorkshopVision 2.7.28).
+- G-code bridge: orders from the network are refused unless the Pi itself sends them, or the address is trusted, or the client typed the password, or the owner
+  wrote an `allowed` list; with none set only queries are answered. `install.sh` asks for a password / allowed list / trusted address (`BRIDGE_PASSWORD`,
+  `BRIDGE_ALLOW`, `BRIDGE_TRUST`, or `install.sh guard`). A bridge that had none refuses the PC's orders until one is set.
+- The start-up row of the users says what a machine without users does and does not allow. Docs: README, HARDENING, api README.
+
+## 2.28.3 -- 2026-11-06
+
+- Nothing leaves the machine by default (Duet3D catalogue review, issue #2053): phone notifications (ntfy) are OFF until the owner turns them on; `init()` no longer creates a topic or contacts any server, the topic is created when they are turned on, and installs that already saved the setting keep it. Turning them on through the API needs `acknowledge_outbound: true` (the Activity page asks for a confirmation first); the test sends and `notifications.send` are refused while they are off.
+- Pi health: the latency check to the notices server runs only while the notifications are on and uses the configured server; the ping to `1.1.1.1` runs only with `health.internet_check` true (off by default); a missing value hides its row.
+- Docs: README notice at the top, outbound traffic described in "Permissions and what it changes", `security.md`, `HARDENING.md`.
+
+## 2.28.2 -- 2026-11-06
+
+- Roles card: the capability pills no longer redeclare the font size of the family pill (family-design rule).
+
+## 2.28.1 -- 2026-11-06
+
+- Service page: Database, Bridge and the black box hide button are disabled before the click when the role cannot use them, with one reason; Users and Audit decide admin with the operation table (`users.list`, `audit.list`) like the rest of the page; the start-up master tells a role refusal apart from a missing session.
+
+## 2.28.0 -- 2026-11-06
+
+- Own roles with capabilities: 55 capabilities, own roles (base role plus grants and denials, stored in `workshop-roles.json`), operations `roles.list/get/set/remove/effective`, `auth.whoami` with `role_name`, `allow` and `deny`; the four base roles decide exactly as before (golden fixture). See `docs/ROLES.md`.
+- Roles and permissions card on the service page (matrix, own roles, what a person can do); own roles in the role selector of each user.
+- API keys accept `cap:<id>` entries in `ops` and `deny`, `keys.preview`, and `allowed_ops` resolved by the service. Keys saved before this version decide exactly as before; new or re-saved keys never reach non-delegable operations.
+- `plugin.json` lists `machine_bed_edit.py` and `real_mode.py` in `dsfFiles`.
+
+## 2.27.0 -- 2026-11-06
+
+- The macros of `sys/workshop/macros` are grouped in folders (axis, zcal, focus, work, guard, laser, probe, system): every call, the whitelist of G-code, the zcal hook and the macros the service writes (lights.g, lasercorrection.g, zcal.g, enable/disable_pi_status.g) use the new paths. Install it together with the plugins and run `tools/migrate_macro_folders.py` of TallerPlugins on the SD.
+- power.off is open to every role and to nobody signed in; the last time a person was seen is kept after the session ends.
+
+## 2.26.0 -- 2026-11-06
+
+- Bed heaters and tool pins: new `temp` capability for the dedicated temperature inputs (temp0..temp3); thermistor and pt1000 sensors ask for it, so the io pins are no longer offered. New bed sensor types: thermocouple (MAX31855) and pt100 (MAX31865, new preset), thermistor with optional `t` and `b`.
+- Keys page: the new-key button is locked with its reason when the role is not administrator.
+
+## 2.25.0 -- 2026-11-06
+
+- Plan kind `config.bed_edit` (`dsf/machine_bed_edit.py`): change the heater and / or the sensor number of a bed the configuration already defines, with the plan of Machine (diff of each file, snapshot, rollback). `machine.beds.get` adds `sensor` and `editable` to each defined bed.
+
+## 2.24.3 -- 2026-11-06
+
+- Beds: the limit of beds and heaters is the board's own (`limits.bedHeaters`, `limits.heaters` of the object model) instead of a fixed 8; without board limits the cap is the RRF ceiling (32 beds, 20 heaters). Bed zones layout cap is `LAYOUT_MAX * LAYOUT_MAX`.
+
 ## 2.24.2 -- 2026-11-05
 
 - G-code bridge: `BRIDGE JOB START` and the material macros wait for the machine gate (mode / armed / homed); the black box records the service threads; the bridge card text and the shared family.css follow the QA batch of the other session. The bridge itself needs `bridge/install.sh` on the Pi to take effect (a plugin install does not touch it).

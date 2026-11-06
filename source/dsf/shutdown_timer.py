@@ -87,7 +87,7 @@ def run_loop(bridge, config):
         if 0 < missing <= 60 and notified_for != until:
             notified_for = until
             try:
-                # bilingual like the workshop macros (global.workshopLanguage, sys/workshop/macros/language.g)
+                # bilingual like the workshop macros (global.workshopLanguage, sys/workshop/macros/system/language.g)
                 body, title = M("shutdown_timer_machine_powers_off_in_1_minute"), M("shutdown_timer_scheduled_power_off")
                 bridge.send('M291 P{(exists(global.workshopLanguage) && global.workshopLanguage == "en")'
                             ' ? "' + body.text("en") + '" : "' + body.text("es") + '"}'

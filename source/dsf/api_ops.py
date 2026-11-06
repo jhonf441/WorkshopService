@@ -16,6 +16,8 @@ import time
 
 import api_keys
 import api_users
+import roles_ops
+import role_store
 import camera_access
 import audit
 import guard_api
@@ -44,7 +46,7 @@ HANDLERS_DIR = os.path.join(BASE_DIR, "handlers")
 # Mode 640 group dsf: the service, Vision and RS485 run as dsf, the G-code bridge as the login user (member of dsf).
 TOKEN_FILE = paths.CONF + "/workshop-api-token"
 
-_ctx = {"bridge": None, "config": None, "log": print, "log_file": print, "registry": None, "keys": None, "users": None}
+_ctx = {"bridge": None, "config": None, "log": print, "log_file": print, "registry": None, "keys": None, "users": None, "roles": None}
 KEYS_FILE = api_keys.KEYS_FILE
 
 # Confirmation texts (also in the localization of the service page,
@@ -64,6 +66,8 @@ CONFIRM_TEXTS = {
     "password.set": _confirm("api_ops_dwc_password", "api_ops_from_now_dwc_external_programs_ask"),
     "keys.create": _confirm("api_ops_create_access_key", "api_ops_whoever_has_key_will_able_use"),
     "keys.revoke": _confirm("api_ops_delete_key", "api_ops_service_that_uses_it_stops_working"),
+    "roles.set": _confirm("roles_confirm_set_title", "roles_confirm_set_text"),
+    "roles.remove": _confirm("roles_confirm_remove_title", "roles_confirm_remove_text"),
     "password.clear": _confirm("api_ops_remove_dwc_password", "api_ops_anyone_network_will_able_use_dwc"),
     "lights.apply_m950": _confirm("api_ops_change_led_count_config_g", "api_ops_m950_line_config_g_edited_copy"),
     "motion": _confirm("api_ops_move_with_job_open", "api_ops_job_running_or_open_moving_now"),
@@ -189,6 +193,8 @@ def _state_get(args, ctx):
 def _notify_send(args, ctx):
     import notifier
     cfg = notifier.get_cfg(_ctx["config"])
+    if not cfg.get("active"):
+        raise ApiError("failed", "notifications are off (Activity page)")
     if not cfg.get("topic"):
         raise ApiError("failed", "notifications have no destination (Activity page)")
     notifier.send(cfg, args.get("title") or "Workshop", args.get("message") or "")
@@ -686,7 +692,7 @@ def _ops():
            "Returns the configuration of the LED strip, lights and states (zones, colours, effects, scenes, night dimming) and its current state."),
         Op("lights.save", H("lights", {"C": "save"}, {"config": "J"}), WRITE,
            {"config": a(O, True, desc="The lights configuration object of the page (the keys of lights.get; unknown keys are ignored).")},
-           "Saves the lights configuration (validated first), writes 0:/sys/workshop/macros/lights.g and runs it so the board uses it. Logged in Activity."),
+           "Saves the lights configuration (validated first), writes 0:/sys/workshop/macros/system/lights.g and runs it so the board uses it. Logged in Activity."),
         Op("lights.pi_pins", H("lights", {"C": "pi_pins"}), READ, {},
            "Lists the GPIO 2 to 27 of the Pi with what each one is doing (free, in use and by what) and what the lights can do with it (a strip over SPI on a MOSI pin), plus the state of that output.", log=False),
         Op("lights.pi_test", H("lights", {"C": "pi_test"}, {"seconds": "D", "pin": "N"}), WRITE,
@@ -746,9 +752,11 @@ def _ops():
         # notifications
         Op("notifications.get", H("notifications", {"C": "query"}), READ, {},
            "Returns the phone notification settings (ntfy destination, event types and options, quiet hours, mute) and the catalogue of event types."),
-        Op("notifications.active", H("notifications", {"C": "active"}, {"on": "V"}), WRITE,
-           {"on": a(B, True, desc="true sends notifications, false sends none (events are still logged).")},
-           "Turns every phone notification on or off. Saved and logged in Activity."),
+        Op("notifications.active", H("notifications", {"C": "active"}, {"on": "V", "acknowledge_outbound": "Y"}), WRITE,
+           {"on": a(B, True, desc="true sends notifications, false sends none (events are still logged)."),
+            "acknowledge_outbound": a(B, desc="Required true to turn them on: the events (and photos or videos if chosen) are sent to a third-party server, ntfy.sh unless another one is set.")},
+           "Turns every phone notification on or off. They are OFF by default because turning them on sends data out of the machine to a third-party server; "
+           "turning them on is refused unless acknowledge_outbound is true. Saved and logged in Activity."),
         Op("notifications.destination", H("notifications", {"C": "destination"}, {"server": "S", "topic": "T"}), WRITE,
            {"server": a(S, desc="ntfy server starting with http:// or https:// (empty: https://ntfy.sh)."),
             "topic": a(S, desc="ntfy topic: letters, numbers, - and _, up to 64 characters.")},
@@ -802,22 +810,27 @@ def _ops():
            confirm={"level": 3, "key": "password.clear"}),
         # keys of the external services (api_keys.py): only a DWC session manages them
         Op("keys.list", _keys_list, ADMIN, {},
-           "Lists the access keys of external services (name, permissions, expiry, use; never the keys themselves), the presets and the classes.",
+           "Lists the access keys of external services (name, permissions, allowed_ops = the operations each may call, expiry, use; never the keys themselves), the presets and the classes.",
+           log=False),
+        Op("keys.preview", _keys_preview, ADMIN,
+           {"kinds": a(L, desc="Operation classes."), "ops": a(L, desc="Operations allowed: names, patterns, cap:<id>."),
+            "deny": a(L, desc="Operations refused: names, patterns, cap:<id>.")},
+           "What a key with these permissions could call (allowed_ops), with the entries as they would be saved; nothing is created. Same rule as every call with a key.",
            log=False),
         Op("keys.create", _keys_create, ADMIN,
            {"name": a(S, True, desc="Name of the service that will use the key (unique)."),
             "preset": a(S, choices=list(api_keys.PRESETS), desc="Starting permissions (see keys.list); kinds and ops given replace the ones of the preset."),
             "kinds": a(L, desc="Operation classes allowed: read, write, motion, stop, power (admin can never be given)."),
-            "ops": a(L, desc="Operation name patterns also allowed, for example light.*"),
-            "deny": a(L, desc="Operation name patterns always refused, even if a class allows them."),
+            "ops": a(L, desc="Operations also allowed: names, patterns such as light.* and capabilities as cap:<id> (ids in roles.list; never an administration or non-delegable one)."),
+            "deny": a(L, desc="Operations always refused, even if a class or a capability allows them: names, patterns and cap:<id>. Denying wins."),
             "days": a(N, min=0, desc="Valid for this many days, up to 3650 (empty or 0: does not expire).")},
            "Creates an access key for an external service; the key is returned only once and goes in the X-Workshop-Key header. Needs a confirmation.",
            confirm={"level": 3, "key": "keys.create"}),
         Op("keys.update", _keys_update, ADMIN,
            {"id": a(S, True, desc="Id of the key (from keys.list)."), "name": a(S, desc="New name (unique)."),
             "kinds": a(L, desc="New list of allowed operation classes (replaces the old one)."),
-            "ops": a(L, desc="New list of allowed operation patterns (replaces the old one)."),
-            "deny": a(L, desc="New list of refused operation patterns (replaces the old one)."),
+            "ops": a(L, desc="New list of allowed operations: names, patterns and cap:<id> (replaces the old one)."),
+            "deny": a(L, desc="New list of refused operations: names, patterns and cap:<id> (replaces the old one)."),
             "enabled": a(B, desc="false suspends the key without deleting it; true enables it again."),
             "days": a(N, min=0, desc="New validity in days from now, up to 3650; 0: never expires; not given: unchanged.")},
            "Changes the name, permissions, expiry or enabled state of a key; only the arguments given change."),
@@ -954,8 +967,22 @@ def _keys_store():
     return st
 
 
+def _with_allowed(rec):
+    """A key record for the page plus `allowed_ops`: the operations it may call, resolved by the same rule the server applies to every call
+    (api_keys.why_not), so the page keeps no copy of it."""
+    reg = _ctx.get("registry")
+    ops = [(n, o.kind) for n, o in reg.ops.items()] if reg else []
+    return dict(rec, allowed_ops=api_keys.allowed_ops(rec, ops))
+
+
 def _keys_list(args, ctx):
-    return {"keys": _keys_store().list(), "presets": api_keys.PRESETS, "kinds": list(api_keys.KINDS), "max": api_keys.MAX_KEYS}
+    return {"keys": [_with_allowed(r) for r in _keys_store().list()], "presets": api_keys.PRESETS, "kinds": list(api_keys.KINDS),
+            "max": api_keys.MAX_KEYS, "cap_prefix": api_keys.CAP_PREFIX}
+
+
+def _keys_preview(args, ctx):
+    rec = _key_call(api_keys.draft, args.get("kinds"), args.get("ops"), args.get("deny"))
+    return {"ops": rec["ops"], "deny": rec["deny"], "allowed_ops": _with_allowed(rec)["allowed_ops"]}
 
 
 def _key_call(fn, *a, **kw):
@@ -969,12 +996,12 @@ def _keys_create(args, ctx):
     plain, rec = _key_call(_keys_store().create, args.get("name"), args.get("kinds"), args.get("ops"), args.get("deny"),
                            args.get("days"), args.get("preset"))
     _ctx["log_file"](f"api keys: created '{rec['name']}' ({rec['id']})")
-    return {"key": plain, "record": rec, "note": "Copy the key now: it cannot be shown again. Send it in the header X-Workshop-Key."}
+    return {"key": plain, "record": _with_allowed(rec), "note": "Copy the key now: it cannot be shown again. Send it in the header X-Workshop-Key."}
 
 
 def _keys_update(args, ctx):
-    return {"record": _key_call(_keys_store().update, args.get("id"), args.get("name"), args.get("kinds"), args.get("ops"),
-                                args.get("deny"), args.get("enabled"), args.get("days"))}
+    return {"record": _with_allowed(_key_call(_keys_store().update, args.get("id"), args.get("name"), args.get("kinds"), args.get("ops"),
+                                              args.get("deny"), args.get("enabled"), args.get("days")))}
 
 
 def _keys_revoke(args, ctx):
@@ -1064,13 +1091,18 @@ def current_mode():
 
 # ---- start ----
 
-def init(bridge, config, plugin_id, version="", log=print, log_file=print, token_file=TOKEN_FILE, keys_file=KEYS_FILE, users_file=users.USERS_FILE):
+def init(bridge, config, plugin_id, version="", log=print, log_file=print, token_file=TOKEN_FILE, keys_file=KEYS_FILE, users_file=users.USERS_FILE, roles_file=None):
     """Builds the registry of the service. Does not open any connection."""
     _ctx.update(bridge=bridge, config=config, log=log, log_file=log_file)
     reg = identity.AuthRegistry(plugin_id, version, log_file)
-    for op in _ops() + settings_ops.build(_ctx) + bed_zones_ops.build(_ctx) + api_users.make_ops(lambda: _ctx.get("users")):
+    for op in _ops() + settings_ops.build(_ctx) + bed_zones_ops.build(_ctx) + api_users.make_ops(lambda: _ctx.get("users")) + roles_ops.make_ops(lambda: _ctx.get("roles"), lambda: _ctx.get("users")):
         reg.add(op)
     _ctx["users"] = reg.users = users.UserStore(users_file, log=log_file) if users_file else None
+    if users_file:  # the custom roles live next to the people (outside the plugin folder), and the people point to them by name
+        roles_file = roles_file or os.environ.get("WORKSHOP_ROLES") or os.path.join(os.path.dirname(users_file) or ".", "workshop-roles.json")
+        _ctx["roles"] = reg.users.role_source = role_store.RoleStore(roles_file, log=log_file)
+    else:
+        _ctx["roles"] = None
     camera_access.bind(lambda: _ctx.get("users"))  # the camera relay (:8090) applies the same roles
     reg.mode_of = current_mode
     reg.on_denied = record_denied

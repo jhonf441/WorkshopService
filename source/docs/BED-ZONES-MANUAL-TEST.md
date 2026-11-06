@@ -119,10 +119,10 @@ Only with the heaters OFF and the machine cold, and someone watching.
 With the service stopped (and Printing's process at rest):
 
 1. `M140 S60` in the console. **Expected:** only bed 0 heats. This is the problem the service solves; it is not a failure.
-2. `M98 P"0:/sys/workshop/macros/bedzones-set.g" S40`. **Expected:** the same zones and offsets as test 4 (read from `bedzones.g`), and "Zonas de cama: 3 ajustadas (40 C)" (or the English text).
-3. `M98 P"0:/sys/workshop/macros/bedzones-set.g" S45 B1`. **Expected:** only bed 1, exactly 45. The bed is **B**, not P: in `M98` the P is the name of the file, so a `P1` after it is lost and every zone would be set.
-4. `M98 P"0:/sys/workshop/macros/bedzones-set.g" S0`. **Expected:** every zone of the settings off, **including the inactive one**.
-5. `M98 P"0:/sys/workshop/macros/bedzones-set.g" S70` (maximum 60 in the settings). **Expected:** refused with the maximum of the settings, **nothing sent**.
+2. `M98 P"0:/sys/workshop/macros/work/bedzones-set.g" S40`. **Expected:** the same zones and offsets as test 4 (read from `bedzones.g`), and "Zonas de cama: 3 ajustadas (40 C)" (or the English text).
+3. `M98 P"0:/sys/workshop/macros/work/bedzones-set.g" S45 B1`. **Expected:** only bed 1, exactly 45. The bed is **B**, not P: in `M98` the P is the name of the file, so a `P1` after it is lost and every zone would be set.
+4. `M98 P"0:/sys/workshop/macros/work/bedzones-set.g" S0`. **Expected:** every zone of the settings off, **including the inactive one**.
+5. `M98 P"0:/sys/workshop/macros/work/bedzones-set.g" S70` (maximum 60 in the settings). **Expected:** refused with the maximum of the settings, **nothing sent**.
 6. Rename `bedzones.g` to `bedzones.g.off` and run the macro with `S40`. **Expected:** it uses every bed heater of the board, no offsets, and its own fallback maximum (110). Rename it back.
 7. Compare with the service: start it, run `M140 S40` from the console, note the targets; run the macro with `S40`: the targets must be identical.
 8. The macro never goes around the firmware: with a heater whose M143 limit you set low (for example `M143 H1 S50` with the bed cold, then put it back to its value), `S55` is refused for that bed with "limit of 50 C (M143)".

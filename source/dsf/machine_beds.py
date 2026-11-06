@@ -18,11 +18,13 @@ import machine_plans as plans
 import machine_tool as mt
 from workshop_api import READ, Arg, Op
 
-MAX_BEDS = 8
+# Ceilings used ONLY when the board does not report its own limits (object model `limits`, RRF 3.4+): bed numbers fit in 5 bits, 20 heaters.
+# What the board really supports is limits.bedHeaters / limits.heaters (see board_limits): there is no fixed number of beds.
 MAX_BED = 31
+MAX_BEDS = MAX_BED + 1
 MAX_HEATER = 19
 MAX_SENSOR = 99
-PRESETS = ("thermistor", "pt1000")
+PRESETS = ("thermistor", "pt1000", "thermocouple", "pt100")
 # output kind -> (mark kept in the comment of the M950 line (the extruder configuration reads it), PWM frequency, capability the pin needs)
 OUTPUTS = {"ssr": ("ssr-ca", 10, "pwm"), "ssrdc": ("ssr-dc", 10, "pwm"), "relay": ("relay", 1, "digital")}
 # a heater that is really defined: the mode files of the other modes DELETE the heaters with `M950 H0 C"nil"`, and those lines are not a definition
@@ -57,9 +59,21 @@ def used_numbers(om, texts):
     return {"heaters": heaters, "sensors": sensors, "beds": beds, "bed_lines": in_files}
 
 
+def board_limits(om):
+    """{beds, heaters}: how many beds and heaters THIS board supports (limits.bedHeaters, limits.heaters of the object model); the ceilings above when it does not say."""
+    limits = (om or {}).get("limits") or {}
+
+    def pick(key, fallback):
+        n = limits.get(key)
+        return n if isinstance(n, int) and not isinstance(n, bool) and n > 0 else fallback
+    return {"beds": pick("bedHeaters", MAX_BEDS), "heaters": pick("heaters", MAX_HEATER + 1)}
+
+
 def _state(read, om):
     texts = mt._config_texts(read)
     out = used_numbers(om, texts)
+    lim = board_limits(om)
+    out["max_beds"], out["max_heaters"] = lim["beds"], lim["heaters"]
     out["used"] = mt.used_pins(texts)
     return out
 
@@ -78,7 +92,9 @@ def build_lines(spec, state):
     if not isinstance(spec, dict):
         raise mt.ToolError("values", "spec")
     beds = spec.get("beds")
-    if not isinstance(beds, list) or not 1 <= len(beds) <= MAX_BEDS or not all(isinstance(b, dict) for b in beds):
+    max_beds = state.get("max_beds", MAX_BEDS)
+    max_heaters = state.get("max_heaters", MAX_HEATER + 1)
+    if not isinstance(beds, list) or not 1 <= len(beds) <= max_beds or not all(isinstance(b, dict) for b in beds):
         raise mt.ToolError("values", "beds")
     used, taken = state["used"], set()
     heaters, sensors, seen = set(), set(), set()
@@ -86,7 +102,7 @@ def build_lines(spec, state):
     summary = []
     for i, item in enumerate(beds):
         field = "beds[%d]" % i
-        bed = mt._number(item.get("bed"), 0, MAX_BED, field + ".bed", True)
+        bed = mt._number(item.get("bed"), 0, min(MAX_BED, max_beds - 1), field + ".bed", True)
         if bed in state["beds"] or bed in seen:
             raise mt.ToolError("bed_exists", field + ".bed")
         seen.add(bed)
@@ -100,13 +116,14 @@ def build_lines(spec, state):
             raise mt.ToolError("values", field + ".output.kind")
         mark, freq, need = OUTPUTS[output["kind"]]
         sensor_pin = mt._pin(sensor.get("pin"), mt.SENSOR_PRESETS[sensor["preset"]][1], used, taken, field + ".sensor.pin")
+        sensor_text = mt.sensor_text(sensor["preset"], sensor, field + ".sensor")
         output_pin = mt._pin(output.get("pin"), need, used, taken, field + ".output.pin")
         tmax = mt._number(item.get("max_temp"), 50, 280, field + ".max_temp")
-        heater = _free(state["heaters"], heaters, MAX_HEATER)
+        heater = _free(state["heaters"], heaters, max_heaters - 1)
         sensor_number = _free(state["sensors"], sensors, MAX_SENSOR)
         heaters.add(heater)
         sensors.add(sensor_number)
-        lines.append('M308 S%d P"%s" %s A"%s"' % (sensor_number, sensor_pin, mt.SENSOR_PRESETS[sensor["preset"]][0], name[:24]))
+        lines.append('M308 S%d P"%s" %s A"%s"' % (sensor_number, sensor_pin, sensor_text, name[:24]))
         lines.append('M950 H%d C"%s" Q%d T%d   ; workshop:%s' % (heater, output_pin, freq, sensor_number, mark))
         lines.append("M143 H%d S%s" % (heater, pt.num_text(tmax)))
         lines.append("M140 P%d H%d" % (bed, heater))
@@ -164,14 +181,21 @@ def _get(args, ctx):
     om = mo.model()
     state = _state(mo.read_sd, om)
     heat = (om or {}).get("heat") or {}
-    defined = [{"bed": i, "heater": h} for i, h in enumerate(heat.get("bedHeaters") or []) if isinstance(h, int) and h >= 0]
+    import machine_bed_edit
+    texts = mt._config_texts(mo.read_sd)
+    defined = []
+    for i, h in enumerate(heat.get("bedHeaters") or []):
+        if isinstance(h, int) and h >= 0:
+            file_heater, sensor = machine_bed_edit.current(texts, i)
+            # sensor: the T of the heater's M950 line; editable: a line of the files links this bed (config.bed_edit can rewrite it)
+            defined.append({"bed": i, "heater": h, "sensor": sensor, "editable": file_heater is not None})
     taken_beds = state["beds"]
     return {"defined": defined,
             "in_files": sorted(state["bed_lines"] - {d["bed"] for d in defined}),
-            "next": {"heater": next((n for n in range(MAX_HEATER + 1) if n not in state["heaters"]), None),
+            "next": {"heater": next((n for n in range(state["max_heaters"]) if n not in state["heaters"]), None),
                      "sensor": next((n for n in range(MAX_SENSOR + 1) if n not in state["sensors"]), None),
-                     "beds": [n for n in range(MAX_BED + 1) if n not in taken_beds][:MAX_BEDS]},
-            "max_beds": MAX_BEDS}
+                     "beds": [n for n in range(min(MAX_BED + 1, state["max_beds"])) if n not in taken_beds]},
+            "max_beds": state["max_beds"]}
 
 
 def _preview(args, ctx):
@@ -185,7 +209,7 @@ def _preview(args, ctx):
 
 
 def ops():
-    return [Op("machine.beds.get", _get, READ, {}, "The beds the machine has now ([{bed, heater}]), the beds that only a configuration file defines (a mode file that is not "
+    return [Op("machine.beds.get", _get, READ, {}, "The beds the machine has now ([{bed, heater, sensor, editable}]), the beds that only a configuration file defines (a mode file that is not "
                "loaded now), the first heater and sensor numbers nothing uses and the first free bed numbers.", log=False),
             Op("machine.beds.preview", _preview, READ, {"spec": Arg("obj", desc="{beds: [{bed, name?, sensor: {preset: thermistor|pt1000, pin}, output: {kind: ssr|ssrdc|relay, pin}, max_temp}]}")},
                "The exact configuration lines the plan config.bed_heaters would write for these beds and the file they go into, or what is wrong with them. Writes nothing.", log=False)]

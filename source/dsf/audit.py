@@ -16,7 +16,7 @@ import time
 import db
 
 SECRET_ARGS = frozenset({"pin", "new_pin", "old_pin", "password", "key", "local_key", "token", "secret", "topic", "ntfy_topic", "api_key"})
-ALWAYS_PREFIX = ("auth.", "users.", "audit.", "keys.", "password.")
+ALWAYS_PREFIX = ("auth.", "users.", "audit.", "keys.", "password.", "roles.")
 DENIED = ("forbidden", "login_required")
 DEDUPE_S = 10
 _recent = {}
@@ -50,7 +50,7 @@ def actor(ctx):
     if via == "token":
         return "local:%s" % (ctx.get("origin") or "program"), "local"
     if isinstance(u, dict):
-        return u.get("name") or ctx.get("audit_user") or "", u.get("role") or ""
+        return u.get("name") or ctx.get("audit_user") or "", u.get("role_name") or u.get("role") or ""  # a custom role by its name
     return ctx.get("audit_user") or "", ""
 
 
@@ -86,8 +86,10 @@ def record(op_name, kind, args, ctx, ok, code, message, log=print):
             return
         http = ctx.get("http") or {}
         text = str(message or "")
+        # an operation that changes something important may leave its own text (roles.set: the role before and after), which replaces the
+        # summary of the arguments: the audit keeps the change itself
         db.audit_insert(time.strftime("%Y-%m-%dT%H:%M:%S"), user, role, http.get("device", ""), http.get("addr", ""), ctx.get("via", ""),
-                        op_name, summary(args), ok, code, "" if ok else text)
+                        op_name, str(ctx.get("audit_detail") or "")[:600] or summary(args), ok, code, "" if ok else text)
     except Exception as e:  # noqa: BLE001 - the audit must never break a call
         try:
             log("audit: %s" % e)

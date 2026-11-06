@@ -113,7 +113,7 @@ export default {
 		},
 		macro() {
 			const kv = Object.keys(this.example).map(k => k + '=' + (typeof this.example[k] === 'object' ? '...' : this.example[k])).join(',');
-			return 'M98 P"0:/sys/workshop/macros/service-call.g" S"' + this.op.op + '"' + (kv ? ' A"' + kv + '"' : '') + ' Q1';
+			return 'M98 P"0:/sys/workshop/macros/system/service-call.g" S"' + this.op.op + '"' + (kv ? ' A"' + kv + '"' : '') + ' Q1';
 		},
 		response() {
 			return '{ "ok": true, "op": "' + this.op.op + '", "result": ..., "message": null }\n{ "ok": false, "op": "' + this.op.op + '", "error": { "code": "invalid_args | forbidden | confirm_required | motion_denied | failed | busy", "message": "..." } }';

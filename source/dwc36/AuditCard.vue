@@ -89,7 +89,8 @@ export default {
 	},
 	computed: {
 		gateKind() { void this.identityTick; return signedOut() ? 'session' : 'role'; },
-		isAdmin() { return !!this.identity && this.identity.role === 'admin'; },
+		// one source of truth: the operation table of the service (audit.list is admin), as the rest of the page
+		isAdmin() { return !!this.identity && this.canDo('audit.list'); },
 		userItems() { return this.users; }
 	},
 	watch: {

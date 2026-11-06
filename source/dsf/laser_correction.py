@@ -6,7 +6,7 @@ zones 0:/sys/workshop/zones/p<N>.g add it to their origin while global.laserOffs
 number, so a new measure changed the store and left the real G54..G59.3 as they were. A G-code macro cannot read JSON, so the service mirrors the
 correction into one small macro:
 
-    0:/sys/workshop/macros/lasercorrection.g    set global.workshopLaserCorrX / Y / Known     GENERATED, rewritten whenever the store `laser` changes
+    0:/sys/workshop/macros/laser/lasercorrection.g    set global.workshopLaserCorrX / Y / Known     GENERATED, rewritten whenever the store `laser` changes
 
 workplaces.g, wpload.g and saveworkplace.g declare the three globals (0, 0, false until a correction exists) and run that file before the zones;
 each p<N>.g only names the globals (`X{20 + (global.laserOffsetOn ? global.workshopLaserCorrX : 0)}`), never a number. A new correction therefore
@@ -27,7 +27,7 @@ import machine_gcode
 import sd_paths
 
 NAME = "laser"
-FILE = "sys/workshop/macros/lasercorrection.g"
+FILE = "sys/workshop/macros/laser/lasercorrection.g"
 LIMIT_MM = 100.0        # a correction beyond this is not a measure (the pointer sits a few cm from the beam): the mirror then says "none" (0 0)
 
 

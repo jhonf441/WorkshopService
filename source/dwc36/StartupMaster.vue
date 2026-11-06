@@ -12,6 +12,7 @@
 		<v-card-text>
 			<div class="text-body-2 mb-3 svc-sm-intro">{{ $t(T + 'intro') }}</div>
 			<session-notice v-if="needsLogin" kind="session" variant="section" />
+			<lock-reason v-else-if="refusedRole" kind="role" need="viewer" />
 			<section v-for="g in groups" :key="g.id" class="svc-sm-group" :class="'svc-sm-group-' + g.id">
 				<div class="svc-sm-head">
 					<v-icon small :color="g.color">{{ g.icon }}</v-icon>
@@ -43,6 +44,9 @@
 import { api, currentIdentity, onIdentity } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js'
 import SessionNotice from './SessionNotice.vue'
+import LockReason from './LockReason.vue'
+import { signedOut } from './workshop-auth.js'
+import { errorKind } from './friendly-error.js'
 import { buildGroups, doneSteps, donePercent } from './startup-groups.js'
 import { IDS, pluginActive, pathExists } from './workshop-ids.js'
 
@@ -64,12 +68,12 @@ const PLUGINS = [
 ];
 
 export default {
-	components: { SessionNotice },
+	components: { SessionNotice, LockReason },
 	mixins: [roleMixin],
 	// what each plugin reported was read with the session that left (ESTANDAR 3.3): emptied on sign-out / change of role, read again by the listener below
-	sessionData: ['reported', 'needsLogin', 'loading'],
+	sessionData: ['reported', 'needsLogin', 'refusedRole', 'loading'],
 	data() {
-		return { T: 'plugins.WorkshopService.startup_master.', reported: {}, loading: false, needsLogin: false, off: null, identity: currentIdentity() };
+		return { T: 'plugins.WorkshopService.startup_master.', reported: {}, loading: false, needsLogin: false, refusedRole: false, off: null, identity: currentIdentity() };
 	},
 	computed: {
 		// only the installed and enabled plugins; the id that is installed (new or old) is the one the report carries
@@ -127,11 +131,15 @@ export default {
 				if (gen !== this._gen) return;
 				this.reported = (r && r.plugins) || {};
 				this.needsLogin = false;
+				this.refusedRole = false;
 			} catch (e) {
 				if (gen !== this._gen) return;
 				// no session: say so, do not pass it off as 'not checked'
 				this.reported = {};
-				this.needsLogin = !!e && (e.code === 'login_required' || e.code === 'forbidden');
+				// a refusal is told by its cause (as refusalKind of session-refusal.js): 401, or 403 while nobody is signed in = no session; 403 with a session = role
+				const kind = errorKind(e);
+				this.needsLogin = kind === 'login' || (kind === 'role' && signedOut());
+				this.refusedRole = kind === 'role' && !this.needsLogin;
 			} finally {
 				if (gen === this._gen) this.loading = false;
 			}

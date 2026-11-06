@@ -558,6 +558,8 @@
 		<div v-if="visited.users" v-show="section === 'users'">
 		<!-- People of the workshop: name + PIN, roles applied by the service -->
 		<users-card />
+		<!-- Roles and permissions: who can do what, custom roles (administrator only) -->
+		<roles-card />
 
 		</div>
 		<div v-if="visited.audit" v-show="section === 'audit'">
@@ -697,6 +699,7 @@ import ReceivedCommands from './ReceivedCommands.vue'
 import Database from './Database.vue'
 import ApiKeys from './ApiKeys.vue'
 import UsersCard from './UsersCard.vue'
+import RolesCard from './RolesCard.vue'
 import AuditCard from './AuditCard.vue'
 import ApiDetail from './ApiDetail.vue'
 import ProcessRow from './ProcessRow.vue'
@@ -753,7 +756,7 @@ const CATS = [
 	{ id: 'energy', name: i18n.t('plugins.WorkshopService.servicePage.energy'), icon: 'mdi-flash', color: '#8E24AA', re: /^(power|energy|meter)\./ },
 	{ id: 'activity', name: i18n.t('plugins.WorkshopService.servicePage.cat_activity'), icon: 'mdi-history', color: '#00897B', re: /^(activity|notifications|history|risk|blackbox|trace|sound)\./ },
 	{ id: 'camera', name: i18n.t('plugins.WorkshopService.servicePage.cat_cameras'), icon: 'mdi-cctv', color: '#3949AB', re: /^(camera|vision)\./ },
-	{ id: 'security', name: i18n.t('plugins.WorkshopService.servicePage.cat_security'), icon: 'mdi-shield-account-outline', color: '#D81B60', re: /^(auth|users|password|keys)\./ },
+	{ id: 'security', name: i18n.t('plugins.WorkshopService.servicePage.cat_security'), icon: 'mdi-shield-account-outline', color: '#D81B60', re: /^(auth|users|password|keys|audit|roles)\./ },
 	{ id: 'config', name: i18n.t('plugins.WorkshopService.servicePage.cat_config'), icon: 'mdi-tune', color: '#6D4C41', re: /^(config|settings|profile|package|modules|bridge|comms|db|api|examples|state|view)\./ },
 	{ id: 'system', name: i18n.t('plugins.WorkshopService.servicePage.system'), icon: 'mdi-cog', color: '#757575', re: /./ }
 ];
@@ -762,7 +765,7 @@ export default {
 	mixins: [roleMixin],
 	// what came from the session of the person who left (ESTANDAR 3.3): put back to its first value on sign-out and on a change of role
 	sessionData: ['apiOps', 'tests'],
-	components: { PageHeader, SessionNotice, HelpGuide, BlackBoxCard: BlackBoxCard, ConfigPackage, StartupMaster, SideTabs, BridgeCard: BridgeCard, ReceivedCommands, Database: Database, ApiKeys: ApiKeys, UsersCard, AuditCard, ApiDetail: ApiDetail, ProcessRow: ProcessRow, ProcessesSummary: ProcessesSummary },
+	components: { PageHeader, SessionNotice, HelpGuide, BlackBoxCard: BlackBoxCard, ConfigPackage, StartupMaster, SideTabs, BridgeCard: BridgeCard, ReceivedCommands, Database: Database, ApiKeys: ApiKeys, UsersCard, RolesCard, AuditCard, ApiDetail: ApiDetail, ProcessRow: ProcessRow, ProcessesSummary: ProcessesSummary },
 	data() {
 		return {
 			section: 'summary', // the section chosen in the side bar

@@ -14,12 +14,12 @@ from messages import M
 import bed_zones
 
 AREA = "bed-zones"
-MAX_ZONES = 8
 MAX_TEMP_LIMIT = 200.0     # no setpoint above this is ever accepted, whatever the user types
 MAX_OFFSET_LIMIT = 30.0
 MAX_TIMEOUT_S = 3600.0
 MAX_BED = 31               # RRF bed heater slots
 LAYOUT_MAX = 4             # rows / columns of the map
+MAX_ZONES = LAYOUT_MAX * LAYOUT_MAX  # what the map draws; how many beds the BOARD supports (limits.bedHeaters) is checked by the page, a zone of a missing bed is flagged
 
 
 def defaults():

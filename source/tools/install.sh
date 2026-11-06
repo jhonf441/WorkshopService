@@ -164,7 +164,7 @@ run_preflight() {
   say "preflight on $HOST"
   if [ ! -f "$SRC_DSF/preflight_cli.py" ]; then say "preflight skipped: this build has no dsf/preflight_cli.py (older than 2.19.1)"; return 0; fi
   "${SSH[@]}" "$TARGET" "rm -rf '$TMP_REMOTE/pre' && mkdir -p '$TMP_REMOTE/pre/dsf/i18n'"
-  "${SCP[@]}" "$SRC_DSF/preflight_cli.py" "$SRC_DSF/preflight.py" "$SRC_DSF/messages.py" "$SRC_DSF/paths.py" "$TARGET:$TMP_REMOTE/pre/dsf/"
+  "${SCP[@]}" "$SRC_DSF/preflight_cli.py" "$SRC_DSF/preflight.py" "$SRC_DSF/messages.py" "$SRC_DSF/paths.py" "$SRC_DSF/ports.py" "$TARGET:$TMP_REMOTE/pre/dsf/"
   "${SCP[@]}" "$SRC_DSF/i18n/es.json" "$SRC_DSF/i18n/en.json" "$TARGET:$TMP_REMOTE/pre/dsf/i18n/"
   "${SCP[@]}" "$WORK/build/plugin.json" "$TARGET:$TMP_REMOTE/pre/plugin.json"
   local rc=0
@@ -175,11 +175,19 @@ run_preflight() {
 # ---------------------------------------------------------------- install
 stage_files() {
   S="$WORK/stage"; rm -rf "$S"; mkdir -p "$S/dsf" "$S/dwc"
-  (cd "$SRC_DSF" && find . -maxdepth 2 \( -name "*.py" -o -name "*.json" \) ! -name config.json ! -path "./fixtures/*" ! -path "*/__pycache__/*" -type f | sort \
+  # config.json and secrets.json are never installed or compared: they hold this machine's settings and keys
+  (cd "$SRC_DSF" && find . -maxdepth 2 \( -name "*.py" -o -name "*.json" \) ! -name config.json ! -name secrets.json ! -path "./fixtures/*" ! -path "*/__pycache__/*" -type f | sort \
     | while read -r f; do echo "$(md5sum "$f" | cut -d' ' -f1)  $f"; done) > "$WORK/local.md5"
+  # from a working copy only the files git tracks are installed: an untracked local file (a test key, a scratch .json) never travels
+  if [ "$SRC_DSF" = "$REPO/dsf" ] && git -C "$REPO" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git -C "$REPO" ls-files dsf | sed 's#^dsf/#./#' | sort > "$WORK/tracked.txt"
+    awk 'NR==FNR{t[$0]=1; next} {f=$0; sub(/^[0-9a-f]+  /,"",f); if (f in t) print}' "$WORK/tracked.txt" "$WORK/local.md5" > "$WORK/local.tracked"
+    mv "$WORK/local.tracked" "$WORK/local.md5"
+    say "only the files tracked by git are installed"
+  fi
   remote_run "ROOT=$ROOT" > "$WORK/remote.md5" <<'REMOTE'
 cd "$ROOT/plugins/WorkshopService/dsf" 2>/dev/null || exit 0
-find . -maxdepth 2 \( -name "*.py" -o -name "*.json" \) ! -name config.json -type f | sort | while read -r f; do echo "$(md5sum "$f" | cut -d' ' -f1)  $f"; done
+find . -maxdepth 2 \( -name "*.py" -o -name "*.json" \) ! -name config.json ! -name secrets.json -type f | sort | while read -r f; do echo "$(md5sum "$f" | cut -d' ' -f1)  $f"; done
 REMOTE
   CHANGED="$(diff "$WORK/local.md5" "$WORK/remote.md5" | grep '^<' | sed 's/^< *[0-9a-f]*  //' || true)"
   say "files that differ from the Pi:"; echo "${CHANGED:-  (none)}"

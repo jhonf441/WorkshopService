@@ -1,5 +1,11 @@
 # WorkshopService (System service)
 
+<!-- notice:start -->
+> **Read before installing.** This plugin runs with real permissions on your machine. Read [SECURITY.md](SECURITY.md) and the section **Permissions and what it changes** below: they say what it can do, which files it writes, and what it sends outside your network (nothing, unless you turn a feature on).
+
+> **The Workshop users and roles do not protect DWC itself.** Anyone who can open DWC on your network can send G-code, move the machine, edit `config.g` and upload files, whatever the Workshop roles say: Duet has no roles of its own. Set a DWC password (`M551`) and keep the machine on a network you trust.
+<!-- notice:end -->
+
 
 
 WorkshopService is the base of every other workshop plugin. It has two parts: a Python backend that runs on the Raspberry Pi under DSF (central API, database, status LEDs, safety monitors, G-code bridge) and one DWC page, "System service" (`/Plugins/WorkshopService`). Every other plugin depends on it and is installed after it.
@@ -277,7 +283,7 @@ Settings live outside the plugin folder: `0:/sys/workshop/config/service.json`, 
 
 ## 5. Roles and permissions
 
-Four roles, applied in the server for every API operation (`dsf/permissions.py`): Viewer (looks), Operator (moves and runs jobs in allowed modes), Technician (settings, mode change), Admin (everything, users, power). Without users everybody is admin; the first user created turns roles on. Token header `X-Workshop-Token`. The page shows a "read only" chip when your role can only look.
+Four roles, applied in the server for every API operation (`dsf/permissions.py`): Viewer (looks), Operator (moves and runs jobs in allowed modes), Technician (settings, mode change), Admin (everything, users, power). Without users everybody who reaches DWC is admin, but the camera relay, Vision and the G-code bridge only let the network look (reads and queries); the first user created turns roles on. Token header `X-Workshop-Token`. The page shows a "read only" chip when your role can only look.
 
 ## 6. API operations used
 
@@ -300,16 +306,16 @@ Risk: **High (backend with broad permissions; it can shut the system down)**. Re
 
 **DSF permissions** (DSF shows them and you approve them when you install; the zip asks for nothing else):
 
-| Permission | What it lets the plugin do |
-|---|---|
-| `commandExecution` | send G-code to the board |
-| `codeInterceptionReadWrite` | intercept G-code (M3/M4/M5, a device fault) and let it through or change it |
-| `objectModelReadWrite` | read the state of the machine and publish its own data in it |
-| `networkAccess` | open network connections (notices, the meter, the camera, the service API) |
-| `registerHttpEndpoints` | answer on its own address (an API endpoint under /machine/<Id>/) |
-| `writeSystem` | lock files under 0:/sys (the history database needs it) |
-| `fileSystemAccess` | read and write files outside the DSF folders (keys, camera files) |
-| `launchProcesses` | start programs (ffmpeg, pinctrl, systemctl, sudo shutdown) |
+| Permission | What it lets the plugin do | Where the code uses it |
+|---|---|---|
+| `commandExecution` | send G-code to the board | G-code through `CommandConnection`: `dsf/jog_move.py` (jog moves), `dsf/status_light.py` (`M150` LEDs), `dsf/machine_ops.py`, `dsf/machine_workarea.py`, `dsf/machine_height.py`, `dsf/frame_ops.py` (Machine page actions, only the closed list of `dsf/machine_gcode.py`), `dsf/main.py` |
+| `codeInterceptionReadWrite` | intercept G-code (M3/M4/M5, a device fault) and let it through or change it | `dsf/main.py` (`InterceptConnection`, `M3`/`M4`/`M5` for the air assist and the live-job activity), `dsf/bed_zones_intercept.py` (`M140`/`M190` for bed zones) and `dsf/jog_move.py` (a lock that blocks motion codes while a jog runs) |
+| `objectModelReadWrite` | read the state of the machine and publish its own data in it | `dsf/machine_state.py` (one subscription to the model) and `dsf/publisher.py` (`set_plugin_data` of the plugin's own data) |
+| `networkAccess` | open network connections (notices, the meter, the camera, the service API) | listens: the camera relay `dsf/camera_relay.py` (port 8090, `camera_relay.bind`) and the optional G-code bridge on port 23 (its own process); connects: the LAN (cameras, the Tuya meter in `dsf/tuya_meter.py`), DSF on `localhost`, and `ntfy.sh` only when you turn the phone notices on (`dsf/notifier.py`) |
+| `registerHttpEndpoints` | answer on its own address (an API endpoint under /machine/<Id>/) | `dsf/workshop_api.py`: `/machine/WorkshopService/api` (POST and GET) |
+| `writeSystem` | lock files under 0:/sys (the history database needs it) | SQLite file locks in `0:/sys/workshop/data/duet.db` (`dsf/db.py`); measured with `tools/permission_probe.py`: without it every API call is HTTP 500 |
+| `fileSystemAccess` | read and write files outside the DSF folders (keys, camera files) | `/opt/dsf/conf/workshop-secrets.json`, `workshop-users.json`, `workshop-roles.json`, `workshop-api-token`, `workshop-camera.key` (`dsf/paths.py`, `dsf/config_store.py`, `dsf/users.py`, `dsf/role_store.py`, `dsf/api_ops.py`, `dsf/camera_key.py`); camera files in `/opt/dsf/sd/workshop/camera/` (`dsf/camera_*.py`); reads of `/proc` and `/sys/class/thermal` (`dsf/health_poller.py`, `dsf/cpu_meter.py`); the LED SPI device named in DSF's `config.json` (`dsf/pi_leds.py`). Measured: without it every call is 401. It could not be narrowed: the files are outside the folders the narrower permissions cover (unverified: DSF's list of folder permissions was not checked on the machine) |
+| `launchProcesses` | start programs (ffmpeg, pinctrl, systemctl, sudo shutdown) | `ffmpeg` (`dsf/camera_assembly.py`, `dsf/camera_timelapse.py`, `dsf/camera_notice.py`), `pinctrl` (`dsf/pi_leds.py`), `vcgencmd`, `ip`, `nmcli`, `ping`, `systemctl`, `journalctl` (`dsf/health_poller.py`), `systemctl` for the bridge unit (`dsf/bridge_service.py`), `sudo -n shutdown` / `sudo -n reboot` (`dsf/handlers/shutdown_all.py`, `dsf/handlers/reset_all.py`). Measured: without it `exec` of `ip` and `vcgencmd` is denied. DSF has no per-program permission |
 
 **Runs a program on the Pi:** `main.py` as the `dsf` user (restarted by DSF if it stops).
 
@@ -318,10 +324,13 @@ Risk: **High (backend with broad permissions; it can shut the system down)**. Re
 - `/opt/dsf/conf/workshop-secrets.json` and `workshop-users.json` (mode 600), `workshop-camera.key`
 
 **What it needs outside the zip** (each one is a separate step you do on purpose and can undo):
+- Internet access to `ntfy.sh` (or your own ntfy server) from the Pi, only if you turn the phone notifications on (off by default, see the safety notes)
 - `/etc/sudoers.d/dsf-power`, only if you want the shutdown / restart buttons: you create it by hand (steps below)
 - the G-code bridge (`sudo bridge/install.sh`): systemd unit, polkit rule and `/opt/workshop-bridge`; `sudo bridge/install.sh uninstall` removes them
 - ports: the camera relay (8090 by default, all interfaces; `camera_relay.bind` keeps it on the Pi) and the G-code bridge (23)
 - `ffmpeg` for timelapses and snapshots; `tinytuya` for a Tuya energy meter
+- the `kiosk/` helper scripts of the touch-screen Pi, only if you copy them to your home folder (table below); they are not in the zip
+- `sudo tools/uninstall-system-rules.sh` removes the sudoers rule again (and, with `--bridge`, the bridge)
 
 **How to: the shutdown / restart rule (sudoers)**
 
@@ -343,8 +352,43 @@ Risk: **High (backend with broad permissions; it can shut the system down)**. Re
 - To see whether it blocks something: `journalctl -k | grep DENIED | grep Workshop` (no output means no denial).
 - If the profile is old or a feature is denied after an update that changed the permissions, install the plugin again from DWC so DSF rewrites the profile, then check the command above once more.
 
+**How to: the `kiosk/` scripts**
+
+They are in the WorkshopService source repository, NOT in the zip: installing the plugin never copies them. You copy the ones you want to your home folder on the kiosk Pi; they run as your login user, not as `dsf`, and none of them needs `sudo` except `chromium-no-zoom` (to install it) and `capture.sh`.
+
+| Script | What it does | What it writes | How it starts | Remove |
+|---|---|---|---|---|
+| `ensure-emergencyfab.sh` | puts back into `machine.enabledPlugins` of `0:/sys/dwc-settings.json` the plugins DWC dropped, only when no screen has DWC open; skips plugins you stopped on purpose | that file, through DSF's file API on `http://localhost`; its log `~/ensure-emergencyfab.log` | line in `~/.config/labwc/autostart` | delete the line and the files |
+| `keyboard-watchdog.sh` | starts the on-screen keyboard (squeekboard) when a touch screen exists and it is not running | nothing | `~/.config/labwc/autostart` | delete the line |
+| `wifi-watchdog.sh` | keeps the Pi on the saved Wi-Fi profile `DUET`: switches the radio on, deletes duplicate profiles named `DUET <n>`, brings `DUET` up (`nmcli`) | NetworkManager connections | `~/.config/labwc/autostart` | delete the line (the profile named in `PROFILE` is not removed) |
+| `display-watchdog.sh`, `touch-unlock.sh` | take the black lock layer (`swaylock`) away with `SIGUSR1` after the touch controller re-enumerates or the screen is touched; they never kill it | nothing | `~/.config/labwc/autostart` | delete the lines |
+| `screensaver-on.sh`, `screensaver-off.sh` | the idle screensaver: put up and take away the black `swaylock` layer | `/tmp/duet-ss.pid` (removed) | called by `swayidle` | remove them from the `swayidle` command |
+| `kiosk-osk.py` | shows / hides the keyboard when the page asks, over D-Bus | nothing; listens on `127.0.0.1:8099` only | `~/.config/labwc/autostart` | delete the line |
+| `kiosk-three-fingers.py` | closes the kiosk browser (`pkill -f app=http://localhost`) when the screen is tapped with three fingers at once | nothing | `~/.config/labwc/autostart` | delete the line |
+| `chromium-shim.sh` | runs Chromium with `--autoplay-policy=no-user-gesture-required` so DWC can beep | nothing | copied as `~/kiosk-bin/chromium`, put first in `PATH` of the autostart | delete `~/kiosk-bin/chromium` and the `PATH` part |
+| `chromium-no-zoom` | adds `--disable-pinch` to Chromium | `/etc/chromium.d/98-no-zoom` (needs `sudo`) | read by Chromium's launcher | `sudo rm /etc/chromium.d/98-no-zoom` |
+| `capture.sh` | diagnostic for the G-code bridge: records port 23 with `tcpdump` until you press Ctrl+C | `/tmp/live_job.pcap` (needs `sudo`) | by hand only | nothing to remove |
+
+**How to: remove everything the Workshop set added outside the zip**
+
+Uninstalling a plugin from DWC removes only its own folder. This is everything else, in the order to do it. The last two rows DELETE YOUR DATA and cannot be undone: export the history and take a backup first.
+
+| What | Command | Deletes your data? |
+|---|---|---|
+| The plugins | in DWC *Settings > Plugins*, or `PluginManager uninstall <Id>`: the plugins that depend on `WorkshopService` first (stop Vision and RS485 before), `WorkshopService` last | no |
+| The AppArmor profile DSF wrote at install (`/etc/apparmor.d/dsf.<Id>`) | check `ls /etc/apparmor.d/dsf.*`; if one is left after uninstalling, `sudo apparmor_parser -R /etc/apparmor.d/dsf.<Id> && sudo rm /etc/apparmor.d/dsf.<Id>` (unverified: whether DSF removes it by itself) | no |
+| The shutdown / restart rule | `sudo tools/uninstall-system-rules.sh` (add `--dry-run` to only list); by hand: `sudo rm /etc/sudoers.d/dsf-power` and then `sudo visudo -c` | no |
+| The G-code bridge: unit, polkit rule, `/opt/workshop-bridge` | `sudo bridge/install.sh uninstall` (or `sudo tools/uninstall-system-rules.sh --bridge`) | no |
+| The kiosk helpers | the table above: delete their lines from `~/.config/labwc/autostart`, the copies in your home folder, `~/kiosk-bin/chromium`, and `sudo rm /etc/chromium.d/98-no-zoom` | no |
+| Keys, users, roles, API token, camera key | `sudo rm /opt/dsf/conf/workshop-secrets.json /opt/dsf/conf/workshop-users.json /opt/dsf/conf/workshop-roles.json /opt/dsf/conf/workshop-api-token /opt/dsf/conf/workshop-camera.key`. A new install makes a NEW camera key: an ESP32-CAM flashed with the old one stops authenticating | **yes** |
+| Settings, history database, zones, macros and camera files | `sudo rm -rf /opt/dsf/sd/sys/workshop /opt/dsf/sd/workshop`, and `/opt/dsf/sd/sys/workshop-model-agent` and `/opt/dsf/sd/sys/workshop-globals.g` if you used Model Explorer | **yes** |
+
+Changes you made through the pages to your own files (`config.g` LED count from Lights, the mode files from Printing) keep a `.bak` next to them; uninstalling does not revert them.
+
 **Safety notes:**
-- Without users, everybody who reaches DWC is an administrator and the relay and the bridge are open to the network: create the first administrator in the Users section.
+- **No users: the network can only look.** Until the first administrator exists, the camera relay (8090), Vision (8095) and the G-code bridge (23) answer reads and queries from the network but refuse everything that changes something (the camera settings, calibration, G-code orders); only the Pi itself is not limited. Whoever reaches DWC is still an administrator (a DWC password is the protection there), so create the first administrator in the Users section. If you switch the roles off on purpose (with an administrator's PIN), the relay and Vision are open to the network again. A bridge without a password, an allowed list or a trusted address refuses every order: `install.sh` asks for one.
+- **Nothing leaves your network by default.** Phone notifications (ntfy) are OFF until you turn them on in the Activity page, which asks you to confirm. Once on, event texts (job end, job pause, errors, Pi health, power) go to a third-party server, `https://ntfy.sh` unless you set your own, and a camera photo or short video is attached when the camera is configured and the type's attachment is set. Anyone who knows the random topic can read them, so keep it private. While they are on, the Pi also sends a `HEAD` request to that server to measure latency. Turn them off to stop all of it.
+- The Pi health page pings a public address (`1.1.1.1`) for its "internet" latency only if you set `health.internet_check` to `true` in the service settings; it is off by default.
 
 Uninstalling removes the plugin folder; your data in `0:/sys/workshop/` and `/opt/dsf/conf/workshop-*.json` stays.
 

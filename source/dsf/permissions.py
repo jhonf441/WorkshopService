@@ -23,7 +23,17 @@ Machine v2: the operations of the design that are not registered yet live in PLA
 write (the hardware-risk kinds M208, M92, M906/M913/M917, M569, M584 need admin) have a rule in ESCALATE_IN.
 
 External keys (api_keys.py) do NOT go through this table: they keep their own model (kinds / ops / deny).
+
+Custom roles (permission_caps.py, role_store.py, docs/ROLES.md): a custom role is a base role (viewer, operator or technician, never
+admin) plus grants and denials. `decide()` stays the one entry point: for the four base roles it is exactly what it was (a golden fixture,
+fixtures/permissions_golden.json, proves it); for a custom role the caller passes the role's record in ctx["role_def"]. Order: stopping is
+never blocked; a denial wins; then the camera rule of a viewer; then the base role or a grant (a grant never lifts what an argument
+escalated, except machine.hardware_params for the hardware-risk writes); then the mode rule. An operation that cannot be delegated is
+never granted.
 """
+import fnmatch
+
+import permission_caps as caps
 
 VIEWER, OPERATOR, TECHNICIAN, ADMIN = "viewer", "operator", "technician", "admin"
 ROLES = (VIEWER, OPERATOR, TECHNICIAN, ADMIN)
@@ -33,7 +43,7 @@ MODES = ("laser", "cnc", "fff")
 # operations that need no identity at all: logging in and asking who one is
 PUBLIC_OPS = frozenset({"auth.login", "auth.whoami", "api.ping"})
 # stopping is never blocked: any caller may stop (no login needed), like the emergency stop of DWC
-STOP_OPS = frozenset({"jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "machine.stop", "livejob.stop_safe"})
+STOP_OPS = frozenset({"jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "machine.stop", "livejob.stop_safe", "power.off"})  # power.off: whoever is at the machine can switch it off (owner decision 2026-11-06: anyone could pull the plug anyway)
 # an operator may run these only in a mode it is allowed (the others need the camera / mode rules below)
 MODE_GATED = frozenset({"jog.xy", "jog.z", "jog.axis", "jog.free", "frame.start", "motion.reserve", "job.start"})
 # a viewer may call these only when it has the camera (the camera relay key and the Vision answers)
@@ -154,11 +164,13 @@ OP_ROLES = {
     "machine.maintenance.get": OPERATOR, "machine.maintenance.done": TECHNICIAN, "machine.maintenance.plan.set": TECHNICIAN,
     # phase 5: the one-time import from Machine 0.3.0 (reading the state is an operator's; the import writes history and library, so admin)
     # -- admin: shutdown / restart, M950, deleting history, passwords, communication, keys, restoring --
-    "power.off": ADMIN, "power.full_reset": ADMIN, "lights.apply_m950": ADMIN,
+    "power.off": VIEWER, "power.full_reset": ADMIN, "lights.apply_m950": ADMIN,
     "activity.delete": ADMIN, "activity.clear": ADMIN, "history.delete": ADMIN,
     "db.folder": ADMIN, "db.delete_previous": ADMIN, "config.restore": ADMIN, "comms.set": ADMIN,
     "password.set": ADMIN, "password.clear": ADMIN,
-    "keys.list": ADMIN, "keys.create": ADMIN, "keys.update": ADMIN, "keys.revoke": ADMIN,
+    "keys.list": ADMIN, "keys.preview": ADMIN, "keys.create": ADMIN, "keys.update": ADMIN, "keys.revoke": ADMIN,
+    # custom roles: only an administrator manages them, and none of it can be delegated (permission_caps.NOT_DELEGABLE)
+    "roles.list": ADMIN, "roles.get": ADMIN, "roles.set": ADMIN, "roles.remove": ADMIN, "roles.effective": ADMIN,
 }
 
 
@@ -191,7 +203,19 @@ def clean_modes(modes):
 
 
 def decide(role, op, ctx=None):
-    """(allowed, reason). reason: "" | "role" | "mode" | "camera" | "mode_unknown" | "unknown_role"."""
+    """(allowed, reason). reason: "" | "role" | "mode" | "camera" | "mode_unknown" | "unknown_role" | "denied" (a custom role's denial).
+    `role` is a base role or the name of a custom role whose record is in ctx["role_def"] (anything else: unknown_role, fail closed)."""
+    if role not in RANK:
+        rd = (ctx or {}).get("role_def")
+        if isinstance(rd, dict) and rd.get("name") == role and rd.get("base") in CUSTOM_BASES:
+            return _decide_custom(rd, str(op), ctx or {})
+        if ctx and "role_def" in ctx and str(op) in STOP_OPS:
+            return True, ""  # a person whose custom role cannot be found (identity sends role_def None) can still stop: stopping is never blocked
+    return _decide_base(role, op, ctx)
+
+
+def _decide_base(role, op, ctx=None):
+    """The decision of a base role: the ladder of OP_ROLES plus the context rules (unchanged since F1-A)."""
     ctx = ctx or {}
     op = str(op)
     if role not in RANK:
@@ -212,6 +236,112 @@ def decide(role, op, ctx=None):
             if mode not in modes:
                 return False, "mode"
     return True, ""
+
+
+CUSTOM_BASES = (VIEWER, OPERATOR, TECHNICIAN)  # a custom role starts from one of these, never from admin
+
+
+def classified(op):
+    """True when the operation is in a table (an unclassified one is admin-only and never granted)."""
+    return str(op) in OP_ROLES or str(op) in PLANNED_OP_ROLES
+
+
+def split_entries(entries):
+    """(capability ids, operation patterns) of a list of grant / deny entries."""
+    cs = {e for e in entries if e in caps.CAPABILITIES}
+    return cs, [e for e in entries if e not in caps.CAPABILITIES]
+
+
+def entry_hits(entry, op):
+    """True when a grant / deny entry (a capability id, an operation name or an fnmatch pattern) covers `op`."""
+    if entry in caps.CAPABILITIES:
+        return caps.capability_of(op) == entry
+    return fnmatch.fnmatchcase(str(op), entry)
+
+
+def is_granted(rd, op):
+    """True when the custom role is granted `op` on top of its base role: delegable, classified, and covered by a grant entry."""
+    op = str(op)
+    if not classified(op) or not caps.delegable(op):
+        return False
+    return any(entry_hits(e, op) for e in rd.get("grant") or ())
+
+
+def is_denied(rd, op):
+    return any(entry_hits(e, str(op)) for e in rd.get("deny") or ())
+
+
+def _decide_custom(rd, op, ctx):
+    """Decision of a custom role. A role with no grants and no denials decides exactly like its base role."""
+    base = rd["base"]
+    if op in STOP_OPS:
+        return True, ""  # stopping is never blocked, not even by a denial
+    if is_denied(rd, op):
+        return False, "denied"
+    if op in CAMERA_OPS and base == VIEWER:
+        return (True, "") if ctx.get("camera") else (False, "camera")
+    table = required_role(op)
+    if RANK[base] < RANK[table] and not is_granted(rd, op):
+        return False, "role"
+    need = needed_role(op, ctx)
+    if RANK[base] < RANK[need] and RANK[need] > RANK[table]:
+        # an argument raised the role (the hardware-risk kinds, a change of settings): a grant of the operation does not cover that;
+        # only the explicit capability does, and only for the kinds of ESCALATE_IN
+        if not (op in ESCALATE_IN and caps.HARDWARE_PARAMS in (rd.get("grant") or ())):
+            return False, "role"
+    if base in (VIEWER, OPERATOR) and op in MODE_GATED:
+        modes = clean_modes(ctx.get("modes"))
+        mode = str(ctx.get("mode") or "").strip().lower()
+        if len(modes) < len(MODES):
+            if mode not in MODES:
+                return False, "mode_unknown"
+            if mode not in modes:
+                return False, "mode"
+    return True, ""
+
+
+def effective_ops(role, rd=None, ctx=None):
+    """What `role` (a base role or the custom one described by `rd`) may do with each classified operation, for the screens that explain it:
+    [{"op", "allowed", "reason", "needed_role", "capability", "source"}]. source: "base" (the base role allows it), "grant" (only because of a
+    grant), "deny" (a denial blocks it), "" (nobody of that role may). The arguments are the plain ones (no escalation); `hardware` and
+    `changes` say what the same call would be when it writes a hardware-risk parameter / changes settings."""
+    ctx = dict(ctx or {})
+    ctx["role_def"] = rd
+    base = rd["base"] if rd else role
+    out = []
+    for op in sorted(set(OP_ROLES) | set(PLANNED_OP_ROLES)):
+        c = dict(ctx, args={})
+        ok, why = decide(role, op, c)
+        base_ok = _decide_base(base, op, c)[0] if base in RANK else False
+        row = {"op": op, "allowed": ok, "reason": why, "needed_role": needed_role(op, c), "capability": caps.capability_of(op),
+               "source": ("base" if base_ok else "grant") if ok else ("deny" if why == "denied" else "")}
+        probe = ESCALATION_PROBES.get(op)
+        if probe:
+            row["escalated"] = decide(role, op, dict(ctx, args=probe))[0]
+        out.append(row)
+    return out
+
+
+# the arguments that make a call an escalated one, to tell what a role may do when it changes settings / writes hardware parameters
+ESCALATION_PROBES = {"vision.post": {"path": "/settings"}, "camera.service": {"changes": {"x": 1}}, "machine.config.apply": {"kind": "config.m208"},
+                     "machine.history.restore": {"kind": "config.m208"}, "machine.try": {"gcode_kind": "M208"}}
+
+
+def resolved_lists(role, rd):
+    """(allow, deny) for the pages: the operations a custom role may call that its base role may not, and the ones its base role may call
+    that it may not. Computed for a user who may run every mode and see the camera; the server decides again on every call."""
+    if not rd:
+        return [], []
+    ctx = {"modes": list(MODES), "camera": True, "mode": None, "args": {}, "role_def": rd}
+    allow, deny = [], []
+    for op in sorted(set(OP_ROLES) | set(PLANNED_OP_ROLES)):
+        mine = decide(role, op, ctx)[0]
+        theirs = _decide_base(rd["base"], op, ctx)[0]
+        if mine and not theirs:
+            allow.append(op)
+        elif theirs and not mine:
+            deny.append(op)
+    return allow, deny
 
 
 def can(role, op, ctx=None):

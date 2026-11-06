@@ -20,7 +20,7 @@ import time
 
 STEP_MM = 15.0         # longest piece sent at once
 LEAD_S = 0.6       # how much motion may be queued on the board ahead of now
-MAX_PCT = 10.0         # same cap as sys/workshop/macros/laserguard.g
+MAX_PCT = 10.0         # same cap as sys/workshop/macros/guard/laserguard.g
 FEED_POINTER = 3000.0  # mm/min with the pointer (laser off)
 FEED_LASER = 1500.0    # mm/min with the laser on
 FEED_TRAVEL = 6000.0

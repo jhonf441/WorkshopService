@@ -19,6 +19,7 @@ code deep inside a handler (activity.log_event) can write who did it without rec
 """
 import contextvars
 
+import api_keys
 import permissions
 import workshop_api as wa
 from messages import M
@@ -105,6 +106,21 @@ class AuthRegistry(wa.Registry):
         if h is not None:
             h["user"] = user
 
+    def _key_allows(self, op, rec):
+        """Permissions of a key (api_keys.why_not: classes, patterns and capabilities minus the denials, never administration or, for a
+        strict key, a non-delegable operation). The same rule gives the page its list of allowed operations."""
+        why = api_keys.why_not(rec, op.name, op.kind)
+        if why is None:
+            return
+        name, kname = op.name, rec.get("name", "?")
+        if why == "admin":
+            raise wa.ApiError("forbidden", f"'{name}' needs a DWC session: a key cannot call administration operations")
+        if why == "denied":
+            raise wa.ApiError("forbidden", f"the key '{kname}' does not allow '{name}'")
+        if why == "not_delegable":
+            raise wa.ApiError("forbidden", f"the key '{kname}' does not allow '{name}': a key cannot call operations that are not delegable")
+        raise wa.ApiError("forbidden", f"the key '{kname}' does not allow '{name}' (kind {op.kind})")
+
     def _allowed(self, op, via, ctx=None):
         super()._allowed(op, via, ctx)
         if via in (wa.VIA_SESSION, wa.VIA_OPEN) and ctx is not None:
@@ -130,8 +146,9 @@ class AuthRegistry(wa.Registry):
             return
         if store.damaged:
             raise wa.ApiError("forbidden", M("auth_users_damaged"), reason="damaged")
-        dctx = {"args": ctx.get("args_raw") or {}, "modes": ident.get("modes"), "camera": ident.get("camera"), "mode": self.mode_of()}
-        ok, why = permissions.decide(ident["role"], name, dctx)
+        dctx = {"args": ctx.get("args_raw") or {}, "modes": ident.get("modes"), "camera": ident.get("camera"), "mode": self.mode_of(),
+                "role_def": ident.get("role_def")}
+        ok, why = permissions.decide(role_name(ident), name, dctx)
         if not ok:
             raise self._forbidden(name, ident, dctx, why)
 
@@ -139,12 +156,30 @@ class AuthRegistry(wa.Registry):
     def _forbidden(name, ident, dctx, why):
         need = permissions.needed_role(name, dctx)
         extra = {"reason": why, "role": ident["role"], "needed_role": need, "op_name": name}
+        if ident.get("role_name"):
+            extra["role_name"] = ident["role_name"]
         if why == "mode":
             extra["mode"] = dctx.get("mode")
-        if why == "mode":
-            return wa.ApiError("forbidden", M("auth_forbidden_mode", mode=M("auth_mode_" + str(dctx.get("mode")))), **extra)
-        if why == "mode_unknown":
-            return wa.ApiError("forbidden", M("auth_forbidden_mode_unknown"), **extra)
-        if why == "camera":
-            return wa.ApiError("forbidden", M("auth_forbidden_camera"), **extra)
-        return wa.ApiError("forbidden", M("auth_forbidden_role", role=M("auth_role_" + ident["role"]), needed=M("auth_role_" + need)), **extra)
+        return wa.ApiError("forbidden", forbidden_message(why, ident, need, dctx.get("mode")), **extra)
+
+
+def role_name(ident):
+    """The name the person's role goes by: the custom role's name, or the base role."""
+    return ident.get("role_name") or ident["role"]
+
+
+def forbidden_message(why, ident, need, mode=None):
+    """The text of a refusal (the same for a real 403 and for what `roles.effective` explains)."""
+    if why == "mode":
+        return M("auth_forbidden_mode", mode=M("auth_mode_" + str(mode)))
+    if why == "mode_unknown":
+        return M("auth_forbidden_mode_unknown")
+    if why == "camera":
+        return M("auth_forbidden_camera")
+    custom = ident.get("role_name") is not None
+    label = ident["role_name"] if custom else M("auth_role_" + ident["role"])
+    if why == "denied":
+        return M("auth_forbidden_denied", role=label)
+    if why == "unknown_role":
+        return M("auth_forbidden_role_missing", role=label)
+    return M("auth_forbidden_role", role=label, needed=M("auth_role_" + need))

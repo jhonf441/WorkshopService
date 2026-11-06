@@ -133,6 +133,22 @@ export function onIdentity(fn) {
 
 const RANK = { viewer: 0, operator: 1, technician: 2, admin: 3 }
 
+function listed(list, op) {
+	return Array.isArray(list) && list.includes(op)
+}
+
+// Is this operation blocked by the person's own (custom) role? True only for an operation the role denies although its base role allows it.
+export function workshopDenied(op) {
+	const id = shared().identity
+	return !!(id && id.table && listed(id.deny, op) && !(id.table.stop || []).includes(op))
+}
+
+// The name of the person's custom role ('' for a base role or when unknown)
+export function workshopRoleName() {
+	const id = shared().identity
+	return id && id.role_name && id.role_name !== id.role ? String(id.role_name) : ''
+}
+
 // Can the current person call this operation? Without an answer from the service yet (or without users) it says yes: hiding is
 // only a courtesy, the service decides. ctx: { mode: 'laser' | 'cnc' | 'fff', args: {...} } for the rules that depend on it.
 export function workshopCan(op, ctx = {}) {
@@ -143,6 +159,10 @@ export function workshopCan(op, ctx = {}) {
 	if (!id.role && !id.configured) return true
 	const t = id.table
 	if ((t.stop || []).includes(op)) return true
+	// A custom role (auth.whoami allow / deny, exact operation names): a denial wins, a grant adds what the base role cannot do. Without the lists
+	// (an older service, a base role) nothing changes. The service decides again on every call.
+	if (listed(id.deny, op)) return false
+	const granted = listed(id.allow, op)
 	const role = id.role || 'viewer'
 	let need = (t.ops || {})[op] || 'admin'
 	const esc = (t.escalate || {})[op] // some operations need more when their arguments change settings
@@ -152,7 +172,9 @@ export function workshopCan(op, ctx = {}) {
 		if (hit && RANK[esc.role] > RANK[need]) need = esc.role
 	}
 	if (role === 'viewer' && (t.camera || []).includes(op)) return !!(id.user && id.user.camera)
-	if (RANK[role] === undefined || RANK[role] < RANK[need]) return false
+	if (RANK[role] === undefined) return false
+	const escalated = need !== ((t.ops || {})[op] || 'admin') // a grant never lifts what the arguments escalated
+	if (RANK[role] < RANK[need] && !(granted && !escalated)) return false
 	if (role === 'operator' && (t.mode_gated || []).includes(op) && ctx.mode) {
 		const modes = (id.user && id.user.modes) || []
 		return modes.length >= (t.modes || []).length || modes.includes(String(ctx.mode).toLowerCase())
@@ -259,6 +281,24 @@ export async function adoptToken(call, token) {
 	return refreshIdentity(call)
 }
 
+// The page was in the background (another tab or window) while the person signed in or out there: the storage event can be missed (a throttled or frozen
+// tab, a page restored from the back/forward cache), and the page kept saying "no session". When it comes back to the front the token of the browser
+// is compared with the one this page knows, and who the service says the person is is asked again when that disagrees with the token.
+function reconcileSession(call) {
+	const s = shared()
+	let stored = ''
+	try {
+		stored = tokenStore().getItem(TOKEN_KEY) || ''
+	} catch (e) {
+		stored = s.token || ''
+	}
+	const staleAnswer = !!(s.token && s.identity && s.identity.login_required)
+	if (stored !== (s.token || '') || staleAnswer) {
+		s.token = stored
+		refreshIdentity(call).catch(() => {})
+	}
+}
+
 // Tells the service the person is still there (real use only), at most once a minute.
 export function startKeepalive(call) {
 	const s = shared()
@@ -270,6 +310,15 @@ export function startKeepalive(call) {
 			if (e.key !== TOKEN_KEY) return
 			s.token = e.newValue || ''
 			refreshIdentity(call).catch(() => {})
+		})
+		window.addEventListener('focus', () => reconcileSession(call))
+		window.addEventListener('pageshow', e => {
+			if (e.persisted) reconcileSession(call)
+		})
+	}
+	if (typeof document.addEventListener === 'function') {
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'visible') reconcileSession(call)
 		})
 	}
 	let last = 0

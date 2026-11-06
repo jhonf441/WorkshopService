@@ -193,16 +193,11 @@ def topic_new():
 
 
 def init(bridge, config):
+    """Nothing leaves the machine until the user turns the notifications on (get_cfg: active is False by default),
+    so a new installation creates no topic and contacts no server here. The topic is created when they are turned on
+    (handlers/notifications.py, action "active")."""
     _state["bridge"] = bridge
     _state["config"] = config
-    cfg = get_cfg(config)
-    if not cfg["topic"]:
-        cfg["topic"] = topic_new()
-        set_cfg(config, cfg)
-        try:
-            bridge.save_config()
-        except Exception:
-            pass
     publish()
 
 
@@ -211,7 +206,7 @@ def get_cfg(config):
     kinds = {t[0]: t[2] for t in KINDS}
     kinds.update({k: bool(v) for k, v in (n.get("kinds") or {}).items()})
     return {
-        "active": bool(n.get("active", True)),
+        "active": bool(n.get("active", False)),  # off by default: the events (and photos) go to a third-party server
         "server": str(n.get("server") or SERVER_DEFAULT),
         # Before, the topic was in config["ntfy_topic"] (handlers/ntfy.py) and
         # in the duet-notify .service -- it is inherited from there the first time.
@@ -284,6 +279,8 @@ def publish():
 
 def send(cfg, title, message, priority="default", tags=None):
     """Envio sincronico. Devuelve (ok, error_o_None)."""
+    if not cfg["active"]:
+        return False, M("notifier_notifications_are_off")
     if not cfg["topic"]:
         return False, M("notifier_no_topic_configured")
     url = cfg["server"].rstrip("/") + "/" + cfg["topic"]
@@ -312,6 +309,8 @@ def send_photo(cfg, title, message, jpeg, priority="default", tags=None):
 
 def send_file(cfg, title, message, payload, label, priority="default", tags=None, timeout=20):
     """Send with an attached file (photo or video). Returns (ok, error_or_None)."""
+    if not cfg["active"]:
+        return False, M("notifier_notifications_are_off")
     if not cfg["topic"]:
         return False, M("notifier_no_topic_configured")
     url = cfg["server"].rstrip("/") + "/" + cfg["topic"]
@@ -397,6 +396,8 @@ def probe_kind(config, type_name):
     if t is None:
         return {"ok": False, "error": "unknown type: %s" % type_name}
     cfg = get_cfg(config)
+    if not cfg.get("active"):
+        return {"ok": False, "error": "notifications are off: turn them on first"}
     if not cfg.get("topic"):
         return {"ok": False, "error": "no topic: set the destination first"}
     o = cfg["options"].get(type_name) or options_default(type_name)

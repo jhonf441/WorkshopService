@@ -10,7 +10,10 @@ fit the API: the upload of a look file (POST /luts: up to 6 MB, the body of the 
 
 Rules (the table is ROUTES / `classify`; a route that is not in it needs admin, and test_camera_access.py fails if the relay has a route
 that is not classified):
-  - machine WITHOUT users (nothing bound, no store, or `configured()` is False): nothing changes, as before;
+  - machine WITHOUT users (nothing bound, no store, or `configured()` is False): a request from the Pi itself (loopback) is not limited; from
+    the network it can only LOOK (the reads of the table) and everything that changes something answers 403 `first_admin_required` until
+    the first administrator is created. The exception is a machine whose owner switched the roles OFF on purpose (people exist,
+    `network_open()`): there nothing changes, as before;
   - the Pi itself (loopback, no Origin header, no X-Workshop-Token): macros, Vision, the service. It passes. A browser always sends Origin on
     a POST, and the kiosk page on the Pi is checked like any other screen;
   - reads (state, stream, snapshot, mosaic, images, videos): a viewer only with the camera (`camera_for_viewer`, the same calculation as
@@ -143,6 +146,14 @@ def decide(ident, rule):
     return True, 200, ""
 
 
+def decide_open(client_ip, rule, network_open):
+    """(allowed, http_status, code) on a machine without users. The Pi itself and a machine whose owner switched the roles off on purpose
+    are not limited; anyone else on the network only reads (a rule that needs more than a viewer is a change)."""
+    if network_open or is_loopback(client_ip) or rule in (VIEW, ANY):
+        return True, 200, ""
+    return False, 403, "first_admin_required"
+
+
 def authorize(headers, client_ip, method, path, query, token_valid):
     """(allowed, http_status, code) for one request of the relay. `token_valid(t)` tells whether t is a valid day key."""
     rule = classify(method, path, query)
@@ -155,7 +166,7 @@ def authorize(headers, client_ip, method, path, query, token_valid):
     try:
         store = provider() if provider else None
         if store is None or not store.configured():
-            return True, 200, ""  # nobody has been created yet: everybody is admin
+            return decide_open(client_ip, rule, bool(store is not None and store.network_open()))
         if store.damaged:
             return False, 503, "service_unreachable"
         ident = store.resolve(session) or store.anonymous()

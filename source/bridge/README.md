@@ -146,8 +146,10 @@ clients by `last` and `last_order`.
 
 ## Security (tested in `tests/test_security.py`)
 
-Allowed IPs (default: private and loopback only), trusted IPs, optional password for orders
-(`BRIDGE KEY <password>`; queries always pass), IP blocked after `password_attempts` wrong
+Allowed IPs (default: private and loopback only), trusted IPs, password for orders
+(`BRIDGE KEY <password>`; queries always pass). Since 2.28.4 ORDERS from the network are refused unless the Pi itself sends them, the address is trusted,
+the client typed the password, or (no password) the owner wrote an `allowed` list; `sudo ./install.sh` / `sudo ./install.sh guard` ask for one
+(`BRIDGE_PASSWORD`, `BRIDGE_ALLOW`, `BRIDGE_TRUST`). A client authenticates by sending `BRIDGE KEY <password>` on its connection before its first order. An IP is blocked after `password_attempts` wrong
 passwords for `block_seconds`, blocking from the page (persisted, cuts all connections of the
 IP), maximum connections, maximum line length (1024), exclusive control with
 `BRIDGE USE` / `BRIDGE RELEASE`. Passwords are stored as a salted scrypt hash and never appear in

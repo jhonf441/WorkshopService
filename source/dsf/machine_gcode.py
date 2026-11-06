@@ -110,19 +110,19 @@ TEMPLATES = {
     "move_xy_machine": ("G53 G1 X{x} Y{y} F{feed} S0", re.compile(r"^G53 G1 X%s Y%s F[0-9]{1,5} S0$" % (_NUM, _NUM))),
     "tune_move": ("G1 {axis}{pos} F{feed} S0", re.compile(r"^G1 [XY]%s F[0-9]{1,5} S0$" % _NUM)),     # absolute, X or Y only, never the laser
     # height calibration (machine_height.py): the macros of the assistants and ONE relative Z step (G91 / G90 are rel_mode / abs_mode), never the laser
-    "zcal_goto": ('M98 P"0:/sys/workshop/macros/zcal-goto.g" X{x} Y{y}', re.compile(r'^M98 P"0:/sys/workshop/macros/zcal-goto\.g" X%s Y%s$' % (_NUM, _NUM))),
-    "zcal_mark": ('M98 P"0:/sys/workshop/macros/zcal-mark.g" P{paper} H{h}', re.compile(r'^M98 P"0:/sys/workshop/macros/zcal-mark\.g" P%s H%s$' % (_NUM, _NUM))),
-    "zcal_probe": ('M98 P"0:/sys/workshop/macros/zcal-probe.g" X{x} Y{y}', re.compile(r'^M98 P"0:/sys/workshop/macros/zcal-probe\.g" X%s Y%s$' % (_NUM, _NUM))),
-    "zcal_szp": ('M98 P"0:/sys/workshop/macros/zcal-szp.g" X{x} Y{y} A{a}', re.compile(r'^M98 P"0:/sys/workshop/macros/zcal-szp\.g" X%s Y%s A[12]$' % (_NUM, _NUM))),
-    "zcal_apply": ('M98 P"0:/sys/workshop/macros/zcal.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/zcal\.g"$')),
+    "zcal_goto": ('M98 P"0:/sys/workshop/macros/zcal/zcal-goto.g" X{x} Y{y}', re.compile(r'^M98 P"0:/sys/workshop/macros/zcal/zcal-goto\.g" X%s Y%s$' % (_NUM, _NUM))),
+    "zcal_mark": ('M98 P"0:/sys/workshop/macros/zcal/zcal-mark.g" P{paper} H{h}', re.compile(r'^M98 P"0:/sys/workshop/macros/zcal/zcal-mark\.g" P%s H%s$' % (_NUM, _NUM))),
+    "zcal_probe": ('M98 P"0:/sys/workshop/macros/zcal/zcal-probe.g" X{x} Y{y}', re.compile(r'^M98 P"0:/sys/workshop/macros/zcal/zcal-probe\.g" X%s Y%s$' % (_NUM, _NUM))),
+    "zcal_szp": ('M98 P"0:/sys/workshop/macros/zcal/zcal-szp.g" X{x} Y{y} A{a}', re.compile(r'^M98 P"0:/sys/workshop/macros/zcal/zcal-szp\.g" X%s Y%s A[12]$' % (_NUM, _NUM))),
+    "zcal_apply": ('M98 P"0:/sys/workshop/macros/zcal/zcal.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/zcal/zcal\.g"$')),
     "zcal_med": ('M409 K"global.workshopZcalMed"', re.compile(r'^M409 K"global\.workshopZcalMed"$')),
     "jog_z": ("G1 Z{d} F{feed} S0", re.compile(r"^G1 Z%s F[0-9]{1,5} S0$" % _NUM)),
     # work area (machine_workarea.py): the macros of the corner assistants (release X/Y, measure the corner at the end stops, take the pointer
     # to a bed point, walk the saved area with the pointer), the two numbers the measurement leaves in the object model and the reload of cutarea.g
-    "area_release": ('M98 P"0:/sys/workshop/macros/handfree.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/handfree\.g"$')),
-    "area_capture": ('M98 P"0:/sys/workshop/macros/handcorner.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/handcorner\.g"$')),
-    "area_goto": ('M98 P"0:/sys/workshop/macros/gotobed.g" X{x} Y{y}', re.compile(r'^M98 P"0:/sys/workshop/macros/gotobed\.g" X%s Y%s$' % (_NUM, _NUM))),
-    "area_frame": ('M98 P"0:/sys/workshop/macros/framecutarea.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/framecutarea\.g"$')),
+    "area_release": ('M98 P"0:/sys/workshop/macros/work/handfree.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/work/handfree\.g"$')),
+    "area_capture": ('M98 P"0:/sys/workshop/macros/work/handcorner.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/work/handcorner\.g"$')),
+    "area_goto": ('M98 P"0:/sys/workshop/macros/work/gotobed.g" X{x} Y{y}', re.compile(r'^M98 P"0:/sys/workshop/macros/work/gotobed\.g" X%s Y%s$' % (_NUM, _NUM))),
+    "area_frame": ('M98 P"0:/sys/workshop/macros/work/framecutarea.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/work/framecutarea\.g"$')),
     "area_corner_x": ('M409 K"global.handCornerX"', re.compile(r'^M409 K"global\.handCornerX"$')),
     "area_corner_y": ('M409 K"global.handCornerY"', re.compile(r'^M409 K"global\.handCornerY"$')),
     "area_reload": ('M98 P"0:/sys/workshop/zones/cutarea.g"', re.compile(r'^M98 P"0:/sys/workshop/zones/cutarea\.g"$')),
@@ -130,7 +130,7 @@ TEMPLATES = {
     # resume after a power cut (machine_power.py): RRF runs resurrect-prologue.g and then resurrect.g; only after the checks of the service and the
     # acknowledgements of the person (the prologue of laser / CNC asks again on the machine)
     "resume_print": ("M916", re.compile(r"^M916$")),
-    "work_origins_apply": ('M98 P"0:/sys/workshop/macros/wpload.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/wpload\.g"$')),
+    "work_origins_apply": ('M98 P"0:/sys/workshop/macros/work/wpload.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/work/wpload\.g"$')),
 }
 
 # range of each named value: ("int", lo, hi), ("num", lo, hi) (decimals, at most 3 places) or ("list", lo, hi, n_min, n_max) (a:b:c).

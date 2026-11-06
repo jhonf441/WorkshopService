@@ -86,7 +86,12 @@ curl -s -X POST http://duet3.local/machine/WorkshopService/api      -H "X-Worksh
   sent but is invalid, expired, disabled or revoked answers 401 and never falls back to the open mode;
   an operation outside its permissions answers 403 `forbidden` with the reason. The calls made with a
   key are in the history of received commands with the name of the key. Managing keys:
-  `keys.list`, `keys.create`, `keys.update`, `keys.revoke` (a DWC session only).
+  `keys.list`, `keys.preview`, `keys.create`, `keys.update`, `keys.revoke` (a DWC session only).
+  The `ops` and `deny` lists of a key take operation names, patterns (`light.*`) and capabilities (`cap:camera.capture`, the same groups the custom roles
+  use; ids in `roles.list`); deny wins; a key never gets an administration or non-delegable operation through a capability, and a key created or
+  saved from now on never reaches one through a class or a pattern either (keys saved before keep their exact decisions). `keys.list` returns
+  `allowed_ops` for each key (already resolved by the server) and `strict`; `keys.preview` does the same for permissions not saved yet. An unknown or
+  forbidden capability answers 422 `invalid_args` ("'x' is not a capability", "the capability 'x' cannot be given to a key"). See `docs/ROLES.md`.
 
 ## People, PIN and roles (identity)
 
@@ -128,6 +133,16 @@ curl -s -X POST .../machine/WorkshopService/api -H "X-Workshop-Token: <token>" -
 - The **audit** (`audit.list`, read only) records user, role, device, address, operation, arguments without PINs or
   secrets, result and time of every change, every refusal and every login. The API has no way to delete it; the
   maintenance purges rows older than 90 days.
+- **Custom roles** (administrator only, model in `docs/ROLES.md`): a custom role is a base role (`viewer`, `operator` or `technician`, never
+  `admin`) plus grants and denials. `users.add` / `users.set` accept its exact name as `role`; `users.list` answers `custom_roles`.
+  `auth.whoami` keeps `role` = the BASE role (so pages that only know the four roles behave as before) and adds `role_name` (the custom
+  role's name, or the base role), `allow` (operations the role may call above its base role), `deny` (operations its base role may call
+  that it may not) and, for a custom role with the hardware key, `hardware_params`. A person whose role cannot be found has `role` `none`,
+  `role_problem` `missing`, and the server refuses everything but stopping. A 403 caused by a custom role adds `error.role_name`; `reason`
+  may be `denied`. `auth.resolve` answers the same `role`, `role_name`, `allow`, `deny`.
+  Operations (all `admin`, none can be delegated): `roles.list`, `roles.get`, `roles.set`, `roles.remove`, `roles.effective`.
+  `roles.set` and `roles.remove` answer `428 confirm_required` until the call carries `confirm: true`; every change is in the audit with the
+  role before and after.
 - External keys (`X-Workshop-Key`), local programs and macros keep their own model and do not go through the roles.
 
 ### Camera relay (port 8090)
@@ -138,8 +153,9 @@ The pages read the relay directly (an `<img>` and a `<video>` cannot carry the h
 `camera.timelapse`, `camera.schedule`, `camera.flash`, `camera.image.set`) is an operation of the API, with its level in
 `dsf/permissions.py` and its line in the audit. The one exception is the look files of the timelapse studio (up to 6 MB, the body of the API is
 1 MB): `POST /luts` and `POST /luts/remove`. The browser sends `X-Workshop-Token` / `X-Workshop-Device` (the relay answers them in the CORS preflight).
-Without users nothing changes. A request from the Pi itself (loopback, no `Origin`, no token: macros, Vision, the service)
-passes. Users exist and the store cannot answer: `503 service_unreachable`. No session: `401 login_required`; not enough
+Without users the Pi itself (loopback) is not limited and the network can only LOOK: the reads of the table answer, everything else
+answers `403 first_admin_required` (unless the owner switched the roles off with the administrator's PIN: then it is open as before). A
+request from the Pi itself (loopback, no `Origin`, no token: macros, Vision, the service) passes. Users exist and the store cannot answer: `503 service_unreachable`. No session: `401 login_required`; not enough
 role (or a viewer without `camera_for_viewer`): `403 forbidden`. Body: `{"ok": false, "code": "...", "error": "..."}`.
 A route that is not in the table needs `admin`; a test fails if the relay has a route that is not classified.
 
@@ -280,10 +296,10 @@ The exact shapes the plugin builds against are in `docs/MACHINE-PHASE2-CONTRACT.
 | `machine.limits.get` | operator | the M208 limits of every axis, the endstops and where the configuration defines M208. |
 | `machine.layout {mode, probe?, x0 x1 y0 y1?, nx?, ny?, points?, margin?}` | operator | READ, no motion, nothing sent to the board: data for the bed view of Mesh and Level (axis limits, probe and offsets, reach of the probe, M671 leadscrews, which mesh / level points are taken or excluded and why, last mesh and level measurements). Exact keys: `docs/MACHINE-LAYOUT-CONTRACT.md`. |
 | `machine.try {gcode_kind, action?, values, seconds?, try_id?}` | technician (admin for M208, M92, M906, M913, M917) | VOLATILE trial with automatic revert. Phase 2: `M208` (`values {axes: {X: {min, max}}}`); phase 3 adds M92, M906, M913, M917, M203, M201, M205, M566, M425, M556, M593 (below); `M376` answers `not_implemented`. `action` start / keep / revert. The previous limits are written to `sys/workshop/data/machine/try-pending.json` first and put back after `seconds` (5-600, default 60) even if the page closed; `recover_pending` (started by main.py) puts them back after a restart. Class `geometry`, level 3 confirmation, one trial at a time. |
-| `machine.mark_cross {action?, power?, save?}` | technician | laser <-> pointer assistant on the server: `mark` fires a 4 mm cross (Laser mode, X and Y homed, 1-10 %, interlocks closed, movement reserved, level 3 confirmation; the laser guard is armed and M5 always follows), `capture` computes the correction once the pointer is over the cross (`save` writes it to the settings store `laser` key `correction` and to the history; the store is the ONE source: the service mirrors it into `0:/sys/workshop/macros/lasercorrection.g` (`global.workshopLaserCorrX/Y/Known`; `Known` is true only for a measured correction, and `saveworkplace.g` saves no origin without it; read by `workplaces.g`, `wpload.g`, `saveworkplace.g` and every zone file) and runs `wpload.g` so the zones take it at once, only when the file on the card is what the store says and no job runs; the answer carries `zones_applied` and `zones_reason`: `job_running`, `mirror_failed` or `no_connection:<detail>` when it is false), `clear` forgets the mark. |
+| `machine.mark_cross {action?, power?, save?}` | technician | laser <-> pointer assistant on the server: `mark` fires a 4 mm cross (Laser mode, X and Y homed, 1-10 %, interlocks closed, movement reserved, level 3 confirmation; the laser guard is armed and M5 always follows), `capture` computes the correction once the pointer is over the cross (`save` writes it to the settings store `laser` key `correction` and to the history; the store is the ONE source: the service mirrors it into `0:/sys/workshop/macros/laser/lasercorrection.g` (`global.workshopLaserCorrX/Y/Known`; `Known` is true only for a measured correction, and `saveworkplace.g` saves no origin without it; read by `workplaces.g`, `wpload.g`, `saveworkplace.g` and every zone file) and runs `wpload.g` so the zones take it at once, only when the file on the card is what the store says and no job runs; the answer carries `zones_applied` and `zones_reason`: `job_running`, `mirror_failed` or `no_connection:<detail>` when it is false), `clear` forgets the mark. |
 | `machine.height.get` | operator | READ: the height calibration of the tool (it was a card of the Workbench): per mode `{general: {method, setting}, k0, szp}`, the paper thickness, the `rev` to save against, the hooks of the mode files, whether `zcal.g` exists, the probes of the object model (trigger height, offsets), the macros present and what is homed. |
-| `machine.height.save {base_rev, changes}` | technician | `changes {paper?, modes: {Laser|CNC|FFF: {method?, setting?, k0?, szp?}}}` (fine adjustment -3..3 mm; `k0 {p, x, y, z, date}`; `szp` only FFF; `null` removes). Revisioned like `settings.set` (409 `conflict` returns the current value). Rewrites `sys/workshop/macros/zcal.g` and applies it now unless a job runs (`applied`, `apply_reason`). Audited. |
-| `machine.height.hook` | technician | adds `M98 P"0:/sys/workshop/macros/zcal.g"` to `modelaser.g`, `modecnc.g`, `modefff.g` when missing (a `.bak-<stamp>` copy of each first). Audited. |
+| `machine.height.save {base_rev, changes}` | technician | `changes {paper?, modes: {Laser|CNC|FFF: {method?, setting?, k0?, szp?}}}` (fine adjustment -3..3 mm; `k0 {p, x, y, z, date}`; `szp` only FFF; `null` removes). Revisioned like `settings.set` (409 `conflict` returns the current value). Rewrites `sys/workshop/macros/zcal/zcal.g` and applies it now unless a job runs (`applied`, `apply_reason`). Audited. |
+| `machine.height.hook` | technician | adds `M98 P"0:/sys/workshop/macros/zcal/zcal.g"` to `modelaser.g`, `modecnc.g`, `modefff.g` when missing (a `.bak-<stamp>` copy of each first). Audited. |
 | `machine.height.step {action, x?, y?, dz?, paper?, h?, a?}` | technician | motion, reserved like `machine.mark_cross` (refused during a job): `goto` (macro zcal-goto, X Y), `jog` (one relative Z step of -5 -1 -0.1 -0.05 0.05 0.1 1 5, always `S0`), `mark` (zcal-mark: Z0 with the paper `paper` and rise to `h`), `measure` (zcal-probe at X Y: returns `measured`), `szp` (FFF: zcal-szp, `a` 1 or 2: returns `output`). |
 | `machine.workarea.get` | operator | READ: the work area of each mode (`cutarea.g`: `areas {Laser|CNC|FFF: {xmin,xmax,ymin,ymax} \| null}`), `mode`, `reach` (M208 travel of X and Y), `macros`, `homed {X,Y}`, `edit_modes`, `min_mm` (machine_workarea.py; it was a card of the Workbench) |
 | `machine.workarea.positions` | operator | READ: the positions saved by the jog (`positions.json`): `positions [{name, x, y, z}]` in machine coordinates (where the tool was); two of them can be the corners of a work area |
@@ -402,7 +418,7 @@ connection, Pre mode, only those two codes): with no `P` it answers the code its
 with a `P` the code goes through untouched, and so does one that names its heaters with `H` (a slicer that sends one `M140 S.. H<n>` / `M190 S.. H<n>` per zone: an explicit order the firmware reads as written). A setpoint of 0 or -273.15 turns every zone off. `M190` holds the code until every zone is within
 `tolerance` of its target, a heater is in fault (answered with an error) or `timeout_s` passes (answered with an error, the zones keep their setpoint).
 The PID and the protections (M143, heater faults) stay in the firmware. Settings area `bed-zones` (`sys/workshop/config/bed-zones.json`, revisioned):
-a file that is not valid turns the feature off and every code goes through. The service is the brain of the feature and the firmware keeps the control: the service only sends setpoints (never a limit, a PID or a protection of RRF). So the board can read the settings without the service, it copies them to `0:/sys/workshop/config/bedzones.g` (generated, never edited by hand, rewritten at every change of the store and at start; `dsf/bed_zones_mirror.py`) and the backup macro of Printing, `0:/sys/workshop/macros/bedzones-set.g`, reads that copy. Manual test guide: `docs/BED-ZONES-MANUAL-TEST.md`. Code: `dsf/bed_zones.py` (logic), `bed_zones_config.py`,
+a file that is not valid turns the feature off and every code goes through. The service is the brain of the feature and the firmware keeps the control: the service only sends setpoints (never a limit, a PID or a protection of RRF). So the board can read the settings without the service, it copies them to `0:/sys/workshop/config/bedzones.g` (generated, never edited by hand, rewritten at every change of the store and at start; `dsf/bed_zones_mirror.py`) and the backup macro of Printing, `0:/sys/workshop/macros/work/bedzones-set.g`, reads that copy. Manual test guide: `docs/BED-ZONES-MANUAL-TEST.md`. Code: `dsf/bed_zones.py` (logic), `bed_zones_config.py`,
 `bed_zones_intercept.py`, `bed_zones_ops.py`. The process `bed_zones` runs only while WorkshopPrinting is enabled.
 
 | Operation | Role | What it does |
@@ -414,13 +430,14 @@ a file that is not valid turns the feature off and every code goes through. The 
 
 ### Bed heaters (the plan that defines the beds)
 
-A zone of a split bed needs its own bed in RRF: a sensor (`M308`), a heater (`M950 H`), its maximum (`M143`) and the link `M140 P<bed> H<heater>`. That is the plan kind `config.bed_heaters` of `machine.config.plan` / `machine.config.apply` (technician, like `config.tool`; the same plan as every other change of the configuration: exact diff, snapshot, sha check, history, rollback; the board restarts to read it). `dsf/machine_beds.py`. The plan goes into the LAST file of the configuration that really defines heaters (a line `M950 H0 C"nil"` of another mode only deletes one and does not count), after its last top-level heater / sensor / tool line, else into `config.g`. The pins are never guessed: each must be one the board has, with the capability its use needs (a sensor `adc`, a solid-state relay output `pwm`, a relay output `digital`), and no line of the configuration may use it. The heater and sensor numbers are the first ones nothing uses (the board or any line of any file).
+A zone of a split bed needs its own bed in RRF: a sensor (`M308`), a heater (`M950 H`), its maximum (`M143`) and the link `M140 P<bed> H<heater>`. That is the plan kind `config.bed_heaters` of `machine.config.plan` / `machine.config.apply` (technician, like `config.tool`; the same plan as every other change of the configuration: exact diff, snapshot, sha check, history, rollback; the board restarts to read it). `dsf/machine_beds.py`. The plan goes into the LAST file of the configuration that really defines heaters (a line `M950 H0 C"nil"` of another mode only deletes one and does not count), after its last top-level heater / sensor / tool line, else into `config.g`. The pins are never guessed: each must be one the board has, with the capability its use needs (a thermistor or PT1000 sensor `temp`, a K thermocouple or PT100 sensor `spi`; `temp` is a dedicated temperature input, `temp0` to `temp3`, and an `io*.in` pin never has it; the optional `t` and `b` of a thermistor are its resistance at 25 C in ohm, 1000 to 10000000, and its beta, 1000 to 10000; a solid-state relay output `pwm`, a relay output `digital`), and no line of the configuration may use it. The heater and sensor numbers are the first ones nothing uses (the board or any line of any file).
 
 | Operation | Role | What it does |
 |---|---|---|
 | `machine.beds.get` | operator | `{defined: [{bed, heater}], in_files: [bed], next: {heater, sensor, beds: [bed]}, max_beds}`: the beds the board has, the beds only a file defines, the first free numbers. |
 | `machine.beds.preview {spec}` | technician | The exact lines the plan would write and the file they go into, or `errors: [{code, field}]` (`bed_exists`, `pin_used`, `pin_unknown`, `pin_capability`, `values`...). Writes nothing. |
-| `machine.config.plan {kind: "config.bed_heaters", values: {spec}}` | read | `spec = {beds: [{bed, name?, sensor: {preset: thermistor\|pt1000, pin}, output: {kind: ssr\|ssrdc\|relay, pin}, max_temp}]}`, 1 to 8 beds. |
+| `machine.config.plan {kind: "config.bed_heaters", values: {spec}}` | read | `spec = {beds: [{bed, name?, sensor: {preset: thermistor\|pt1000\|thermocouple\|pt100, pin, t?, b?}, output: {kind: ssr\|ssrdc\|relay, pin}, max_temp}]}`, 1 to 8 beds. |
+| `machine.config.plan {kind: "config.bed_edit", values: {spec}}` | read | `spec = {bed, heater?, sensor?}` (at least one): another heater and / or sensor NUMBER for a bed whose `M140 P<bed> H<heater>` line is in the configuration files (technician, `dsf/machine_bed_edit.py`). The new number must be the bed's own or one nothing uses and inside `limits.heaters` / `limits.bedHeaters`; a free number renumbers `M950 H`, `M143 H`, `M307 H`, `M570 H`, `M140 P H` (heater) or `M308 S` and the `T` of the heater's `M950` (sensor) in every file of the configuration. Refusals: `bed_missing`, `heater_used`, `sensor_used`, `no_sensor_link`, `bad_value`. `machine.beds.get` now returns `{bed, heater, sensor, editable}` per defined bed. |
 
 The free pins come from `machine.tool.pins`. The page is Machine > Bed heaters (`?layout=beds&beds=1,2,3` from the 3D printing page).
 
@@ -468,8 +485,8 @@ A macro cannot make HTTP requests. It calls the service with the helper macro th
 writes at start:
 
 ```
-M98 P"0:/sys/workshop/macros/service-call.g" S"power.after_job" A"armed=toggle"
-M98 P"0:/sys/workshop/macros/service-call.g" S"activity.log" A"type=warning,text=Door open" W5
+M98 P"0:/sys/workshop/macros/system/service-call.g" S"power.after_job" A"armed=toggle"
+M98 P"0:/sys/workshop/macros/system/service-call.g" S"activity.log" A"type=warning,text=Door open" W5
 ```
 
 `S` = operation (only the ones marked `macro` in the list), `A` = arguments `key=value,...`

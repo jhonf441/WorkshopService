@@ -21,18 +21,33 @@ MAX_ITEMS = 4
 NAME_RE = re.compile(r'^[^";\r\n{}]{1,32}$')
 PIN_TOKEN_RE = re.compile(r"(?<![\w.])!?\^?((?:\d{1,2}\.)?(?:out\d+|io\d+\.(?:out|in)|temp\d+|spi\.cs\d+|\d{1,2}\.[a-z0-9.]+))(?![\w])")
 
-# the Duet 3 6HC main board: outputs (PWM, 24 V), the io pins and the temperature / SPI inputs
+# the Duet 3 6HC main board: outputs (PWM, 24 V), the io pins and the temperature / SPI inputs. "temp" = a dedicated temperature input (it has the pull-up
+# resistor a thermistor or a PT1000 needs); "adc" = it can only read a voltage, so a thermistor there needs an external circuit and is NOT offered.
 BOARD_PINS = ([("out%d" % n, ("pwm", "digital")) for n in range(10)]
               + [("io%d.out" % n, ("pwm", "digital", "servo")) for n in range(9)]
               + [("io%d.in" % n, ("digital", "adc")) for n in range(9)]
-              + [("temp%d" % n, ("adc",)) for n in range(4)]
+              + [("temp%d" % n, ("adc", "temp")) for n in range(4)]
               + [("spi.cs%d" % n, ("spi", "digital")) for n in range(3)])
 CAPS = dict(BOARD_PINS)
 SENSOR_PRESETS = {
-    "thermistor": ('Y"thermistor" T100000 B3950', "adc"),
-    "pt1000": ('Y"pt1000"', "adc"),
+    "thermistor": ('Y"thermistor" T100000 B3950', "temp"),
+    "pt1000": ('Y"pt1000"', "temp"),
     "thermocouple": ('Y"thermocouple-max31855"', "spi"),
+    "pt100": ('Y"rtd-max31865"', "spi"),
 }
+# optional thermistor parameters (resistance at 25 C in ohms, beta): a person may use a thermistor that is not the common 100k beta 3950
+THERMISTOR_T = (1000, 10000000)
+THERMISTOR_B = (1000, 10000)
+
+
+def sensor_text(preset, item, field):
+    """The Y... part of the M308 line of a preset. A thermistor takes the optional item["t"] and item["b"] (checked); the rest has no parameters."""
+    text = SENSOR_PRESETS[preset][0]
+    if preset != "thermistor" or (item.get("t") is None and item.get("b") is None):
+        return text
+    t = _number(item.get("t", 100000), THERMISTOR_T[0], THERMISTOR_T[1], field + ".t")
+    b = _number(item.get("b", 3950), THERMISTOR_B[0], THERMISTOR_B[1], field + ".b")
+    return 'Y"thermistor" T%s B%s' % (pt.num_text(t), pt.num_text(b))
 
 
 class ToolError(ValueError):
@@ -119,7 +134,7 @@ def build_lines(spec, state):
         pin = _pin(item.get("pin"), SENSOR_PRESETS[preset][1], used, taken, field + ".pin")
         idx = s_next
         s_next += 1
-        lines.append('M308 S%d P"%s" %s A"%s"' % (idx, pin, SENSOR_PRESETS[preset][0], name[:24] or "T%d" % number))
+        lines.append('M308 S%d P"%s" %s A"%s"' % (idx, pin, sensor_text(preset, item, field), name[:24] or "T%d" % number))
         return idx
 
     for i, item in enumerate(_items(spec, "sensors")):
@@ -299,7 +314,7 @@ def _pins(args, ctx):
     state, _ = _state(mo.read_sd, mo.model())
     kind = args.get("kind")
     used = [{"pin": p, "by": by} for p, by in sorted(state["used"].items())]
-    return {"free": free_pins(state["used"], kind if kind in ("pwm", "digital", "adc", "spi", "servo") else None), "used": used}
+    return {"free": free_pins(state["used"], kind if kind in ("pwm", "digital", "adc", "temp", "spi", "servo") else None), "used": used}
 
 
 def _preview(args, ctx):
@@ -315,7 +330,7 @@ def _preview(args, ctx):
 def ops():
     return [Op("machine.tool.get", _get, READ, {}, "The tools the machine has now (number, name, heaters, drives, fans, offsets), the next free tool number and the mode "
                "of the machine (Laser / CNC / FFF).", log=False),
-            Op("machine.tool.pins", _pins, READ, {"kind": Arg("str", desc="Optional capability to ask for: pwm, digital, adc, spi or servo.")},
+            Op("machine.tool.pins", _pins, READ, {"kind": Arg("str", desc="Optional capability to ask for: pwm, digital, adc, temp (temperature input), spi or servo.")},
                "The pins of the board no line of the configuration uses, with what each one can do, and the ones that are in use with the command that uses them.", log=False),
             Op("machine.tool.preview", _preview, READ, {"spec": Arg("obj", desc="The tool as in the design: type, number, name, heaters, fans, sensors, output, drive, offsets.")},
                "The exact configuration lines the plan config.tool would write for this tool, or what is wrong with it. Writes nothing.", log=False)]

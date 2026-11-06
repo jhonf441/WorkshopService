@@ -106,7 +106,7 @@ const curl = computed(() => {
 })
 const macro = computed(() => {
 	const kv = Object.keys(example.value).map(k => k + '=' + (typeof example.value[k] === 'object' ? '...' : example.value[k])).join(',')
-	return 'M98 P"0:/sys/workshop/macros/service-call.g" S"' + props.op.op + '"' + (kv ? ' A"' + kv + '"' : '') + ' Q1'
+	return 'M98 P"0:/sys/workshop/macros/system/service-call.g" S"' + props.op.op + '"' + (kv ? ' A"' + kv + '"' : '') + ' Q1'
 })
 const response = computed(() => '{ "ok": true, "op": "' + props.op.op + '", "result": ..., "message": null }\n{ "ok": false, "op": "' + props.op.op + '", "error": { "code": "invalid_args | forbidden | confirm_required | motion_denied | failed | busy", "message": "..." } }')
 

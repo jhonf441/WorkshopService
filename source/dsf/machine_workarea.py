@@ -5,7 +5,7 @@ height calibration it is a calibration of the MACHINE, so it lives in Machine no
 
     0:/sys/workshop/zones/cutarea.g   per mode `global.cutArea<Mode> = {Xmin, Xmax, Ymin, Ymax}` (bed coordinates = where the POINTER lands) or
                                       null. Loaded by workplaces.g at start-up; saveworkplace.g, cutguard.g, the Workbench map and the laser editor READ it
-    0:/sys/workshop/macros/handfree.g | handcorner.g | gotobed.g | framecutarea.g
+    0:/sys/workshop/macros/work/handfree.g | handcorner.g | gotobed.g | framecutarea.g
                                       the movements of the corner assistants: still macros of the SD (shipped by the Workbench package, like the
                                       zcal-*.g of the height calibration)
 
@@ -46,8 +46,8 @@ CUTAREA_G = "sys/workshop/zones/cutarea.g"
 POSITIONS_JSON = "sys/workshop/data/positions.json"   # the saved positions of the jog: [{name, x, y, z}] in machine coordinates (where the tool was)
 MIN_MM = 10.0                         # an area smaller than this is almost surely a capture error
 TRAVEL_TOL = 0.001
-MACROS = {"release": "sys/workshop/macros/handfree.g", "capture": "sys/workshop/macros/handcorner.g", "goto": "sys/workshop/macros/gotobed.g",
-          "frame": "sys/workshop/macros/framecutarea.g"}
+MACROS = {"release": "sys/workshop/macros/work/handfree.g", "capture": "sys/workshop/macros/work/handcorner.g", "goto": "sys/workshop/macros/work/gotobed.g",
+          "frame": "sys/workshop/macros/work/framecutarea.g"}
 RESERVE_S = 120                       # the corner measurement walks to the end stops twice
 JOB_STATES = job_states.ACTIVE_OR_TOOL_CHANGE
 KEYS = ("xmin", "xmax", "ymin", "ymax")
@@ -111,8 +111,8 @@ def render(areas, mode, rect, stamp):
     txt = ("; cutarea.g -- usable CUT AREA per mode, in BED coordinates (= position\n"
            "; of the POINTER, the same that the zones sys/workshop/zones/p<N>.g store).\n"
            "; Format {Xmin, Xmax, Ymin, Ymax}; null = not measured. Written by WorkshopService\n"
-           "; (Machine > Work area) and loaded by sys/workshop/macros/workplaces.g.\n"
-           "; sys/workshop/macros/saveworkplace.g uses it to never save an origin outside.\n"
+           "; (Machine > Work area) and loaded by sys/workshop/macros/work/workplaces.g.\n"
+           "; sys/workshop/macros/work/saveworkplace.g uses it to never save an origin outside.\n"
            "; Last change: mode %s%s, %s\n" % (mode, "" if rect else " (removed)", stamp))
     for m in MODES:
         txt += "if !exists(global.cutArea%s)\n    global cutArea%s = null\nset global.cutArea%s = %s\n" % (m, m, m, _fmt(vals[m]))

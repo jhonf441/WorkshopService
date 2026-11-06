@@ -221,7 +221,7 @@ export default {
 	sessionData: ['state', 'cfg', 'showPins', 'dlgOff', 'offPin', 'offError', 'first', 'form', 'dlg', 'pinForm', 'dlgPin', 'armed', 'busy', 'error', 'formError', 'msg'],
 	data() {
 		return {
-			state: { configured: null, users: [], settings: {}, roles: [], modes: [], min_pin: 4, max_pin: 12 },
+			state: { configured: null, users: [], settings: {}, roles: [], custom_roles: [], modes: [], min_pin: 4, max_pin: 12 },
 			cfg: { idle_minutes: 720, max_hours: 12, never_expires: false, camera_for_viewer: false, anonymous_viewer: false },
 			identity: currentIdentity(),
 			showPins: false, dlgOff: false, offPin: '', offError: '', first: { name: '', pin: '', repeat: '' },
@@ -233,8 +233,9 @@ export default {
 	computed: {
 		me() { return this.identity && this.identity.user && this.identity.user.name ? this.identity.user : null; },
 		gateKind() { void this.identityTick; return signedOut() ? 'session' : 'role'; },
-		isAdmin() { return !!this.identity && this.identity.role === 'admin'; },
-		roleItems() { return (this.state.roles || []).map(r => ({ value: r, text: this.roleName(r) })); },
+		// one source of truth: the operation table of the service (users.list), as the rest of the page
+		isAdmin() { return !!this.identity && this.canDo('users.list'); },
+		roleItems() { return (this.state.roles || []).map(r => ({ value: r, text: this.roleName(r) })).concat((this.state.custom_roles || []).map(r => ({ value: r, text: r }))); },
 		firstValid() { return !!this.first.name.trim() && PIN_RE.test(this.first.pin) && this.first.pin === this.first.repeat; },
 		formValid() {
 			const f = this.form;
@@ -262,7 +263,8 @@ export default {
 	methods: {
 		// an answer of the old person that is still on its way must not fill the list again
 		onSessionChange() { this._gen++; },
-		roleName(r) { return this.$t('plugins.WorkshopService.users.role_' + r); },
+		// a custom role shows its own name (users.list sends custom_roles)
+		roleName(r) { return (this.state.custom_roles || []).includes(r) ? r : this.$t('plugins.WorkshopService.users.role_' + r); },
 		modeName(m) { return this.$t('plugins.WorkshopService.users.mode_' + m); },
 		roleColor(r) { return ROLE_COLORS[r] || 'grey'; },
 		date(t) { try { return new Date(t * 1000).toLocaleString(this.$i18n.locale); } catch (e) { return String(t); } },
@@ -275,7 +277,7 @@ export default {
 				this.state = Object.assign({}, this.state, { configured: false });
 				return;
 			}
-			if (!id || id.role !== 'admin') {
+			if (!id || !this.canDo('users.list')) {
 				this.state = Object.assign({}, this.state, { configured: id ? !!id.configured : null });
 				return;
 			}

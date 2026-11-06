@@ -74,6 +74,7 @@ DEFAULTS = {
     # 2026-10-13: 6000 open after 17 h and the process at 180 % CPU; a restart brings it to ~20 %)
     "dcs_fds_alert": 2500,
     "history_days": 7,       # days of Pi health history kept in the database (health_history.py)
+    "internet_check": False,  # ping 1.1.1.1 (a public address) for the "internet" latency: off, nothing leaves the LAN by default
 }
 
 SERVICES = [
@@ -577,11 +578,22 @@ def run_loop(bridge, config):
                     tuya_ip = None
                 network = {
                     "router_ms": ping_ms(wifi.get("router")),
-                    "internet_ms": ping_ms("1.1.1.1"),
                     "meter_ms": ping_ms(tuya_ip),
-                    "notices_ms": http_ms("https://ntfy.sh/"),
                     "camera": port_open(ports.CAMERA_RELAY),
                 }
+                # Nothing leaves the local network unless the owner asked for it: the notices server is only
+                # contacted while the phone notifications are on (and it is the server they use), and the ping to
+                # a public address is a switch that is off by default (config "health": {"internet_check": true}).
+                # A key that is missing hides its row on the Health page.
+                if cfg.get("internet_check"):
+                    network["internet_ms"] = ping_ms("1.1.1.1")
+                try:
+                    import notifier
+                    notices = notifier.get_cfg(config)
+                    if notices["active"]:
+                        network["notices_ms"] = http_ms(notices["server"])
+                except Exception as e:
+                    log_file(f"notices latency skipped: {e}")
             if current_time - t_jour >= JOURNAL_EACH_S:
                 t_jour = current_time
                 jour = {

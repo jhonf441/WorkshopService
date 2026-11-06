@@ -1495,7 +1495,7 @@ class Painter:
             self.conn = CommandConnection()
             self.conn.connect()
         # same own channel as Bridge.send (communication.py)
-        self.conn.perform_simple_code('M98 P"0:/sys/workshop/macros/enable_pi_status.g"', channel=communication.channel_plugin())
+        self.conn.perform_simple_code('M98 P"0:/sys/workshop/macros/system/enable_pi_status.g"', channel=communication.channel_plugin())
 
     def forget(self):
         """The subscription (re)connected: paint everything again."""

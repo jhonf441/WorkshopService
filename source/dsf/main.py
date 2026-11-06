@@ -472,7 +472,7 @@ def _handle_shutdown(signum, frame):
         # Reuses the bridge connection already established -- opening a NEW
         # connection right here fails, because DCS is already closing the plugin's
         # environment at this moment.
-        bridge.send('M98 P"0:/sys/workshop/macros/disable_pi_status.g"')
+        bridge.send('M98 P"0:/sys/workshop/macros/system/disable_pi_status.g"')
     except Exception as e:
         log_file(f"could not tell daemon.g before exiting: {e}")
     sys.exit(0)

@@ -29,9 +29,12 @@
 		<v-card-text>
 			<!-- The unit of THIS Pi: start / stop it here (it keeps running after a power cut because it is enabled) -->
 			<div v-if="unit && unit.installed" class="d-flex align-center flex-wrap mb-3 pc-unidad">
-				<v-switch :input-value="unit.active" :disabled="unit.can_control === false || unitBusy" :loading="unitBusy" dense hide-details class="mt-0 mr-3" :label="$t('plugins.WorkshopService.bridgeCard.unit_switch')" @change="changeUnit" />
+				<v-switch :input-value="unit.active" :disabled="unit.can_control === false || unitBusy || !canDo('bridge.service.set')" :loading="unitBusy" dense hide-details class="mt-0 mr-3" :label="$t('plugins.WorkshopService.bridgeCard.unit_switch')" @change="changeUnit" />
 				<span class="text-caption grey--text">{{ unit.active ? (unit.enabled ? $t('plugins.WorkshopService.bridgeCard.unit_on_enabled') : $t('plugins.WorkshopService.bridgeCard.unit_on_not_enabled')) : $t('plugins.WorkshopService.bridgeCard.unit_off') }}</span>
 			</div>
+			<!-- one reason for the unit control: reading it is bridge.service, switching it bridge.service.set (both technician) -->
+			<lock-reason v-if="!canDo('bridge.service')" op="bridge.service" need="technician" class="mb-3" />
+			<lock-reason v-else-if="unit && unit.installed" op="bridge.service.set" need="technician" class="mb-3" />
 			<v-alert v-if="unit && unit.installed && unit.can_control === false" dense text type="info" class="mb-3">
 				{{ $t('plugins.WorkshopService.bridgeCard.unit_no_permission') }}
 				<div class="mt-1"><code>sudo ./install.sh control</code></div>
@@ -459,6 +462,8 @@ import i18n from '../../i18n'
 
 import { copyText } from './copy.js'
 import { apiText } from './workshop-api.js'
+import { roleMixin } from './role-mixin.js'
+import LockReason from './LockReason.vue'
 
 const STATE_FILE = '0:/sys/workshop/data/bridge-state.json';
 const CONFIG = '0:/sys/workshop/config/bridge.json';
@@ -608,6 +613,10 @@ const help = {
 };
 
 export default {
+	components: { LockReason },
+	mixins: [roleMixin],
+	// the state of the unit was read with the session that left: emptied on sign-out / change of role, read again by onSessionChange
+	sessionData: ['unit', 'unitMsg'],
 	data() {
 		return {
 			GH,
@@ -826,7 +835,12 @@ export default {
 				Promise.resolve(p).then(() => { if (!this.destroyed) this.schedule(); });
 			}, ms);
 		},
+		onSessionChange(kind) {
+			if (kind !== 'signed-out') this.readUnit();
+		},
 		async readUnit() {
+			// a role that cannot read the unit does not ask: the lock reason says why
+			if (!this.canDo('bridge.service')) return;
 			try {
 				const r = JSON.parse(await apiText('bridge.service', {}));
 				if (r && typeof r.installed === 'boolean') {

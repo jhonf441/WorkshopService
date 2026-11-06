@@ -1097,7 +1097,7 @@ class Client:
         try:
             self.send_raw("Connected!\r\n")
             if b.settings.get("extended_greeting"):
-                extra = " This bridge asks for a password to send orders: BRIDGE KEY <password>." if (b.needs_password() and not b.is_trusted(self.ip)) else ""
+                extra = " This bridge asks for a password to send orders: BRIDGE KEY <password>." if (b.needs_password() and not b.can_order(self)) else ""
                 self.send_raw(f"Workshop G-code bridge. You are '{self.name}'. Type BRIDGE HELP for the commands.{extra}\r\n")
             buf = ""
             telnet = TelnetFilter()
@@ -1186,7 +1186,14 @@ class Client:
                 n = self.rejects
             if n in (1, 10, 100):
                 b.event("security", "order_rejected_password", f"Order from '{self.name}' rejected: password missing", client=self.name)
-            self.reply_local("Error: this bridge asks for a password to send orders. Type BRIDGE KEY <password> (or mark this IP as trusted in Services).")
+            if b.exposed():
+                self.reply_local("Error: this bridge has no password, no allowed list and no trusted address, so it only answers queries from the network. "
+                                 "Set a password (then type BRIDGE KEY <password>), an allowed list or a trusted address in Services > G-code bridge.")
+            elif not b.needs_password():
+                self.reply_local("Error: only the Pi and the trusted addresses may send orders to this bridge, and this address is not one of them. "
+                                 "Mark it as trusted in Services > G-code bridge, or set a password or an allowed list.")
+            else:
+                self.reply_local("Error: this bridge asks for a password to send orders. Type BRIDGE KEY <password> (or mark this IP as trusted in Services).")
             return
         if b.settings.get("exclusive") and not is_query:
             with b.lock:
@@ -1457,8 +1464,9 @@ class Bridge:
         return a.is_loopback  # the Pi can always talk to itself
 
     def exposed(self):
-        """True when any private address of the LAN may send orders: no allow-list and no password."""
-        return not self.settings.get("allowed") and not self.needs_password()
+        """True when nothing says WHO may send orders: no password, no allow-list and no trusted address. Orders are then refused from the
+        network (only the Pi itself and queries pass) until one of the three is set; it used to let every private address order."""
+        return not self.settings.get("allowed") and not self.needs_password() and not self.settings.get("trusted")
 
     def is_trusted(self, ip):
         return ip in self.settings.get("trusted")
@@ -1486,13 +1494,27 @@ class Bridge:
     def needs_password(self):
         return bool(self.settings.get("password_hash"))
 
+    @staticmethod
+    def is_local_ip(ip):
+        try:
+            a = ipaddress.ip_address(ip)
+        except ValueError:
+            return False
+        return a.is_loopback or bool(getattr(a, "ipv4_mapped", None) and a.ipv4_mapped.is_loopback)
+
     def can_order(self, client):
-        return (not self.needs_password()) or client.authenticated or self.is_trusted(client.ip)
+        """Orders (anything that is not a query) need: the Pi itself, or a trusted address, or the password, or - with no password - an
+        allow-list the owner wrote (the client already passed it in `ip_allowed`). With none of them set, nobody on the network orders."""
+        if self.is_local_ip(client.ip) or self.is_trusted(client.ip):
+            return True
+        if self.needs_password():
+            return client.authenticated
+        return bool(self.settings.get("allowed"))
 
     def role(self, client):
         if client is self.owner:
             return "control"
-        if self.needs_password() and not (client.authenticated or self.is_trusted(client.ip)):
+        if not self.can_order(client):
             return "no_password"
         return "listener"
 
@@ -2171,8 +2193,8 @@ class Bridge:
                     self.event("info", "listening", f"Listening on port {port} (exclusive: {self.settings.get('exclusive')}, password: {'yes' if self.needs_password() else 'no'})",
                                port=port, exclusive=self.settings.get("exclusive"), password=self.needs_password())
                     if self.exposed():
-                        self.event("security", "open_to_lan", "Any device of the private network may send orders: set `allowed` (for example the PC's address) or a password",
-                                   port=port)
+                        self.event("security", "orders_refused_until_guard", "No password, no allowed list and no trusted address: the network can only query. "
+                                   "Set a password, `allowed` (for example the PC's address) or a trusted address to send orders", port=port)
                 except OSError as e:
                     server = None
                     self.listening["error"] = f"Could not open port {port}: {e}"

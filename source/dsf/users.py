@@ -28,6 +28,7 @@ import time
 
 import paths
 import permissions
+import role_store
 
 USERS_FILE = os.environ.get("WORKSHOP_USERS") or paths.CONF + "/workshop-users.json"
 MIN_PIN = 4
@@ -132,6 +133,7 @@ class UserStore:
         self.users = {}       # casefolded name -> record
         self.settings = dict(DEFAULT_SETTINGS)
         self.damaged = False
+        self.role_source = None  # role_store.RoleStore with the custom roles (set by api_ops.init)
         self.sessions = {}    # token hash -> {name key, created, last, device}
         self.fails = {}       # "u:<name>" / "c:<client>" / "g" -> {"n", "first", "until", "strikes"}
         self.load()
@@ -155,7 +157,7 @@ class UserStore:
                 self.log("users: the users file exists but cannot be read: the identity fails closed")
                 return
             for rec in data["users"]:
-                if isinstance(rec, dict) and rec.get("name") and rec.get("pin_hash") and rec.get("role") in permissions.RANK:
+                if isinstance(rec, dict) and rec.get("name") and rec.get("pin_hash") and rec.get("role") and isinstance(rec.get("role"), str):  # a custom role is resolved when the person is used
                     self.users[_key(rec["name"])] = rec
             self.settings.update({k: data.get("settings", {}).get(k, v) for k, v in DEFAULT_SETTINGS.items()})
 
@@ -184,6 +186,12 @@ class UserStore:
         damaged (fail closed, the switch does not count)."""
         return (bool(self.users) and bool(self.settings.get("enabled", True))) or self.damaged
 
+    def network_open(self):
+        """True when the owner switched the roles off ON PURPOSE (people exist, the switch is off): the programs on the network (camera
+        relay, Vision) keep the old open behaviour. A machine that never had a person is NOT open: from the network it can only look
+        (camera_access.py, vision_access.py) until the first administrator is created."""
+        return bool(self.users) and not self.damaged and not self.settings.get("enabled", True)
+
     def _public(self, rec):
         return {"name": rec["name"], "role": rec["role"], "modes": list(rec.get("modes") or []),
                 "camera_for_viewer": bool(rec.get("camera_for_viewer")), "created": rec.get("created"),
@@ -198,7 +206,10 @@ class UserStore:
                 if self._alive(s, now):
                     live[s["key"]] = max(live.get(s["key"], 0), s["last"])
             for r in out:
-                r["last_seen"] = live.get(_key(r["name"]))
+                # a live session counts, and so does the last time a closed or expired one was used (saved in the record): "never" is only for
+                # a person that really never signed in
+                saved = (self.users.get(_key(r["name"])) or {}).get("last_seen")
+                r["last_seen"] = max(live.get(_key(r["name"])) or 0, saved or 0) or None
                 r["sessions"] = sum(1 for s in self.sessions.values() if s["key"] == _key(r["name"]) and self._alive(s, now))
             return out
 
@@ -254,8 +265,9 @@ class UserStore:
         return [r for r in self.users.values() if r["role"] == permissions.ADMIN]
 
     def _check_role(self, role):
-        if role not in permissions.RANK:
-            raise UserError("invalid_args", "the role must be one of: " + ", ".join(permissions.ROLES))
+        custom = self.role_source is not None and self.role_source.canonical(role) == role
+        if role not in permissions.RANK and not custom:
+            raise UserError("invalid_args", "the role must be one of: " + ", ".join(permissions.ROLES) + " or a custom role")
         return role
 
     def add(self, name, pin, role, modes=None, camera_for_viewer=False):
@@ -391,11 +403,16 @@ class UserStore:
             self.fails.pop("u:" + _key(name), None)
             now = self.now()
             for sid in [k for k, s in self.sessions.items() if not self._alive(s, now)]:
+                self._remember(self.sessions[sid])
                 del self.sessions[sid]
             while len(self.sessions) >= MAX_SESSIONS:  # the oldest goes
-                del self.sessions[min(self.sessions, key=lambda k: self.sessions[k]["last"])]
+                oldest = min(self.sessions, key=lambda k: self.sessions[k]["last"])
+                self._remember(self.sessions[oldest])
+                del self.sessions[oldest]
             token = secrets.token_urlsafe(32)
             self.sessions[self._sid(token)] = {"key": _key(name), "created": now, "last": now, "device": str(device or "")[:40]}
+            rec["last_seen"] = int(now)  # signing in is activity: it stays after the session closes
+            self._save()
             return token, self._public(rec)
 
     def resolve(self, token):
@@ -414,8 +431,9 @@ class UserStore:
             if rec is None:
                 del self.sessions[sid]
                 return None
-            return {"name": rec["name"], "role": rec["role"], "modes": list(rec.get("modes") or []), "sid": sid,
-                    "camera": bool(rec.get("camera_for_viewer") or self.settings.get("camera_for_viewer"))}
+            ident = {"name": rec["name"], "role": rec["role"], "modes": list(rec.get("modes") or []), "sid": sid,
+                     "camera": bool(rec.get("camera_for_viewer") or self.settings.get("camera_for_viewer"))}
+            return ident if ident["role"] in permissions.RANK else role_store.custom_identity(ident, self.role_source)
 
     def touch(self, sid):
         with self.lock:
@@ -423,9 +441,19 @@ class UserStore:
             if s is not None:
                 s["last"] = self.now()
 
+    def _remember(self, s):
+        """Keeps in the record of the person the last time this session was used (called under the lock; the caller saves)."""
+        rec = self.users.get(s.get("key"))
+        if rec is not None and int(s.get("last") or 0) > int(rec.get("last_seen") or 0):
+            rec["last_seen"] = int(s["last"])
+
     def logout(self, sid):
         with self.lock:
-            return self.sessions.pop(sid, None) is not None
+            s = self.sessions.pop(sid, None)
+            if s is not None:
+                self._remember(s)
+                self._save()
+            return s is not None
 
     def kill_sessions(self, name):
         with self.lock:

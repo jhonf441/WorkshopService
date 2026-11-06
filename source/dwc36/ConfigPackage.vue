@@ -63,7 +63,7 @@
 <script>
 'use strict'
 
-import { api, workshopCan } from './workshop-api.js'
+import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js'
 import ErrorNotice from './ErrorNotice.vue'
 
@@ -112,7 +112,8 @@ export default {
 		todo() { return (this.items || []).filter(i => i.action === 'create' || i.action === 'reference' || (i.action === 'conflict' && this.replace.includes(i.path))).length; },
 	},
 	methods: {
-		can(op) { return workshopCan(op); },
+		// reads the role ticket: a template that calls this method draws again when the person signs in, out or changes role (workshopCan alone is not reactive)
+		can(op) { return this.canDo(op); },
 		color(a) { return COLORS[a]; },
 		say(text, ok) { this.msg = text; this.msgOk = ok !== false; },
 		async exportPackage() {

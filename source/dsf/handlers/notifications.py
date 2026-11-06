@@ -6,7 +6,7 @@ Configures the phone notifications (ntfy) of the activity events.
 Used by the Activity page (WorkshopActivity plugin).
 
 Usage: <params>                             -> query (JSON)
-     <params> C"activo" V1|0                -> turns all on/off
+     <params> C"activo" V1|0 [Y1]           -> turns all on/off (on needs Y1: it sends data to a third-party server; off by default)
      <params> C"destino" S"https://ntfy.sh" T"my-topic"
      <params> C"new_topic"                -> new random topic (you have to subscribe again on the phone)
      <params> C"tipo" T"job_end" V1|0   -> one event type
@@ -45,6 +45,13 @@ def run(params, bridge, config):
 
     if action == "active":
         cfg["active"] = float(params.get("V", 1)) != 0
+        if cfg["active"]:
+            # Turning on sends data to a third-party server: it needs an explicit acknowledgement (Y1), like the
+            # confirmation dialog of the page, so an API caller cannot turn it on silently.
+            if float(params.get("Y", 0)) == 0:
+                return json.dumps({"error": M("notifications_confirm_outbound_required")})
+            if not cfg["topic"]:
+                cfg["topic"] = notifier.topic_new()  # a new installation has no topic until it asks for the notifications
         change = M("notif_enabled") if cfg["active"] else M("notif_disabled")
     elif action == "destination":
         server = str(params.get("S", cfg["server"])).strip() or notifier.SERVER_DEFAULT

@@ -100,6 +100,18 @@
 :is(.sidetabs, .wf-nav) :is(.st-icon, .wf-nav-icon) { color: var(--wf-icon) !important; font-size: 18px; }
 :is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item):is(.st-on, .on) { opacity: 1; font-weight: 600; background: transparent; border-left-color: var(--wf-sec-now); }
 :is(.sidetabs, .wf-nav) .st-item.st-off { opacity: 0.35; }
+/* a section above the person's role: stays in its place, dimmed, with a lock and the role that opens it (blue while nobody is signed in) */
+:is(.sidetabs, .wf-nav) .st-item.st-locked { opacity: 0.7; }
+:is(.sidetabs, .wf-nav) .st-lockmark { border-radius: 50%; background: var(--wf-surface); }
+/* the JS bars (Vision, Camera, zones) share the pieces of the Vue side bar: the icon box with the lock mark and the text column (name, and under it who may open it) */
+.wf-nav .st-iconbox { position: relative; flex: none; display: inline-flex; }
+.wf-nav .st-lockmark { position: absolute; right: -6px; bottom: -5px; font-size: 12px; line-height: 1; }
+.wf-nav .st-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.wf-nav.collapsed .st-text { display: none; }
+:is(.sidetabs, .wf-nav) .st-item.st-locked .st-lockmark { color: var(--wf-n-role); }
+:is(.sidetabs, .wf-nav) .st-item.st-locked-session .st-lockmark { color: var(--wf-n-session); }
+.st-need { max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 1px 8px; border: 1px solid color-mix(in srgb, var(--wf-n-role) 45%, transparent); border-radius: 10px; background: var(--wf-n-role-bg); color: var(--wf-n-role-text); font-size: 11px; line-height: 1.5; white-space: nowrap; }
+.st-locked-session .st-need { border-color: color-mix(in srgb, var(--wf-n-session) 45%, transparent); background: var(--wf-n-session-bg); color: var(--wf-n-session-text); }
 :is(.sidetabs, .wf-nav) .st-fold:hover { background: rgba(128, 128, 128, 0.12); }
 :is(.sidetabs, .wf-nav) .st-pinned { color: inherit; opacity: 1; }
 :is(.sidetabs, .wf-nav) .st-badge { background: transparent; color: inherit; border: 1px solid var(--wf-line-strong); }
@@ -108,6 +120,7 @@
 	:is(.sidetabs, .wf-nav), :is(.sidetabs, .wf-nav).st-collapsed { gap: 0 14px; border-right: 0; border-bottom: 1px solid var(--wf-line); }
 	:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item), :is(.sidetabs, .wf-nav).st-collapsed :is(button.st-item, .wf-nav-item) { border-left: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 2px; }
 	:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item):is(.st-on, .on) { border-bottom-color: var(--wf-sec-now); }
+	.wf-nav.collapsed .st-text { display: flex; }
 	:is(.sidetabs, .wf-nav).st-collapsed .st-group { font-size: 11px; }
 }
 
@@ -243,6 +256,9 @@
 .wf-notice--error, .wf-reason--error, .wf-cover--error, .wf-toast--error { --wf-n-c: var(--wf-n-error); --wf-n-t: var(--wf-n-error-text); --wf-n-bg: var(--wf-n-error-bg); }
 /* N1 the session chip of the page bar */
 .wf-session-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 12px; border: 1px solid var(--wf-n-session); border-radius: 14px; background: var(--wf-n-session-bg); color: var(--wf-n-session-text); font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1; cursor: pointer; }
+@keyframes wf-attention { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 25%, 75% { box-shadow: 0 0 0 4px var(--wf-n-session); } 50% { box-shadow: 0 0 0 0 transparent; } }
+.is-attention { animation: wf-attention 0.6s ease-in-out 3; }
+@media (prefers-reduced-motion: reduce) { .is-attention { animation: none; outline: 3px solid var(--wf-n-session); outline-offset: 2px; } }
 .wf-session-chip.is-role { border-color: var(--wf-n-role); background: var(--wf-n-role-bg); color: inherit; cursor: default; }
 .wf-session-chip-icon { flex: none; width: 16px; height: 16px; font-size: 16px; color: var(--wf-n-session); }
 .wf-session-chip.is-role .wf-session-chip-icon { color: var(--wf-n-role); }

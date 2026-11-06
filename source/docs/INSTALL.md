@@ -78,6 +78,14 @@ is not in the plugin folder (`0:/sys/workshop`, `/opt/dsf/conf/workshop-*.json`,
 and a later install finds it. Note that a fresh install on a Pi without `/opt/dsf/conf/workshop-camera.key` creates a NEW key: an
 ESP32-CAM flashed with the old one will not authenticate.
 
+**What uninstalling does not remove.** Uninstalling from DWC removes only the plugin folders. The rules and files you added by hand stay until you remove them:
+
+- the shutdown / restart rule: `sudo tools/uninstall-system-rules.sh` (`--dry-run` only lists; `--bridge` also removes the G-code bridge). By hand: `sudo rm /etc/sudoers.d/dsf-power`, then `sudo visudo -c`;
+- the G-code bridge (unit, polkit rule, `/opt/workshop-bridge`): `sudo bridge/install.sh uninstall`;
+- the `kiosk/` scripts you copied to your home folder: delete their lines from `~/.config/labwc/autostart` and the copies, `~/kiosk-bin/chromium`, and `sudo rm /etc/chromium.d/98-no-zoom` (what each script does and writes: "How to: the `kiosk/` scripts" in the plugin README and `security.md`);
+- the AppArmor profile DSF wrote at install, `/etc/apparmor.d/dsf.<Id>`: look with `ls /etc/apparmor.d/dsf.*` after uninstalling (whether DSF removes it itself is unverified); if one is left, `sudo apparmor_parser -R` it and delete the file;
+- your data, which only YOU delete and cannot be undone: `/opt/dsf/conf/workshop-*.json`, `workshop-api-token`, `workshop-camera.key` (a new install makes a NEW camera key), `0:/sys/workshop/` and `/opt/dsf/sd/workshop/` (camera files). The exact commands are in the table "How to: remove everything the Workshop set added outside the zip" of the plugin README.
+
 After installing: reload every DWC tab (and the kiosk), and check that `machine.enabledPlugins` still lists your plugins.
 
 If DWC shows a plugin with a process (Service, Vision, RS485) as "partially started" or "disabled" with only a Stop button, its process
