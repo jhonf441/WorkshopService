@@ -63,6 +63,7 @@ PROCESSES = {
     "timer": (BAR,),
     "maintenance": (MACHINE,),
     "pid_trace": (PRINTING,),
+    "bed_zones": (PRINTING,),
 }
 # Safety processes are NEVER gated by plugins (CLAUDE.md: "Safety modules are never gated"): in "auto" they always run.
 # Only an explicit "off" of the user in config "modulos" stops them.

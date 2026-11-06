@@ -33,7 +33,7 @@ MODES = ("laser", "cnc", "fff")
 # operations that need no identity at all: logging in and asking who one is
 PUBLIC_OPS = frozenset({"auth.login", "auth.whoami", "api.ping"})
 # stopping is never blocked: any caller may stop (no login needed), like the emergency stop of DWC
-STOP_OPS = frozenset({"jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "machine.stop", "livejob.stop_safe"})
+STOP_OPS = frozenset({"jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "machine.stop", "livejob.stop_safe"})
 # an operator may run these only in a mode it is allowed (the others need the camera / mode rules below)
 MODE_GATED = frozenset({"jog.xy", "jog.z", "jog.axis", "jog.free", "frame.start", "motion.reserve", "job.start"})
 # a viewer may call these only when it has the camera (the camera relay key and the Vision answers)
@@ -119,6 +119,8 @@ OP_ROLES = {
     "power.method": TECHNICIAN, "password.status": TECHNICIAN,
     # shared settings with a revision (cameras.json holds camera addresses, so reading needs a login as operator)
     "settings.get": OPERATOR, "settings.set": TECHNICIAN, "settings.merge": TECHNICIAN,
+    # bed zones: anybody who sees the machine reads them, the operator heats, the technician changes the limits, turning off is a stop (STOP_OPS)
+    "bedzones.get": VIEWER, "bedzones.setpoint": OPERATOR, "bedzones.set": TECHNICIAN, "bedzones.off": VIEWER,
     # protection guard: watching state is public to everyone who can see the machine, tuning it is the admin's
     "guard.status": VIEWER, "guard.set": ADMIN,
     # machine profile and discovery: pages of every role need them to hide what the machine does not have
@@ -141,7 +143,7 @@ OP_ROLES = {
     "machine.history.restore": TECHNICIAN, "machine.report": TECHNICIAN,
     "machine.offsets.get": OPERATOR, "machine.offsets.snapshot": TECHNICIAN, "machine.limits.get": OPERATOR, "machine.power.get": OPERATOR, "machine.power.resume": TECHNICIAN,
     "machine.layout": OPERATOR,
-    "machine.try": TECHNICIAN, "machine.try.pending": TECHNICIAN, "machine.mark_cross": TECHNICIAN, "machine.test_move": TECHNICIAN, "machine.tool.get": OPERATOR, "machine.tool.pins": TECHNICIAN, "machine.tool.preview": TECHNICIAN,
+    "machine.try": TECHNICIAN, "machine.try.pending": TECHNICIAN, "machine.mark_cross": TECHNICIAN, "machine.test_move": TECHNICIAN, "machine.tool.get": OPERATOR, "machine.tool.pins": TECHNICIAN, "machine.tool.preview": TECHNICIAN, "machine.beds.get": OPERATOR, "machine.beds.preview": TECHNICIAN,
     # height calibration of the tool (was a card of the Workbench): reading is an operator's, everything that changes or moves a technician's
     "machine.height.get": OPERATOR, "machine.height.save": TECHNICIAN, "machine.height.hook": TECHNICIAN, "machine.height.step": TECHNICIAN,
     # work area of each mode (was a card of the Workbench): reading is an operator's, saving and moving a technician's

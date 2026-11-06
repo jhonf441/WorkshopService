@@ -385,7 +385,7 @@
 							<div v-if="help" class="pc-help"><b>{{ $t('plugins.WorkshopService.bridgeCard.port') }}:</b> {{ t('port') }}<br><b>{{ $t('plugins.WorkshopService.bridgeCard.a_single_connection_with_control_2') }}</b> {{ t('exclusive') }}<br><b>{{ $t('plugins.WorkshopService.bridgeCard.greeting_with_help') }}</b> {{ t('greeting') }}</div>
 							<div class="text-caption grey--text mt-1">
 								{{ $t('plugins.WorkshopService.bridgeCard.changing_the_port_does_not_cut') }}
-								{{ $t('plugins.WorkshopService.bridgeCard.ports_below_1024_need') }} <code>instalar.sh</code>.
+								{{ $t('plugins.WorkshopService.bridgeCard.ports_below_1024_need') }} <code>install.sh</code>.
 							</div>
 							<div class="text-subtitle-2 mt-3 mb-1" :title="t('names')">{{ $t('plugins.WorkshopService.bridgeCard.names_by_ip') }}</div>
 							<div v-if="help" class="pc-help mb-1">{{ t('names') }}</div>

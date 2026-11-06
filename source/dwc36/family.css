@@ -140,9 +140,20 @@
 .wf-section-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
 .wf-section-head > :is(h2, h3, .wf-h) { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; }
 .wf-section-head .wf-lead { flex-basis: 100%; margin: 0; font-size: 13px; line-height: 1.4; opacity: 0.7; }
-.wf-sub { margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--wf-line); }
-.wf-sub > :is(h4, .wf-subt) { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.wf-sub { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--wf-line); }
+.wf-sub > :is(h4, .wf-subt) { margin: 0; font-size: 14px; font-weight: 600; }
+/* a button that is a direct child keeps its own width (a column would stretch it to the whole card) */
+.wf-sub > :is(button, .wf-btn, .v-btn) { align-self: flex-start; }
 .wf-index { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 2px solid var(--wf-sec-now); border-radius: 50%; color: var(--wf-sec-now); font-size: 12px; font-weight: 700; }
+
+/* ================= color input (A3): a swatch with the family border, the same everywhere (workshopColorEl in 19-help-dom.js) ================= */
+.wf-color { box-sizing: border-box; width: 44px; height: 32px; padding: 2px; border: 1px solid var(--wf-line-strong); border-radius: 6px; background: transparent; cursor: pointer; }
+.wf-color::-webkit-color-swatch-wrapper { padding: 0; }
+.wf-color::-webkit-color-swatch { border: 0; border-radius: 4px; }
+.wf-color::-moz-color-swatch { border: 0; border-radius: 4px; }
+.wf-color:focus-visible { outline: 2px solid var(--wf-info); outline-offset: 2px; }
+.wf-color.is-compact { width: 28px; height: 28px; padding: 1px; }
+@media (pointer: coarse) { .wf-color:not(.is-compact) { width: 56px; height: 44px; } }
 
 /* ================= buttons ================= */
 .workshop-theme .v-btn, .wf-btn { box-shadow: none !important; letter-spacing: 0; text-transform: none; }
@@ -303,6 +314,11 @@ button.help-tip.v-btn.v-btn, .help-tip { width: 24px; height: 24px; min-width: 2
 @media (pointer: coarse) {
 	.wf-session-chip { min-height: 40px; }
 	button.help-tip.v-btn.v-btn, .help-tip { width: 40px; height: 40px; min-width: 40px; margin: -8px; }
+	/* the same -8 px wherever the "?" sits: the rules of the label and of the section head (-4px 0 / 0) are more specific than `.help-tip` for the plain button of
+	   the JS pages, so there the 40 px box grew the label row to 32 px and the Vue pages (button.help-tip.v-btn) kept 24 px. 8 px between the label row and the
+	   control keep the 40 px touch box from ever reaching the input under it. */
+	.wf-field-label .help-tip, .wf-section-head .help-tip, .help-tip-row > .help-tip { margin: -8px; }
+	.wf-field { gap: 8px; }
 	.wf-guide > summary { min-height: 44px; display: flex; align-items: center; }
 	.workshop-theme .v-btn:not(.v-btn--icon):not(.v-btn--fab):not(.v-btn--variant-text):not(.v-btn--text), .wf-btn { min-height: 44px; }
 	.wf-actions, .wf-bar-right { gap: 12px; }

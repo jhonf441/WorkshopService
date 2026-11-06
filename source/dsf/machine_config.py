@@ -456,8 +456,9 @@ def planners():
     """Every planner: the ones of this module and the phase 2 ones of machine_plans.py (imported late: it imports this module)."""
     import machine_plans
     import machine_plans_motion
+    import machine_beds
     import machine_tool
-    return dict(PLANNERS, **machine_plans.PLANNERS, **machine_plans_motion.PLANNERS, **machine_tool.PLANNERS)
+    return dict(PLANNERS, **machine_plans.PLANNERS, **machine_plans_motion.PLANNERS, **machine_tool.PLANNERS, **machine_beds.PLANNERS)
 
 
 def make_plan(kind, values, env, who=None, now=None):
@@ -579,7 +580,7 @@ def _msg_code(code):
     return code if code in ("no_config", "not_utf8", "bad_value", "no_points", "too_many_points", "too_few_points", "out_of_reach",
                             "duplicate_point", "no_limits", "patch_expression", "patch_unsupported_form", "patch_bad_axis",
                             "patch_missing_line", "current_over_limit", "bad_type", "no_frequency", "tool_exists", "pin_used", "pin_unknown", "pin_capability", "driver_unknown",
-                            "driver_used", "laser_mode", "tool_name") else "other"
+                            "driver_used", "laser_mode", "tool_name", "bed_exists") else "other"
 
 
 def _role_ok(ctx, kind):
@@ -670,7 +671,7 @@ def ops():
     a = Arg
     kinds = ("config.m671 (values {x: [..], y: [..], s, p, f}), config.bed (values {points: [{x, y}], k, s, passes, tol, rehome_z}), "
              "config.g31 ({k, p, x, y, z}), config.m208 (admin; {axes: {X: {min, max}}}), config.m92 (admin; {axes: {X: steps}}), "
-             "config.g10 ({tool, offsets: {X, Y, Z}}). The work offsets G54..G59.3 have no kind: they are the work zones of the Workbench")
+             "config.g10 ({tool, offsets: {X, Y, Z}}), config.tool (a new tool), config.bed_heaters ({beds: [{bed, sensor, output, max_temp}]}: the sensor, heater and M140 P H of each zone of a split bed). The work offsets G54..G59.3 have no kind: they are the work zones of the Workbench")
     return [
         Op("machine.config.plan", _plan_op, READ, {"kind": a(S, True, desc="Kind of change: " + kinds + "."),
                                                   "values": a(O, desc="The values of the kind.")},

@@ -29,6 +29,7 @@ import workshop_api as wa
 from workshop_api import ADMIN, MOTION, POWER, READ, STOP, WRITE, Arg, ApiError, Op
 import messages
 import settings_ops
+import bed_zones_ops
 import stopped_plugins
 import interlocks
 import live_job_stop
@@ -1067,7 +1068,7 @@ def init(bridge, config, plugin_id, version="", log=print, log_file=print, token
     """Builds the registry of the service. Does not open any connection."""
     _ctx.update(bridge=bridge, config=config, log=log, log_file=log_file)
     reg = identity.AuthRegistry(plugin_id, version, log_file)
-    for op in _ops() + settings_ops.build(_ctx) + api_users.make_ops(lambda: _ctx.get("users")):
+    for op in _ops() + settings_ops.build(_ctx) + bed_zones_ops.build(_ctx) + api_users.make_ops(lambda: _ctx.get("users")):
         reg.add(op)
     _ctx["users"] = reg.users = users.UserStore(users_file, log=log_file) if users_file else None
     camera_access.bind(lambda: _ctx.get("users"))  # the camera relay (:8090) applies the same roles

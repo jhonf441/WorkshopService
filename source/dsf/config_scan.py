@@ -13,7 +13,7 @@ import re
 
 ROOT = "0:/sys/config.g"
 BED = "0:/sys/bed.g"
-MAX_FILES = 8
+MAX_FILES = 16   # 8 was reached on the real machine before the FFF mode file (config.g calls six macros, automodeselect.g three more): every plan then saw the CNC file, not modefff.g
 MAX_DEPTH = 2
 MAX_BYTES = 400000
 

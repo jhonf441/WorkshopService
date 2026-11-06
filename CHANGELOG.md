@@ -4,6 +4,27 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.24.2 -- 2026-11-05
+
+- G-code bridge: `BRIDGE JOB START` and the material macros wait for the machine gate (mode / armed / homed); the black box records the service threads; the bridge card text and the shared family.css follow the QA batch of the other session. The bridge itself needs `bridge/install.sh` on the Pi to take effect (a plugin install does not touch it).
+
+## 2.24.1 -- 2026-11-05
+
+- Bed zones: an `M140` / `M190` that names its heaters with `H` goes through untouched, like one with a `P`. A slicer profile that sends one `M140 S.. H<n>` per zone (14 zones in the factory PrusaSlicer-style profiles of the owner's slicer) would otherwise have been spread across ALL the zones by every line, the last one winning. Only an `M140` / `M190` with no `P` and no `H` (the usual `M140 S60`, also the one of layer 2) is split across the zones.
+
+## 2.24.0 -- 2026-11-05
+
+- Plan kind `config.bed_heaters` and operations `machine.beds.get` / `machine.beds.preview` (`dsf/machine_beds.py`): the ONE way the configuration gets the bed heaters of a split bed (sensor, heater, `M143`, `M140 P H`), with the plan of Machine (exact diff, snapshot, history, rollback). The pins are chosen by the person among the free ones of the board, never guessed. It goes into the last file that really defines heaters, after its last top-level heater line (a mode file that only deletes heaters with `C"nil"` is not a definition).
+- The scan of the configuration reads up to 16 files (was 8): on the real machine `config.g` calls six macros and `automodeselect.g` three mode files, so `modefff.g` was the ninth and every plan (tool, steps per mm...) saw `modecnc.g` instead.
+- `machine_beds.py` joins `machine_tool.py` in the exception of the safety test that keeps `M950` text out of the Machine modules: it only builds lines for a reviewed plan and never sends.
+
+## 2.23.0 -- 2026-11-05
+
+- Bed zones: a bed split in several heaters, each one a bed of its own in RRF. While the setting is on, M140 / M190 with no P are answered by the service and become one `M140 P<bed> S<setpoint + offset>` per active zone; with a P they go through untouched; 0 or -273.15 turns every zone off. M190 holds the code until every zone is within the tolerance (error on a heater fault or on the timeout). Its own interception connection (Pre, only M140 / M190) with its own watchdog; the firmware keeps the PID, the M143 limits and the fault detection, the service only sends setpoints.
+- API: `bedzones.get` (viewer), `bedzones.setpoint` (operator), `bedzones.set` (technician, with a revision) and `bedzones.off` (a stop, never blocked). Settings area `bed-zones` with strict validation; a file that is not valid turns the feature off. New process `bed_zones` (rests when Printing is stopped).
+- `config/bedzones.g`: a copy of the settings the service writes for the board (every change and at start, never edited by hand) so the backup macro of Printing can read them with the service stopped.
+- New files: `bed_zones.py`, `bed_zones_config.py`, `bed_zones_intercept.py`, `bed_zones_ops.py`, `bed_zones_mirror.py`; the texts in `i18n`. Manual test guide: `docs/BED-ZONES-MANUAL-TEST.md`.
+
 ## 2.22.18 -- 2026-11-05
 
 - The mode of the machine is what the board applies (state.machineMode), not global.selectedMode: the select*.g macros write that variable before M452 and it stayed wrong when M452 failed, so the LEDs, job traces, activity, heights and work area could say Laser while the machine was in FFF. One module (real_mode.py) now decides it for the 12 places that read it.

@@ -1236,7 +1236,9 @@ class Client:
             self.reply_local(f"Error: an earlier order of this job failed ({self.failed_why}); the rest is refused for {left} s so it does not run without what that order had to set up. Fix it and send the job again (or BRIDGE RESUME).")
             return
 
-        if not is_query and tok in GATED_CODES:
+        # the material macros (focus, origin) move the machine, so they wait for the same conditions as a G1 (the focus macro used to run on a machine
+        # that was not homed and only then aborted itself, after the live job had been opened)
+        if not is_query and (tok in GATED_CODES or (tok == "M98" and MATERIAL_MACRO_RE.match(line))):
             why = b.gate.reason(tok)
             now_m = b.clock.mono()
             if not why and tok not in NEEDS_HOMING_OK and self.taint_until > now_m:
@@ -1647,10 +1649,40 @@ class Bridge:
         self.service_notify(JOB_END_OPS.get(reason, "job.end"), {})
 
     # -- BRIDGE commands --
+    def _job_start_refusal(self, sub, arg, client):
+        """BRIDGE JOB START on a machine that cannot take the job (off, halted, paused, not homed): the text of the refusal, or None.
+        The live job is not opened, and the rest of what the program streams is refused too (like any refused order), so the focus macro
+        that comes next does not run on its own. The state is asked again when what the gate has is older than a second (the gate itself
+        asks every 2 s); an unknown state (service stopped, no answer) lets the job start: the gate never blocks by guessing."""
+        if sub != "JOB" or not self.can_order(client) or not self.settings.get("block_when_unfit"):
+            return None
+        job = parse_job_command(arg)
+        if job is None or job[0] != "start":
+            return None
+        if time.monotonic() - self.gate.at > 1.0:
+            try:
+                self.gate.refresh()
+            except Exception:
+                self.gate.status = None
+        why = self.gate.reason()
+        if not why:
+            return None
+        client.taint_until = self.clock.mono() + TAINT_S
+        with self.lock:
+            self.totals["rejects"] += 1
+            self.totals["rejects_machine"] = self.totals.get("rejects_machine", 0) + 1
+            client.rejects += 1
+            self.count("rejects")
+        self.event("info", "job_start_rejected_machine", f"Live job start from '{client.name}' rejected: the machine is {why}", client=client.name, state=why)
+        return f"Error: the machine is {why}; the live job was not started. Fix it and send the job again."
+
     def bridge_command(self, line, client):
         parts = line.split(None, 2)
         sub = SUBCOMMANDS.get(parts[1].upper() if len(parts) > 1 else "", None)
         arg = parts[2].strip() if len(parts) > 2 else ""
+        refused = self._job_start_refusal(sub, arg, client)  # outside the lock: it may ask the service
+        if refused:
+            return refused, False
         with self.lock:
             self.totals["bridge_commands"] += 1
             if sub == "KEY":

@@ -464,6 +464,11 @@ def _handle_shutdown(signum, frame):
     # first release the interception: a hung code jams the RRF channel
     _release_interception()
     try:
+        import bed_zones_intercept
+        bed_zones_intercept.release(log_file)
+    except Exception:
+        pass
+    try:
         # Reuses the bridge connection already established -- opening a NEW
         # connection right here fails, because DCS is already closing the plugin's
         # environment at this moment.
@@ -550,6 +555,14 @@ if __name__ == "__main__":
     except Exception as e:
         log_file(f"could not check config/focus.g: {e}")
 
+    # bedzones.g (the settings bedzones-set.g loads when the service is stopped) follows the store "bed-zones": written again at start (bed_zones_mirror.py)
+    try:
+        import bed_zones_mirror
+        if bed_zones_mirror.sync_at_start() == "written":
+            log_file("config/bedzones.g written from the settings store bed-zones")
+    except Exception as e:
+        log_file(f"could not check config/bedzones.g: {e}")
+
     def _apply_laser_correction():
         # the board's memory takes the stored correction (wpload.g) once it answers and is free; it never waits the start of the service
         try:
@@ -591,6 +604,7 @@ if __name__ == "__main__":
         ("jobs", M("main_jobs_and_zones"), M("main_detects_job_start_end_mode_zone_changes"), 30),
         ("motors", M("main_motors"), M("main_reads_drivers_currents_speeds_motors_page"), 60),
         ("jog", "Jog", M("main_moves_machine_while_jog_button_held"), 10),
+        ("bed_zones", M("main_bed_zones"), M("main_splits_m140_m190_into_one_heater_per_bed_zone"), 15),
         ("pid_trace", M("main_pid_tuning_record"), M("main_records_temperature_power_while_heater_tuned_pid"), 30),
         ("maintenance", M("main_maintenance_counters"), M("main_counts_hours_distance_axes_maintenance_plan"), 30),
         ("events", M("main_rrf_events"), M("main_emergencies_pauses_firmware_errors_for_activity"), 30),
@@ -663,6 +677,8 @@ if __name__ == "__main__":
 
     import pid_trace
     heartbeats.launch("pid_trace", pid_trace.run_loop, bridge, config)
+    import bed_zones_intercept
+    heartbeats.launch("bed_zones", bed_zones_intercept.run_loop, bridge, log_file)
 
     import jog_move
     jog_move.set_log_file(LOG_FILE)

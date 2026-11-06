@@ -394,6 +394,36 @@ means nothing was stopped on purpose). Only ids that start with `Workshop` are a
 `error.field` `id`). The answer of `set` is `{stopped, changed}`; a call that changes nothing writes nothing. The write goes to the
 audit like any other.
 
+## Bed zones
+
+A bed split in several heaters, each one a bed of its own in RRF (`M140 P0 H0`, `M140 P1 H1`, ...). RRF cannot group heaters in one bed and slicers send
+`M140 S60` with no `P`, which only reaches bed 0. While the setting `enabled` is true the service intercepts `M140` / `M190` (its own interception
+connection, Pre mode, only those two codes): with no `P` it answers the code itself and sends one `M140 P<bed> S<setpoint + offset>` per active zone;
+with a `P` the code goes through untouched, and so does one that names its heaters with `H` (a slicer that sends one `M140 S.. H<n>` / `M190 S.. H<n>` per zone: an explicit order the firmware reads as written). A setpoint of 0 or -273.15 turns every zone off. `M190` holds the code until every zone is within
+`tolerance` of its target, a heater is in fault (answered with an error) or `timeout_s` passes (answered with an error, the zones keep their setpoint).
+The PID and the protections (M143, heater faults) stay in the firmware. Settings area `bed-zones` (`sys/workshop/config/bed-zones.json`, revisioned):
+a file that is not valid turns the feature off and every code goes through. The service is the brain of the feature and the firmware keeps the control: the service only sends setpoints (never a limit, a PID or a protection of RRF). So the board can read the settings without the service, it copies them to `0:/sys/workshop/config/bedzones.g` (generated, never edited by hand, rewritten at every change of the store and at start; `dsf/bed_zones_mirror.py`) and the backup macro of Printing, `0:/sys/workshop/macros/bedzones-set.g`, reads that copy. Manual test guide: `docs/BED-ZONES-MANUAL-TEST.md`. Code: `dsf/bed_zones.py` (logic), `bed_zones_config.py`,
+`bed_zones_intercept.py`, `bed_zones_ops.py`. The process `bed_zones` runs only while WorkshopPrinting is enabled.
+
+| Operation | Role | What it does |
+|---|---|---|
+| `bedzones.get` | viewer | `{config, rev, problems, detected}`: the settings (`enabled`, `zones: [{bed, active, offset}]`, `max_temp`, `max_offset`, `tolerance`, `timeout_s`, `layout: {rows, columns}`), their revision, the problems of the saved file and the bed heater slots the board reports (`[{bed, heater}]`, `heater` null = empty slot). |
+| `bedzones.set {config, base_rev}` | technician | Validates the whole configuration and saves it only if nobody changed it since `base_rev` (409 `conflict` with `error.current`). `invalid_args` carries `error.errors` with one message per field. Noted in Activity. |
+| `bedzones.setpoint {temperature, zone?}` | operator | HEATS: without `zone` every active zone gets `temperature` plus its offset, with `zone` (a bed number) only that zone gets exactly `temperature`. A setpoint over `max_temp`, an offset over `max_offset`, an unknown zone or a damaged configuration answers `invalid_args` and sends nothing; a failed send answers `failed`. Returns `{codes}`. |
+| `bedzones.off` | viewer (a stop, never blocked) | Turns every configured zone off, active or not, even with a damaged configuration. Returns `{codes}`. |
+
+### Bed heaters (the plan that defines the beds)
+
+A zone of a split bed needs its own bed in RRF: a sensor (`M308`), a heater (`M950 H`), its maximum (`M143`) and the link `M140 P<bed> H<heater>`. That is the plan kind `config.bed_heaters` of `machine.config.plan` / `machine.config.apply` (technician, like `config.tool`; the same plan as every other change of the configuration: exact diff, snapshot, sha check, history, rollback; the board restarts to read it). `dsf/machine_beds.py`. The plan goes into the LAST file of the configuration that really defines heaters (a line `M950 H0 C"nil"` of another mode only deletes one and does not count), after its last top-level heater / sensor / tool line, else into `config.g`. The pins are never guessed: each must be one the board has, with the capability its use needs (a sensor `adc`, a solid-state relay output `pwm`, a relay output `digital`), and no line of the configuration may use it. The heater and sensor numbers are the first ones nothing uses (the board or any line of any file).
+
+| Operation | Role | What it does |
+|---|---|---|
+| `machine.beds.get` | operator | `{defined: [{bed, heater}], in_files: [bed], next: {heater, sensor, beds: [bed]}, max_beds}`: the beds the board has, the beds only a file defines, the first free numbers. |
+| `machine.beds.preview {spec}` | technician | The exact lines the plan would write and the file they go into, or `errors: [{code, field}]` (`bed_exists`, `pin_used`, `pin_unknown`, `pin_capability`, `values`...). Writes nothing. |
+| `machine.config.plan {kind: "config.bed_heaters", values: {spec}}` | read | `spec = {beds: [{bed, name?, sensor: {preset: thermistor\|pt1000, pin}, output: {kind: ssr\|ssrdc\|relay, pin}, max_temp}]}`, 1 to 8 beds. |
+
+The free pins come from `machine.tool.pins`. The page is Machine > Bed heaters (`?layout=beds&beds=1,2,3` from the 3D printing page).
+
 ## Laser interlocks (optional)
 
 The machine profile (`profile.set`, schema 2) may declare `interlocks: {lid, extraction, key}`, each

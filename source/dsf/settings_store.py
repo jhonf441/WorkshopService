@@ -28,7 +28,7 @@ DATA_DIR = "sys/workshop/data"
 NAMES = {n: CONFIG_DIR for n in (
     "bridge", "buttons", "camera", "cameras", "clamps", "current", "focus", "jog", "jog-macros",
     "laser", "materials", "motors", "printing", "rs485", "step-ceiling", "vision", "zcal",
-    "work_state", "zone-extra", "zone-sizes", "zone-zpoints")}
+    "work_state", "zone-extra", "zone-sizes", "zone-zpoints", "bed-zones")}
 NAMES["laser-designs"] = DATA_DIR
 # Machine v2 (calibration records and maintenance counters): revisioned like the rest, but only machine_store.py writes them
 # (settings.set / settings.merge refuse these names: a record is made by a procedure of the service, never typed in).
@@ -136,14 +136,17 @@ def _encode(value):
 
 def _mirror(name, value):
     """Files the board reads that are a copy of one store (the store stays the ONLY source): `laser` -> macros/lasercorrection.g
-    (laser_correction.py), `focus` -> config/focus.g (focus_geometry.py). Runs after every changed write, whoever writes. A failure is logged
+    (laser_correction.py), `focus` -> config/focus.g (focus_geometry.py), `bed-zones` -> config/bedzones.g (bed_zones_mirror.py). Runs after every changed write, whoever writes. A failure is logged
     and never undoes the saved value; the service writes the mirror again at start."""
-    if name not in ("laser", "focus"):
+    if name not in ("laser", "focus", "bed-zones"):
         return False
     try:
         if name == "laser":
             import laser_correction
             return bool(laser_correction.sync(value))
+        if name == "bed-zones":
+            import bed_zones_mirror
+            return bool(bed_zones_mirror.sync(value))
         import focus_geometry
         return bool(focus_geometry.sync(value))
     except Exception as e:  # noqa: BLE001

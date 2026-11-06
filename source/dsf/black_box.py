@@ -202,7 +202,10 @@ class BlackBox:
     def _top(self):
         """CPU of this service's own threads since the previous round (every
         top_s). It never opens another process's /proc entries: AppArmor denies
-        that for this plugin (ptrace read) and logs a DENIED line each time."""
+        that for this plugin (ptrace read) and logs a DENIED line each time.
+        Only the service's threads that use 1 % or more are named; when none does
+        (the normal state of a service at rest) the answer says so in words
+        ("idle (<1%)"), not a bare dash that looked like a broken line."""
         current_time = time.monotonic()
         ticks = {}
         base = os.path.join(self.proc, "self", "task")
@@ -232,7 +235,7 @@ class BlackBox:
                 if pct >= 1:
                     uses.append((pct, label))
         uses.sort(reverse=True)
-        return " ".join(f"{n.replace(' ', '_')}={round(p)}%" for p, n in uses[:3]) or "-"
+        return " ".join(f"{n.replace(' ', '_')}={round(p)}%" for p, n in uses[:3]) or "idle (<1%)"
 
     # ---------------- linea ----------------
 
@@ -551,7 +554,7 @@ class BlackBox:
             self._top_t = time.monotonic()
             t = self._top()
             if t:
-                self.write_out("top " + t)
+                self.write_out("svc-threads " + t) # PH-1: it is the CPU of the service's own threads, not the system top
 
     def event(self, type_name, raw_text):
         if type_name == "power":
