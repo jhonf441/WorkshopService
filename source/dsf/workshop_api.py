@@ -482,6 +482,15 @@ async def _read_full_request(conn):
     return json.loads(data.decode("utf-8"))  # raises: incomplete or too big
 
 
+def _beat(error=None):
+    """Heartbeat of the process page (heartbeats.py); it must never get in the way of the endpoint thread."""
+    try:
+        import heartbeats
+        heartbeats.error("api", error) if error is not None else heartbeats.ok("api")
+    except Exception:
+        pass
+
+
 def serve(registry, namespace, path="api", http_info=None):
     """Registers GET and POST /machine/<namespace>/<path> in a thread of its own
     and keeps them alive (re-registers if the connection to DSF drops).
@@ -522,6 +531,12 @@ def serve(registry, namespace, path="api", http_info=None):
                 pass
         return _h
 
+    try:
+        import heartbeats
+        heartbeats.register("api", messages.M("workshop_api_process_title"), messages.M("workshop_api_process_description"), 30)
+    except Exception:
+        pass
+
     def loop():
         from dsf.connections import CommandConnection
         from dsf.object_model import HttpEndpointType
@@ -545,8 +560,10 @@ def serve(registry, namespace, path="api", http_info=None):
                     registry.log(f"api: GET endpoint not available ({e}); POST api.describe still works")
                 wait = 5
                 while True:
-                    time.sleep(3600)
+                    _beat()
+                    time.sleep(30)  # it only waits (the handlers answer on their own); this tick is the heartbeat
             except Exception as e:
+                _beat(e)
                 msg = str(e)
                 if "ermission" in msg or "not allowed" in msg.lower():
                     registry.log(f"api: no permission for the HTTP endpoint ({msg})")

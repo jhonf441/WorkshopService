@@ -418,12 +418,21 @@ def intercept_loop():
         _intercept_wd.end()
 
 
+def _beat(label):
+    """The heartbeat of a loop that must never die because of its own bookkeeping (laser guard, watchdogs): never raises."""
+    try:
+        heartbeats.ok(label)
+    except Exception:
+        pass
+
+
 def _laser_guard_loop():
     """Every second: if a laser power was left set and nothing is working, sends the M5 (laser_guard.py explains when)."""
     import machine_state
     import jog_move
     while True:
         time.sleep(1.0)
+        _beat("guardian_laser")  # every pass, also outside Laser mode; never raises (the guard must not die for this)
         try:
             if machine_state.read_in("state.machineMode") != "Laser":
                 continue
@@ -443,7 +452,6 @@ def _laser_guard_loop():
                 except Exception:
                     laser_guard.rearm()  # try again at the next check
                     raise
-            heartbeats.ok("guardian_laser")
         except Exception as e:
             log_file(f"laser guard: {type(e).__name__}: {e}")
             time.sleep(4)
@@ -456,9 +464,15 @@ def _handle_shutdown(signum, frame):
     # Pi (which no longer runs) nor daemon.g (which still thinks the Pi has
     # control) would paint them.
     log_file(f"signal {signum} received, handing the status control back to daemon.g...")
+    _clean_stop(f"signal {signum}")
+    sys.exit(0)
+
+
+def _clean_stop(why):
+    """The clean part of the shutdown (shared by SIGTERM above and the service.restart op, service_restart.py): it does NOT end the process."""
     try:
         import black_box
-        black_box.shut(f"signal {signum}")  # service restart = clean shutdown
+        black_box.shut(why)  # service restart = clean shutdown
     except Exception:
         pass
     # first release the interception: a hung code jams the RRF channel
@@ -475,7 +489,6 @@ def _handle_shutdown(signum, frame):
         bridge.send('M98 P"0:/sys/workshop/macros/system/disable_pi_status.g"')
     except Exception as e:
         log_file(f"could not tell daemon.g before exiting: {e}")
-    sys.exit(0)
 
 
 def _excepthook_thread(args):
@@ -500,6 +513,7 @@ def _watchdog_lock():
     consecutive, dump = 0, False
     while True:
         time.sleep(5)
+        _beat("watchdog_lock")
         if bridge.lock.locked():
             consecutive += 1
         else:
@@ -523,11 +537,11 @@ def _watchdog_lock():
 
 if __name__ == "__main__":
 
-    bridge.publicador.start("publisher")  # the only thread that calls set_plugin_data
+    bridge.publicador.start("publisher", beat=lambda: heartbeats.ok("publisher"))  # the only thread that calls set_plugin_data
     os.makedirs(HANDLERS_DIR, exist_ok=True)
     threading.Thread(target=_watchdog_lock, name="watchdog_lock", daemon=True).start()
     threading.Thread(target=_laser_guard_loop, name="guardian_laser", daemon=True).start()
-    threading.Thread(target=_intercept_wd.run, name="intercept_watchdog", daemon=True).start()
+    threading.Thread(target=_intercept_wd.run, kwargs={"beat": lambda: heartbeats.ok("intercept_watchdog")}, name="intercept_watchdog", daemon=True).start()
     log_file("WorkshopService starting...")
     threading.excepthook = _excepthook_thread
 
@@ -594,6 +608,8 @@ if __name__ == "__main__":
         log_file(f"could not load the command history: {e}")
 
     signal.signal(signal.SIGTERM, _handle_shutdown)
+    import service_restart
+    service_restart.configure(cleanup=lambda: _clean_stop("service restart"), log=log_file)  # op service.restart; ends with os._exit(1) like the watchdog
 
     # Internal processes: they start supervised (heartbeats.launch restarts them if
     # they die) and show on the "Workshop services" page.
@@ -619,6 +635,12 @@ if __name__ == "__main__":
         ("motion", M("main_movement_owner"), M("main_decides_whether_possible_move_change_geometry"), 10),
         # F1-C: alarm when a safety process dies or a protection is left unwatched (protection_guard.py)
         ("guard", M("main_protection_guard"), M("main_watches_that_safety_processes_beat_alarms_when"), 5),
+        # processes redesign (phase 1): threads that had no heartbeat (they tick from their own loop; late = 3x expected)
+        ("guardian_laser", M("main_laser_power_guard"), M("main_laser_power_guard_description"), 1),
+        ("intercept_watchdog", M("main_interception_watchdog"), M("main_interception_watchdog_description"), 1),
+        ("watchdog_lock", M("main_bridge_lock_watchdog"), M("main_bridge_lock_watchdog_description"), 5),
+        ("publisher", M("main_state_publisher"), M("main_state_publisher_description"), 30),
+        ("communication", M("main_code_channels"), M("main_code_channels_description"), 10),
     ]
     for _n, _t, _d, _e in PROCESSES:
         heartbeats.register(_n, _t, _d, _e)
@@ -652,6 +674,7 @@ if __name__ == "__main__":
                 communication.emit(bridge, config)
             except Exception as e:
                 log_file(f"communication: {e}")
+            _beat("communication")
             time.sleep(10)
 
     threading.Thread(target=_communication_loop, name="communication", daemon=True).start()

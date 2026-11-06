@@ -81,6 +81,7 @@
     "handlers/notifications.py",
     "handlers/password.py",
     "handlers/pid_zones.py",
+    "handlers/processes.py",
     "handlers/reset_all.py",
     "handlers/risk.py",
     "handlers/service_modules.py",
@@ -169,6 +170,7 @@
     "ports.py",
     "preflight.py",
     "preflight_cli.py",
+    "process_catalog.py",
     "profile_ops.py",
     "protection_guard.py",
     "published_texts.py",
@@ -179,6 +181,7 @@
     "role_store.py",
     "sd_paths.py",
     "service_modules.py",
+    "service_restart.py",
     "settings_ops.py",
     "settings_store.py",
     "shutdown_method.py",
@@ -195,17 +198,17 @@
     "work_state.py"
   ],
   "dwcFiles": [
-    "css/WorkshopService.40ecd985.css",
-    "css/WorkshopService.40ecd985.css.gz",
-    "js/WorkshopService.3ead786d.js",
-    "js/WorkshopService.3ead786d.js.gz"
+    "css/WorkshopService.a73f7586.css",
+    "css/WorkshopService.a73f7586.css.gz",
+    "js/WorkshopService.97217172.js",
+    "js/WorkshopService.97217172.js.gz"
   ],
   "sdFiles": [],
   "pid": -1,
   "id": "WorkshopService",
   "name": "Workshop Service",
   "author": "jhonf441",
-  "version": "2.29.0",
+  "version": "2.29.4",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopService",
   "tags": [

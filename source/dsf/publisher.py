@@ -120,19 +120,24 @@ class Publisher:
         with self._lock:
             return sorted(self._pending)
 
-    def run(self, stop=lambda: False):
+    def run(self, stop=lambda: False, beat=None):
         while not stop():
             try:
                 self.flush()
             except Exception as e:
                 self._log(f"publisher: {e}")
+            if beat is not None:
+                try:
+                    beat()  # heartbeat of the process page; never allowed to stop the publisher
+                except Exception:
+                    pass
             wait = self.next_wait_s()
             self._wake.wait(30.0 if wait is None else max(0.05, min(wait, 30.0)))
             self._wake.clear()
 
-    def start(self, name="publisher"):
+    def start(self, name="publisher", beat=None):
         if self._thread is None:
-            self._thread = threading.Thread(target=self.run, name=name, daemon=True)
+            self._thread = threading.Thread(target=self.run, kwargs={"beat": beat}, name=name, daemon=True)
             self._thread.start()
         return self._thread
 

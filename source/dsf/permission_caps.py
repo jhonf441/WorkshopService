@@ -110,7 +110,11 @@ CAPABILITIES = {
                       "modules.list", "examples.list", "package.export", "package.preview", "preflight.run", "plugins.stopped.get", "db.status"),
     "config.api": _c("config", "read", 1, "api.describe", "api.ping"),
     "config.edit": _c("config", "write", 2, "config.snapshot", "config.commit", "config.lock", "config.unlock", "config.arm", "config.confirm",
-                      "config.rollback", "settings.set", "settings.merge", "modules.set", "examples.create"),
+                      "config.rollback", "settings.set", "settings.merge", "examples.create"),
+    "processes.control": _c("system", "write", 2, "modules.set", "processes.pause", "processes.resume", "processes.restart"),
+    # restarting the whole service is its OWN capability (not part of processes.control): granting "Procesos: parar y arrancar" never grants it;
+    # an administrator may still grant this one on purpose (the level 3 confirmation and the idle checks always apply)
+    "service.restart": _c("system", "admin", 3, "service.restart"),
     "system.plugins": _c("system", "write", 1, "plugins.stopped.set"),
     "config.bridge": _c("config", "write", 2, "bridge.test", "bridge.service", "bridge.service.set"),
     "config.critical": _c("config", "admin", 4, "config.restore", "package.apply", "profile.set", "comms.set"),

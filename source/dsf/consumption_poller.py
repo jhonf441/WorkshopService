@@ -163,6 +163,12 @@ def run_loop(bridge, config):
     cycle = 0
     notified_without = False
     while True:
+        _g = heartbeats.gate("consumption")  # pause / restart from the page (heartbeats.py); never raises
+        if _g == "restart":
+            return
+        if _g == "pause":
+            time.sleep(1)
+            continue
         cycle += 1
         # the Power plugin is stopped or disabled (Settings > Plugins): the meter is not read (service_modules.py)
         if not service_modules.is_active(service_modules.POWER):

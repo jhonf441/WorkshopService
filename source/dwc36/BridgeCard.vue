@@ -339,6 +339,17 @@
 										<v-icon x-small left>mdi-plus</v-icon>{{ cl.name }} ({{ cl.ip }})
 									</v-btn>
 								</div>
+								<div class="d-flex align-center flex-wrap mt-2" style="gap:8px">
+									<v-text-field
+										v-model="trustNew" dense outlined hide-details style="max-width:260px" autocomplete="off" placeholder="192.0.2.16"
+										:label="$t('plugins.WorkshopService.bridgeCard.trust_add_label')" :error="!!trustNew && !trustNewValid"
+										@keyup.enter="addTrust()"
+									/>
+									<v-btn small color="primary" :disabled="!trustNewValid" :loading="actionInProgress === 'trust-add'" @click="addTrust()">
+										<v-icon small left>mdi-plus</v-icon>{{ $t('plugins.WorkshopService.bridgeCard.trust_add_button') }}
+									</v-btn>
+									<span v-if="trustNew && !trustNewValid" class="text-caption error--text">{{ $t('plugins.WorkshopService.bridgeCard.trust_add_invalid') }}</span>
+								</div>
 								<div v-if="help" class="pc-help">{{ $t('plugins.WorkshopService.bridgeCard.the_article') }} <b>X</b> {{ $t('plugins.WorkshopService.bridgeCard.on_each_ip_removes_its_trust') }} <b>{{ $t('plugins.WorkshopService.bridgeCard.plus_name_ip') }}</b> {{ $t('plugins.WorkshopService.bridgeCard.are_current_connections_not_trusted_yet') }} {{ t('trust') }}</div>
 							</div>
 
@@ -652,6 +663,7 @@ export default {
 			secForm: { modeIp: 'local', allowed: [], max_connections: 8, attempts_key: 5, block_min: 5, wait_order: 15, queries_in_job: true },
 			secLoaded: false,
 			keyNew: '',
+			trustNew: '',
 			viewKey: false,
 			savingSec: false,
 			msgSec: null,
@@ -772,6 +784,13 @@ export default {
 		eventsFiltered() {
 			const ev = (this.e && this.e.events) || [];
 			return this.filterEv ? ev.filter(x => (x.type || 'info') === this.filterEv) : ev;
+		},
+		// the address typed to be trusted: a plain IPv4 or IPv6 address (the bridge compares trusted addresses as written, no networks)
+		trustNewValid() {
+			const v = (this.trustNew || '').trim();
+			const v4 = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/.test(v);
+			const v6 = v.indexOf(':') >= 0 && /^[0-9a-fA-F:.]+$/.test(v) && v.length <= 45;
+			return v4 || v6;
 		},
 		clientsNoTrusted() {
 			if (!this.e || !this.sec) {
@@ -973,6 +992,14 @@ export default {
 			}
 			this.armed = null;
 			this.action({ action: 'block', ip: cl.ip }, k);
+		},
+		addTrust() {
+			if (!this.trustNewValid) {
+				return;
+			}
+			const ip = this.trustNew.trim();
+			this.trustNew = '';
+			this.action({ action: 'trust', ip, yes: true }, 'trust-add');
 		},
 		putKey() {
 			const key = this.keyNew;

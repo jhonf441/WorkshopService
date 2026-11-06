@@ -200,9 +200,23 @@ def reason(label):
     return {"code": "plugin_active" if process(label) else "plugin_inactive", "plugins": list(ids)}
 
 
+def _honesty(p):
+    """Phase 2: what the switch really does. configured = stored mode; effective = what the supervisor decided at launch
+    (running / idle / forced, None if unknown); live = the loop re-reads the mode each pass (process_catalog.MODE_LIVE);
+    pending_restart = a running thread that the stored mode would stop and that only a service restart applies."""
+    import heartbeats
+    import process_catalog
+    effective, launch_mode = heartbeats.launch_decision(p)
+    live = process_catalog.is_mode_live(p)
+    running = effective in ("running", "forced")
+    pending = bool(running and not live and launch_mode is not None and kind(p) != launch_mode and not process(p))
+    return {"configured": kind(p), "effective": effective, "pending_restart": pending, "live": live}
+
+
 def status():
-    """{process: {modo, activo, razon}} for the service page."""
+    """{process: {modo, activo, razon, configured, effective, pending_restart, live}} for the service page."""
     out = {}
     for p in list(PROCESSES) + list(SAFETY) + list(OWN) + ["subscription"]:
         out[p] = {"mode": kind(p), "active": process(p), "reason": reason(p)}
+        out[p].update(_honesty(p))
     return out

@@ -10,7 +10,9 @@ DWC, unless the user forces it on or off here. The choice is kept in config["mod
 """
 import json
 
+import process_catalog
 import service_modules
+from messages import M
 
 
 def run(params, bridge, config):
@@ -23,10 +25,19 @@ def run(params, bridge, config):
         if kind not in service_modules.MODES:
             return json.dumps({"ok": False, "error": "mode must be auto, on or off"})
         settings = config.setdefault("modules", {})
+        # a locked process (safety group and the ones the service stands on) has no switch; "auto" is still accepted to drop an old
+        # stored on/off of it (back to the default is always the safe direction)
+        if process_catalog.is_locked(pid) and not (kind == "auto" and pid in settings):
+            return json.dumps({"ok": False, "error": M("modules_process_locked", process=pid)})
         if kind == "auto":
             settings.pop(pid, None)
         else:
             settings[pid] = kind
         service_modules.set_settings(settings)
         bridge.save_config()
-    return json.dumps({"ok": True, "modules": service_modules.status()})
+    status = service_modules.status()
+    result = {"ok": True, "modules": status}
+    if action == "set":
+        result["process"] = pid
+        result["status"] = status.get(pid)
+    return json.dumps(result)

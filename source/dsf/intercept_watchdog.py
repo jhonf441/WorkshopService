@@ -51,8 +51,13 @@ class InterceptWatchdog:
         self._exit()
         return True
 
-    def run(self, stop=None):
+    def run(self, stop=None, beat=None):
         while not (stop and stop.is_set()):
             time.sleep(1.0)
+            if beat is not None:
+                try:
+                    beat()  # heartbeat of the process page; it must never get in the way of the check
+                except Exception:  # noqa: BLE001
+                    pass
             if self.check():
                 return

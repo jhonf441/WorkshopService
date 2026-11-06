@@ -10,11 +10,11 @@
 			<v-chip v-if="r" small dark :color="stateResp.color"><v-icon left x-small>{{ stateResp.icon }}</v-icon>{{ stateResp.text }}</v-chip>
 			<v-spacer />
 			<v-btn small text :loading="loading" @click="read()"><v-icon small left>mdi-refresh</v-icon>{{ $t('plugins.WorkshopService.common.refresh') }}</v-btn>
-			<v-btn small color="primary" :loading="backingup" :disabled="!b || (r && r.busy) || !canDo('db.backup')" @click="backup()"><v-icon small left>mdi-content-save-outline</v-icon>{{ $t('plugins.WorkshopService.database.back_up_now') }}</v-btn>
+			<v-btn small color="primary" :loading="backingup" :disabled="!b || (r && r.busy) || !canDo('db.backup')" @click="backup()"><v-icon v-if="!canDo('db.backup')" x-small left aria-hidden="true">mdi-lock-outline</v-icon><v-icon small left>mdi-content-save-outline</v-icon>{{ $t('plugins.WorkshopService.database.back_up_now') }}</v-btn>
 		</v-card-title>
-		<v-card-text>
+		<v-card-text @click="touchLock">
 			<error-notice :error="error" retry class="mb-2" @retry="read()" />
-			<lock-reason v-if="b" op="db.backup" need="technician" class="mb-2" />
+			<lock-reason v-if="b" op="db.settings" need="technician" class="mb-2 svc-lock-reason" />
 			<div v-if="msg" class="text-body-2 mb-2" :class="msgOk ? 'success--text' : 'error--text'">{{ msg }}</div>
 			<div v-if="!b && !error" class="grey--text">{{ $t('plugins.WorkshopService.database.reading') }}</div>
 			<template v-if="b">
@@ -25,10 +25,9 @@
 					<div v-for="p in r.per_delete" :key="p.file" class="d-flex align-center flex-wrap mt-1" style="gap:8px">
 						<code class="bd-arch">{{ p.file }}</code>
 						<span class="text-caption">{{ $t('plugins.WorkshopService.database.deleted_on_d', { d: dateEpoch(p.until) }) }}</span>
-						<v-btn x-small outlined :disabled="!canDo('db.keep')" @click="keep(p.file, true)">{{ $t('plugins.WorkshopService.database.keep') }}</v-btn>
+						<v-btn x-small outlined :disabled="!canDo('db.keep')" @click="keep(p.file, true)"><v-icon v-if="!canDo('db.keep')" x-small left aria-hidden="true">mdi-lock-outline</v-icon>{{ $t('plugins.WorkshopService.database.keep') }}</v-btn>
 					</div>
-					<lock-reason op="db.keep" need="technician" class="mt-1" />
-				</div>
+									</div>
 
 				<v-row dense>
 					<!-- la base -->
@@ -66,8 +65,7 @@
 							<div class="text-caption grey--text">
 								{{ $t('plugins.WorkshopService.database.readings_older_than_n_days', { n: b.consumption_detail_days || 90 }) }}
 							</div>
-							<lock-reason op="db.settings" need="technician" class="mt-1" />
-							<div v-if="r && r.prune_pending" class="text-caption orange--text mt-1">
+														<div v-if="r && r.prune_pending" class="text-caption orange--text mt-1">
 								{{ $t('plugins.WorkshopService.database.will_summarize_n_readings', { n: r.prune_pending.rows, from: dateEpoch(r.prune_pending.since), to: dateEpoch(r.prune_pending.until), on: dateEpoch(r.prune_pending.limit) }) }}
 							</div>
 						</div>
@@ -127,13 +125,12 @@
 							<div v-if="r.mirror_error" class="text-caption error--text mt-1">{{ r.mirror_error }}</div>
 						</div>
 						<!-- one reason for the three settings controls above (switch, daily / weekly, copy to another place) -->
-						<lock-reason op="db.settings" need="technician" class="mt-1" />
-
+						
 						<!-- donde se guardan -->
 						<div class="bd-box mt-2">
 							<div class="d-flex align-center flex-wrap" style="gap:8px">
 								<span class="text-body-2">{{ $t('plugins.WorkshopService.database.where_they_re_stored') }}</span>
-								<v-btn x-small outlined :loading="readingPlaces" :disabled="!canDo('db.places')" @click="readPlaces()">{{ $t('plugins.WorkshopService.database.choose_another_place') }}</v-btn>
+								<v-btn x-small outlined :loading="readingPlaces" :disabled="!canDo('db.places')" @click="readPlaces()"><v-icon v-if="!canDo('db.places')" x-small left aria-hidden="true">mdi-lock-outline</v-icon>{{ $t('plugins.WorkshopService.database.choose_another_place') }}</v-btn>
 							</div>
 							<div v-if="places" class="mt-2">
 								<div v-for="l in places" :key="l.folder" class="d-flex align-center flex-wrap bd-place" style="gap:8px">
@@ -143,7 +140,7 @@
 									<span class="text-caption grey--text">{{ $t('plugins.WorkshopService.database.n_gb_free', { n: l.free_gb }) }}</span>
 									<v-chip v-if="l.folder === r.folder" x-small color="primary">{{ $t('plugins.WorkshopService.database.in_use') }}</v-chip>
 									<v-btn v-else x-small :color="armed === 'c' + l.folder ? 'amber darken-3' : undefined" :dark="armed === 'c' + l.folder" :disabled="l.writable === false || !canDo('db.folder')"
-										@click="double('c' + l.folder, () => changeFolder(l.folder))">
+										@click="double('c' + l.folder, () =><v-icon v-if="!canDo('db.folder')" x-small left aria-hidden="true">mdi-lock-outline</v-icon> changeFolder(l.folder))">
 										{{ armed === 'c' + l.folder ? $t('plugins.WorkshopService.database.tap_again_copy_there') : $t('plugins.WorkshopService.database.use_this_one') }}
 									</v-btn>
 									<span v-if="l.writable === false" class="text-caption error--text">{{ $t('plugins.WorkshopService.database.can_t_write') }}</span>
@@ -156,12 +153,12 @@
 							</div>
 							<div v-if="r.folder_previous && r.previous" class="text-caption mt-2">
 								{{ $t('plugins.WorkshopService.database.in_the_previous_folder') }} (<code>{{ r.folder_previous }}</code>) {{ $t('plugins.WorkshopService.database.n_backups_left_already_copied', { n: r.previous }) }}
-								<v-btn x-small text :color="armed === 'borrarAnt' ? 'error' : 'grey'" :disabled="!canDo('db.delete_previous')" @click="double('borrarAnt', deletePrevious)">
+								<v-btn x-small text :color="armed === 'borrarAnt' ? 'error' : 'grey'" :disabled="!canDo('db.delete_previous')" @click="double('borrarAnt', deletePrevious)"><v-icon v-if="!canDo('db.delete_previous')" x-small left aria-hidden="true">mdi-lock-outline</v-icon>
 									{{ armed === 'borrarAnt' ? $t('plugins.WorkshopService.database.tap_again_delete_them') : $t('plugins.WorkshopService.database.delete_them') }}
 								</v-btn>
 							</div>
 							<!-- one reason for the group: the first operation of it the role cannot do (places: technician; folder, delete previous: admin) -->
-							<lock-reason :op="lockPlaces.op" :need="lockPlaces.need" class="mt-1" />
+							<lock-reason :op="lockPlaces.op" :need="lockPlaces.need" class="mt-1 svc-lock-reason" />
 						</div>
 
 						<!-- copias -->
@@ -172,11 +169,10 @@
 								<span class="text-caption grey--text">{{ c.mb }} MB &middot; {{ date(c.date) }}</span>
 								<span v-if="perDelete(c.file)" class="wf-state warn">{{ $t('plugins.WorkshopService.database.deleted_on_d', { d: dateEpoch(perDelete(c.file).until) }) }}</span>
 								<v-chip v-if="kept(c.file)" x-small color="success" outlined>{{ $t('plugins.WorkshopService.database.kept') }}</v-chip>
-								<v-btn x-small text :disabled="!canDo('db.keep')" @click="keep(c.file, !kept(c.file))">{{ kept(c.file) ? $t('plugins.WorkshopService.common.release') : $t('plugins.WorkshopService.database.keep') }}</v-btn>
+								<v-btn x-small text :disabled="!canDo('db.keep')" @click="keep(c.file, !kept(c.file))"><v-icon v-if="!canDo('db.keep')" x-small left aria-hidden="true">mdi-lock-outline</v-icon>{{ kept(c.file) ? $t('plugins.WorkshopService.common.release') : $t('plugins.WorkshopService.database.keep') }}</v-btn>
 								<v-btn v-if="pathSd(r.folder)" x-small text :loading="lowering === c.file" @click="download(c.file)"><v-icon x-small left>mdi-download</v-icon>{{ $t('plugins.WorkshopService.common.download') }}</v-btn>
 							</div>
-							<lock-reason op="db.keep" need="technician" class="mt-1" />
-						</div>
+													</div>
 						<div v-if="r.failures && r.failures.length" class="mt-2">
 							<div class="text-body-2 error--text">{{ $t('plugins.WorkshopService.database.failures') }}</div>
 							<div v-for="(f, i) in r.failures" :key="i" class="text-caption error--text">{{ date(f.date) }}: {{ f.text }}</div>
@@ -198,6 +194,8 @@ import i18n from '../../i18n'
 
 import { api } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js'
+import { signedOut } from './workshop-auth.js'
+import { blinkLocked } from './lock-attention.js'
 import ErrorNotice from './ErrorNotice.vue'
 import LockReason from './LockReason.vue'
 import { pluginActive } from './workshop-ids.js'
@@ -270,6 +268,12 @@ export default {
 		clearTimeout(this.armedTimer);
 	},
 	methods: {
+		// a touch on the card while this role cannot use some of its controls (a disabled control emits no click): the reasons of the card blink
+		touchLock(ev) {
+			if (this.canDo('db.settings') && this.canDo('db.keep') && this.canDo('db.backup')) return
+			const el = ev && ev.currentTarget ? ev.currentTarget : null
+			if (el) blinkLocked(el, signedOut())
+		},
 		// API of WorkshopService: db.<op> (the result is the JSON of the service)
 		async base(op, args) {
 			const r = await api('db.' + op, args || {});

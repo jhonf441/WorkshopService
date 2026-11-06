@@ -43,6 +43,14 @@ def heartbeat(topic, now=None):
     return was_idle
 
 
+def wake(topic):
+    """Wake whoever sleeps in sleep(topic, ...) right now, even if someone is looking (a heartbeat only wakes an idle poller). Used to
+    publish a change at once (a process paused from the page) instead of at the next period."""
+    with _lock:
+        ev = _event(topic)
+    ev.set()
+
+
 def active(topic, now=None):
     now = _clock() if now is None else now
     with _lock:

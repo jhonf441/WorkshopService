@@ -56,6 +56,8 @@ WATCHES = (
     {"id": "motion", "source": HEARTBEAT, "protects": "motion", "process": "motion"},
     {"id": "risk", "source": HEARTBEAT, "protects": "risk", "process": "risk"},
     {"id": "health", "source": HEARTBEAT, "protects": "health", "process": "health"},
+    {"id": "guardian_laser", "source": HEARTBEAT, "protects": "laser_off", "process": "guardian_laser"},
+    {"id": "intercept_watchdog", "source": HEARTBEAT, "protects": "interception", "process": "intercept_watchdog"},
     {"id": "vision", "source": VISION, "protects": "fire", "plugin": service_modules.VISION},
     {"id": "rs485", "source": RS485, "protects": "servo", "plugin": service_modules.RS485},
 )

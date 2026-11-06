@@ -175,7 +175,19 @@ def run_loop(bridge, config, stop=lambda: False, model_source=None, sleep=None, 
     if subscribe:
         machine_state.on_change(listener)
     try:
+        paused_now = False
         while not stop():
+            _g = heartbeats.gate(LABEL)  # pause / restart from the page (heartbeats.py); never raises
+            if _g != "run":
+                if not paused_now:  # same as when its plugin stops: flush and forget the baseline, so the pause is a gap and not counted
+                    paused_now = True
+                    col.rest(_epoch())
+                    _live["running"] = False
+                if _g == "restart":
+                    return
+                time.sleep(1)
+                continue
+            paused_now = False
             _cycle(col, model_source, sleep, clock)
     finally:
         _live["running"] = False

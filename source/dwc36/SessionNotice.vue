@@ -1,7 +1,7 @@
 <template>
 	<!-- A notice by cause (ESTANDAR 2.2): N2 a note on top of a section (variant="section") or N4 a cover that replaces the content of a zone
 	     (variant="cover"). The look is design/family.css (.wf-notice / .wf-cover + the cause); nothing here is styled.
-	     <session-notice kind="session" variant="cover" />        cover with the "Sign in" button
+	     <session-notice kind="session" variant="cover" />        cover; the sign-in is the chip of the bar (no button here)
 	     <session-notice kind="role" needed="technician" />       note: "Requires the Technician role. Your role: Operator."
 	     <session-notice kind="down" variant="cover" @retry="load()" /> -->
 	<div v-if="shown" :class="[variant === 'cover' ? 'wf-cover' : 'wf-notice', (variant === 'cover' ? 'wf-cover--' : 'wf-notice--') + cssKind]" :role="variant === 'cover' ? 'status' : 'note'">
@@ -68,7 +68,8 @@ export default {
 		act() {
 			if (this.action !== null) return this.action
 			if (this.variant !== 'cover') return ''
-			return this.kind === 'session' ? 'sign-in' : this.kind === 'down' ? 'retry' : ''
+			// a session cover has no button of its own: the chip of the bar is the ONE sign-in of the page
+			return this.kind === 'down' ? 'retry' : ''
 		},
 		actLabel() {
 			return this.act === 'retry' ? ts('notice_retry') : ts('notice_sign_in')

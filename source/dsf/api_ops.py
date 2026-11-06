@@ -76,6 +76,8 @@ CONFIRM_TEXTS = {
     "machine.mark_cross": _confirm("machine_confirm_cross_title", "machine_confirm_cross_text"),
     "machine.test_move": _confirm("machine_confirm_testmove_title", "machine_confirm_testmove_text"),
     "workarea.step": _confirm("machine_confirm_area_step_title", "machine_confirm_area_step_text"),
+    "processes.restart": _confirm("processes_confirm_restart_title", "processes_confirm_restart_text"),
+    "service.restart": _confirm("service_restart_confirm_title", "service_restart_confirm_text"),
 }
 
 
@@ -131,6 +133,15 @@ def H(handler, fixed=None, letters=None, value_map=None, xf=None, actor=False):
 
     fn.handler = handler
     return fn
+
+
+def _service_restart(args, ctx):
+    import service_restart
+    reasons, started = service_restart.request(_ctx["bridge"])
+    if reasons:
+        # message: the reasons in the language of the request; error.reasons: [{"code", "message"}] (the same, machine readable)
+        raise ApiError("conflict", M("service_restart_refused", reasons=messages.J([r["message"] for r in reasons], "; ")), reasons=reasons)
+    return {"restarting": True, "message": M("service_restart_restarting")}
 
 
 def _hex(v):
@@ -433,6 +444,22 @@ def _ops():
            {"process": a(S, True, desc="Id of the internal process (as listed by modules.list)."),
             "mode": a(S, True, choices=("auto", "on", "off"), desc="auto: runs only while a plugin that needs it is enabled; on: always; off: never (applies at the next start of the service).")},
            "Chooses how an internal process of the service runs. Saved in the configuration."),
+        Op("processes.pause", H("processes", {"C": "pause"}, {"process": "P"}), WRITE,
+           {"process": a(S, True, desc="Id of the process (only the ones the list marks pausable: consumption, motors, maintenance, pid_trace, trace).")},
+           "Pauses a data process of the service: its loop keeps its heartbeat but does nothing until resumed. In memory only: a restart of the service runs it again."),
+        Op("processes.resume", H("processes", {"C": "resume"}, {"process": "P"}), WRITE,
+           {"process": a(S, True, desc="Id of the process (as for processes.pause).")},
+           "Resumes a paused data process."),
+        Op("processes.restart", H("processes", {"C": "restart"}, {"process": "P"}), WRITE,
+           {"process": a(S, True, desc="Id of the process (as for processes.pause).")},
+           "Asks a data process to end its loop and start again (the supervisor relaunches it at once, without an error or a wait). It is cooperative: "
+           "a thread that is blocked inside a call cannot answer, so the call returns ok with requested=true and the process list shows restart_pending_s growing. "
+           "Needs a confirmation in the page (level 2).", confirm={"level": 2, "key": "processes.restart"}),
+        Op("service.restart", _service_restart, ADMIN, {},
+           "Restarts the whole service (the process ends with a non-zero code and DSF starts it again). The protections are off for a few seconds, so it is "
+           "refused unless the machine is idle or off with no job, laser, movement or protection alarm: the refusal (code conflict) lists the reasons "
+           "in error.reasons. It answers first and ends the process about a second later. Level 3 confirmation.",
+           confirm={"level": 3, "key": "service.restart"}),
         Op("examples.list", H("examples", {"C": "list"}, {"plugin": "P"}), READ,
            {"plugin": a(S, True, desc="Id of the plugin that offers the examples (for example WorkshopJog).")},
            "Lists the example files a plugin offers (commented macros to edit) with their state: configured, example (all commented, still to configure) or missing.", log=False),

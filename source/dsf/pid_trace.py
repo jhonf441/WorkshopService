@@ -145,6 +145,12 @@ def run_loop(bridge, config, stop=lambda: False, model_source=None, sleep=None, 
         machine_state.on_change(listener)
     try:
         while not stop():
+            _g = heartbeats.gate(LABEL)  # pause / restart from the page (heartbeats.py); never raises
+            if _g == "restart":
+                return  # the finally below saves the record
+            if _g == "pause":
+                time.sleep(1)
+                continue
             _cycle(model_source, sleep)
     finally:
         with _lock:

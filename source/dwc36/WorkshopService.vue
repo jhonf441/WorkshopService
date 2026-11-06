@@ -193,42 +193,34 @@
 						<div v-if="!processes.length" class="grey--text">
 							{{ $t('plugins.WorkshopService.servicePage.waiting_for_backend_data_needs') }}
 						</div>
-						<!-- summary tiles, filters and one card per process (what it is, pace, CPU and its last minutes) -->
+						<!-- summary tiles, filters, search and the five groups (safety, machine, data, support, separate services), one row per process -->
 						<processes-summary
 :service="serviceOwn" :process="processInfo" :processes="processes" :count="count"
-:load="loadDuet" :ipc="ipc" :hist-service="histProc.service" :guard="guardStatus"
-						/>
-						<div v-if="processes.length" class="d-flex align-center flex-wrap mb-2" style="gap:6px">
-							<v-chip
-								v-for="c in procCategories" :key="c.cat" x-small label
-								outlined :class="{ 'wf-on': procCat === c.cat }"
-								@click="procCat = procCat === c.cat ? null : c.cat"
-							>{{ c.cat }} ({{ c.n }})</v-chip>
-							<v-spacer />
-							<v-btn-toggle v-model="procFilter" dense mandatory color="primary">
-								<v-btn small value="all">{{ $t('plugins.WorkshopService.procDocs.ui_filter_all') }}</v-btn>
-								<v-btn small value="problems">{{ $t('plugins.WorkshopService.procDocs.ui_filter_problems') }}</v-btn>
-							</v-btn-toggle>
+:load="loadDuet" :ipc="ipc" :hist-service="histProc.service" :guard="guardStatus" :safety="safety" :pending="pending" :paused="pausedItems"
+:restart="svcRestart" @restart-service="restartService"
+/>
+						<div v-if="procItems.length" class="svc-pf" role="group" :aria-label="$t('plugins.WorkshopService.procDocs.ui_filters_aria')">
+							<button
+								v-for="f in procFilters" :key="f.id" type="button" class="svc-pf-pill"
+								:aria-pressed="procFilterNow === f.id ? 'true' : 'false'" @click="procFilter = f.id"
+							>{{ f.label }}<span class="svc-pf-n"> {{ f.n }}</span></button>
 						</div>
 						<v-text-field
-							v-if="processes.length > 6" v-model="procSearch" dense hide-details clearable outlined class="mb-2"
+							v-if="procItems.length > 6" v-model="procSearch" dense hide-details clearable outlined class="mb-2"
 							:placeholder="$t('plugins.WorkshopService.procDocs.ui_search')" prepend-inner-icon="mdi-magnify"
 						/>
-						<div v-if="processes.length && !processesFiltered.length" class="text-caption grey--text mb-2">{{ $t('plugins.WorkshopService.procDocs.ui_none_match') }}</div>
-						<!-- the long list, by category: each group opens by tapping its header (open by itself when it has a problem or when searching) -->
-						<div v-for="g in procGroups" :key="g.cat" class="svc-group">
-							<a href="#" class="svc-group-cab" @click.prevent="$set(procOpen, g.cat, !groupOpen(g))">
-								<v-icon x-small>{{ groupOpen(g) ? 'mdi-chevron-down' : 'mdi-chevron-right' }}</v-icon>
-								<span class="svc-group-name">{{ g.cat }}</span>
-								<span class="grey--text">({{ g.items.length }})</span>
-								<v-spacer />
-								<v-chip v-if="g.problems" x-small label color="warning" dark>{{ g.problems }}</v-chip>
-								<v-icon v-else x-small color="success">mdi-check-circle-outline</v-icon>
-							</a>
-							<div v-if="groupOpen(g)">
-								<process-row v-for="p in g.items" :key="p.id" :p="p" :hist="histProc.proc[p.id] || null" @mode="m => changeMode(p.id, m)" />
-							</div>
-						</div>
+						<div v-if="procItems.length && !procGroups.length" class="text-caption grey--text mb-2">{{ $t('plugins.WorkshopService.procDocs.ui_none_match') }}</div>
+						<!-- each group says what it is for and how many of its processes are on time; a filter does not change those numbers -->
+						<section v-for="g in procGroups" :key="g.id" class="svc-pg" :class="'svc-pg--' + g.id">
+							<header class="svc-pg-head">
+								<b>{{ $t('plugins.WorkshopService.procDocs.ui_group_' + g.id) }}</b>
+								<span>{{ $t('plugins.WorkshopService.procDocs.ui_group_count', { ok: g.ok, n: g.total }) }} &middot; {{ $t('plugins.WorkshopService.procDocs.ui_group_' + g.id + '_desc') }}</span>
+							</header>
+							<process-row
+								v-for="p in g.items" :key="p.id" :p="p" :hist="histProc.proc[p.id] || null"
+								@mode="m => changeMode(p.id, m)" @pause="controlProcess(p.id, 'pause')" @resume="controlProcess(p.id, 'resume')" @restart="controlProcess(p.id, 'restart')" @go-path="to => $router.push(to)" @go-anchor="goA"
+							/>
+						</section>
 						<!-- Load toward the board: what this service asks the Duet for (DuetControlServer) -->
 						<div class="text-overline grey--text mt-3">{{ $t('plugins.WorkshopService.servicePage.load_this_service_puts_on_the') }}</div>
 						<div class="svc-proc">
@@ -277,37 +269,6 @@
 							</div>
 							<div v-if="lightsIpc" class="text-caption ml-10 mt-1 svc-metricas grey--text">
 								<span :title="$t('plugins.WorkshopService.servicePage.what_the_lights_module_still_asks')">{{ $t('plugins.WorkshopService.servicePage.lights_ipc', { r: lightsIpc.reads_min, c: lightsIpc.commands_min, p: lightsIpc.publishes_min }) }}</span>
-							</div>
-						</div>
-						<!-- Servicios aparte de WorkshopService (puente, plugins con proceso propio) -->
-						<div v-if="external.length" class="text-overline grey--text mt-3">{{ $t('plugins.WorkshopService.servicePage.separate_services') }}</div>
-						<div v-for="x in external" :key="x.id" class="svc-proc">
-							<div class="d-flex align-center flex-wrap">
-								<v-icon class="mr-3 svx-ico">{{ x.icon }}</v-icon>
-								<div class="svc-proc-txt">
-									<div class="font-weight-medium">{{ x.title }}</div>
-									<div class="text-caption grey--text">{{ x.description }}</div>
-									<div v-if="x.detail" class="text-caption svc-detail"><v-icon x-small class="mr-1">mdi-information-outline</v-icon>{{ x.detail }}</div>
-								</div>
-								<v-spacer />
-								<v-chip small label dark :color="x.state.color">{{ x.state.text }}</v-chip>
-							</div>
-							<div class="text-caption ml-10 mt-1">
-								<span v-for="b in x.buses" :key="b.id" class="mr-3" :class="b.open ? 'success--text' : (b.error ? 'warning--text' : 'grey--text')" :title="b.error || ''">
-									<v-icon x-small :color="b.open ? 'success' : (b.error ? 'warning' : 'grey')">mdi-serial-port</v-icon>
-									{{ b.name }}: {{ b.open ? $t('plugins.WorkshopService.servicePage.open') : (b.error ? $t('plugins.WorkshopService.servicePage.with_a_problem') : $t('plugins.WorkshopService.servicePage.closed')) }}
-									<span class="grey--text">{{ $t('plugins.WorkshopService.servicePage.bus_stats', { ok: b.stats.ok, nr: b.stats.without_response, crc: b.stats.crc }) }}</span>
-								</span>
-								<a v-if="x.path && hasPath(x.path)" href="#" class="ml-1" @click.prevent="$router.push(x.path)">{{ $t('plugins.WorkshopService.servicePage.open_the_page') }}</a><a v-else-if="x.anchor" href="#" class="ml-1" @click.prevent="goA(x.anchor)">{{ $t('plugins.WorkshopService.servicePage.see_details_and_settings') }}</a>
-							</div>
-							<div class="ml-10 mt-1">
-								<a href="#" class="text-caption" @click.prevent="$set(docExt, x.id, !docExt[x.id])">
-									<v-icon x-small color="primary">{{ docExt[x.id] ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-									{{ docExt[x.id] ? $t('plugins.WorkshopService.procDocs.ext_less') : $t('plugins.WorkshopService.procDocs.ext_detail') }}
-								</a>
-							</div>
-							<div v-if="docExt[x.id]" class="svc-doc-auto ml-10 mt-1">
-								<div v-for="k in ['what', 'how', 'depends', 'why']" :key="k"><b>{{ $t('plugins.WorkshopService.procDocs.ext_' + k) }}</b> {{ $t('plugins.WorkshopService.procDocs.ext_' + x.id + '_' + k) }}</div>
 							</div>
 						</div>
 					</v-card-text>
@@ -507,7 +468,8 @@
 					{{ key.has === null ? $t('plugins.WorkshopService.common.no_data_2') : (key.has ? $t('plugins.WorkshopService.servicePage.set') : $t('plugins.WorkshopService.servicePage.no_password')) }}
 				</v-chip>
 			</v-card-title>
-			<v-card-text>
+			<v-card-text @click="touchPasswordLock">
+				<lock-reason op="password.set" need="admin" class="mb-2 svc-lock-reason" />
 				<div class="text-caption grey--text mb-2">
 					{{ $t('plugins.WorkshopService.servicePage.with_a_password_dwc_asks_for') }}
 				</div>
@@ -516,21 +478,21 @@
 				</div>
 				<v-row dense>
 					<v-col cols="12" sm="5">
-						<v-text-field v-model="key.newEntry" type="password" :label="$t('plugins.WorkshopService.servicePage.new_password')" dense outlined hide-details autocomplete="new-password" />
+						<v-text-field v-model="key.newEntry" type="password" :disabled="!canDo('password.set')" :label="$t('plugins.WorkshopService.servicePage.new_password')" dense outlined hide-details autocomplete="new-password" />
 					</v-col>
 					<v-col cols="12" sm="5">
-						<v-text-field v-model="key.repeat" type="password" :label="$t('plugins.WorkshopService.servicePage.repeat_the_password')" dense outlined hide-details autocomplete="new-password" />
+						<v-text-field v-model="key.repeat" type="password" :disabled="!canDo('password.set')" :label="$t('plugins.WorkshopService.servicePage.repeat_the_password')" dense outlined hide-details autocomplete="new-password" />
 					</v-col>
 					<v-col cols="12" sm="2" class="d-flex align-center">
-						<v-btn small block :color="key.armed === 'set' ? 'error' : 'primary'" :loading="key.sending" :disabled="!keyValid" @click="putKey">
-							{{ key.armed === 'set' ? $t('plugins.WorkshopService.servicePage.confirm_q') : (key.has ? $t('plugins.WorkshopService.servicePage.change') : $t('plugins.WorkshopService.servicePage.set_2')) }}
+						<v-btn small block :color="key.armed === 'set' ? 'error' : 'primary'" :loading="key.sending" :disabled="!keyValid || !canDo('password.set')" @click="putKey">
+							<v-icon v-if="!canDo('password.set')" small left aria-hidden="true">mdi-lock-outline</v-icon>{{ key.armed === 'set' ? $t('plugins.WorkshopService.servicePage.confirm_q') : (key.has ? $t('plugins.WorkshopService.servicePage.change') : $t('plugins.WorkshopService.servicePage.set_2')) }}
 						</v-btn>
 					</v-col>
 				</v-row>
 				<div v-if="key.newEntry && !keyValid" class="text-caption warning--text mt-1">{{ keyProblem }}</div>
 				<div class="d-flex align-center mt-3">
-					<v-btn v-if="key.has" small outlined :color="key.armed === 'clear' ? 'error' : null" :disabled="key.sending" @click="removeKey">
-						{{ key.armed === 'clear' ? $t('plugins.WorkshopService.servicePage.confirm_q') : $t('plugins.WorkshopService.servicePage.remove_the_password') }}
+					<v-btn v-if="key.has" small outlined :color="key.armed === 'clear' ? 'error' : null" :disabled="key.sending || !canDo('password.clear')" @click="removeKey">
+						<v-icon v-if="!canDo('password.clear')" small left aria-hidden="true">mdi-lock-outline</v-icon>{{ key.armed === 'clear' ? $t('plugins.WorkshopService.servicePage.confirm_q') : $t('plugins.WorkshopService.servicePage.remove_the_password') }}
 					</v-btn>
 					<span v-if="key.msg" class="text-caption ml-3">{{ key.msg }}</span>
 				</div>
@@ -690,7 +652,9 @@ import SideTabs from './SideTabs.vue'
 import PageHeader from './PageHeader.vue'
 import SessionNotice from './SessionNotice.vue'
 import HelpGuide from './HelpGuide.vue'
+import LockReason from './LockReason.vue'
 import { roleMixin } from './role-mixin.js'
+import { blinkLocked } from './lock-attention.js'
 import { signedOut } from './workshop-auth.js'
 import { pluginBadge } from './plugin-colors.js'
 import { PLUGIN_ID } from './plugin-id.js'
@@ -709,10 +673,10 @@ import ConfigPackage from './ConfigPackage.vue'
 import StartupMaster from './StartupMaster.vue'
 import { matches } from './search.js'
 import { hist as histProc, sample } from './processes-history.js'
+import { buildGroups, safetyTally, filterCounts, pendingList, pausedList, modeFailure, configuredMode, activeFilterIds, effectiveFilter, pauseKey, serviceRestartFailure, restartDone } from './processes-groups.js'
 // same color per LED as the rest of the interface
 import { ledColor } from './LedStrip.vue'
 
-// Icono, color y categoria de cada proceso interno (dsf/latidos.py)
 // Calls to the board: warning limit (calls/min) and the area of each type of call
 const IPC_LIMIT = 240;
 const IPC_AREAS = {
@@ -722,20 +686,8 @@ const IPC_AREAS = {
 	servicesInternal: { area: 'services' }, healthPi: { area: 'health' }, camera_relay: { area: 'camera' }
 };
 
-const PROC_INFO = {
-	interceptor: { icon: 'mdi-code-braces', color: '#5C6BC0', cat: 'G-code' },
-	status_light: { icon: 'mdi-led-on', color: '#FFB300', cat: i18n.t('plugins.WorkshopService.servicePage.lights_and_status') },
-	consumption: { icon: 'mdi-flash', color: '#8E24AA', cat: i18n.t('plugins.WorkshopService.servicePage.energy') },
-	jobs: { icon: 'mdi-briefcase-outline', color: '#1E88E5', cat: i18n.t('plugins.WorkshopService.servicePage.jobs') },
-	motors: { icon: 'mdi-engine', color: '#00897B', cat: i18n.t('plugins.WorkshopService.servicePage.machine') },
-	jog: { icon: 'mdi-gamepad-variant', color: '#039BE5', cat: i18n.t('plugins.WorkshopService.servicePage.machine') },
-	events: { icon: 'mdi-bell-alert', color: '#E53935', cat: i18n.t('plugins.WorkshopService.common.activity') },
-	trace: { icon: 'mdi-vector-polyline', color: '#43A047', cat: i18n.t('plugins.WorkshopService.servicePage.jobs') },
-	health: { icon: 'mdi-heart-pulse', color: '#D81B60', cat: i18n.t('plugins.WorkshopService.servicePage.system') }
-};
 // section of the side bar that holds each anchor (the link "see details and settings" of the processes list)
 const ANCHOR_SECTION = { 'svc-bridge': 'bridge', 'svc-base': 'base' };
-const PROC_OTHER = { icon: 'mdi-cog', color: '#757575', cat: i18n.t('plugins.WorkshopService.servicePage.other') };
 
 
 // Commands that act on the machine or the current: testing them asks for a double tap
@@ -765,7 +717,7 @@ export default {
 	mixins: [roleMixin],
 	// what came from the session of the person who left (ESTANDAR 3.3): put back to its first value on sign-out and on a change of role
 	sessionData: ['apiOps', 'tests'],
-	components: { PageHeader, SessionNotice, HelpGuide, BlackBoxCard: BlackBoxCard, ConfigPackage, StartupMaster, SideTabs, BridgeCard: BridgeCard, ReceivedCommands, Database: Database, ApiKeys: ApiKeys, UsersCard, RolesCard, AuditCard, ApiDetail: ApiDetail, ProcessRow: ProcessRow, ProcessesSummary: ProcessesSummary },
+	components: { PageHeader, SessionNotice, LockReason, HelpGuide, BlackBoxCard: BlackBoxCard, ConfigPackage, StartupMaster, SideTabs, BridgeCard: BridgeCard, ReceivedCommands, Database: Database, ApiKeys: ApiKeys, UsersCard, RolesCard, AuditCard, ApiDetail: ApiDetail, ProcessRow: ProcessRow, ProcessesSummary: ProcessesSummary },
 	data() {
 		return {
 			section: 'summary', // the section chosen in the side bar
@@ -777,12 +729,17 @@ export default {
 			nowSvc: Date.now(),
 			histProc,
 			procFilter: 'all',
-			procCat: null,
 			procSearch: '',
 			modeError: {},
+			modeTick: {},
+			ctlBusy: {}, // process id -> true while a pause / resume / restart of that row is on its way
+			ctlError: {}, // process id -> { kind, text } of the last refused or failed one
+			ctlAction: {}, // process id -> the action on its way ('pause' | 'resume' | 'restart'), for the spinner of that button
+			ctlDone: {}, // process id -> the last action the service accepted: a confirmation line under the buttons
+			ctlLocal: {}, // process id -> { paused, restart_pending, until }: what the service answered, shown at once until the next publication
+			ctlTick: 0, // bumped when a local answer expires, so the rows are worked out again
+			svcRestart: { phase: '', failure: null, before: null }, // the restart of the whole service asked from the summary
 			docAuto: { air: false, lights: false, poweroff: false, job: false },
-			docExt: {},
-			procOpen: {},
 			filter: '',
 			copied: null,
 			catFilter: null,
@@ -812,6 +769,11 @@ export default {
 			if (id) {
 				this.irAcuando(id);
 			}
+		},
+		// the service came back after a restart asked from here: a new pid or a smaller uptime than before the request
+		processInfo(now) {
+			if (!this.svcRestart.phase || !this.connected) return;
+			if (restartDone(this.svcRestart.before, now)) this.clearSvcRestart();
 		},
 		rs485Ts(v, old) {
 			if (v && v !== old) {
@@ -1218,38 +1180,70 @@ export default {
 			const raw = (this.pluginData('servicesInternal') || {}).processes || {};
 			return Object.keys(raw).map(id => {
 				const p = Object.assign({ id }, raw[id]);
-				p.info = PROC_INFO[id] || PROC_OTHER;
+				p.group = p.group || 'support'; // a service older than the groups publishes none
+				p.locked = !!p.locked;
 				p.errorRecent = p.age_error_s != null && p.age_error_s < 3600;
 				p.module = ((this.pluginData('servicesInternal') || {}).modules || {})[id] || null;
-				p.modeError = this.modeError[id] || '';
+				p.modeError = this.modeError[id] || null;
+				p.modeTick = this.modeTick[id] || 0;
+				p.ctlBusy = !!this.ctlBusy[id];
+				p.ctlAction = this.ctlAction[id] || '';
+				p.ctlDone = this.ctlDone[id] || '';
+				// what the service just answered is shown at once; the next publication (a second or so later) takes over after a few seconds
+				void this.ctlTick;
+				const local = this.ctlLocal[id];
+				if (local && Date.now() < local.until) {
+					p.paused = local.paused;
+					p.restart_pending = local.restart_pending;
+					if (local.restart_pending && !(p.restart_pending_s > 0)) p.restart_pending_s = 0;
+				}
+				p.ctlError = this.ctlError[id] || null;
 				p.state = this.stateProcess(p);
 				return p;
 			});
 		},
-		procCategories() {
-			const by = {};
-			this.processes.forEach(p => {
-				const c = p.info.cat;
-				by[c] = by[c] || { cat: c, color: p.info.color, n: 0 };
-				by[c].n++;
+		// the separate services (Vision, RS485, the bridge, the database) as rows of the group "ext": the state is the one `external` already
+		// worked out, it is not computed again here
+		externalRows() {
+			return this.external.map(x => ({
+				id: x.id, external: true, group: 'ext', locked: false, module: null, restarts: 0,
+				title: x.title, description: x.description, detail: x.detail, buses: x.buses,
+				state: { level: x.level, color: x.state.color, text: x.state.text, detail: x.detail || '' },
+				link: x.path && this.hasPath(x.path) ? { path: x.path } : (x.anchor ? { anchor: x.anchor } : null)
+			}));
+		},
+		// ONE list for the groups, the filters and the Safety tile: the internal processes and the separate services
+		procItems() {
+			return this.processes.concat(this.externalRows).map(p => {
+				p.search = this.textSearch(p);
+				return p;
 			});
-			return Object.keys(by).map(k => by[k]);
+		},
+		// the selected filter; 'paused' falls back to 'all' when nothing is paused any more (its pill is gone)
+		procFilterNow() {
+			return effectiveFilter(this.procFilter, this.procItems);
 		},
 		procGroups() {
-			const by = {};
-			this.processesFiltered.forEach(p => {
-				const c = p.info.cat;
-				by[c] = by[c] || { cat: c, color: p.info.color, items: [], problems: 0 };
-				by[c].items.push(p);
-				if (p.state.level > 0 || (p.restarts || 0) > 0) by[c].problems++;
-			});
-			return Object.keys(by).map(k => by[k]);
+			return buildGroups(this.procItems, this.procFilterNow, this.procSearch, matches);
 		},
-		processesFiltered() {
-			return this.processes.filter(p =>
-				(this.procFilter === 'all' || p.state.level > 0 || (p.restarts || 0) > 0) &&
-				(!this.procCat || p.info.cat === this.procCat) &&
-				matches(this.textSearch(p), this.procSearch));
+		procFilters() {
+			const n = filterCounts(this.procItems);
+			const D = 'plugins.WorkshopService.procDocs.';
+			return activeFilterIds(this.procItems).map(id => ({
+				id, n: n[id],
+				label: this.$t(D + (id === 'all' ? 'ui_filter_all' : (id === 'problems' ? 'ui_filter_problems' : 'ui_filter_' + id)))
+			}));
+		},
+		safety() {
+			return safetyTally(this.procItems);
+		},
+		// the processes paused from the page: { id, title } for the banner of the summary
+		pausedItems() {
+			return pausedList(this.procItems).map(p => ({ id: p.id, title: p.title || p.id }));
+		},
+		// the processes whose stored mode only applies when the service restarts: { id, title, mode } for the banner of the summary
+		pending() {
+			return pendingList(this.procItems).map(p => ({ id: p.id, title: p.title || p.id, mode: configuredMode(p) }));
 		},
 		// ONE list for every number of the strip, the chips and the header: the internal processes plus the separate services (bridge,
 		// database, RS485, Vision), each with its level (0 fine, 1 warning, 2 problem). While the service is not connected the page
@@ -1266,6 +1260,7 @@ export default {
 		// the chip next to the title: the same counts, worded as the strip words them
 		headerChip() {
 			const c = this.count;
+			if (!this.connected && this.svcRestart.phase) return { color: 'warning', icon: 'mdi-restart', text: this.$t('plugins.WorkshopService.procDocs.ui_svc_restarting') }; // asked by a person: a calm state, not a failure
 			if (!this.connected) return { color: 'error', icon: 'mdi-lan-disconnect', text: this.$t('plugins.WorkshopService.servicePage.backend_disconnected') };
 			if (c.bad) return { color: 'error', icon: 'mdi-close-circle', text: this.$t('plugins.WorkshopService.servicePage.n_with_problems', { n: c.bad }) };
 			if (c.notice) return { color: 'warning', icon: 'mdi-alert', text: this.$t('plugins.WorkshopService.servicePage.n_with_warnings', { n: c.notice }) };
@@ -1343,6 +1338,7 @@ export default {
 		clearInterval(this._clockSvc);
 		clearInterval(this._sampling);
 		clearTimeout(this._closeT);
+		clearTimeout(this._svcSlowT);
 		if (this._offIdentity) this._offIdentity();
 	},
 	methods: {
@@ -1535,6 +1531,12 @@ export default {
 			this._keyT = setTimeout(() => { this.key.armed = null; }, 4000);
 			return false;
 		},
+		// a touch on the password card while this role cannot change it (a disabled control emits no click): its one reason blinks
+		touchPasswordLock(ev) {
+			if (this.canDo('password.set') && this.canDo('password.clear')) return
+			const el = ev && ev.currentTarget ? ev.currentTarget : null
+			if (el) blinkLocked(el, signedOut())
+		},
 		async putKey() {
 			if (!this.keyValid || !this.armKey('set')) return;
 			this.key.sending = true;
@@ -1697,25 +1699,112 @@ export default {
 		// everything a person may type to find a process: its name, what it does, its category and the explanations of its detail
 		textSearch(p) {
 			const D = 'plugins.WorkshopService.procDocs.'
-			const docs = ['what', 'why', 'fails', 'uses', 'where'].map(k => (this.$te(D + p.id + '_' + k) ? this.$t(D + p.id + '_' + k) : '')).join(' ')
-			return [p.title, p.description, p.id, p.info.cat, docs].join(' ')
+			const keys = p.external ? ['what', 'how', 'depends', 'why'].map(k => 'ext_' + p.id + '_' + k) : ['what', 'why', 'fails', 'uses', 'where'].map(k => p.id + '_' + k)
+			const docs = keys.map(k => (this.$te(D + k) ? this.$t(D + k) : '')).join(' ')
+			return [p.title, p.description, p.id, this.$t(D + 'ui_group_' + p.group), docs].join(' ')
 		},
-		groupOpen(g) {
-			if (this.procOpen[g.cat] !== undefined) return this.procOpen[g.cat];
-			// by itself: open with a problem, or while looking for something
-			return g.problems > 0 || !!this.procSearch || !!this.procCat || this.procFilter === 'problems';
-		},
+		// the switch of a process: the answer says if it was kept; a refusal or a failure is shown next to the row and the switch goes back to
+		// the mode that is really stored (the row re-draws its buttons when modeTick changes)
 		async changeMode(id, modo) {
-			this.$set(this.modeError, id, '');
+			this.$set(this.modeError, id, null);
+			let failure = null;
 			try {
-				await api('modules.set', { process: id, mode: modo });
+				failure = modeFailure(await api('modules.set', { process: id, mode: modo }), null);
 			} catch (e) {
-				this.$set(this.modeError, id, i18n.t('plugins.WorkshopService.servicePage.mode_failed', { msg: String((e && e.message) || e) }));
+				failure = modeFailure(null, e);
 			}
+			if (!failure) return;
+			if (failure.kind === 'error' || failure.kind === 'empty') {
+				failure.text = i18n.t('plugins.WorkshopService.servicePage.mode_failed', { msg: failure.text || '' });
+			}
+			this.$set(this.modeError, id, failure);
+			this.$set(this.modeTick, id, (this.modeTick[id] || 0) + 1);
+		},
+		// a person asked to pause / resume / restart ONE process: the answer says if it was kept; a refusal or failure shows next to the row. A cancelled
+		// confirmation is no change (nothing is shown); the new state arrives with the next data of the service
+		async controlProcess(id, action) {
+			if (this.ctlBusy[id]) return;
+			this.$set(this.ctlError, id, null);
+			this.$set(this.ctlDone, id, '');
+			this.$set(this.ctlAction, id, action);
+			this.$set(this.ctlBusy, id, true);
+			let failure = null;
+			let result = null;
+			try {
+				result = await api('processes.' + action, { process: id });
+				failure = modeFailure(result, null);
+			} catch (e) {
+				if (e && e.code === 'cancelled') {
+					this.$set(this.ctlBusy, id, false);
+					this.$set(this.ctlAction, id, '');
+					return;
+				}
+				failure = modeFailure(null, e);
+			}
+			this.$set(this.ctlBusy, id, false);
+			this.$set(this.ctlAction, id, '');
+			if (failure) {
+				if (failure.kind === 'error' || failure.kind === 'empty') {
+					failure.text = i18n.t('plugins.WorkshopService.procDocs.ui_proc_failed', { msg: failure.text || '' });
+				}
+				this.$set(this.ctlError, id, failure);
+				return;
+			}
+			// accepted: show it AT ONCE (the next publication of the service, a second or so later, takes over): the state the service answered, and a
+			// line under the buttons saying what happens next
+			let res = result;
+			if (typeof res === 'string') {
+				try {
+					res = JSON.parse(res);
+				} catch (e) {
+					res = null;
+				}
+			}
+			const st = (res && res.status) || {};
+			const paused = action === 'pause' ? true : action === 'resume' ? false : (st.paused !== undefined && st.paused !== null ? !!st.paused : false);
+			const pending = action === 'restart' ? !!(st.restart_pending || (res && res.requested)) : false;
+			this.$set(this.ctlLocal, id, { paused, restart_pending: pending, until: Date.now() + 8000 });
+			this.$set(this.ctlDone, id, action);
+			setTimeout(() => { this.ctlTick++; }, 8100);
+			setTimeout(() => { if (this.ctlDone[id] === action) this.$set(this.ctlDone, id, ''); }, 20000);
+		},
+		clearSvcRestart() {
+			clearTimeout(this._svcSlowT);
+			this.svcRestart = { phase: '', failure: null, before: null };
+		},
+		// the whole service: the shared dialog asks for confirmation (level 3); while it goes down and comes back the page shows a calm state, never a red
+		// error, and gives up waiting after 90 s with a note
+		async restartService() {
+			if (this.svcRestart.phase) return;
+			const before = this.processInfo ? { pid: this.processInfo.pid, age_s: this.processInfo.age_s } : null;
+			this.svcRestart = { phase: '', failure: null, before };
+			let failure = null;
+			try {
+				failure = serviceRestartFailure(await api('service.restart', {}), null, String(i18n.locale || 'en').slice(0, 2));
+			} catch (e) {
+				failure = serviceRestartFailure(null, e, String(i18n.locale || 'en').slice(0, 2));
+			}
+			if (failure && failure.kind === 'cancelled') {
+				this.clearSvcRestart();
+				return;
+			}
+			if (failure) {
+				this.svcRestart = { phase: '', failure, before: null };
+				return;
+			}
+			this.svcRestart = { phase: 'restarting', failure: null, before };
+			clearTimeout(this._svcSlowT);
+			this._svcSlowT = setTimeout(() => {
+				if (this.svcRestart.phase === 'restarting') this.svcRestart = Object.assign({}, this.svcRestart, { phase: 'slow' });
+			}, 90000);
 		},
 		stateProcess(p) {
-			if (p.idle) {
+		if (p.idle) {
 				return { level: 0, color: 'grey', icon: 'mdi-sleep', text: i18n.t('plugins.WorkshopService.servicePage.resting'), detail: i18n.t('plugins.WorkshopService.servicePage.resting_detail') };
+			}
+			if (pauseKey(p) && p.live) {
+				// paused by a person: it ticks, so it is not late; a calm gray state of its own
+				return { level: 0, color: 'grey', icon: 'mdi-pause-circle-outline', text: i18n.t('plugins.WorkshopService.procDocs.ui_tag_paused'), detail: i18n.t('plugins.WorkshopService.procDocs.ui_paused_detail') };
 			}
 			if (!p.live) {
 				return { level: 2, color: 'error', icon: 'mdi-close-circle', text: i18n.t('plugins.WorkshopService.servicePage.stopped'), detail: i18n.t('plugins.WorkshopService.servicePage.crashed_and_is_restarting') };
@@ -1800,9 +1889,20 @@ export default {
 }
 .svc-height { flex: 1 1 auto; }
 .svc-col { display: flex; flex-direction: column; }
-.svc-group { margin-bottom: 4px; }
-.svc-group-cab { display: flex; align-items: center; gap: 6px; padding: 6px 4px; font-size: 13px; text-decoration: none; color: inherit; border-bottom: 1px solid var(--wf-line); }
-.svc-group-name { font-weight: 600; }
+.svc-pf { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.svc-pf-pill { font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 16px; border: 1px solid var(--wf-line); background: none; color: inherit; cursor: pointer; }
+.svc-pf-pill:hover { background: var(--wf-soft); }
+.svc-pf-pill:focus-visible { outline: 2px solid var(--wf-info); outline-offset: 2px; }
+.svc-pf-pill[aria-pressed="true"] { border-color: var(--wf-info); color: var(--wf-c-info-text); background: var(--wf-c-info-bg); font-weight: 600; }
+.svc-pf-n { opacity: 0.65; font-variant-numeric: tabular-nums; }
+.svc-pg { border: 1px solid var(--wf-line); border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+.svc-pg-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; padding: 10px 14px; border-bottom: 1px solid var(--wf-line); border-left: 4px solid #8fa3ad; background: var(--wf-soft); }
+.svc-pg-head b { font-size: 15px; }
+.svc-pg-head span { font-size: 13px; opacity: 0.7; }
+.svc-pg--safety > .svc-pg-head { border-left-color: #b79cf0; }
+.svc-pg--machine > .svc-pg-head { border-left-color: #5aa9ff; }
+.svc-pg--data > .svc-pg-head { border-left-color: #5cc28a; }
+.svc-pg--ext > .svc-pg-head { border-left-color: #f0a23c; }
 /* a row of the lists (process, automation): a divider, no side bar, no tint */
 .svc-proc, .svc-auto { padding: 10px 0; border-top: 1px solid var(--wf-line); }
 .svc-proc-txt { min-width: 0; flex: 1 1 200px; }

@@ -226,6 +226,12 @@ def run_loop(bridge, config, stop=lambda: False, pause=None):
     homed_before = None  # homed flags of the previous cycle (a change triggers a CHOPCONF read without the page)
 
     while not stop():
+        _g = heartbeats.gate("motors")  # pause / restart from the page (heartbeats.py); never raises
+        if _g == "restart":
+            return
+        if _g == "pause":
+            time.sleep(1)
+            continue
         # the Motors plugin is stopped or disabled (Settings > Plugins): the drivers are not polled (service_modules.py)
         if not service_modules.is_active(service_modules.MOTORS):
             heartbeats.ok("motors")

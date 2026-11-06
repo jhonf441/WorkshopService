@@ -123,7 +123,7 @@ OP_ROLES = {
     "notifications.new_topic": TECHNICIAN, "notifications.type": TECHNICIAN, "notifications.option": TECHNICIAN,
     "notifications.quiet_hours": TECHNICIAN, "notifications.video": TECHNICIAN,
     "db.places": TECHNICIAN, "db.backup": TECHNICIAN, "db.keep": TECHNICIAN, "db.settings": TECHNICIAN,
-    "modules.list": TECHNICIAN, "modules.set": TECHNICIAN, "examples.list": TECHNICIAN, "examples.create": TECHNICIAN,
+    "modules.list": TECHNICIAN, "modules.set": TECHNICIAN, "processes.pause": TECHNICIAN, "processes.resume": TECHNICIAN, "processes.restart": TECHNICIAN, "examples.list": TECHNICIAN, "examples.create": TECHNICIAN,
     "blackbox.lines": TECHNICIAN, "blackbox.hide": TECHNICIAN, "blackbox.show": TECHNICIAN,
     "bridge.test": TECHNICIAN, "bridge.service": TECHNICIAN, "bridge.service.set": TECHNICIAN,
     "power.method": TECHNICIAN, "password.status": TECHNICIAN,
@@ -164,7 +164,7 @@ OP_ROLES = {
     "machine.maintenance.get": OPERATOR, "machine.maintenance.done": TECHNICIAN, "machine.maintenance.plan.set": TECHNICIAN,
     # phase 5: the one-time import from Machine 0.3.0 (reading the state is an operator's; the import writes history and library, so admin)
     # -- admin: shutdown / restart, M950, deleting history, passwords, communication, keys, restoring --
-    "power.off": VIEWER, "power.full_reset": ADMIN, "lights.apply_m950": ADMIN,
+    "power.off": VIEWER, "power.full_reset": ADMIN, "lights.apply_m950": ADMIN, "service.restart": ADMIN,
     "activity.delete": ADMIN, "activity.clear": ADMIN, "history.delete": ADMIN,
     "db.folder": ADMIN, "db.delete_previous": ADMIN, "config.restore": ADMIN, "comms.set": ADMIN,
     "password.set": ADMIN, "password.clear": ADMIN,

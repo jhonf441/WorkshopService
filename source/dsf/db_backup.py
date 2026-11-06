@@ -707,16 +707,33 @@ def _cycle():
         _mant_save(m)
 
 
+def _beat(error=None):
+    """Heartbeat of the process page (heartbeats.py); it must never get in the way of the loop."""
+    try:
+        import heartbeats
+        heartbeats.error("base_backup", error) if error is not None else heartbeats.ok("base_backup")
+    except Exception:
+        pass
+
+
 def _loop():
     time.sleep(60)  # so the rest of the service starts first
     while True:
         try:
             _cycle()
+            _beat()
         except Exception as e:
             _log(f"cycle: {e!r}")
+            _beat(e)
         time.sleep(600)
 
 
 def launch(config, bridge, log=print):
     _st.update(config=config, bridge=bridge, log=log)
+    try:
+        import heartbeats
+        heartbeats.register("base_backup", M("db_backup_process_title"), M("db_backup_process_description"), 90000)  # a backup every day
+        heartbeats.ok("base_backup")  # the first cycle waits 60 s: do not show it as late before it
+    except Exception:
+        pass
     threading.Thread(target=_loop, name="base_backup", daemon=True).start()

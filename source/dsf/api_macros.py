@@ -232,8 +232,18 @@ def _send_reply(reply):
         _state["log"](f"api_macros: could not answer the macro ({e})")
 
 
+def _beat(error=None):
+    """Heartbeat of the process page (heartbeats.py); it must never get in the way of the worker."""
+    try:
+        import heartbeats
+        heartbeats.error("api_macros", error) if error is not None else heartbeats.ok("api_macros")
+    except Exception:
+        pass
+
+
 def _worker():
     q = _state["q"]
+    _beat()
     while True:
         raw = q.get()
         try:
@@ -241,7 +251,9 @@ def _worker():
         except Exception as e:  # noqa: BLE001
             reply = None
             _state["log"](f"api_macros: {e}")
+            _beat(e)
         _send_reply(reply)
+        _beat()
 
 
 def _get(d, *path):
@@ -290,6 +302,13 @@ def start(registry, bridge, log=print, sd_root=None):
         return
     _state["started"] = True
     _state["q"] = queue.Queue(maxsize=20)
+    try:
+        import heartbeats
+        from messages import M
+        # event driven (it waits for a macro request): it ticks at start and after each request, so the expected pace is a day
+        heartbeats.register("api_macros", M("api_macros_process_title"), M("api_macros_process_description"), 86400)
+    except Exception:
+        pass
     threading.Thread(target=_worker, name="api-macros", daemon=True).start()
     try:
         import machine_state

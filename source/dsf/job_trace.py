@@ -629,4 +629,16 @@ def run_loop(bridge, config):
     _running["recorder"] = Recorder(air_gpout=air)
     v = Watchdog(_running["recorder"])
     while True:
+        _g = heartbeats.gate("trace")  # pause / restart from the page (heartbeats.py); never raises
+        if _g != "run":
+            if v.wakes:  # same as when nobody looks: write what there is and mark the gap
+                try:
+                    v.g.sleep()
+                except Exception as e:  # noqa: BLE001
+                    log_file(f"could not rest the recorder: {e}")
+                v.wakes = False
+            if _g == "restart":
+                return
+            time.sleep(1)
+            continue
         time.sleep(v.run_once())

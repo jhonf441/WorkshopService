@@ -4,6 +4,32 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.29.4 -- 2026-11-06
+
+- Password tab: changing or removing the DWC password is administrator-only and the tab now says so: the fields and buttons are disabled for other roles, each button carries its lock, and one reason shows at the top of the card (it blinks on a touch).
+- Database tab: the card shows ONE reason instead of up to six repeated ones, the gated buttons carry their lock, and a touch on the card blinks the reason.
+- Bridge card: the example address in the trusted-IP field is a documentation address (192.0.2.16), no real address of this workshop.
+
+## 2.29.3 -- 2026-11-06
+
+- Processes page, summary: "Restart the service" carries its own lock icon when this role cannot use it, its reason appears only after a touch on it, and the blink rings the words instead of the whole width of the card.
+- Shared design family: a reason next to a locked control (`.wf-reason`) fits its text, so the blink of every page of the service no longer draws a box across the whole row.
+- Bridge card: type an IP address to trust (it only offered the addresses that had already tried to connect).
+- Service page: a session cover (Audit, Users, API) has no sign-in button of its own any more, the chip of the bar is the one sign-in. The mode switch of a process only calls the service when its value really changed.
+
+## 2.29.2 -- 2026-11-06
+
+- Internal processes page: a control this person cannot use now carries its own lock icon (inside each locked button, and once before the mode switch) instead of a loose "sign-in required" line under the group. The reason of a group appears only after a touch on THAT group, and only that reason (and the sign-in chip) blinks; the blink rings the words, not the whole width of the card.
+- The last error of a process is shown in gray with "recovered" when a heartbeat arrived after it; red stays for a process that is failing now.
+
+## 2.29.1 -- 2026-11-06
+
+- Internal processes page, redone in three phases. Phase 1 (visibility): five groups (safety, machine, data, support, separate services) with a safety tile, filters and search; every row answers what it does, what it depends on, what stops if it fails and who reads it. Nine threads that were invisible now report heartbeats (guardian_laser, intercept_watchdog, watchdog_lock, publisher, communication, commands_extra, base_backup, api, api_macros) and the protection guard also watches the laser guardian and the interception watchdog. `dsf/process_catalog.py` classifies every process.
+- Phase 2 (honest control): the auto/on/off switch says when it applies (only `bed_zones` re-reads the mode each pass; every other change applies when the service restarts) and shows a pending-restart note and banner. `modules.set` refuses the nine locked processes. New capability `processes.control` ("Procesos: parar y arrancar"); the four base roles decide as before.
+- Phase 3 (real control): `processes.pause`, `processes.resume` and `processes.restart` for consumption, motors, maintenance, pid_trace and trace (cooperative, in memory, they do not survive a restart), and `service.restart` (administrator, confirmation level 3, only when the machine is idle: status off or idle, no job, no laser, no owned movement, no protection down). `service.restart` is its own capability, not part of `processes.control`. The page answers at once (spinner, state shown before the next publication, confirmation line), a paused process is unmistakable, and a touch on a locked control makes its reason blink.
+- Fixed while trying it on the Pi: threads nobody launches through the supervisor showed as stopped on the page; a tick now marks them live.
+- NOT tried on a real machine: that DSF revives the service after `service.restart` (exit code 1, same path as the interception watchdog) and the five pausable loops against a live job.
+
 ## 2.29.0 -- 2026-11-06
 
 - Service page: the session follows a sign-in made in another tab (the page reconciles its token when it comes back to the front); the package card redraws with the role; the family.css copies carry the shared pieces of the side bar (icon box with a lock mark, text column).

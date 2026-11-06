@@ -80,14 +80,31 @@ def _pass(log):
     return n
 
 
+def _beat(error=None):
+    """Heartbeat of the process page (heartbeats.py); it must never get in the way of the loop."""
+    try:
+        import heartbeats
+        heartbeats.error("commands_extra", error) if error is not None else heartbeats.ok("commands_extra")
+    except Exception:
+        pass
+
+
 def loop(log=print):
     while True:
         try:
             _pass(log)
+            _beat()
         except Exception as e:
             log(f"commands_extra: {e!r}")
+            _beat(e)
         time.sleep(EACH_S)
 
 
 def launch(log=print):
+    try:
+        import heartbeats
+        from messages import M
+        heartbeats.register("commands_extra", M("extra_commands_title"), M("extra_commands_description"), EACH_S)
+    except Exception:
+        pass
     threading.Thread(target=loop, args=(log,), name="commands_extra", daemon=True).start()
