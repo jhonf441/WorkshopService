@@ -35,7 +35,9 @@ NAMES["laser-designs"] = DATA_DIR
 NAMES["machine-calibrations"] = CONFIG_DIR
 NAMES["machine-maintenance"] = CONFIG_DIR
 NAMES["machine-pointsets"] = CONFIG_DIR   # named point sets of the Machine bed view (docs/MACHINE-POINTSETS-CONTRACT.md); an ordinary store: operator reads, technician writes
-SERVICE_ONLY = frozenset({"machine-calibrations", "machine-maintenance"})
+# Pellet layer profiles (pellet_layers_ops.py): validated on every write and read by the thread that heats; settings.set must not bypass that.
+NAMES["pellet-layers"] = CONFIG_DIR
+SERVICE_ONLY = frozenset({"machine-calibrations", "machine-maintenance", "pellet-layers"})
 MAX_BYTES = 2 * 1024 * 1024  # a settings file is small; this stops a runaway client
 NO_FILE_REV = "0"  # rev of a file that does not exist yet
 

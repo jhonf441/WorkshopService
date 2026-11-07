@@ -1,0 +1,23 @@
+{
+ "name": "workshop-gcode-bridge",
+ "version": "3.8.0",
+ "contract": 1,
+ "schema": 2,
+ "files": {
+  "gcode_bridge.py": {
+   "sha256": "2b86aa02c0da5bf98896f31dbbd6797ebc6188682883d2e0ac4fad53c261d7b3"
+  },
+  "live_resume.py": {
+   "sha256": "1ab4f4b93dc8682a1c25456735f97f48736278e81c508af2dade69e3a311c475"
+  },
+  "live_stop.py": {
+   "sha256": "d9043eb113672c72a0534222432a386eaf833a0ce5019f754dff86863afeeaa5"
+  },
+  "workshop-gcode-bridge.service": {
+   "sha256": "bc1dad89311c5d6a5eef7802e597b0bad2dd2e3338ed75d406cac7d6cdf30e7e"
+  },
+  "install.sh": {
+   "sha256": "76541cc7e48182923162c8e31e1b5de5554c7f8482e17e49c4102fea370cb3f3"
+  }
+ }
+}

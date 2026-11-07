@@ -110,7 +110,7 @@ curl -s -X POST .../machine/WorkshopService/api -H "X-Workshop-Token: <token>" -
 - The token goes in the header `X-Workshop-Token` (the same header carries the local key of the system programs: the
   local key is compared first). `X-Workshop-Device` is a random id of the browser for the audit. The address of the
   request (`X-Forwarded-For`) is only written in the audit, it is never used to decide anything.
-- Sessions live in the memory of the service (a restart logs everybody out), expire after `idle_minutes` without
+- Sessions survive a restart of the service (only the SHA-256 of each token is kept, in a private file next to the users file; `users.close_sessions` ends everybody's session but the caller's), expire after `idle_minutes` without
   activity (`auth.keepalive` or any change) and after `max_hours` in any case. 5 wrong PINs lock the person for a minute
   (twice as long each time, up to 15 minutes); a client and the whole service have their own limits.
 - Without a valid token: `401 login_required` (the pages open a PIN dialog and repeat the call). With a token but not
@@ -410,6 +410,20 @@ means nothing was stopped on purpose). Only ids that start with `Workshop` are a
 `error.field` `id`). The answer of `set` is `{stopped, changed}`; a call that changes nothing writes nothing. The write goes to the
 audit like any other.
 
+## Pellet temperature by layer
+
+A profile (settings area `pellet-layers`, `{"profiles": {name: {tool, heaters, mode: "steps"|"ramp", axis: "layer"|"z", max_temp, max_step, max_spread, points: [{at, temps}]}}}`; `settings.set` refuses the area: only these operations write it) tells the service what temperature each zone of a pellet extruder gets from each layer or height on. It does NOTHING until a person ARMS it for one job file (`pelletlayers.arm`, technician; in memory only, a restart disarms; dropped after an hour if the job never starts). While that job is `processing`, each time the layer changes (`job.layer`, or the Z against the layer heights of `gcode_plan.py` when the board does not give it) the thread `pellet_layers` sends `M568 P<tool> S<t1>:<t2>:...` (the code `pid_zones.py` already uses), always inside: the profile `max_temp`, `heat.heaters[h].max` minus 10 C, a change of at most `max_step` per layer advanced and zones at most `max_spread` apart, never below 30 C. It never switches a heater on or off. A pause holds (nothing is sent, it stays armed); cancel, end, another job, a heater in fault or turned off, or a board that refuses the code disarm it and leave the temperatures as they are (a refusal also raises an `error` event to the phone). Every change goes to the history (and so the black box) and to the audit (`pelletlayers.apply` / `pelletlayers.disarm`, with the person who armed it). Design: `informes/pellet-temperatura-por-capa/DISENO.md`. Code: `pellet_layers.py` (pure), `pellet_layers_run.py`, `pellet_layers_ops.py`.
+
+| Operation | Role | What it does |
+|---|---|---|
+| `pelletlayers.list` | viewer | `{profiles: [{name, tool, heaters, mode, axis, points, first, last}], rev}` |
+| `pelletlayers.get {name}` | viewer | `{name, profile, rev}` |
+| `pelletlayers.set {name, profile}` | technician | Validates and saves one profile (`invalid_args` with one message per field in `error.errors`). Saving heats nothing. A profile that is armed answers `conflict`. |
+| `pelletlayers.remove {name}` | technician | Deletes a profile (not while armed). |
+| `pelletlayers.status` | viewer | `{armed, phase, profile, file, layer, key, applied, limited, changes, next, reason}`; `phase`: off, waiting, waiting_heat, waiting_layer, running, holding, ended; `reason` = `{key, params, warn}` of the last disarm. Also published as plugin data `pelletLayers`. |
+| `pelletlayers.arm {name, file}` | technician | Arms the profile for the job `file` (as `job.file.fileName` reports it). One run at a time. |
+| `pelletlayers.disarm` | viewer (a stop, never blocked) | Stops applying now; the temperatures stay as they are. |
+
 ## Bed zones
 
 A bed split in several heaters, each one a bed of its own in RRF (`M140 P0 H0`, `M140 P1 H1`, ...). RRF cannot group heaters in one bed and slicers send
@@ -427,6 +441,8 @@ a file that is not valid turns the feature off and every code goes through. The 
 | `bedzones.set {config, base_rev}` | technician | Validates the whole configuration and saves it only if nobody changed it since `base_rev` (409 `conflict` with `error.current`). `invalid_args` carries `error.errors` with one message per field. Noted in Activity. |
 | `bedzones.setpoint {temperature, zone?}` | operator | HEATS: without `zone` every active zone gets `temperature` plus its offset, with `zone` (a bed number) only that zone gets exactly `temperature`. A setpoint over `max_temp`, an offset over `max_offset`, an unknown zone or a damaged configuration answers `invalid_args` and sends nothing; a failed send answers `failed`. Returns `{codes}`. |
 | `bedzones.off` | viewer (a stop, never blocked) | Turns every configured zone off, active or not, even with a damaged configuration. Returns `{codes}`. |
+
+**Real geometry (optional, layout and view only).** `config.geometry = {bed: {width, length}}` (millimetres, map space: origin top left, y downwards) and `zones[i].rect = {x, y, w, h}`. The rects are exactly what the user left: the service never moves a zone that has one. A config without them is valid and unchanged; a `rect` without `geometry` is an error. A zone WITHOUT a rect (with a geometry) is placed once in the first free spot (`bed_zones_geometry.place_missing`: the size of the last zone, else a quarter of the shorter side) and fails if there is no room. An older config with `mode`, `gap`, `align`, `mirror` or `size` is read without error: those keys are ignored (its rects are already resolved) and they disappear at the next save. A zone outside the bed or overlapping another is an error (`zones[i].rect`). The heating never reads it.
 
 ### Bed heaters (the plan that defines the beds)
 

@@ -621,6 +621,7 @@ if __name__ == "__main__":
         ("motors", M("main_motors"), M("main_reads_drivers_currents_speeds_motors_page"), 60),
         ("jog", "Jog", M("main_moves_machine_while_jog_button_held"), 10),
         ("bed_zones", M("main_bed_zones"), M("main_splits_m140_m190_into_one_heater_per_bed_zone"), 15),
+        ("pellet_layers", M("main_pellet_layers"), M("main_pellet_layers_detail"), 15),
         ("pid_trace", M("main_pid_tuning_record"), M("main_records_temperature_power_while_heater_tuned_pid"), 30),
         ("maintenance", M("main_maintenance_counters"), M("main_counts_hours_distance_axes_maintenance_plan"), 30),
         ("events", M("main_rrf_events"), M("main_emergencies_pauses_firmware_errors_for_activity"), 30),
@@ -702,6 +703,8 @@ if __name__ == "__main__":
     heartbeats.launch("pid_trace", pid_trace.run_loop, bridge, config)
     import bed_zones_intercept
     heartbeats.launch("bed_zones", bed_zones_intercept.run_loop, bridge, log_file)
+    import pellet_layers_run
+    heartbeats.launch("pellet_layers", pellet_layers_run.run_loop, bridge, config)
 
     import jog_move
     jog_move.set_log_file(LOG_FILE)

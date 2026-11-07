@@ -13,7 +13,7 @@ DEFAULT_GROUP = "support"
 
 _SAFETY = ("guardian_laser", "intercept_watchdog", "watchdog_lock", "guard", "motion", "risk", "events",
            "config_guard", "health", "interceptor")
-_MACHINE = ("jog", "bed_zones", "timer", "status_light")
+_MACHINE = ("jog", "bed_zones", "pellet_layers", "timer", "status_light")
 _DATA = ("consumption", "motors", "maintenance", "pid_trace", "trace", "jobs", "box_black", "base_backup",
          "commands_extra")
 _SUPPORT = ("subscription", "publisher", "communication", "camera", "api", "api_macros")

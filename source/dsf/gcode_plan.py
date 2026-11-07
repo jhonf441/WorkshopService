@@ -115,7 +115,7 @@ def arm(path, kind, om, smax=255.0, stats=None, rapid=6000.0, tool0=None, wcs0=N
     clock = [0.0]  # seconds since the start
     if stats is not None:
         stats.update(time_s=0.0, dist_cut=0.0, dist_travel=0.0, f_min=None, f_max=None, pieces=0, layers=0,
-                     z_min=None, z_max=None, v_min=None, v_max=None)
+                     z_min=None, z_max=None, v_min=None, v_max=None, layer_z=[])
 
     def add(x, y, z, w, v, fpos, dt=0.0, fd=0.0):
         nonlocal cur, nvert
@@ -216,6 +216,8 @@ def arm(path, kind, om, smax=255.0, stats=None, rapid=6000.0, tool0=None, wcs0=N
                 if extrudes and (z_layer is None or tgt["Z"] > z_layer + 0.01):
                     layer += 1
                     z_layer = tgt["Z"]
+                    if stats is not None:
+                        stats["layer_z"].append(round(z_layer, 3))  # height of layer N = layer_z[N - 1] (pellet_layers.py reads it)
                 w = 1 if extrudes else 0
                 v = 0.0
             elif kind == "CNC":

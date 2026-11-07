@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "workshop-bridge-action-v1",
+  "title": "bridge-action.json (contract 1)",
+  "description": "Written by the page or the service to 0:/sys/workshop/data/bridge-action.json (atomically: temporary file + rename). The bridge looks at the file about once a second, runs an action whose seq it has not seen, and answers in bridge-state.json key 'action' with the same seq. The file is created by the bridge with {\"seq\": null}.",
+  "type": "object",
+  "required": ["seq", "action"],
+  "properties": {
+    "seq": {"type": "integer", "minimum": 1, "description": "Unique and increasing per sender (the service uses epoch milliseconds). The same seq is never run twice."},
+    "action": {"type": "string", "description": "debug, debug_extend, restart, kick, rename, give_control, release, trust, block, unblock, set_password, clear_password, stop_safe, resume_arm, resume_disarm, interrupted_discard (see CONTRACT.md). An unknown action is answered ok:false."}
+  }
+}

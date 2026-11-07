@@ -70,6 +70,7 @@ except ImportError:  # pragma: no cover - an old install that did not copy the n
 
 VERSION = "3.8.0"
 SCHEMA = 2
+CONTRACT = 1   # version of the service <-> bridge contract (bridge/CONTRACT.md); only published in the state file, nothing reads it here
 HOST = "0.0.0.0"
 SD_DIR = os.environ.get("BRIDGE_SD_DIR", "/opt/dsf/sd")
 
@@ -2053,6 +2054,7 @@ class Bridge:
             state = {
                 "schema": SCHEMA,
                 "version": VERSION,
+                "contract": CONTRACT,
                 "seq": self.seq,
                 "time": wall,
                 "clock": time.strftime("%H:%M:%S", time.localtime(wall)),

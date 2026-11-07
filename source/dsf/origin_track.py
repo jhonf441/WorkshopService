@@ -16,7 +16,6 @@ the origin is also saved in the same row of the commands table (no extra
 writes). This module has no DSF imports so it can be tested on a PC.
 """
 import collections
-import json
 import re
 import threading
 import time
@@ -138,13 +137,10 @@ def bridge_clients(path, now=None):
     if now - _bridge_cache["at"] < 2.0:
         return _bridge_cache["clients"]
     _bridge_cache["at"] = now
-    out = []
-    try:
-        with open(path) as f:
-            d = json.load(f) or {}
-            out = list(d.get("clients") or [])
-    except Exception:
-        out = []
+    # through the contract adapter: unreadable, garbage or an unknown schema give []. An old file is still read on purpose: the list only
+    # names the program behind a call, it never decides anything.
+    import bridge_contract
+    out = bridge_contract.clients(bridge_contract.read_state(path, now=now))
     _bridge_cache["clients"] = out
     return out
 

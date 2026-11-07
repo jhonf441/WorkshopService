@@ -40,11 +40,11 @@ def _c(category, klass, risk, *ops):
 CAPABILITIES = {
     # -- machine and movement --
     "machine.view": _c("machine", "read", 1, "state.get", "motion.state", "motion.ask", "frame.status", "view.heartbeat", "pid.status", "pid.trace",
-                       "motors.reread", "safety.status", "guard.status", "bedzones.get", "readiness.list", "workstate.get", "machine.overview",
+                       "motors.reread", "safety.status", "guard.status", "bedzones.get", "pelletlayers.list", "pelletlayers.get", "pelletlayers.status", "readiness.list", "workstate.get", "machine.overview",
                        "machine.state", "machine.runs", "machine.layout", "machine.limits.get", "machine.power.get", "machine.offsets.get",
                        "machine.tool.get", "machine.beds.get", "machine.motion.get", "machine.shaping.get", "machine.workarea.get",
                        "machine.workarea.positions", "machine.mesh.list", "machine.mesh.get", "machine.maintenance.get", "machine.height.get"),
-    "machine.stop": _c("machine", "stop", 1, "jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "machine.stop",
+    "machine.stop": _c("machine", "stop", 1, "jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "pelletlayers.disarm", "machine.stop",
                        "livejob.stop_safe"),
     "machine.move": _c("machine", "motion", 2, "jog.xy", "jog.z", "jog.axis", "jog.free", "frame.start", "motion.reserve", "motion.renew",
                        "motion.release"),
@@ -63,6 +63,7 @@ CAPABILITIES = {
     "machine.try": _c("machine", "motion", 3, "machine.try", "machine.try.pending"),
     HARDWARE_PARAMS: _c("machine", "admin", 4),
     "system.bedzones": _c("system", "write", 2, "bedzones.setpoint", "bedzones.set"),
+    "system.pelletlayers": _c("system", "write", 3, "pelletlayers.set", "pelletlayers.remove", "pelletlayers.arm"),
     "machine.workstate": _c("machine", "write", 1, "workstate.set", "readiness.report"),
     "machine.guard": _c("machine", "admin", 3, "guard.set"),
     # -- jobs and laser --

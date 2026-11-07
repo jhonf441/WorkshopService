@@ -43,7 +43,7 @@ MODES = ("laser", "cnc", "fff")
 # operations that need no identity at all: logging in and asking who one is
 PUBLIC_OPS = frozenset({"auth.login", "auth.whoami", "api.ping"})
 # stopping is never blocked: any caller may stop (no login needed), like the emergency stop of DWC
-STOP_OPS = frozenset({"jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "machine.stop", "livejob.stop_safe", "power.off"})  # power.off: whoever is at the machine can switch it off (owner decision 2026-11-06: anyone could pull the plug anyway)
+STOP_OPS = frozenset({"jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "pelletlayers.disarm", "machine.stop", "livejob.stop_safe", "power.off"})  # power.off: whoever is at the machine can switch it off (owner decision 2026-11-06: anyone could pull the plug anyway)
 # an operator may run these only in a mode it is allowed (the others need the camera / mode rules below)
 MODE_GATED = frozenset({"jog.xy", "jog.z", "jog.axis", "jog.free", "frame.start", "motion.reserve", "job.start"})
 # a viewer may call these only when it has the camera (the camera relay key and the Vision answers)
@@ -76,7 +76,7 @@ OP_ROLES = {
     "auth.resolve": ADMIN,  # for local programs (Vision :8095) with the local key; a session needs admin so nobody probes tokens
     # -- users, audit --
     "users.list": ADMIN, "users.add": ADMIN, "users.set": ADMIN, "users.remove": ADMIN, "users.reset_pin": ADMIN,
-    "users.settings": ADMIN, "users.enable": ADMIN, "audit.list": ADMIN,
+    "users.settings": ADMIN, "users.enable": ADMIN, "users.close_sessions": ADMIN, "audit.list": ADMIN,
     # -- state (viewer) --
     "state.get": VIEWER, "motion.state": VIEWER, "motion.ask": VIEWER, "frame.status": VIEWER, "view.heartbeat": VIEWER,
     "job.get": VIEWER, "risk.list": VIEWER, "pid.status": VIEWER, "pid.trace": VIEWER, "blackbox.status": VIEWER, "config.guard": VIEWER,
@@ -129,6 +129,9 @@ OP_ROLES = {
     "power.method": TECHNICIAN, "password.status": TECHNICIAN,
     # shared settings with a revision (cameras.json holds camera addresses, so reading needs a login as operator)
     "settings.get": OPERATOR, "settings.set": TECHNICIAN, "settings.merge": TECHNICIAN,
+    # pellet temperature by layer: reading is public to viewers, profiles and arming a job are the technician's, disarming is a stop (STOP_OPS)
+    "pelletlayers.list": VIEWER, "pelletlayers.get": VIEWER, "pelletlayers.status": VIEWER, "pelletlayers.set": TECHNICIAN,
+    "pelletlayers.remove": TECHNICIAN, "pelletlayers.arm": TECHNICIAN, "pelletlayers.disarm": VIEWER,
     # bed zones: anybody who sees the machine reads them, the operator heats, the technician changes the limits, turning off is a stop (STOP_OPS)
     "bedzones.get": VIEWER, "bedzones.setpoint": OPERATOR, "bedzones.set": TECHNICIAN, "bedzones.off": VIEWER,
     # protection guard: watching state is public to everyone who can see the machine, tuning it is the admin's

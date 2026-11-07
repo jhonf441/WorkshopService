@@ -12,6 +12,7 @@ import settings_store
 from messages import M
 
 import bed_zones
+import bed_zones_geometry as geometry
 
 AREA = "bed-zones"
 MAX_TEMP_LIMIT = 200.0     # no setpoint above this is ever accepted, whatever the user types
@@ -72,8 +73,39 @@ def _zones(raw, errors):
         if not _num(offset, -MAX_OFFSET_LIMIT, MAX_OFFSET_LIMIT):
             errors.append(_err(field + ".offset", "bed_zones_err_number", lo=-MAX_OFFSET_LIMIT, hi=MAX_OFFSET_LIMIT))
             continue
-        out.append({"bed": bed, "active": active, "offset": float(offset)})
+        entry = {"bed": bed, "active": active, "offset": float(offset)}
+        if "rect" in z:  # real geometry (optional): checked against the bed in validate()
+            rect = geometry.clean_rect(z["rect"])
+            if rect is None:
+                errors.append(_err(field + ".rect", "bed_zones_err_geometry_rect"))
+                continue
+            entry["rect"] = rect
+        out.append(entry)
     return out
+
+
+def _geometry(p, out, errors):
+    """The optional `geometry` block (bed size) and the rects of the zones. With no geometry the config is exactly what it was before it existed.
+    The rects are the user's: only a zone that has none is placed (in a free spot), and never again once saved."""
+    zones = out["zones"]
+    if p.get("geometry") is None:
+        if any("rect" in z for z in zones):
+            errors.append(_err("zones", "bed_zones_err_geometry_rect_alone"))
+        return
+    geo, problems = geometry.clean_geometry(p["geometry"])
+    for field, key, params in problems:
+        errors.append(_err(field, key, **params))
+    if geo is None:
+        return
+    if not all("rect" in z for z in zones) and not geometry.place_missing(zones, geo["bed"]):  # a zone without a rect: a free place, once
+        errors.append(_err("geometry", "bed_zones_err_geometry_nofit"))
+        return
+    for i, z in enumerate(zones):
+        if geometry.outside(z["rect"], geo["bed"]):
+            errors.append(_err(f"zones[{i}].rect", "bed_zones_err_geometry_outside"))
+    for i, j in geometry.overlaps([z["rect"] for z in zones]):
+        errors.append(_err(f"zones[{j}].rect", "bed_zones_err_geometry_overlap", a=i + 1, b=j + 1))
+    out["geometry"] = geo
 
 
 def validate(raw):
@@ -100,6 +132,8 @@ def validate(raw):
         out["layout"] = {"rows": layout["rows"], "columns": layout["columns"]}
     else:
         errors.append(_err("layout", "bed_zones_err_layout", max=LAYOUT_MAX))
+    if not errors:
+        _geometry(p, out, errors)
     if not errors and len(out["zones"]) > out["layout"]["rows"] * out["layout"]["columns"]:
         errors.append(_err("layout", "bed_zones_err_layout_small"))
     if not errors and any(abs(z["offset"]) > out["max_offset"] for z in out["zones"]):

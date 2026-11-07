@@ -46,12 +46,8 @@ def _allowed(line):
 
 
 def _port():
-    try:
-        with open(STATE) as f:
-            d = json.load(f)
-            return int(d.get("port") or d.get("port") or 23)  # "puerto": bridge 2.x
-    except Exception:
-        return 23
+    import bridge_contract
+    return bridge_contract.port(bridge_contract.read_state(STATE))   # 23 when there is no readable state
 
 
 def _read(s, still=0.6, total=4.0):

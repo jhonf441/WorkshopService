@@ -1,0 +1,2797 @@
+{
+ "_comment": "Single source of truth of the bridge state rules (CONTRACT.md sections 2 and 3). Read by dsf/test_bridge_contract.py (Python adapter) and tests/bridge-contract.test.js (dwc36/bridge-contract.js). Change a rule here first: both readers must then change. 'absent' = no file. 'raw' = the file text; 'state' = the object serialized. 'now' is the epoch used for the activity fallback. orders_age_s null = unknown.",
+ "contract": 1,
+ "alive_s": 15,
+ "fresh_s": 10,
+ "schemas": [
+  2
+ ],
+ "default_port": 23,
+ "vectors": [
+  {
+   "name": "healthy",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "healthy, file 9.9 s old",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 9.9,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 13.9,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "healthy, file exactly 10 s old",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 10.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 14.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "healthy, file exactly 15 s old (still alive)",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 15.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 19.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "healthy, file 15.01 s old (not alive)",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 15.01,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": 19.009999999999998,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "healthy, file 600 s old",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 600.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": 604.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "order pending, fresh file",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 2,
+      "last_order_age_s": 0
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 0.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "order pending, file exactly 10 s old (still proves now)",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 2,
+      "last_order_age_s": 0
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 10.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 0.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "order pending, file 10.01 s old (proves nothing)",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 2,
+      "last_order_age_s": 0
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 10.01,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 10.01,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "order pending, file 600 s old",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 2,
+      "last_order_age_s": 0
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 600.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": 600.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "two clients, the youngest order wins",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 7
+     },
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.20",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 3
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 2.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 5.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 2,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "client without last order, another with",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": null
+     },
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 5
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 1.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 6.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 2,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "no client carries an age: activity fallback, pending and fresh",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "pending_orders": 0
+     }
+    ],
+    "activity": {
+     "generated_at": 1799999995.0,
+     "pending_orders": 1,
+     "last_order_at": 1799999980.0
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 0.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "activity fallback, pending but generated 11 s ago",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [],
+    "activity": {
+     "generated_at": 1799999989.0,
+     "pending_orders": 1,
+     "last_order_at": 1799999980.0
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 20.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 0,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "activity fallback, idle",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [],
+    "activity": {
+     "generated_at": 1799999999.0,
+     "pending_orders": 0,
+     "last_order_at": 1799999970.0
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 30.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 0,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "activity fallback, last order never",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [],
+    "activity": {
+     "generated_at": 1799999999.0,
+     "pending_orders": 0,
+     "last_order_at": null
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": null,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 0,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "activity fallback, last order in the future (clock went back)",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [],
+    "activity": {
+     "generated_at": 1799999999.0,
+     "pending_orders": 0,
+     "last_order_at": 1800000100.0
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 0.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 0,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "no activity, no client ages",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [],
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": null,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 0,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "absent file",
+   "note": "no file at all: status missing",
+   "now": 1800000000.0,
+   "absent": true,
+   "expect": {
+    "status": "missing",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": null,
+    "version": null,
+    "contract": null,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "garbage 0",
+   "raw": "",
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "garbage",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": null,
+    "version": null,
+    "contract": null,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "garbage 1",
+   "raw": "{",
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "garbage",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": null,
+    "version": null,
+    "contract": null,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "garbage 2",
+   "raw": "not json",
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "garbage",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": null,
+    "version": null,
+    "contract": null,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "garbage 3",
+   "raw": "[1, 2]",
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "garbage",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": null,
+    "version": null,
+    "contract": null,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "garbage 4",
+   "raw": "null",
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "garbage",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": null,
+    "version": null,
+    "contract": null,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "garbage 5",
+   "raw": "42",
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "garbage",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": null,
+    "version": null,
+    "contract": null,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "garbage 6",
+   "raw": "\"text\"",
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "garbage",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": null,
+    "version": null,
+    "contract": null,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "garbage 7",
+   "raw": "true",
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "garbage",
+    "alive": false,
+    "health": "down",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": null,
+    "version": null,
+    "contract": null,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "empty object",
+   "state": {},
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": false,
+    "clients": 0,
+    "schema": null,
+    "version": null,
+    "contract": 1,
+    "legacy": true,
+    "newer": false
+   }
+  },
+  {
+   "name": "no schema key",
+   "note": "read leniently, like the readers of the service always did",
+   "state": {
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": null,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "schema null",
+   "note": "a null schema is the same as none",
+   "state": {
+    "schema": null,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": null,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "schema 1",
+   "state": {
+    "schema": 1,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "incompatible",
+    "alive": false,
+    "health": "incompatible",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": 1,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "schema 3",
+   "state": {
+    "schema": 3,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "incompatible",
+    "alive": false,
+    "health": "incompatible",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": 3,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "schema as text",
+   "state": {
+    "schema": "2",
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "incompatible",
+    "alive": false,
+    "health": "incompatible",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": "2",
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "schema true",
+   "state": {
+    "schema": true,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "incompatible",
+    "alive": false,
+    "health": "incompatible",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": true,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "schema 2.5",
+   "state": {
+    "schema": 2.5,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "incompatible",
+    "alive": false,
+    "health": "incompatible",
+    "orders_age_s": null,
+    "port": 23,
+    "live_stop_enabled": null,
+    "clients": 0,
+    "schema": 2.5,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "contract absent (bridge 3.8.0 and older)",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": true,
+    "newer": false
+   }
+  },
+  {
+   "name": "contract 2 (newer)",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 2,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    },
+    "extra_key": {
+     "x": 1
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "newer",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 2,
+    "legacy": false,
+    "newer": true
+   }
+  },
+  {
+   "name": "contract 0",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 0,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": true,
+    "newer": false
+   }
+  },
+  {
+   "name": "contract as text",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": "x",
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": true,
+    "newer": false
+   }
+  },
+  {
+   "name": "contract true",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": true,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": true,
+    "newer": false
+   }
+  },
+  {
+   "name": "contract null",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": null,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": true,
+    "newer": false
+   }
+  },
+  {
+   "name": "version missing",
+   "state": {
+    "schema": 2,
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": null,
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "version not text",
+   "state": {
+    "schema": 2,
+    "version": 5,
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": null,
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "clients missing",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 0,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "clients is text",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": "x",
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 0,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "clients with junk items",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     null,
+     3,
+     "a",
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 1,
+      "last_order_age_s": 2
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 1.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 0.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "pending as text",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": "many",
+      "last_order_age_s": 3
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 1.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "pending true",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": true,
+      "last_order_age_s": 3
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 1.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "age as text",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": "soon"
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": null,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "age true",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": true
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": null,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "activity is text",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [],
+    "activity": "junk",
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": null,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 0,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "activity is a list",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [],
+    "activity": [],
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": null,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 0,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "port missing",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 23,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "port null",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": null,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 23,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "port zero",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 0,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 23,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "port as number text",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": "2424",
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2424,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "port as junk text",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": "abc",
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 23,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "port is a list",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": [],
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 23,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "port is an object",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": {},
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 23,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "port 23",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 23,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 23,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "live_stop disabled",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": false
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": false,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "live_stop missing",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": false,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "live_stop is a number",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": 5
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": false,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "live_stop enabled as 1",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": 1
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  },
+  {
+   "name": "unknown extra keys everywhere",
+   "state": {
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "port": 2323,
+    "clients": [
+     {
+      "id": "192.168.77.16:5000",
+      "ip": "192.168.77.16",
+      "name": "lightburn",
+      "pending_orders": 0,
+      "last_order_age_s": 4,
+      "new_field": 1
+     }
+    ],
+    "activity": {
+     "generated_at": 1800000000.0,
+     "clients_connected": 1,
+     "pending_orders": 0,
+     "last_order_at": 1799999996.0,
+     "last_motion_at": null,
+     "live_job": {
+      "active": false
+     }
+    },
+    "events": [],
+    "action": null,
+    "live_stop": {
+     "enabled": true
+    },
+    "brand_new": {
+     "a": [
+      1,
+      2
+     ]
+    }
+   },
+   "file_age_s": 0.0,
+   "now": 1800000000.0,
+   "expect": {
+    "status": "ok",
+    "alive": true,
+    "health": "ok",
+    "orders_age_s": 4.0,
+    "port": 2323,
+    "live_stop_enabled": true,
+    "clients": 1,
+    "schema": 2,
+    "version": "3.8.0",
+    "contract": 1,
+    "legacy": false,
+    "newer": false
+   }
+  }
+ ]
+}

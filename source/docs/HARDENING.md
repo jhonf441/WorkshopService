@@ -76,10 +76,10 @@ created through that same door, so there is no separate "setup code".
   client is the Pi itself (loopback), a `trusted` address, has typed the password (`BRIDGE KEY <password>`), or - with no password - the
   owner wrote an `allowed` list that contains it. With none of those set the state file says `security.exposed: true`, the bridge logs the event
   `orders_refused_until_guard` and a client that tries to order is told why. `install.sh` (install or `install.sh guard`) asks for one at install time:
-  `BRIDGE_PASSWORD=...`, `BRIDGE_ALLOW=192.168.1.16` or `BRIDGE_TRUST=192.168.1.16` (environment, so a password never shows in the process list).
+  `BRIDGE_PASSWORD=...`, `BRIDGE_ALLOW=192.0.2.16` or `BRIDGE_TRUST=192.0.2.16` (environment, so a password never shows in the process list).
   The cutting PC .16 must therefore be listed as `allowed` or `trusted` (if its program cannot send `BRIDGE KEY`) or send the password first: after an
   upgrade of a bridge that had none, live jobs from the PC are refused until one of them is set (Services page, tab Security and key, or
-  `sudo BRIDGE_TRUST=192.168.1.16 ./install.sh guard`). The change is picked up without a restart (settings reload when the file changes).
+  `sudo BRIDGE_TRUST=192.0.2.16 ./install.sh guard`). The change is picked up without a restart (settings reload when the file changes).
 - `/opt/dsf/conf/workshop-api-token` (the local key of the system programs, mode 640, group dsf). It used to live on the SD
   (`0:/sys/workshop/data/.api-token`), and the SD is what DuetWebServer serves as `0:/` through `/machine/file/...`: anybody who can read
   files through DWC could read the key (the whole LAN with DWC without password, any session with one), and the key opens every operation

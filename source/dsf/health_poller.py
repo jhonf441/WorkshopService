@@ -279,8 +279,17 @@ def read_services():
     return out
 
 
+def _bridge_read():
+    """The state of the G-code bridge through the contract adapter (bridge_contract.py): never raises, never waits."""
+    import bridge_contract
+    return bridge_contract.read_state(paths.DATA_DIR + "/bridge-state.json")
+
+
 def port_bridge():
     # the port is configured on the Services page (0:/sys/workshop/config/bridge.json)
+    # NOT moved onto bridge_contract (bridge/ARCHITECTURE.md 8b): clients_bridge() counts the connections on this port and the jog
+    # (jog_move._clients_bridge, no-limits mode) and the motion owner read that count. A state of an unknown schema must keep
+    # giving the port it says, or the count would silently fall to the connections of port 23.
     try:
         import json as _json
         with open(paths.DATA_DIR + "/bridge-state.json") as f:
@@ -299,14 +308,14 @@ def clients_bridge():
 
 def programs_bridge():
     """Names of those connected to the bridge (the ones set with
-    BRIDGE NAME or in Services > Bridge > Names by IP; otherwise, clientN)."""
-    try:
-        import json as _json
-        with open(paths.DATA_DIR + "/bridge-state.json") as f:
-            d = _json.load(f)
-            return [f"{c.get('name')} ({c.get('ip')})" for c in (d.get("clients") or [])]
-    except Exception:
+    BRIDGE NAME or in Services > Bridge > Names by IP; otherwise, clientN).
+    None when the bridge is not publishing: no readable state, a schema this service does not know, or a state older than
+    bridge_contract.ALIVE_S (a stopped bridge has no clients; the old file used to list the ones it had when it died)."""
+    import bridge_contract
+    read = _bridge_read()
+    if not read.alive():
         return None
+    return [f"{c.get('name')} ({c.get('ip')})" for c in bridge_contract.clients(read)]
 
 
 def _local_a_dwc():
@@ -473,11 +482,12 @@ _WATCHDOG_BRIDGE = {}
 
 def _events_bridge_recent(seconds=120):
     """The bridge says it was asked to restart (code 'restarting' in its events) within the last seconds."""
-    try:
-        with open(paths.DATA_DIR + "/bridge-state.json") as f:
-            events = (json.load(f) or {}).get("events") or []
-    except Exception:
+    # NOT filtered by age: the bridge leaves 1.5 s after writing this event, so the file that carries it is never updated again
+    read = _bridge_read()
+    if not read.readable:
         return False
+    events = read.state.get("events")
+    events = [e for e in events if isinstance(e, dict)] if isinstance(events, list) else []
     current_time = time.localtime()
     sec_today = current_time.tm_hour * 3600 + current_time.tm_min * 60 + current_time.tm_sec
     for e in events[:40]:

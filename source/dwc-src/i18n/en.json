@@ -1595,6 +1595,8 @@
 		"main_movement_owner": "Movement owner",
 		"main_moves_machine_while_jog_button_held": "Moves the machine while a jog button is held down.",
 		"main_paints_status_zone_led_strip_according": "Paints the status zone of the LED strip according to the mode and what the machine is doing (zones and colours in the Lights and states page). It rests if that plugin is stopped.",
+		"main_pellet_layers": "Pellet temperature by layer",
+		"main_pellet_layers_detail": "Changes the temperature of the pellet extruder zones when the layer changes, only if the job is turned on for it.",
 		"main_pid_tuning_record": "PID tuning record",
 		"main_protection_guard": "Protection guard",
 		"main_reads_drivers_currents_speeds_motors_page": "Reads drivers, currents and speeds for the Motors page (slow if nobody is looking at it).",

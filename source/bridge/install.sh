@@ -6,6 +6,16 @@
 #   sudo ./install.sh no-control remove that rule
 #   sudo ./install.sh uninstall  remove the unit, the polkit rule and /opt/workshop-bridge (the SD data stays)
 #   sudo ./install.sh guard      set who may send orders (see below) without reinstalling
+#   sudo ./install.sh rollback   go back to the code and the unit of the previous install (kept in /opt/workshop-bridge.prev)
+#   ./install.sh status          what is installed (version, unit state, previous version); needs no root
+#   add --force to install / rollback / uninstall while the bridge is IN USE (see below)
+#
+# IN USE: install, rollback and uninstall restart or remove the bridge, which cuts every connected program. They REFUSE (exit 3) while the
+# state file the bridge writes (fresh, under 15 s old) says a live job is open, orders are pending, or an order arrived in the last 30 s,
+# unless --force (or BRIDGE_FORCE=1) is given. A state that is missing, unreadable or old counts as "not in use" (a bridge that stopped
+# writing is not running a job). If the check itself cannot run (no python3) it refuses too.
+# BACKUP: before copying, the installed code and the unit go to /opt/workshop-bridge.prev (one generation; installing the same code again
+# keeps the older backup). bridge.json and the data files are never touched by install or rollback.
 #
 # WHO MAY SEND ORDERS (Duet3D review): a bridge with no password, no allowed list and no trusted address refuses every order
 # from the network (queries and the Pi itself still work). "install" and "guard" therefore ask for one of them when none is
@@ -25,16 +35,109 @@
 set -eu
 
 UNIT=workshop-gcode-bridge
-DEST=/opt/workshop-bridge
-SD=/opt/dsf/sd
-UNIT_DIR=/etc/systemd/system
-POLKIT=/etc/polkit-1/rules.d/49-workshop-gcode-bridge.rules
+# BRIDGE_DEST / BRIDGE_SD / BRIDGE_UNIT_DIR / BRIDGE_POLKIT exist only for the tests on a scratch root (bridge/tests/test_install_sh.py);
+# sudo does not pass the environment on, so a normal run always uses the real places.
+DEST="${BRIDGE_DEST:-/opt/workshop-bridge}"
+SD="${BRIDGE_SD:-/opt/dsf/sd}"
+UNIT_DIR="${BRIDGE_UNIT_DIR:-/etc/systemd/system}"
+POLKIT="${BRIDGE_POLKIT:-/etc/polkit-1/rules.d/49-workshop-gcode-bridge.rules}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
+PREV="$DEST.prev"
+CODE_FILES="gcode_bridge.py live_resume.py live_stop.py"
 
-if [ "$(id -u)" -ne 0 ]; then
+FORCE="${BRIDGE_FORCE:-0}"
+CMD=install
+for a in "$@"; do
+  case "$a" in
+    --force) FORCE=1 ;;
+    *) CMD="$a" ;;
+  esac
+done
+
+if [ "${BRIDGE_SCRATCH:-}" = 1 ]; then
+  if [ -z "${BRIDGE_DEST:-}" ]; then
+    echo "BRIDGE_SCRATCH=1 needs BRIDGE_DEST (a scratch folder): refusing to run on the real system." >&2
+    exit 1
+  fi
+elif [ "$CMD" != status ] && [ "$(id -u)" -ne 0 ]; then
   echo "This needs root: run it with sudo." >&2
   exit 1
 fi
+
+# 0 = the bridge is in use (the reason is printed), 1 = it is not, 2 = the check could not run
+bridge_in_use() {
+  f="$SD/sys/workshop/data/bridge-state.json"
+  [ -f "$f" ] || return 1
+  command -v python3 >/dev/null 2>&1 || return 2
+  BSTATE="$f" python3 - <<'PY' || return $?
+import json, os, sys, time
+f = os.environ["BSTATE"]
+try:
+    age = time.time() - os.path.getmtime(f)
+    with open(f, encoding="utf-8") as fh:
+        d = json.load(fh)
+except Exception:
+    sys.exit(1)          # unreadable: nothing we can tell is running
+if age > 15 or not isinstance(d, dict):
+    sys.exit(1)          # a bridge that stopped writing is not running a job
+act = d.get("activity") if isinstance(d.get("activity"), dict) else {}
+job = act.get("live_job") if isinstance(act.get("live_job"), dict) else {}
+def num(v):
+    return v if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
+if job.get("active"):
+    print("a live job is open through the bridge")
+    sys.exit(0)
+if num(act.get("pending_orders")) > 0:
+    print("orders are being sent to the machine right now")
+    sys.exit(0)
+ages = [num(c.get("last_order_age_s")) + age for c in (d.get("clients") or []) if isinstance(c, dict) and isinstance(c.get("last_order_age_s"), (int, float)) and not isinstance(c.get("last_order_age_s"), bool)]
+if ages and min(ages) < 30:
+    print("an order arrived in the last 30 seconds")
+    sys.exit(0)
+sys.exit(1)
+PY
+}
+
+refuse_if_in_use() {
+  [ "$FORCE" = 1 ] && return 0
+  rc=0
+  reason="$(bridge_in_use)" || rc=$?
+  if [ "$rc" = 0 ]; then
+    echo "REFUSED: the bridge is in use ($reason). Restarting it would cut the program that is sending." >&2
+    echo "Wait until the job ends, or run the same command with --force if you are sure." >&2
+    exit 3
+  fi
+  if [ "$rc" = 2 ]; then
+    echo "REFUSED: could not check whether the bridge is in use (python3 is missing). Use --force if you are sure." >&2
+    exit 3
+  fi
+}
+
+installed_version() {
+  # $1 = a folder with gcode_bridge.py
+  [ -f "$1/gcode_bridge.py" ] && sed -n 's/^VERSION = "\(.*\)"/\1/p' "$1/gcode_bridge.py" | head -n 1
+}
+
+# the code and the unit that are installed go to $PREV, unless the new code is the same as what is installed
+# (then the older backup stays: backing the same code up over itself would lose the way back)
+backup_installed() {
+  [ -d "$DEST" ] || return 0
+  same=1
+  for f in $CODE_FILES; do
+    cmp -s "$HERE/$f" "$DEST/$f" 2>/dev/null || same=0
+  done
+  if [ "$same" = 1 ] && [ -d "$PREV" ]; then
+    echo "  same code as installed: the previous backup in $PREV is kept"
+    return 0
+  fi
+  rm -rf "$PREV"
+  mkdir -p "$PREV"
+  for f in $CODE_FILES; do
+    [ -f "$DEST/$f" ] && cp -p "$DEST/$f" "$PREV/$f"
+  done
+  [ -f "$UNIT_DIR/$UNIT.service" ] && cp -p "$UNIT_DIR/$UNIT.service" "$PREV/$UNIT.service"
+  echo "  previous code backed up to $PREV ($(installed_version "$PREV" || true))"
+}
 
 run_user() {
   # the user the bridge runs as: the one who called sudo, else the owner of this folder
@@ -64,12 +167,14 @@ ensure_sd_dir() {
 }
 
 do_install() {
+  refuse_if_in_use
   user="$(run_user)"
   if ! sudo -u "$user" python3 -c "import dsf.connections" >/dev/null 2>&1; then
     echo "WARNING: python3 of $user cannot import dsf.connections (dsf-python). The bridge needs it." >&2
   fi
 
   echo "1. Code to $DEST"
+  backup_installed
   install -d -m 755 "$DEST"
   install -m 644 "$HERE/gcode_bridge.py" "$DEST/gcode_bridge.py"
   # safe stop / resume of live jobs (2026-10-22): the bridge starts without these two, but then it has no safe stop
@@ -202,6 +307,7 @@ do_no_control() {
 }
 
 do_uninstall() {
+  refuse_if_in_use
   systemctl disable --now "$UNIT" 2>/dev/null || true
   rm -f "$UNIT_DIR/$UNIT.service" "$POLKIT"
   systemctl daemon-reload
@@ -209,11 +315,48 @@ do_uninstall() {
   echo "Bridge removed (unit, polkit rule and $DEST). $SD/sys/workshop/{config,data} were not touched."
 }
 
-case "${1:-install}" in
+do_rollback() {
+  if [ ! -d "$PREV" ] || [ ! -f "$PREV/gcode_bridge.py" ]; then
+    echo "Nothing to go back to: $PREV does not exist (the first install has no previous version). Nothing was changed." >&2
+    exit 1
+  fi
+  refuse_if_in_use
+  echo "Rolling back $(installed_version "$DEST" || echo '?') -> $(installed_version "$PREV" || echo '?')"
+  for f in $CODE_FILES; do
+    if [ -f "$PREV/$f" ]; then
+      install -m 644 "$PREV/$f" "$DEST/$f"
+    fi
+  done
+  if [ -f "$PREV/$UNIT.service" ]; then
+    cp -p "$PREV/$UNIT.service" "$UNIT_DIR/$UNIT.service"
+  fi
+  systemctl daemon-reload
+  systemctl restart "$UNIT"
+  sleep 2
+  systemctl --no-pager --lines=8 status "$UNIT" || true
+  echo "Rolled back. The settings (bridge.json) and the data files were not touched."
+}
+
+do_status() {
+  v="$(installed_version "$DEST" || true)"
+  if [ -z "$v" ]; then
+    echo "Not installed ($DEST has no gcode_bridge.py)."
+    return 0
+  fi
+  echo "Installed: bridge $v in $DEST"
+  pv="$(installed_version "$PREV" || true)"
+  if [ -n "$pv" ]; then echo "Previous:  bridge $pv in $PREV (sudo ./install.sh rollback goes back to it)"; else echo "Previous:  none"; fi
+  echo "Unit:      $(systemctl is-active "$UNIT" 2>/dev/null || true) / $(systemctl is-enabled "$UNIT" 2>/dev/null || true)"
+  if [ -f "$POLKIT" ]; then echo "Page control (polkit): on"; else echo "Page control (polkit): off"; fi
+}
+
+case "$CMD" in
   install) do_install ;;
   control) do_control ;;
   no-control) do_no_control ;;
   guard) do_guard ;;
   uninstall) do_uninstall ;;
-  *) echo "usage: sudo $0 [install|control|no-control|guard|uninstall]" >&2; exit 2 ;;
+  rollback) do_rollback ;;
+  status) do_status ;;
+  *) echo "usage: sudo $0 [install|rollback|status|control|no-control|guard|uninstall] [--force]" >&2; exit 2 ;;
 esac

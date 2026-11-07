@@ -5,7 +5,7 @@ a terminal, a script, an ESP32) send G-code to the Duet through DSF. Each line g
 the machine's reply followed by `ok`. It is a separate systemd service, not part of the
 WorkshopService plugin package; the Services page of the plugin shows and controls it.
 
-Source: `gcode_bridge.py` (version 3.0.0). Python 3, standard
+Source: `gcode_bridge.py` (version 3.8.0). Python 3, standard
 library plus `dsf-python` (`dsf.connections`), which is already on the Pi.
 
 ## Install (once, on the Pi, needs sudo)
@@ -51,7 +51,7 @@ The action file is created if missing; the state is regenerated.
 `allowed` ([] = local network only), `trusted`, `password_hash`/`password_salt`
 (`scrypt$<hex>` with the salt in `password_salt`; the older plain sha256(salt + password) is still accepted until the password is set again), `max_connections` (8), `password_attempts` (5),
 `block_seconds` (300), `blocked`, and the line-handling knobs:
-`order_timeout_s` (15), `query_timeout_s` (3), `query_cache_ms` ({code: ms}; defaults
+`order_timeout_s` (120), `query_timeout_s` (3), `query_cache_ms` ({code: ms}; defaults
 M114 500, M408 500, M105 1000, M119 1000, M27 1000, M36 2000, M20 5000, M122 5000, M503 30000,
 M115 60000; 0 disables the cache for a code), `query_soft_ms` (500), `query_stale_s` (5),
 `overtake_ms` (500), `query_workers` (2).
@@ -137,7 +137,7 @@ answered by the bridge and never reach the board. It also ends with
 `end_reason: "disconnect"` when the client that started it was the last one connected.
 Each start / end is also sent to WorkshopService through its API (`job.start`, `job.end`,
 `job.cancel`, `job.close`; a disconnect closes the job at its last activity), in the
-background with retries, using the local key `/opt/dsf/conf/workshop-api-token` (older installs: `0:/sys/workshop/data/.api-token`, read as a fallback)
+background with retries, using the local key `/opt/dsf/conf/workshop-api-token` (the old `0:/sys/workshop/data/.api-token` is no longer read)
 Put the two
 lines in the start / end G-code of the sending program.
 `dsf/jog_move.py` (`bridge_state_age_s`) uses `pending_orders` (only if the file is less than

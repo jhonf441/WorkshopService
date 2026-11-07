@@ -169,6 +169,11 @@ def make_ops(store_of):
     def users_reset_pin(args, ctx):
         return {"user": call(store().reset_pin, args.get("name"), args.get("pin"))}
 
+    def users_close_sessions(args, ctx):
+        """Ends every session but the caller's own (so the administrator who asks stays in)."""
+        mine = (ctx.get("user") or {}).get("sid")
+        return {"closed": store().close_sessions(keep_sid=mine)}
+
     def users_settings(args, ctx):
         st = store()
         changes = {k: args.get(k) for k in ("idle_minutes", "max_hours", "never_expires", "anonymous_viewer", "camera_for_viewer") if args.get(k) is not None}
@@ -225,10 +230,13 @@ def make_ops(store_of):
            "Removes a person and ends their sessions. Not yourself, not the last administrator."),
         Op("users.reset_pin", users_reset_pin, ADMIN, {"name": a(S, True, desc="Person."), "pin": a(S, True, desc=d_pin)},
            "Sets a new PIN for a person and ends their sessions."),
+        Op("users.close_sessions", users_close_sessions, ADMIN, {},
+           "Ends the session of every person except the administrator who asks (sessions now survive a restart of the service, so this is how everybody "
+           "is made to sign in again). Answers how many sessions ended."),
         Op("users.settings", users_settings, ADMIN,
            {"idle_minutes": a(I, min=1, max=1440, desc="Minutes without activity before a session expires."),
             "max_hours": a(I, min=1, max=168, desc="Longest life of a session, active or not."),
-            "never_expires": a(B, desc="Sessions never expire (the two limits above are ignored); they end by logging out or restarting the service."),
+            "never_expires": a(B, desc="Sessions never expire (the two limits above are ignored); they end by logging out or by `users.close_sessions`."),
             "anonymous_viewer": a(B, desc="A caller with no login may read the state as a viewer (touch screen)."),
             "camera_for_viewer": a(B, desc="Viewers see the camera.")},
            "Reads or changes the session settings (without arguments it only reads)."),

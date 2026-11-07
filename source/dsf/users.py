@@ -4,7 +4,10 @@ users -- people of the workshop: name + PIN, role, sessions (F1-A of the redesig
 What it keeps:
   - the users (name, role, modes an operator may run, camera for viewers) and the settings of the sessions, in ONE file;
   - the PIN of each one only as a salted hash (scrypt, else PBKDF2), never in clear;
-  - the sessions (token -> user) ONLY in memory: restarting the service logs everybody out.
+  - the sessions: in memory, and also in a SECOND file next to the users file (<users file>.sessions, mode 600) so that restarting the
+    service does not log everybody out. That file keeps only the SHA-256 of each token (never the token: a token is 256 random bits, the
+    hash cannot be turned back into one), the person, the dates and the device. Expired sessions, sessions of people who no longer exist
+    and a file that cannot be read are dropped at start; nothing is ever opened by the file being wrong.
 
 Where the file lives: like the keys (config_store.py) it goes OUTSIDE the SD, in /opt/dsf/conf (mode 600). Reason: DWC's file
 API serves any file of the SD to whoever opens DWC, and a PIN of 4 digits has only 10,000 possibilities: a hash on the SD could be
@@ -136,7 +139,10 @@ class UserStore:
         self.role_source = None  # role_store.RoleStore with the custom roles (set by api_ops.init)
         self.sessions = {}    # token hash -> {name key, created, last, device}
         self.fails = {}       # "u:<name>" / "c:<client>" / "g" -> {"n", "first", "until", "strikes"}
+        self.sessions_path = self.path + ".sessions"
+        self._sessions_saved_at = 0.0   # last time the sessions file was written (a touch rewrites it at most once a minute)
         self.load()
+        self._load_sessions()
 
     # ---- file ----
     def load(self):
@@ -251,6 +257,7 @@ class UserStore:
                     raise UserError("bad_credentials", "the PIN is wrong")
                 self.settings["enabled"] = False
                 self.sessions.clear()
+                self._save_sessions()
             self._save()
             return dict(self.settings)
 
@@ -375,6 +382,72 @@ class UserStore:
             for k in [k for k, e in self.fails.items() if e["until"] <= now and now - e["first"] > FAIL_WINDOW_S]:
                 del self.fails[k]
 
+    # ---- sessions file ----
+    def _save_sessions(self):
+        """Writes the live sessions (hashes only) atomically with mode 600. Never raises: a disk problem must not break a login or a request."""
+        try:
+            with self.lock:
+                if self.damaged:
+                    return
+                data = {"version": 1, "sessions": {sid: {"key": x["key"], "created": x["created"], "last": x["last"], "device": x.get("device", "")}
+                                                    for sid, x in self.sessions.items()}}
+                os.makedirs(os.path.dirname(self.sessions_path) or ".", exist_ok=True)
+                tmp = self.sessions_path + ".tmp"
+                with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
+                    json.dump(data, fh, ensure_ascii=False)
+                    fh.flush()
+                    os.fsync(fh.fileno())
+                try:
+                    os.chmod(tmp, 0o600)
+                except OSError:
+                    pass
+                os.replace(tmp, self.sessions_path)
+                self._sessions_saved_at = self.now()
+        except Exception as e:  # noqa: BLE001 -- see the docstring
+            self.log("users: the sessions file could not be written: %r" % (e,))
+
+    def _load_sessions(self):
+        """At start: the sessions of the file that are still valid (alive, of a person that still exists). Anything else is dropped."""
+        with self.lock:
+            if self.damaged or not os.path.exists(self.sessions_path):
+                return
+            try:
+                with open(self.sessions_path, encoding="utf-8") as fh:
+                    data = json.load(fh)
+                raw = data.get("sessions") if isinstance(data, dict) else None
+                if not isinstance(raw, dict):
+                    return
+            except (OSError, ValueError):
+                self.log("users: the sessions file cannot be read: nobody keeps a session")
+                return
+            now = self.now()
+            for sid, x in raw.items():
+                if not (isinstance(sid, str) and len(sid) == 64 and all(c in "0123456789abcdef" for c in sid) and isinstance(x, dict)):
+                    continue
+                created, last, key = x.get("created"), x.get("last"), x.get("key")
+                if not (isinstance(key, str) and key in self.users):
+                    continue
+                if isinstance(created, bool) or isinstance(last, bool) or not isinstance(created, (int, float)) or not isinstance(last, (int, float)):
+                    continue
+                s = {"key": key, "created": float(created), "last": float(last), "device": str(x.get("device") or "")[:40]}
+                if last > now + 60 or created > now + 60 or not self._alive(s, now):  # from the future or expired
+                    continue
+                self.sessions[sid] = s
+                if len(self.sessions) >= MAX_SESSIONS:
+                    break
+
+    def close_sessions(self, keep_sid=None):
+        """Ends every session except `keep_sid` (the caller's own, so the administrator who asks is not thrown out). Returns how many ended."""
+        with self.lock:
+            gone = [sid for sid in self.sessions if sid != keep_sid]
+            for sid in gone:
+                self._remember(self.sessions[sid])
+                del self.sessions[sid]
+            if gone:
+                self._save()
+                self._save_sessions()
+            return len(gone)
+
     # ---- sessions ----
     @staticmethod
     def _sid(token):
@@ -413,6 +486,7 @@ class UserStore:
             self.sessions[self._sid(token)] = {"key": _key(name), "created": now, "last": now, "device": str(device or "")[:40]}
             rec["last_seen"] = int(now)  # signing in is activity: it stays after the session closes
             self._save()
+            self._save_sessions()
             return token, self._public(rec)
 
     def resolve(self, token):
@@ -440,6 +514,8 @@ class UserStore:
             s = self.sessions.get(sid)
             if s is not None:
                 s["last"] = self.now()
+                if s["last"] - self._sessions_saved_at >= 60:  # the activity is kept across a restart, at most once a minute
+                    self._save_sessions()
 
     def _remember(self, s):
         """Keeps in the record of the person the last time this session was used (called under the lock; the caller saves)."""
@@ -453,13 +529,17 @@ class UserStore:
             if s is not None:
                 self._remember(s)
                 self._save()
+                self._save_sessions()
             return s is not None
 
     def kill_sessions(self, name):
         with self.lock:
             k = _key(name)
-            for sid in [i for i, s in self.sessions.items() if s["key"] == k]:
+            gone = [i for i, s in self.sessions.items() if s["key"] == k]
+            for sid in gone:
                 del self.sessions[sid]
+            if gone:
+                self._save_sessions()
 
     def anonymous(self):
         """Identity of a caller with no login when the settings allow it (a viewer), else None."""

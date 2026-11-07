@@ -7,7 +7,8 @@
 				<div>{{ $t('plugins.WorkshopService.bridgeCard.g_code_bridge_telnet') }}</div>
 				<div class="text-caption grey--text pc-sub">
 					{{ $t('plugins.WorkshopService.bridgeCard.cutting_programs_terminals_scripts_or') }}
-					<code>{{ host }}:{{ (e && e.port) || 23 }}</code>
+					<code v-if="portError">{{ $t('plugins.WorkshopService.bridgeCard.port_not_listening') }}</code>
+					<code v-else>{{ host }}:{{ (e && e.port) || 23 }}</code>
 				</div>
 			</div>
 			<v-spacer />
@@ -16,6 +17,7 @@
 					<v-icon left small>{{ sec.password ? 'mdi-shield-lock' : 'mdi-shield-outline' }}</v-icon>{{ sec.local_only ? $t('plugins.WorkshopService.bridgeCard.local_network') : $t('plugins.WorkshopService.bridgeCard.chosen_ips') }} · {{ sec.password ? $t('plugins.WorkshopService.bridgeCard.with_key') : $t('plugins.WorkshopService.bridgeCard.no_key') }}
 				</v-chip>
 				<v-chip v-if="e && !stopped" small label outlined class="mr-1" :title="t('version')">v{{ e.version }} · {{ $t('plugins.WorkshopService.bridgeCard.up_for_t', { t: dur(e.uptime_s) }) }}</v-chip>
+				<v-chip v-if="e && !stopped && contractChip" small label outlined :color="contractChip.color" class="mr-1" :title="contractChip.title">{{ contractChip.text }}</v-chip>
 				<v-chip small label dark :color="stateChip.color" :title="t('state')">{{ stateChip.text }}</v-chip>
 				<v-btn v-if="e && !stopped" icon small class="ml-1" :color="armed === 'restart' ? 'warning' : ''" :disabled="!!bridgeInUse" :loading="actionInProgress === 'restart'" :title="bridgeInUse || (armed === 'restart' ? $t('plugins.WorkshopService.bridgeCard.restart_bridge_confirm') : $t('plugins.WorkshopService.bridgeCard.restart_bridge'))" @click="restartBridge()">
 					<v-icon>mdi-restart</v-icon>
@@ -53,6 +55,12 @@
 				</v-alert>
 			</template>
 
+			<template v-else-if="e && schemaUnknown">
+				<v-alert dense text type="warning" class="mb-0">
+					{{ $t('plugins.WorkshopService.bridgeCard.schema_unknown', { s: String(e.schema), v: e.version || '?' }) }}
+				</v-alert>
+			</template>
+
 			<template v-else-if="e && !e.schema">
 				<v-alert dense text type="warning" class="mb-0">
 					{{ $t('plugins.WorkshopService.bridgeCard.bridge_running_is_version_v', { v: e.version }) }} <code>bridge</code> {{ $t('plugins.WorkshopService.bridgeCard.of_the_repository') }}
@@ -64,7 +72,7 @@
 				<v-alert v-if="help" dense text color="primary" icon="mdi-help-circle" class="mb-3 text-body-2">
 					{{ $t('plugins.WorkshopService.bridgeCard.help_mode_under_each_group_of') }} <b>{{ $t('plugins.WorkshopService.bridgeCard.key_word') }}</b> {{ $t('plugins.WorkshopService.bridgeCard.is_in_the_tab') }} <a @click="goAKey()">{{ $t('plugins.WorkshopService.bridgeCard.security_and_key') }}</a>. {{ $t('plugins.WorkshopService.bridgeCard.tap') }} <v-icon small>mdi-help-circle</v-icon> {{ $t('plugins.WorkshopService.bridgeCard.at_the_top_right_to_hide') }}
 				</v-alert>
-				<v-alert v-if="e.error" dense text type="error" class="mb-3">{{ e.error }}</v-alert>
+				<v-alert v-if="e.error" dense text type="error" class="mb-3">{{ errorText }}</v-alert>
 
 				<!-- Control + numeros -->
 				<div class="pc-top">
@@ -391,7 +399,10 @@
 					<v-tab-item>
 						<div v-if="config" class="pc-config mt-3">
 							<v-row dense>
-								<v-col cols="6" sm="3"><v-text-field v-model.number="config.port" type="number" min="1" max="65535" :label="$t('plugins.WorkshopService.bridgeCard.port')" :title="t('port')" dense outlined hide-details /></v-col>
+								<v-col cols="6" sm="3"><v-text-field v-model.number="config.port" type="number" min="1" max="65535" :label="$t('plugins.WorkshopService.bridgeCard.port')" :title="t('port')" dense outlined hide-details />
+									<div v-if="portError" class="text-caption error--text mt-1" role="alert">{{ errorText }}</div>
+									<div v-else-if="typedHint" class="text-caption warning--text mt-1" role="note">{{ typedHint }}</div>
+								</v-col>
 								<v-col cols="12" sm="5" class="d-flex align-center"><v-switch v-model="config.exclusive" :label="$t('plugins.WorkshopService.bridgeCard.a_single_connection_with_control')" :title="t('exclusive')" dense hide-details class="mt-0" /></v-col>
 								<v-col cols="12" sm="4" class="d-flex align-center"><v-switch v-model="config.extended_greeting" :label="$t('plugins.WorkshopService.bridgeCard.greeting_with_help_on_connect')" :title="t('greeting')" dense hide-details class="mt-0" /></v-col>
 								<v-col cols="12" sm="12" class="d-flex align-center"><v-switch v-model="config.skip_material_macro" :label="$t('plugins.WorkshopService.bridgeCard.skip_material_gcode')" :title="$t('plugins.WorkshopService.bridgeCard.skip_material_gcode_tip')" dense hide-details class="mt-0" /></v-col>
@@ -475,6 +486,8 @@ import { copyText } from './copy.js'
 import { apiText } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js'
 import LockReason from './LockReason.vue'
+import { parsePortError, portHint } from './bridge-port.js'
+import * as bridgeContract from './bridge-contract.js'
 
 const STATE_FILE = '0:/sys/workshop/data/bridge-state.json';
 const CONFIG = '0:/sys/workshop/config/bridge.json';
@@ -696,6 +709,24 @@ export default {
 			];
 		},
 		// why the bridge cannot be restarted now ('' = it can): a live job, orders in the last 30 s, or a job on the machine
+		// the error of the port in the language of the page (the bridge publishes it in English)
+		portError() {
+			return this.e && this.e.error ? parsePortError(this.e.error) : null
+		},
+		errorText() {
+			if (!this.e || !this.e.error) return ''
+			const pe = this.portError
+			if (!pe) return this.e.error
+			return i18n.t('plugins.WorkshopService.bridgeCard.port_err_' + pe.kind, { port: pe.port, detail: pe.detail })
+		},
+		// a word of warning about the port being typed, before it is saved
+		typedHint() {
+			const h = this.config ? portHint(this.config.port) : null
+			if (!h) return ''
+			return h.kind === 'usual'
+				? i18n.t('plugins.WorkshopService.bridgeCard.port_hint_usual', { port: h.port, who: i18n.t('plugins.WorkshopService.bridgeCard.port_who_' + h.who) })
+				: i18n.t('plugins.WorkshopService.bridgeCard.port_hint_low', { port: h.port })
+		},
 		bridgeInUse() {
 			const e = this.e;
 			if (!e) {
@@ -743,6 +774,23 @@ export default {
 		stopped() {
 			return !!(this.unit && this.unit.installed && !this.unit.active);
 		},
+		// the state file as the contract reads it (bridge/CONTRACT.md): the age is the seconds since `seq` last moved
+		bcRead() {
+			return bridgeContract.parse(this.e, this.received ? (this.now - this.received) / 1000 : null)
+		},
+		// a state format this page does not know (a bridge newer than the service): the card does not guess its fields
+		schemaUnknown() {
+			return !!(this.e && this.e.schema) && this.bcRead.status === 'incompatible'
+		},
+		// small chip next to the version: which version of the contract with the service the bridge declares
+		contractChip() {
+			const kind = bridgeContract.contractKind(this.bcRead)
+			if (!kind) return null
+			const n = this.bcRead.contract
+			if (kind === 'newer') return { color: 'warning', text: i18n.t('plugins.WorkshopService.bridgeCard.contract_chip_newer', { n }), title: i18n.t('plugins.WorkshopService.bridgeCard.contract_title_newer', { n }) }
+			if (kind === 'old') return { color: 'warning', text: i18n.t('plugins.WorkshopService.bridgeCard.contract_chip_old'), title: i18n.t('plugins.WorkshopService.bridgeCard.contract_title_old') }
+			return { color: '', text: i18n.t('plugins.WorkshopService.bridgeCard.contract_chip_ok', { n }), title: i18n.t('plugins.WorkshopService.bridgeCard.contract_title_ok', { n }) }
+		},
 		stateChip() {
 			if (this.noInstalled) {
 				return { text: i18n.t('plugins.WorkshopService.bridgeCard.not_installed'), color: 'grey' };
@@ -756,7 +804,7 @@ export default {
 			if (this.e.error) {
 				return { text: i18n.t('plugins.WorkshopService.bridgeCard.port_error'), color: 'error' };
 			}
-			if (!this.received || this.now - this.received > 10000) {
+			if (!bridgeContract.alive(this.bcRead, bridgeContract.FRESH_S)) {
 				return { text: i18n.t('plugins.WorkshopService.common.no_data_2'), color: 'warning' };
 			}
 			return { text: i18n.t('plugins.WorkshopService.bridgeCard.up_to_date'), color: 'success' };

@@ -44,21 +44,17 @@ def _read_json(path):
 
 
 def bridge_state():
-    """bridge-state.json of the bridge, or ApiError when it is not there / not updating (the bridge is stopped or too old to have this)."""
-    try:
-        st = _read_json(STATE_FILE)
-    except (OSError, ValueError):
+    """bridge-state.json of the bridge, or ApiError when it is not there / not updating (the bridge is stopped or too old to have this).
+    Read through bridge_contract: the age is the one of the FILE (the bridge writes its floats with 6 digits: "time": 1.79271e+09 is only
+    good to ~3 hours). A state of a schema this service does not know is refused like an old bridge: nothing is acted on from a file whose
+    meaning is unknown (the emergency stop M112 does not depend on it)."""
+    import bridge_contract as bc
+    read = bc.read_state(STATE_FILE)
+    if read.status in (bc.MISSING, bc.GARBAGE) or read.age_s is None or read.age_s > STATE_MAX_AGE_S:
         raise ApiError("failed", M("livejob_bridge_down"))
-    # the age is the one of the FILE: the bridge writes its floats with 6 digits ("time": 1.79271e+09 is only good to ~3 hours)
-    try:
-        age = time.time() - os.path.getmtime(STATE_FILE)
-    except OSError:
-        raise ApiError("failed", M("livejob_bridge_down"))
-    if age > STATE_MAX_AGE_S:
-        raise ApiError("failed", M("livejob_bridge_down"))
-    if not (st.get("live_stop") or {}).get("enabled"):
+    if read.status == bc.INCOMPATIBLE or not bc.live_stop_enabled(read):
         raise ApiError("failed", M("livejob_bridge_old"))
-    return st
+    return read.state
 
 
 def _records():

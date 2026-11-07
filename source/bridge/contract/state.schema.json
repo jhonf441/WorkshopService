@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "workshop-bridge-state-v2",
+  "title": "bridge-state.json (schema 2, contract 1)",
+  "description": "Written by the G-code bridge every 2 s (1 s with debug on) to 0:/sys/workshop/data/bridge-state.json. Readers: dsf/bridge_contract.py (service), the jog, the live stop, the Services page. Only the keys listed in 'required' are promised; every other key may be added or ignored. Times: use the age of the FILE and the relative *_age_s fields, not the absolute epochs (a browser may read them rounded).",
+  "type": "object",
+  "required": ["schema", "version", "port", "clients", "activity", "events", "action", "live_stop"],
+  "properties": {
+    "schema": {"type": "integer", "enum": [2], "description": "Major version of this file. Changes only when a promised key changes meaning or disappears."},
+    "version": {"type": "string", "description": "Version of the bridge program (gcode_bridge.VERSION)."},
+    "contract": {"type": "integer", "minimum": 1, "description": "Version of bridge/CONTRACT.md the bridge was written for. Absent in bridges up to 3.8.0 (read as 1)."},
+    "seq": {"type": "integer", "description": "Changes on every write."},
+    "time": {"type": "number", "description": "Epoch seconds when the file was written. For people; readers use the file age."},
+    "port": {"type": "integer", "minimum": 1, "description": "TCP port the bridge listens on."},
+    "error": {"type": ["string", "null"], "description": "Why the port could not be opened, or null."},
+    "clients": {
+      "type": "array",
+      "description": "Connected clients.",
+      "items": {
+        "type": "object",
+        "required": ["id", "ip", "name", "pending_orders", "last_order_age_s"],
+        "properties": {
+          "id": {"type": "string"},
+          "ip": {"type": "string"},
+          "name": {"type": "string"},
+          "pending_orders": {"type": "integer", "minimum": 0, "description": "Non-query lines sent to the machine and not finished."},
+          "last_order_age_s": {"type": ["number", "null"], "description": "Whole seconds since the last non-query line of this client at the moment the file was written; null if none."}
+        }
+      }
+    },
+    "activity": {
+      "type": "object",
+      "required": ["generated_at", "clients_connected", "pending_orders", "last_order_at", "last_motion_at", "live_job"],
+      "properties": {
+        "generated_at": {"type": "number"},
+        "clients_connected": {"type": "integer", "minimum": 0},
+        "pending_orders": {"type": "integer", "minimum": 0},
+        "last_order_at": {"type": ["number", "null"]},
+        "last_motion_at": {"type": ["number", "null"]},
+        "live_job": {
+          "type": "object",
+          "required": ["active", "name", "since", "client", "last_event_at", "ended_at", "end_reason"],
+          "properties": {
+            "active": {"type": "boolean"},
+            "end_reason": {"type": ["string", "null"], "description": "end, cancel, close, disconnect or null."}
+          }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["time", "type", "code", "text"],
+        "properties": {"time": {"type": "string", "description": "HH:MM:SS local time."}, "type": {"type": "string"}, "code": {"type": "string"}, "text": {"type": "string"}}
+      }
+    },
+    "action": {
+      "type": ["object", "null"],
+      "description": "Answer to the last action of bridge-action.json: found by its seq.",
+      "properties": {"seq": {"type": ["integer", "null"]}, "ok": {"type": "boolean"}, "code": {"type": "string"}, "text": {"type": "string"}, "time": {"type": "string"}}
+    },
+    "live_stop": {
+      "type": "object",
+      "required": ["enabled"],
+      "properties": {"enabled": {"type": "boolean", "description": "False: live_stop.py is not installed next to the bridge (no safe stop)."}}
+    },
+    "security": {"type": "object"},
+    "debug": {"type": "object"}
+  }
+}

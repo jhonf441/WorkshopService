@@ -124,6 +124,11 @@
 					<v-btn small color="primary" :loading="busy" @click="saveSettings">{{ $t('plugins.WorkshopService.users.save') }}</v-btn>
 					<span v-if="msg" class="text-caption ml-3">{{ msg }}</span>
 					<v-divider class="my-4" />
+					<div class="text-body-2 font-weight-medium">{{ $t('plugins.WorkshopService.users.close_title') }}</div>
+					<div class="text-caption grey--text mb-2">{{ $t('plugins.WorkshopService.users.close_help') }}</div>
+					<v-btn small outlined :color="armed === '#close' ? 'error' : null" :loading="busy" @click="closeOthers">{{ armed === '#close' ? $t('plugins.WorkshopService.users.close_again') : $t('plugins.WorkshopService.users.close_btn') }}</v-btn>
+					<span v-if="closeMsg" class="text-caption ml-3" role="status">{{ closeMsg }}</span>
+					<v-divider class="my-4" />
 					<div class="text-body-2 font-weight-medium">{{ $t('plugins.WorkshopService.users.off_title') }}</div>
 					<div class="text-caption grey--text mb-2">{{ $t('plugins.WorkshopService.users.off_help') }}</div>
 					<v-btn small outlined color="warning" @click="offPin = ''; offError = ''; dlgOff = true">{{ $t('plugins.WorkshopService.users.off_button') }}</v-btn>
@@ -218,7 +223,7 @@ export default {
 	components: { SessionNotice },
 	mixins: [roleMixin],
 	// the people, the sessions and every open form or dialog came from the session that left (ESTANDAR 3.3): emptied on sign-out / change of role
-	sessionData: ['state', 'cfg', 'showPins', 'dlgOff', 'offPin', 'offError', 'first', 'form', 'dlg', 'pinForm', 'dlgPin', 'armed', 'busy', 'error', 'formError', 'msg'],
+	sessionData: ['state', 'cfg', 'showPins', 'dlgOff', 'offPin', 'offError', 'first', 'form', 'dlg', 'pinForm', 'dlgPin', 'armed', 'busy', 'error', 'formError', 'msg', 'closeMsg'],
 	data() {
 		return {
 			state: { configured: null, users: [], settings: {}, roles: [], custom_roles: [], modes: [], min_pin: 4, max_pin: 12 },
@@ -227,7 +232,7 @@ export default {
 			showPins: false, dlgOff: false, offPin: '', offError: '', first: { name: '', pin: '', repeat: '' },
 			form: emptyForm(), dlg: false,
 			pinForm: { own: false, name: '', old: '', pin: '', repeat: '' }, dlgPin: false,
-			armed: '', busy: false, error: '', formError: '', msg: '', off: null
+			armed: '', busy: false, error: '', formError: '', msg: '', closeMsg: '', off: null
 		};
 	},
 	computed: {
@@ -380,6 +385,26 @@ export default {
 			} catch (e) {
 				this.error = this.fail(e);
 			}
+		},
+		// ends every session but this one (two touches: it throws people out, kiosk included, until they type their PIN again)
+		async closeOthers() {
+			if (this.armed !== '#close') {
+				this.armed = '#close';
+				this.closeMsg = '';
+				setTimeout(() => { if (this.armed === '#close') this.armed = ''; }, 4000);
+				return;
+			}
+			this.armed = '';
+			this.busy = true;
+			try {
+				const r = await api('users.close_sessions', {});
+				const n = Number(r && r.closed) || 0;
+				this.closeMsg = n ? this.$t('plugins.WorkshopService.users.close_done', { n }) : this.$t('plugins.WorkshopService.users.close_none');
+				await this.read();
+			} catch (e) {
+				this.closeMsg = this.fail(e);
+			}
+			this.busy = false;
 		},
 		async saveSettings() {
 			this.busy = true;

@@ -80,6 +80,7 @@ def summary(path, kind, om, max_vertices=30000):
     fast = [float((axes.get(L) or {}).get("speed") or 0) for L in "XY"]
     fast = min([r for r in fast if r > 0] or [6000.0])
     plan = gcode_plan.arm(path, kind, om_min, stats=stats, rapid=fast)
+    stats.pop("layer_z", None)  # only the pellet layer profile wants the heights; the answer keeps its old shape
     job = []
     all_items = []
     for r in plan:

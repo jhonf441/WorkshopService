@@ -4,6 +4,36 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.30.5 -- 2026-11-06
+
+- G-code bridge contract put to work. The Services page and four readers of the service (health poller, origin of the calls, the safe-stop operations, the bridge probe) now read the bridge state through ONE adapter (`dsf/bridge_contract.py`) and the page through the same rules in `dwc36/bridge-contract.js`; both pass the same 65 test vectors (`bridge/contract/vectors.json`), so they cannot drift. With a healthy bridge nothing changes. A stopped bridge no longer shows the programs it had when it died, and a bridge state of a format the service does not know is not acted on (the safe stop says the bridge is too old; the page warns). The bridge card shows which contract version the bridge declares ("old" until the bridge is installed again).
+- The bridge as a versioned artifact (`bridge/VERSION`, `bridge/bridge-manifest.json`, `bridge/bridge_manifest.py`) and a safer `install.sh`: it keeps a backup in `/opt/workshop-bridge.prev`, has `rollback` and `status`, and refuses to restart the bridge while a job or orders are active (`--force` overrides). Written and tested on a scratch root; never run on the machine yet.
+- NOT moved yet, on purpose: the jog, the laser guard, the motion owner and the restart guard keep their own readers until they are tried with the machine present.
+
+## 2.30.4 -- 2026-11-06
+
+- G-code bridge: written contract between the service and the bridge (`bridge/CONTRACT.md`, JSON schemas in `bridge/contract/`, decision record `bridge/ARCHITECTURE.md`), a read-only adapter in the service (`dsf/bridge_contract.py`, called by nothing yet) and 38 new tests that pin how the bridge behaves today (reply framing with `ok`, query cache, ordering, state and action files). The bridge only gains the key `"contract": 1` in its state file after its next install. Nothing in what the bridge or the service do changes.
+- Bridge README brought up to date with the code (version 3.8.0, `order_timeout_s` 120, the old `.api-token` file is no longer read). The address of the workshop PC that was used as an example in `docs/HARDENING.md` and in two tests is now a documentation address (192.0.2.16).
+
+## 2.30.3 -- 2026-11-06
+
+- Sessions survive a restart of the service (the kiosk and every browser no longer ask for the PIN after each install or restart). They are kept in a second private file next to the users file (`<users file>.sessions`, mode 600) and ONLY the SHA-256 of each token is written, never the token. At start a session is kept only if it is still alive (the same 12 h limits), its person still exists and the entry is well formed; a file that is missing, damaged or wrong opens nothing. A closed session (logout, new PIN, role change, person removed, roles switched off) is removed from the file at once, and the role used is always the current one. Writing the file never breaks a login or a request.
+- New operation `users.close_sessions` (administrator only, not delegable like every `users.*`) and a button in the Users tab ("Close the other sessions", two touches): it ends every session except the caller's, now that a restart no longer does it.
+- The first start after this version has no sessions file, so everybody types the PIN once more.
+
+## 2.30.2 -- 2026-11-06
+
+- Bridge card, port: when the bridge cannot open its port the error is now in the language of the page and appears next to the port field (it used to be the raw English text at the top of the card, far from the input); the header no longer shows a port the bridge is not listening on. While typing, a note warns about ports below 1024 and about ports that something else on a Pi normally uses (22, 80, 443). The bridge itself is not changed.
+
+## 2.30.1 -- 2026-11-06
+
+- Bed zones geometry: no automatic layout any more. The geometry is `{bed: {width, length}}` plus a `rect` per zone, kept exactly as the user left it; a zone without a rect is placed once in a free spot. `mode`, `gap`, `align`, `mirror` and `size` of the earlier shape are ignored when read.
+
+## 2.30.0 -- 2026-11-06
+
+- Bed zones: optional real geometry in the `bed-zones` config (bed size, a rectangle per zone, auto layout for any number of zones, manual placement); validated by the service (`dsf/bed_zones_geometry.py`). A config without geometry behaves as before; the heating (M140 / M190 interception) is unchanged.
+- Pellet temperature by layer: profiles of temperatures per heating zone by layer or height (steps or ramp), operations `pelletlayers.list/get/status/set/remove/arm/disarm`, capability `system.pelletlayers`, and a service process `pellet_layers` that, only for an armed job and only while the machine is processing, sends `M568 P<tool> S...` at each layer change. Off by default; never above the heater maximum minus 10 C nor below 30 C; pause holds; cancel or end disarms; every change goes to the activity log and the audit.
+
 ## 2.29.4 -- 2026-11-06
 
 - Password tab: changing or removing the DWC password is administrator-only and the tab now says so: the fields and buttons are disabled for other roles, each button carries its lock, and one reason shows at the top of the card (it blinks on a touch).
