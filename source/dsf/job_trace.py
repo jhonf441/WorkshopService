@@ -53,6 +53,7 @@ import machine_state
 import gcode_plan
 import heartbeats
 import sd_paths
+import service_log
 from messages import M
 
 # Where the job trace is kept on the SD.
@@ -66,7 +67,6 @@ SD_ROOT = sd_paths.SD
 HIST_MAX = 50
 HIST_MAX_BYTES = 100 * 1024 * 1024
 JOB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "job_current.json")
-LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workshop-service.log")
 
 SAMPLE_S = 0.25  # 4 samples per second: with the single subscription reading the model costs nothing (the 1/s trace drew long straight lines)
 SLEEP_S = 30  # no heartbeat from the page in this time: it sleeps
@@ -103,11 +103,7 @@ DETAIL_AWAKE = M("job_trace_awake_someone_watches_job")
 
 
 def log_file(msg):
-    try:
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} [job_trace] {msg}\n")
-    except Exception:
-        pass
+    service_log.log(msg, "job_trace")
 
 
 # The same repeated error comes out once every LOG_REPEATED_S (2026-10-11: 5777

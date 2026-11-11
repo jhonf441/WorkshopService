@@ -52,8 +52,9 @@
 					</div>
 				</v-card-text>
 			</v-card>
-		<!-- Setup of the whole machine: what each installed plugin still needs (nothing for plugins that are not installed) -->
-		<startup-master @section="id => { section = id }" />
+		<!-- ONE "Puesta en marcha": the steps each installed plugin still needs and the changes of the files of this SD (diff, accept item by item), with the
+		     "Archivos por plugin" viewer next to the files part -->
+		<startup-section @section="id => { section = id }" />
 
 		<!-- Black box (2026-10-12, dsf/box_black.py): the Pi shut off without a clean close
 		     (hang or power cut); last lines of the SD's log -->
@@ -217,7 +218,7 @@
 								<span>{{ $t('plugins.WorkshopService.procDocs.ui_group_count', { ok: g.ok, n: g.total }) }} &middot; {{ $t('plugins.WorkshopService.procDocs.ui_group_' + g.id + '_desc') }}</span>
 							</header>
 							<process-row
-								v-for="p in g.items" :key="p.id" :p="p" :hist="histProc.proc[p.id] || null"
+								v-for="p in g.items" :key="p.id" :p="p" :hist="histProc.proc[p.id] || null" :settings="procSettings"
 								@mode="m => changeMode(p.id, m)" @pause="controlProcess(p.id, 'pause')" @resume="controlProcess(p.id, 'resume')" @restart="controlProcess(p.id, 'restart')" @go-path="to => $router.push(to)" @go-anchor="goA"
 							/>
 						</section>
@@ -283,59 +284,15 @@
 						<v-icon small class="mr-2 svx-ico">mdi-robot</v-icon>{{ $t('plugins.WorkshopService.servicePage.automations') }}
 					</v-card-title>
 					<v-card-text>
-						<div class="svc-auto">
-							<div class="d-flex align-center">
-								<v-icon class="mr-2 svx-ico">mdi-weather-windy</v-icon>
-								<v-switch
-									:input-value="airAssistAuto" dense hide-details class="mt-0 pt-0"
-									:label="$t('plugins.WorkshopService.servicePage.automatic_air_with_the_laser')" @change="setAirAuto"
-								/>
-								<v-spacer />
-								<v-chip x-small label dark :color="airAssist ? 'success' : 'grey'">{{ airAssist ? $t('plugins.WorkshopService.servicePage.air_on') : $t('plugins.WorkshopService.servicePage.air_off') }}</v-chip>
-							</div>
-							<div class="text-caption grey--text svc-sub">
-								{{ $t('plugins.WorkshopService.servicePage.air_rule') }}<span v-if="!airAssistAuto"> {{ $t('plugins.WorkshopService.servicePage.used_when_automatic_mode_is_on') }}</span>
-								<div class="d-flex align-center flex-wrap mt-1" style="gap:4px">
-									<span>{{ $t('plugins.WorkshopService.servicePage.air_off_after') }}</span>
-									<v-chip-group :value="airAssistDelay" mandatory active-class="primary--text" @change="setDelay">
-										<v-chip v-for="t in delayOptions" :key="t" :value="t" small outlined filter>{{ t }} s</v-chip>
-									</v-chip-group>
-								</div>
-							</div>
-							<div class="ml-9 mt-1">
-								<a href="#" class="text-caption" @click.prevent="docAuto.air = !docAuto.air">
-									<v-icon x-small color="primary">{{ docAuto.air ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-									{{ docAuto.air ? $t('plugins.WorkshopService.procDocs.ui_less') : $t('plugins.WorkshopService.procDocs.ui_more') }}
-								</a>
-							</div>
-							<div v-if="docAuto.air" class="svc-doc-auto ml-9 mt-1">
-								<div><b>{{ $t('plugins.WorkshopService.procDocs.ui_auto_what') }}</b> {{ $t('plugins.WorkshopService.procDocs.auto_air_what') }}</div>
-								<div><b>{{ $t('plugins.WorkshopService.procDocs.ui_auto_when') }}</b> {{ $t('plugins.WorkshopService.procDocs.auto_air_when') }}</div>
-								<div><b>{{ $t('plugins.WorkshopService.procDocs.ui_auto_note') }}</b> {{ $t('plugins.WorkshopService.procDocs.auto_air_note') }}</div>
-							</div>
-						</div>
-
-						<div v-if="lightsActive" class="svc-auto">
-							<div class="d-flex align-center flex-wrap" style="gap:4px 12px">
-								<v-icon class="mr-2 svx-ico">mdi-led-strip-variant</v-icon>
-								<!-- Read-only (request 2026-10-09): the lights are controlled in the
-								     Lights page (and the quick buttons of the sidebar / jog) -->
-								<span style="flex:1 1 14rem;min-width:0">{{ $t('plugins.WorkshopService.servicePage.status_lights_x', { x: statusLightAuto ? $t('plugins.WorkshopService.servicePage.automatic_f') : $t('plugins.WorkshopService.servicePage.off_lighting_uses_those_leds') }) }}</span>
-								<v-spacer />
-								<v-chip x-small label :color="statusLightAuto ? 'success' : 'grey'" style="flex:none">{{ statusLightAuto ? $t('plugins.WorkshopService.servicePage.auto_state_on') : $t('plugins.WorkshopService.servicePage.auto_state_off') }}</v-chip>
-								<!-- the link only exists with the plugin installed and active: stopped, the route does not exist -->
-								<a href="#" class="text-body-2" style="flex:none" @click.prevent="$router.push('/Plugins/Lights')">{{ $t('plugins.WorkshopService.servicePage.open_lights_and_status') }}</a>
-							</div>
-							<div class="ml-9 mt-1">
-								<a href="#" class="text-caption" @click.prevent="docAuto.lights = !docAuto.lights">
-									<v-icon x-small color="primary">{{ docAuto.lights ? 'mdi-chevron-up' : 'mdi-chevron-down' }}</v-icon>
-									{{ docAuto.lights ? $t('plugins.WorkshopService.procDocs.ui_less') : $t('plugins.WorkshopService.procDocs.ui_more') }}
-								</a>
-							</div>
-							<div v-if="docAuto.lights" class="svc-doc-auto ml-9 mt-1">
-								<div><b>{{ $t('plugins.WorkshopService.procDocs.ui_auto_what') }}</b> {{ $t('plugins.WorkshopService.procDocs.auto_lights_what') }}</div>
-								<div><b>{{ $t('plugins.WorkshopService.procDocs.ui_auto_when') }}</b> {{ $t('plugins.WorkshopService.procDocs.auto_lights_when') }}</div>
-								<div><b>{{ $t('plugins.WorkshopService.procDocs.ui_auto_note') }}</b> {{ $t('plugins.WorkshopService.procDocs.auto_lights_note') }}</div>
+						<!-- One owner per setting (process-settings.js): what only ONE process uses (the automatic air, the status lights, the bed zones, the
+						     camera relay) is set in the row of that process; here only its state and the way there, never a second switch. -->
+						<div class="svc-auto svc-auto-owned">
+							<div class="text-caption grey--text mb-1">{{ $t('plugins.WorkshopService.procDocs.ui_setting_moved') }}</div>
+							<div v-for="o in ownedSummary" :key="o.id" class="svc-owned-row" :style="{ '--svc-c': o.color }">
+								<v-icon small class="svx-ico" aria-hidden="true">{{ o.icon }}</v-icon>
+								<span class="svc-owned-name">{{ o.label }}</span>
+								<span class="svc-owned-state" :title="o.stateText"><span class="svc-owned-dot" aria-hidden="true" />{{ o.chipText || o.stateText }}</span>
+								<a href="#" class="text-body-2" @click.prevent="goProcess(o.id)">{{ $t('plugins.WorkshopService.procDocs.' + (o.editable ? 'ui_setting_go' : 'ui_setting_see')) }}</a>
 							</div>
 						</div>
 
@@ -524,6 +481,11 @@
 		<roles-card />
 
 		</div>
+		<div v-if="visited.access && accessVisible" v-show="section === 'access'">
+		<!-- Access control (administrator only): profiles, people and groups, keys. Step 0: an empty shell -->
+		<access-section @go-users="section = 'users'" />
+
+		</div>
 		<div v-if="visited.audit" v-show="section === 'audit'">
 		<!-- Who did what (read only; nobody can delete it from here) -->
 		<audit-card />
@@ -665,15 +627,17 @@ import ApiKeys from './ApiKeys.vue'
 import UsersCard from './UsersCard.vue'
 import RolesCard from './RolesCard.vue'
 import AuditCard from './AuditCard.vue'
+import AccessSection from './AccessSection.vue'
 import ApiDetail from './ApiDetail.vue'
 import ProcessRow from './ProcessRow.vue'
 import ProcessesSummary from './ProcessesSummary.vue'
 import BlackBoxCard from './BlackBoxCard.vue'
 import ConfigPackage from './ConfigPackage.vue'
-import StartupMaster from './StartupMaster.vue'
+import StartupSection from './StartupSection.vue'
 import { matches } from './search.js'
 import { hist as histProc, sample } from './processes-history.js'
-import { buildGroups, safetyTally, filterCounts, pendingList, pausedList, modeFailure, configuredMode, activeFilterIds, effectiveFilter, pauseKey, serviceRestartFailure, restartDone } from './processes-groups.js'
+import { buildGroups, safetyTally, filterCounts, pendingList, pausedList, modeFailure, configuredMode, activeFilterIds, effectiveFilter, pauseKey, serviceRestartFailure, restartDone, stateColor, STATE_COLORS } from './processes-groups.js'
+import { SETTING_OF, airView, lightsView } from './process-settings.js'
 // same color per LED as the rest of the interface
 import { ledColor } from './LedStrip.vue'
 
@@ -716,12 +680,14 @@ const CATS = [
 export default {
 	mixins: [roleMixin],
 	// what came from the session of the person who left (ESTANDAR 3.3): put back to its first value on sign-out and on a change of role
-	sessionData: ['apiOps', 'tests'],
-	components: { PageHeader, SessionNotice, LockReason, HelpGuide, BlackBoxCard: BlackBoxCard, ConfigPackage, StartupMaster, SideTabs, BridgeCard: BridgeCard, ReceivedCommands, Database: Database, ApiKeys: ApiKeys, UsersCard, RolesCard, AuditCard, ApiDetail: ApiDetail, ProcessRow: ProcessRow, ProcessesSummary: ProcessesSummary },
+	// the API reference and its tests, and the per-process answers of the processes page (a refused mode change, a refused pause, the last
+	// accepted action): they were for the person who left, gone on sign-out / change of role
+	sessionData: ['apiOps', 'tests', 'modeError', 'ctlError', 'ctlDone'],
+	components: { PageHeader, SessionNotice, LockReason, HelpGuide, BlackBoxCard: BlackBoxCard, ConfigPackage, StartupSection, SideTabs, BridgeCard: BridgeCard, ReceivedCommands, Database: Database, ApiKeys: ApiKeys, UsersCard, RolesCard, AuditCard, AccessSection, ApiDetail: ApiDetail, ProcessRow: ProcessRow, ProcessesSummary: ProcessesSummary },
 	data() {
 		return {
 			section: 'summary', // the section chosen in the side bar
-			visited: { password: false, bridge: false, commands: false, base: false, users: false, audit: false, api: false }, // sections already opened: they stay mounted (v-show) so going back does not reload them
+			visited: { password: false, bridge: false, commands: false, base: false, users: false, access: false, audit: false, api: false }, // sections already opened: they stay mounted (v-show) so going back does not reload them
 			identity: currentIdentity(), // who uses this page (auth.whoami): compat = no user created yet
 			rs485Received: null,
 			visionState: null, // GET :8095/estado de WorkshopVision (OpenCV)
@@ -739,7 +705,7 @@ export default {
 			ctlLocal: {}, // process id -> { paused, restart_pending, until }: what the service answered, shown at once until the next publication
 			ctlTick: 0, // bumped when a local answer expires, so the rows are worked out again
 			svcRestart: { phase: '', failure: null, before: null }, // the restart of the whole service asked from the summary
-			docAuto: { air: false, lights: false, poweroff: false, job: false },
+			docAuto: { poweroff: false, job: false },
 			filter: '',
 			copied: null,
 			catFilter: null,
@@ -763,6 +729,10 @@ export default {
 			if (v in this.visited) {
 				this.visited[v] = true;
 			}
+		},
+		// the person lost the right to see Access (signed out, another role) while on it
+		accessVisible(v) {
+			if (!v && this.section === 'access') this.section = 'summary'
 		},
 		// Deep link from other pages: /Plugins/WorkshopService?anchor=svc-base (page may be kept alive)
 		'$route.query.anchor'(id) {
@@ -802,6 +772,10 @@ export default {
 			l.push(t('stopped_the_api'));
 			return l.slice(0, -1).join(', ') + t('stopped_and') + l[l.length - 1];
 		},
+		// the Access section exists only for who may list the profiles (administrator): same source of truth as every other control of the page
+		accessVisible() {
+			return this.canDo('access.profiles.list')
+		},
 		// the page is long: its sections go in a side bar (same as the Vision and Work table bars)
 		sections() {
 			const t = k => i18n.t('plugins.WorkshopService.servicePage.' + k);
@@ -812,6 +786,7 @@ export default {
 				{ id: 'commands', icon: 'mdi-history', label: t('nav_commands') },
 				{ id: 'base', icon: 'mdi-database-outline', label: t('nav_database') },
 				{ id: 'users', icon: 'mdi-account-group-outline', label: t('nav_users') },
+				...(this.accessVisible ? [{ id: 'access', icon: 'mdi-shield-key-outline', label: i18n.t('plugins.WorkshopService.access.nav_access') }] : []),
 				{ id: 'audit', icon: 'mdi-clipboard-text-clock-outline', label: t('nav_audit') },
 				{ id: 'api', icon: 'mdi-api', label: t('nav_api') },
 				{ id: 'password', icon: 'mdi-lock-outline', label: t('nav_password') },
@@ -851,20 +826,34 @@ export default {
 			}
 			return { text: i18n.t('plugins.WorkshopService.servicePage.running_2'), color: 'success', icon: 'mdi-check-circle', detail: i18n.t('plugins.WorkshopService.servicePage.runs_on_the_system_and_is') };
 		},
-		airAssist() {
-			return !!this.pluginData('airAssist');
+		// what the rows read from the plugin data for the settings they own (ProcessSetting.vue): the raw values, the row works them out
+		procSettings() {
+			const data = {};
+			['airAssist', 'airAssistAuto', 'airAssistDelay', 'statusLightAuto'].forEach(k => { data[k] = this.pluginData(k); });
+			return { data, lightsActive: this.lightsActive };
 		},
-		airAssistAuto() {
-			const v = this.pluginData('airAssistAuto');
-			return v === null || v === undefined ? true : !!v;
-		},
-		delayOptions() {
-			const base = [0, 2, 5, 10, 30];
-			return base.includes(this.airAssistDelay) ? base : base.concat(this.airAssistDelay).sort((x, y) => x - y);
-		},
-		airAssistDelay() {
-			const v = this.pluginData('airAssistDelay');
-			return v == null ? 2 : Number(v);
+		// the summary lines of the card "Automations" for the settings that moved to their rows: the state of the row (ONE colour map,
+		// stateColor) or the state of the setting itself, and the way to the row. Nothing here is a control.
+		ownedSummary() {
+			const SP = 'plugins.WorkshopService.servicePage.';
+			const rows = {};
+			this.procItems.forEach(p => { rows[p.id] = p; });
+			const air = airView(this.procSettings.data);
+			const lights = lightsView(this.procSettings.data, this.lightsActive);
+			const chip = {
+				interceptor: air.auto ? (air.on ? i18n.t(SP + 'air_on') : i18n.t(SP + 'air_off')) : i18n.t(SP + 'auto_state_off'),
+				status_light: lights.auto ? i18n.t(SP + 'auto_state_on') : i18n.t(SP + 'auto_state_off')
+			};
+			const label = { interceptor: i18n.t(SP + 'automatic_air_with_the_laser'), status_light: i18n.t('plugins.WorkshopService.procDocs.set_lights_title'), bed_zones: i18n.t('plugins.WorkshopService.procDocs.set_zones_label'), camera: i18n.t('plugins.WorkshopService.api.relay_title') };
+			const icon = { interceptor: 'mdi-weather-windy', status_light: 'mdi-led-strip-variant', bed_zones: 'mdi-view-grid-outline', camera: 'mdi-video-outline' };
+			return Object.keys(SETTING_OF).map(id => {
+				const p = rows[id] || null;
+				return {
+					id, label: label[id], icon: icon[id], editable: SETTING_OF[id] !== 'lights',
+					chipText: chip[id] || '', stateText: p ? p.state.text : i18n.t('plugins.WorkshopService.procDocs.ui_setting_no_row'),
+					color: p ? stateColor(p) : STATE_COLORS.idle
+				};
+			});
 		},
 		statusLightAuto() {
 			const v = this.pluginData('statusLightAuto');
@@ -1402,12 +1391,12 @@ export default {
 		send(op, args, opts) {
 			return apiText(op, args || {}, opts || {});
 		},
-		setAirAuto(v) {
-			return this.send('air.auto', { on: !!v });
-		},
-		setDelay(v) {
-			if (typeof v !== 'number') return;
-			return this.send('air.delay', { seconds: v });
+		// from the summary of "Automations" to the row that owns the setting: the processes section, no filter, the row in view
+		goProcess(id) {
+			this.section = 'processes';
+			this.procFilter = 'all';
+			this.procSearch = '';
+			this.irAcuando('svc-proc-' + id);
 		},
 		hourShort(iso) {
 			const m = /T(\d\d:\d\d)/.exec(String(iso || ''));
@@ -1910,6 +1899,11 @@ export default {
 .svc-auto > .d-flex.align-center { flex-wrap: wrap; gap: 2px 8px; }
 .svc-auto > .d-flex.align-center > .v-chip, .svc-auto > .d-flex.align-center > .v-icon { flex: none; }
 .svc-sub { margin-left: 36px; }
+/* the settings that live in their rows: one summary line each, the dot in the colour of the row (STATE_COLORS), no control */
+.svc-owned-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; padding: 4px 0; --svc-c: #6e787f; }
+.svc-owned-name { flex: 1 1 12rem; min-width: 0; font-size: 13px; }
+.svc-owned-state { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; opacity: 0.85; white-space: nowrap; }
+.svc-owned-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--svc-c); }
 .svc-doc-auto { border-top: 1px solid var(--wf-line); padding-top: 6px; font-size: 12px; line-height: 1.45; }
 .svc-doc-auto b { display: block; font-weight: 600; opacity: 0.75; margin-top: 4px; }
 .svc-channel { padding: 4px 0; }

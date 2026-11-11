@@ -18,13 +18,28 @@ export function groupOf(item) {
 	return GROUP_IDS.indexOf(g) >= 0 ? g : 'support'
 }
 
-// the looks of a process: 'paused' (calm, set by a person, it ticks), 'ok', 'late' (orange: late, no data, with errors), 'bad' (red: stopped, a real failure), 'idle' (gray: no plugin needs it)
+// the looks of a process: 'paused' (calm, set by a person, it ticks), 'ok', 'late' (orange: late, no data, with errors), 'bad' (red: stopped, a real failure), 'idle' (gray: resting, nothing to do now)
 export function stateKey(item) {
 	const s = (item && item.state) || {}
 	if (s.level >= 2) return 'bad'
 	if (pauseKey(item)) return 'paused'
 	if (s.level === 1) return 'late'
 	return item && item.idle ? 'idle' : 'ok'
+}
+
+// ONE map state key -> colour, for everything of a row that shows its state: the dot, the state tag and the "right now" word (ProcessRow.vue
+// reads it; the family tokens of family.css, with the fallback of each). Nothing else of the row may pick a state colour by itself: the dot of
+// "Cama por zonas" was gray while its "right now" line said "running" (2026-11-06) because each piece decided on its own.
+export const STATE_COLORS = {
+	ok: 'var(--wf-ok, #43a047)',
+	late: 'var(--wf-warn, #fb8c00)',
+	bad: 'var(--wf-err, #e53935)',
+	paused: '#78909c',
+	idle: '#6e787f'
+}
+
+export function stateColor(item) {
+	return STATE_COLORS[stateKey(item)]
 }
 
 // what the "with problems" filter keeps: a warning, a failure or a process that had to be relaunched
@@ -97,8 +112,11 @@ export function pendingNote(p) {
 	return { key: 'ui_mode_pending', params: { mode: configuredMode(p) } }
 }
 
-// what runs now, as the key of a text, or null when the service does not say
+// what runs now, as the key of a text, or null when the service does not say. A process whose own loop says it is resting (`idle`: the bed
+// zones with the zones turned off, a poller whose plugin is stopped) is "resting" even when its supervisor launched it as "running": the word
+// follows the same state as the dot (stateKey), so the row never says "running" next to a gray dot.
 export function effectiveKey(p) {
+	if (p && p.idle && stateKey(p) === 'idle') return 'ui_effective_idle'
 	const e = p && p.module && p.module.effective
 	return EFFECTIVE.indexOf(e) >= 0 ? 'ui_effective_' + e : null
 }

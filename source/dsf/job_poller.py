@@ -34,21 +34,17 @@ import heartbeats
 import activity
 import machine_state
 import live_job
+import service_log
 from messages import M, J
 
 POLL_INTERVAL_S = 5
 
 JOB_ACTIVE_STATES = job_states.POLLER_ACTIVE
 
-LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workshop-service.log")
 
 
 def log_file(msg):
-    try:
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} [job_poller] {msg}\n")
-    except Exception:
-        pass
+    service_log.log(msg, "job_poller")
 
 
 def _get_status():

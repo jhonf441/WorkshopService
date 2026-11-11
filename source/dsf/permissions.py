@@ -43,7 +43,7 @@ MODES = ("laser", "cnc", "fff")
 # operations that need no identity at all: logging in and asking who one is
 PUBLIC_OPS = frozenset({"auth.login", "auth.whoami", "api.ping"})
 # stopping is never blocked: any caller may stop (no login needed), like the emergency stop of DWC
-STOP_OPS = frozenset({"jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "pelletlayers.disarm", "machine.stop", "livejob.stop_safe", "power.off"})  # power.off: whoever is at the machine can switch it off (owner decision 2026-11-06: anyone could pull the plug anyway)
+STOP_OPS = frozenset({"jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "pelletlayers.disarm", "layerrecipes.disarm", "bedcal.stop", "machine.stop", "livejob.stop_safe", "power.off"})  # power.off: whoever is at the machine can switch it off (owner decision 2026-11-06: anyone could pull the plug anyway)
 # an operator may run these only in a mode it is allowed (the others need the camera / mode rules below)
 MODE_GATED = frozenset({"jog.xy", "jog.z", "jog.axis", "jog.free", "frame.start", "motion.reserve", "job.start"})
 # a viewer may call these only when it has the camera (the camera relay key and the Vision answers)
@@ -65,7 +65,6 @@ MACHINE_ADMIN_TRY = ("M208", "M92", "M906", "M913", "M917")
 ESCALATE_IN = {
     # when_missing: a call that does not say WHAT it writes needs the higher role too (fail closed; the arguments are required anyway)
     "machine.config.apply": {"arg": "kind", "when_in": list(MACHINE_ADMIN_KINDS), "role": ADMIN, "when_missing": True},
-    "machine.history.restore": {"arg": "kind", "when_in": list(MACHINE_ADMIN_KINDS), "role": ADMIN},
     "machine.try": {"arg": "gcode_kind", "when_in": list(MACHINE_ADMIN_TRY), "role": ADMIN, "when_missing": True},
 }
 
@@ -77,6 +76,7 @@ OP_ROLES = {
     # -- users, audit --
     "users.list": ADMIN, "users.add": ADMIN, "users.set": ADMIN, "users.remove": ADMIN, "users.reset_pin": ADMIN,
     "users.settings": ADMIN, "users.enable": ADMIN, "users.close_sessions": ADMIN, "audit.list": ADMIN,
+    "audit.verify": ADMIN, "audit.export": ADMIN, "audit.settings": ADMIN,
     # -- state (viewer) --
     "state.get": VIEWER, "motion.state": VIEWER, "motion.ask": VIEWER, "frame.status": VIEWER, "view.heartbeat": VIEWER,
     "job.get": VIEWER, "risk.list": VIEWER, "pid.status": VIEWER, "pid.trace": VIEWER, "blackbox.status": VIEWER, "config.guard": VIEWER,
@@ -124,6 +124,12 @@ OP_ROLES = {
     "notifications.quiet_hours": TECHNICIAN, "notifications.video": TECHNICIAN,
     "db.places": TECHNICIAN, "db.backup": TECHNICIAN, "db.keep": TECHNICIAN, "db.settings": TECHNICIAN,
     "modules.list": TECHNICIAN, "modules.set": TECHNICIAN, "processes.pause": TECHNICIAN, "processes.resume": TECHNICIAN, "processes.restart": TECHNICIAN, "examples.list": TECHNICIAN, "examples.create": TECHNICIAN,
+    # start-up report (SD-LAYOUT.md E.2, F.5): reading the integrity of the SD and the install log reveals the layout, so technician; none of them writes
+    "startup.integrity": TECHNICIAN, "startup.files": TECHNICIAN, "startup.file.view": TECHNICIAN, "startup.runs.list": TECHNICIAN, "startup.runs.get": TECHNICIAN,
+    # restoring a workshop file from the factory copy (SD-LAYOUT.md phase 6): the preview shows the diff of a file and the restore is explicit; both admin
+    "startup.integrity.restore.preview": ADMIN, "startup.integrity.restore": ADMIN,
+    # start-up wizard: the plan shows the diffs (secrets masked) of what would change on THIS SD, technician; applying the items the person ticked is admin only
+    "startup.plan": TECHNICIAN, "startup.apply": ADMIN,
     "blackbox.lines": TECHNICIAN, "blackbox.hide": TECHNICIAN, "blackbox.show": TECHNICIAN,
     "bridge.test": TECHNICIAN, "bridge.service": TECHNICIAN, "bridge.service.set": TECHNICIAN,
     "power.method": TECHNICIAN, "password.status": TECHNICIAN,
@@ -132,8 +138,18 @@ OP_ROLES = {
     # pellet temperature by layer: reading is public to viewers, profiles and arming a job are the technician's, disarming is a stop (STOP_OPS)
     "pelletlayers.list": VIEWER, "pelletlayers.get": VIEWER, "pelletlayers.status": VIEWER, "pelletlayers.set": TECHNICIAN,
     "pelletlayers.remove": TECHNICIAN, "pelletlayers.arm": TECHNICIAN, "pelletlayers.disarm": VIEWER,
+    # temperature-by-layer recipes and the optional data of the bed estimate: anybody who sees the machine reads them, the technician writes (nothing here heats)
+    "layerrecipes.list": VIEWER, "layerrecipes.get": VIEWER, "layerrecipes.set": TECHNICIAN, "layerrecipes.remove": TECHNICIAN,
+    "layerrecipes.import_pellet": TECHNICIAN, "layerrecipes.preview": VIEWER, "layerrecipes.status": VIEWER, "layerrecipes.arm": TECHNICIAN,
+    # G-code library of the printing plugin: it only reads files of the SD (the worker parses them in the background), so viewers read, an operator asks for a re-read, only an admin empties the cache
+    "gcodelib.list": VIEWER, "gcodelib.info": VIEWER, "gcodelib.thumbnail": VIEWER, "gcodelib.layers": VIEWER, "gcodelib.refresh": OPERATOR, "gcodelib.forget": ADMIN,
+    "layerrecipes.disarm": VIEWER,  # a stop (STOP_OPS)
+    "bedestimates.get": VIEWER, "bedestimates.set": TECHNICIAN,
     # bed zones: anybody who sees the machine reads them, the operator heats, the technician changes the limits, turning off is a stop (STOP_OPS)
     "bedzones.get": VIEWER, "bedzones.setpoint": OPERATOR, "bedzones.set": TECHNICIAN, "bedzones.off": VIEWER,
+    # bed zones calibration assistant (the service heats and tunes the zones): reading the state is public to who sees the machine, the plan and the two starts are the
+    # technician's (the start also needs the confirmation of level 3 / 4 and an idle machine), stopping is a stop (STOP_OPS)
+    "bedcal.status": VIEWER, "bedcal.plan": TECHNICIAN, "bedcal.preheat": TECHNICIAN, "bedcal.tune": TECHNICIAN, "bedcal.stop": VIEWER,
     # protection guard: watching state is public to everyone who can see the machine, tuning it is the admin's
     "guard.status": VIEWER, "guard.set": ADMIN,
     # machine profile and discovery: pages of every role need them to hide what the machine does not have
@@ -153,7 +169,7 @@ OP_ROLES = {
     "machine.config.plan": TECHNICIAN, "machine.config.apply": TECHNICIAN,
     # phase 2: history (list / get / compare / restore-plan), report data, offsets, limits, the volatile trial, the laser cross
     "machine.history.list": TECHNICIAN, "machine.history.get": TECHNICIAN, "machine.history.compare": TECHNICIAN,
-    "machine.history.restore": TECHNICIAN, "machine.report": TECHNICIAN,
+    "machine.history.restore": ADMIN, "machine.report": TECHNICIAN,
     "machine.offsets.get": OPERATOR, "machine.offsets.snapshot": TECHNICIAN, "machine.limits.get": OPERATOR, "machine.power.get": OPERATOR, "machine.power.resume": TECHNICIAN,
     "machine.layout": OPERATOR,
     "machine.try": TECHNICIAN, "machine.try.pending": TECHNICIAN, "machine.mark_cross": TECHNICIAN, "machine.test_move": TECHNICIAN, "machine.tool.get": OPERATOR, "machine.tool.pins": TECHNICIAN, "machine.tool.preview": TECHNICIAN, "machine.beds.get": OPERATOR, "machine.beds.preview": TECHNICIAN,
@@ -174,6 +190,10 @@ OP_ROLES = {
     "keys.list": ADMIN, "keys.preview": ADMIN, "keys.create": ADMIN, "keys.update": ADMIN, "keys.revoke": ADMIN,
     # custom roles: only an administrator manages them, and none of it can be delegated (permission_caps.NOT_DELEGABLE)
     "roles.list": ADMIN, "roles.get": ADMIN, "roles.set": ADMIN, "roles.remove": ADMIN, "roles.effective": ADMIN,
+    "access.profiles.list": ADMIN, "access.profiles.get": ADMIN, "access.profiles.set": ADMIN, "access.profiles.remove": ADMIN, "access.profile.versions": ADMIN,
+    "access.profile.rollback": ADMIN, "access.groups.list": ADMIN, "access.groups.get": ADMIN, "access.groups.set": ADMIN, "access.groups.remove": ADMIN,
+    "access.attach": ADMIN, "access.detach": ADMIN, "access.ceiling.set": ADMIN, "access.person.get": ADMIN, "access.check": ADMIN,
+    "access.review": ADMIN, "access.report": ADMIN, "access.plugins.validate": ADMIN,
 }
 
 
@@ -327,7 +347,7 @@ def effective_ops(role, rd=None, ctx=None):
 
 # the arguments that make a call an escalated one, to tell what a role may do when it changes settings / writes hardware parameters
 ESCALATION_PROBES = {"vision.post": {"path": "/settings"}, "camera.service": {"changes": {"x": 1}}, "machine.config.apply": {"kind": "config.m208"},
-                     "machine.history.restore": {"kind": "config.m208"}, "machine.try": {"gcode_kind": "M208"}}
+                     "machine.try": {"gcode_kind": "M208"}}
 
 
 def resolved_lists(role, rd):

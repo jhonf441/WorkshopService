@@ -1,29 +1,22 @@
 """
 Catalog of the service's internal processes for the "Workshop services" page (processes redesign, phase 1).
 
-Pure data, no I/O. Every process (the heartbeat label) has a GROUP the page uses to sort it and a LOCKED flag:
+Pure data, no I/O: since phase 3b it is a VIEW of the one table of the processes (process_registry.py), kept under its old names.
+Every process (the heartbeat label) has a GROUP the page uses to sort it and a LOCKED flag:
 a locked process has NO switch on the page (the safety group, plus the ones the service cannot run without).
 heartbeats.register merges these two fields into the process info, so snapshot() publishes them; an id that is not
 here gets the defaults (group "support", not locked) and the regression test (test_process_catalog.py) fails
 until it is added.
 """
 
-GROUPS = ("safety", "machine", "data", "support")
+import process_registry
+
+GROUPS = process_registry.GROUPS
 DEFAULT_GROUP = "support"
 
-_SAFETY = ("guardian_laser", "intercept_watchdog", "watchdog_lock", "guard", "motion", "risk", "events",
-           "config_guard", "health", "interceptor")
-_MACHINE = ("jog", "bed_zones", "pellet_layers", "timer", "status_light")
-_DATA = ("consumption", "motors", "maintenance", "pid_trace", "trace", "jobs", "box_black", "base_backup",
-         "commands_extra")
-_SUPPORT = ("subscription", "publisher", "communication", "camera", "api", "api_macros")
-# no switch on the page: safety, plus the processes the rest of the service stands on
-_LOCKED_EXTRA = ("jobs", "subscription", "publisher", "api", "commands_extra", "api_macros")
-
-CATALOG = {}
-for _group, _ids in (("safety", _SAFETY), ("machine", _MACHINE), ("data", _DATA), ("support", _SUPPORT)):
-    for _id in _ids:
-        CATALOG[_id] = {"group": _group, "locked": _group == "safety" or _id in _LOCKED_EXTRA}
+# {id: {"group", "locked"}}: a locked process has no switch on the page (the safety group, plus the ones the service cannot run
+# without: ProcessSpec.always_on)
+CATALOG = process_registry.catalog()
 
 # Processes whose loop re-reads the MODE (service_modules.process(label), which honours on/off) on EVERY pass, so a change of
 # the switch reacts without restarting the service. Verdicts (phase 2, read from the loops; conservative, when in doubt OUT):
@@ -37,7 +30,7 @@ for _group, _ids in (("safety", _SAFETY), ("machine", _MACHINE), ("data", _DATA)
 #   jog, timer, trace, events, jobs, risk, config_guard, motion, health, guard  OUT  no loop reads service_modules (grep): only the
 #                     supervisor at launch decides.
 # protection_guard.py:307 reads process() each pass but only to decide what it EXPECTS alive; it does not stop anything.
-MODE_LIVE = ("bed_zones",)
+MODE_LIVE = process_registry.mode_live()
 
 
 # Processes the page may PAUSE / RESUME / RESTART (phase 3, ops processes.pause / resume / restart): the non-locked ones of the data group whose
@@ -49,7 +42,7 @@ MODE_LIVE = ("bed_zones",)
 #   trace        job_trace.run_loop            `while True: time.sleep(v.run_once())`; paused = the recorder sleeps (a gap, as when nobody looks).
 # NOT pausable, whatever the page may want: anything locked, the safety group, the machine group (jog, bed_zones, timer, status_light),
 # camera, jobs, box_black (its loop writes the black box a crash report depends on), base_backup (a once-a-day job, no per-pass loop).
-PAUSABLE = ("consumption", "motors", "maintenance", "pid_trace", "trace")
+PAUSABLE = process_registry.pausable()
 
 
 def is_pausable(process_id):

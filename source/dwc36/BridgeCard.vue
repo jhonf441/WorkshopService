@@ -18,6 +18,7 @@
 				</v-chip>
 				<v-chip v-if="e && !stopped" small label outlined class="mr-1" :title="t('version')">v{{ e.version }} · {{ $t('plugins.WorkshopService.bridgeCard.up_for_t', { t: dur(e.uptime_s) }) }}</v-chip>
 				<v-chip v-if="e && !stopped && contractChip" small label outlined :color="contractChip.color" class="mr-1" :title="contractChip.title">{{ contractChip.text }}</v-chip>
+				<v-btn small text class="mr-1 px-2" :title="t('contract_open')" @click="contractOpen = true">{{ $t('plugins.WorkshopService.bridgeCard.contract_open') }}</v-btn>
 				<v-chip small label dark :color="stateChip.color" :title="t('state')">{{ stateChip.text }}</v-chip>
 				<v-btn v-if="e && !stopped" icon small class="ml-1" :color="armed === 'restart' ? 'warning' : ''" :disabled="!!bridgeInUse" :loading="actionInProgress === 'restart'" :title="bridgeInUse || (armed === 'restart' ? $t('plugins.WorkshopService.bridgeCard.restart_bridge_confirm') : $t('plugins.WorkshopService.bridgeCard.restart_bridge'))" @click="restartBridge()">
 					<v-icon>mdi-restart</v-icon>
@@ -34,8 +35,9 @@
 				<v-switch :input-value="unit.active" :disabled="unit.can_control === false || unitBusy || !canDo('bridge.service.set')" :loading="unitBusy" dense hide-details class="mt-0 mr-3" :label="$t('plugins.WorkshopService.bridgeCard.unit_switch')" @change="changeUnit" />
 				<span class="text-caption grey--text">{{ unit.active ? (unit.enabled ? $t('plugins.WorkshopService.bridgeCard.unit_on_enabled') : $t('plugins.WorkshopService.bridgeCard.unit_on_not_enabled')) : $t('plugins.WorkshopService.bridgeCard.unit_off') }}</span>
 			</div>
-			<!-- one reason for the unit control: reading it is bridge.service, switching it bridge.service.set (both technician) -->
-			<lock-reason v-if="!canDo('bridge.service')" op="bridge.service" need="technician" class="mb-3" />
+			<!-- one reason for the unit control: reading it is bridge.service, switching it bridge.service.set (both technician); with nobody
+			     signed in the cover below says it once, not this line -->
+			<lock-reason v-if="!gated && !canDo('bridge.service')" op="bridge.service" need="technician" class="mb-3" />
 			<lock-reason v-else-if="unit && unit.installed" op="bridge.service.set" need="technician" class="mb-3" />
 			<v-alert v-if="unit && unit.installed && unit.can_control === false" dense text type="info" class="mb-3">
 				{{ $t('plugins.WorkshopService.bridgeCard.unit_no_permission') }}
@@ -43,7 +45,11 @@
 			</v-alert>
 			<v-alert v-if="unitMsg" dense text type="warning" class="mb-3">{{ unitMsg }}</v-alert>
 
-			<template v-if="unit && unit.installed && !unit.active">
+			<!-- nobody signed in (users exist): the card is locked with its cause; the sign-in is the chip of the bar (ESTANDAR 2.2, no second button).
+			     The state keeps being read meanwhile, so the card is full the moment the person signs in -->
+			<session-notice v-if="gated" kind="session" variant="cover" />
+
+			<template v-else-if="unit && unit.installed && !unit.active">
 				<div class="text-body-2 grey--text">{{ $t('plugins.WorkshopService.bridgeCard.unit_stopped_text') }}</div>
 			</template>
 
@@ -470,8 +476,12 @@
 					</v-expansion-panel>
 				</v-expansion-panels>
 			</template>
+			<!-- the state file could not be read several times in a row (an HTTP error, a damaged file): say so and offer a retry, never "Reading..." forever -->
+			<session-notice v-else-if="readProblem" kind="down" variant="cover" :text="readProblem" @retry="read()" />
 			<div v-else class="text-body-2 grey--text">{{ $t('plugins.WorkshopService.bridgeCard.reading_status') }}</div>
 		</v-card-text>
+
+		<bridge-contract-dialog v-model="contractOpen" :state="e" :received="received" :now="now" :stopped="stopped" />
 
 		<v-snackbar v-model="snack.see" :color="snack.ok ? 'success' : 'error'" timeout="3500" bottom>{{ snack.text }}</v-snackbar>
 	</v-card>
@@ -484,10 +494,14 @@ import i18n from '../../i18n'
 
 import { copyText } from './copy.js'
 import { apiText } from './workshop-api.js'
+import { signedOut } from './workshop-auth.js'
 import { roleMixin } from './role-mixin.js'
+import { ts } from './shared-t.js'
 import LockReason from './LockReason.vue'
+import SessionNotice from './SessionNotice.vue'
 import { parsePortError, portHint } from './bridge-port.js'
 import * as bridgeContract from './bridge-contract.js'
+import BridgeContractDialog from './BridgeContractDialog.vue'
 
 const STATE_FILE = '0:/sys/workshop/data/bridge-state.json';
 const CONFIG = '0:/sys/workshop/config/bridge.json';
@@ -546,6 +560,7 @@ const DEFAULT = { port: 23, exclusive: true, queries: ['M114', 'M115', 'M105', '
 const GH = 60;
 const READ_MS = 3000;
 const READ_MAX_MS = 30000;
+const READ_FAILS = 3; // failed reads of the state file in a row before the card says it cannot read it
 const commands = [
 	{ cmd: 'BRIDGE HELP', desc: i18n.t('plugins.WorkshopService.bridgeCard.list_of_bridge_commands'), test: true },
 	{ cmd: 'BRIDGE STATUS', desc: i18n.t('plugins.WorkshopService.bridgeCard.who_has_control_now'), test: true },
@@ -590,6 +605,7 @@ async function writeJson(p, data) {
 const help = {
 	state: i18n.t('plugins.WorkshopService.bridgeCard.status_of_the_bridge_service_on'),
 	version: i18n.t('plugins.WorkshopService.bridgeCard.bridge_version_and_how_long_it'),
+	contract_open: i18n.t('plugins.WorkshopService.bridgeCard.contract_open_title'),
 	control: i18n.t('plugins.WorkshopService.bridgeCard.help_control'),
 	release: i18n.t('plugins.WorkshopService.bridgeCard.releases_control_nobody_has_it_until'),
 	give_control: i18n.t('plugins.WorkshopService.bridgeCard.help_give_control'),
@@ -637,21 +653,28 @@ const help = {
 };
 
 export default {
-	components: { LockReason },
+	components: { LockReason, SessionNotice, BridgeContractDialog },
 	mixins: [roleMixin],
-	// the state of the unit was read with the session that left: emptied on sign-out / change of role, read again by onSessionChange
-	sessionData: ['unit', 'unitMsg'],
+	// what the session that left read or typed (ESTANDAR 3.3): the unit state, every message, result, form and armed button goes back to its
+	// initial value on sign-out / change of role; the unit state and the settings are read again by onSessionChange. The state file (`e`) is
+	// not of the session: it is public on the SD and the cover hides it while nobody is signed in
+	sessionData: ['unit', 'unitMsg', 'editing', 'nameNew', 'armed', 'actionInProgress', 'waiting', 'snack', 'tests', 'fields', 'copied',
+		'secForm', 'secLoaded', 'keyNew', 'trustNew', 'viewKey', 'savingSec', 'msgSec', 'msgSecError', 'debugCopied',
+		'config', 'names', 'queriesTxt', 'saving', 'msg', 'msgError'],
 	data() {
 		return {
 			GH,
 			KINDS: kinds,
 			e: null,
+			readFails: 0, // reads of the state file that failed in a row (not a 404), and the last cause: after a few the card says so
+			readCause: '',
 			noInstalled: false,
 			unit: null, // {installed, active, enabled, can_control} of the unit of this Pi (null = not read yet)
 			unitBusy: false,
 			unitMsg: '',
 			lastSeq: null,
 			received: null,
+			contractOpen: false,
 			now: Date.now(),
 			timer: null,
 			cyclesUnit: 0,
@@ -791,7 +814,19 @@ export default {
 			if (kind === 'old') return { color: 'warning', text: i18n.t('plugins.WorkshopService.bridgeCard.contract_chip_old'), title: i18n.t('plugins.WorkshopService.bridgeCard.contract_title_old') }
 			return { color: '', text: i18n.t('plugins.WorkshopService.bridgeCard.contract_chip_ok', { n }), title: i18n.t('plugins.WorkshopService.bridgeCard.contract_title_ok', { n }) }
 		},
+		// nobody signed in while the service has users: the body is covered and the chip says why (the file keeps being read)
+		gated() {
+			void this.identityTick;
+			return signedOut();
+		},
+		// the state file could not be read READ_FAILS times in a row (not a 404, that is "not installed"): the text of the cover, '' otherwise
+		readProblem() {
+			return !this.e && this.readFails >= READ_FAILS ? i18n.t('plugins.WorkshopService.bridgeCard.state_unreadable', { x: this.readCause }) : '';
+		},
 		stateChip() {
+			if (this.gated) {
+				return { text: ts('notice_session_cover_title'), color: 'grey' };
+			}
 			if (this.noInstalled) {
 				return { text: i18n.t('plugins.WorkshopService.bridgeCard.not_installed'), color: 'grey' };
 			}
@@ -799,7 +834,8 @@ export default {
 				return { text: i18n.t('plugins.WorkshopService.bridgeCard.stopped_chip'), color: 'grey' };
 			}
 			if (!this.e) {
-				return { text: '...', color: 'grey' };
+				// not "..." (it looked like a button): "Reading..." the first seconds, "No data" once the read keeps failing
+				return this.readProblem ? { text: i18n.t('plugins.WorkshopService.common.no_data_2'), color: 'warning' } : { text: i18n.t('plugins.WorkshopService.bridgeCard.reading_chip'), color: 'grey' };
 			}
 			if (this.e.error) {
 				return { text: i18n.t('plugins.WorkshopService.bridgeCard.port_error'), color: 'error' };
@@ -903,7 +939,14 @@ export default {
 			}, ms);
 		},
 		onSessionChange(kind) {
-			if (kind !== 'signed-out') this.readUnit();
+			if (kind === 'signed-out') return;
+			this.readUnit();
+			// the forms were put back to their initial values (sessionData): filled again for the person who is here now
+			if (this.sec && !this.secLoaded) {
+				this.secLoaded = true;
+				this.loadSecForm();
+			}
+			if (this.tab === 4) this.openConfig();
 		},
 		async readUnit() {
 			// a role that cannot read the unit does not ask: the lock reason says why
@@ -947,10 +990,13 @@ export default {
 				}
 				this.missing = 0;
 				if (!r.ok) {
+					this.readFailed('HTTP ' + r.status);
 					return;
 				}
 				const e = await r.json();
 				this.noInstalled = false;
+				this.readFails = 0;
+				this.readCause = '';
 				if (e.seq !== this.lastSeq) {
 					this.lastSeq = e.seq;
 					this.received = Date.now();
@@ -960,8 +1006,13 @@ export default {
 				this.heartbeat();
 				this.checkAction();
 			} catch (err) {
-				// red / archivo a medio escribir: se reintenta en el proximo turno
+				// network, or a file half written: retried on the next turn; counted, so the card can say it after a few
+				this.readFailed(err && err.message ? err.message : String(err));
 			}
+		},
+		readFailed(cause) {
+			this.readFails = Math.min(this.readFails + 1, 99);
+			this.readCause = cause;
 		},
 		// ---- actions (file the bridge reads every second)
 		async action(data, key) {

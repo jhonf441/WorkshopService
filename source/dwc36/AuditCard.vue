@@ -31,7 +31,7 @@
 							<td class="text-caption" style="white-space:nowrap">{{ r.ts.replace('T', ' ') }}</td>
 							<td>
 								{{ r.user || '-' }}
-								<v-chip v-if="r.role" x-small label outlined class="ml-1">{{ roleName(r.role) }}</v-chip>
+								<role-chip v-if="r.role" :role="r.role" :text="roleName(r.role)" class="ml-1" />
 							</td>
 							<td>
 								<code>{{ r.op }}</code>
@@ -68,6 +68,7 @@ import { signedOut } from './workshop-auth.js'
 import { roleMixin } from './role-mixin.js'
 import SessionNotice from './SessionNotice.vue'
 import RangePicker from './RangePicker.vue'
+import RoleChip from './RoleChip.vue'
 import { resolve, localText, relative } from './range-picker.js'
 
 const PAGE = 50;
@@ -80,7 +81,7 @@ function day(offsetDays) {
 
 export default {
 	name: 'AuditCard',
-	components: { RangePicker, SessionNotice },
+	components: { RangePicker, SessionNotice, RoleChip },
 	mixins: [roleMixin],
 	// the rows and the people of the old session are emptied on sign-out / change of role (ESTANDAR 3.3); the filters are not data of the session
 	sessionData: ['rows', 'total', 'users', 'offset', 'error', 'loading'],
@@ -106,7 +107,8 @@ export default {
 	beforeDestroy() { if (this.off) this.off(); },
 	methods: {
 		// an answer of the old person that is still on its way must not fill the table again
-		onSessionChange() { this._gen++; },
+		// the stale call no longer puts the spinner out (gen), so it is put out here; the identity handler reads again when there is something to read
+		onSessionChange() { this._gen++; this.loading = false; },
 		roleName(r) { const k = 'plugins.WorkshopService.users.role_' + r; return this.$te(k) ? this.$t(k) : r; },
 		move(dir) { this.offset = Math.max(0, this.offset + dir * PAGE); this.read(); },
 		async read() {

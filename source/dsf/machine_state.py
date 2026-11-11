@@ -14,10 +14,15 @@ owner of the object model:
     send DSF only sends what changed, and if this side is slow to read, DSF
     merges the changes into a single patch (it waits for the Acknowledge).
   - One thread (heartbeat "suscripcion") reads, applies the patches to the
-    in-memory model and notifies whoever registered with on_change().
+    in-memory model and hands them to whoever registered with on_change():
+    every listener has its OWN bounded queue and thread (ListenerChannel), so a
+    slow or failing listener never delays this thread nor the other listeners
+    (plan phase 3c, finding D-12).
   - get_status() returns a copy of the model WITHOUT asking for anything
     (the same copy for everybody until another patch arrives: it is
-    read-only). read_in("state.status") reads a single value.
+    read-only). read_in("state.status") reads a single value. snapshot()
+    returns (model, age_s) and age() the seconds since the last message
+    (monotonic clock), so a consumer can decide whether the model is reliable.
   - If it drops (DSF restarts, the socket closes or nothing arrives within
     WITHOUT_DATA_S) it reconnects with a growing wait (WAIT_MIN_S..WAIT_MAX_S).
     While there is no connection, get_status() waits up to `timeout` and then
@@ -95,7 +100,10 @@ import threading
 import time
 from collections import deque
 
+import clock as clock_mod
 import heartbeats
+import service_log
+from listener_channel import ListenerChannel, LISTENER_QUEUE_MAX  # noqa: F401 (re-exported)
 from messages import M
 
 WP_DIR = paths.ZONES_DIR
@@ -135,7 +143,6 @@ WINDOW_S = 10  # window of the patches-per-second counter
 MAX_MESSAGE = 16 * 1024 * 1024
 ACK = b'{"command":"Acknowledge"}'
 
-LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workshop-service.log")
 NAME_HEARTBEAT = "subscription"
 # Texts of the Services page (heartbeats.register / heartbeats.detail)
 TITLE = M("machine_state_machine_state_dsf")
@@ -149,11 +156,7 @@ class StateUnavailable(Exception):
 
 
 def log_file(msg):
-    try:
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} [state_machine] {msg}\n")
-    except Exception:
-        pass
+    service_log.log(msg, "state_machine")
 
 
 # ---------------- parches ----------------
@@ -348,13 +351,19 @@ def _connect_dsf(filters):
     return DsfConnection(filters).open_it()
 
 
+# ---------------- listeners ----------------
+
+def _spawn_listener_thread(name, target):
+    return heartbeats.spawn_daemon(name, target)
+
+
 # ---------------- the subscription ----------------
 
 class Subscription:
     """Owner of the model. run_once() is one step of the thread (the tests call
     it by hand with a fake connection) and returns how long to wait."""
 
-    def __init__(self, filters=FILTERS, connect_to=_connect_dsf, clock=time.monotonic):
+    def __init__(self, filters=FILTERS, connect_to=_connect_dsf, clock=clock_mod.mono, spawn=_spawn_listener_thread):
         self.filters = list(filters)
         self.connect_to = connect_to
         self.clock = clock
@@ -377,6 +386,9 @@ class Subscription:
         self.window = deque()
         self.last_error = None
         self.listeners = []
+        self._spawn = spawn
+        self._channels = {}  # listener -> ListenerChannel (made on the first patch it receives)
+        self._channels_lock = threading.Lock()
         self._thread = None
         self._thread_lock = threading.Lock()
 
@@ -489,11 +501,57 @@ class Subscription:
             self.connected = False
 
     def _notify(self, patch, full):
+        """Hands the patch to the queue of each listener and returns at once (never runs a listener here)."""
         for fn in list(self.listeners):
             try:
-                fn(patch, full)
+                self._channel(fn).put(patch, full)
             except Exception as e:
                 log_file(f"listener {getattr(fn, '__name__', fn)}: {type(e).__name__}: {e}")
+
+    def _channel(self, fn):
+        with self._channels_lock:
+            ch = self._channels.get(fn)
+            if ch is None:
+                ch = self._channels[fn] = ListenerChannel(fn, self._spawn)
+            return ch
+
+    def remove_listener(self, fn):
+        try:
+            self.listeners.remove(fn)
+        except ValueError:
+            pass
+        with self._channels_lock:
+            ch = self._channels.pop(fn, None)
+        if ch is not None:
+            ch.close()
+
+    def listener_stats(self):
+        """One dict per listener that has received something: name, queued, delivered, dropped, errors."""
+        with self._channels_lock:
+            chans = list(self._channels.values())
+        return [c.stats() for c in chans]
+
+    def flush(self, timeout=5):
+        """Waits until every listener has delivered what is queued (tests, orderly shutdown). True if it got there."""
+        with self._channels_lock:
+            chans = list(self._channels.values())
+        return all(c.wait_idle(timeout) for c in chans)
+
+    def age(self):
+        """Seconds since the last message from DSF (monotonic clock), or None if none has arrived yet."""
+        last = self.last
+        return None if last is None else max(0.0, self.clock() - last)
+
+    def snapshot(self, timeout=3):
+        """(model, age_s): the same copy as status() and how old it is. StateUnavailable if there is no connection."""
+        with self.lock:
+            self._wait_for(timeout)
+            if self._snap_version != self.version:
+                self._snap = _copy(self.model)
+                self._snap_version = self.version
+            model = self._snap
+            last = self.last
+        return model, (0.0 if last is None else max(0.0, self.clock() - last))
 
     # -- lectura --
     def _wait_for(self, timeout):
@@ -570,19 +628,32 @@ def read_in(route, default=None, timeout=3):
 
 
 def on_change(fn):
-    """fn(patch, full) in the subscription thread after each patch (full=True:
-    whole model on (re)connect). It must be fast (enqueue and return) and must
-    not modify the patch."""
+    """fn(patch, full) after each patch (full=True: whole model on (re)connect), in order, in a thread and queue of its own
+    (a slow listener only delays itself; if its queue of LISTENER_QUEUE_MAX fills, its oldest patch is dropped and counted in
+    listener_stats()). It must not modify the patch."""
     if fn not in _their.listeners:
         _their.listeners.append(fn)
     _their.launch()
 
 
 def unsubscribe(fn):
-    try:
-        _their.listeners.remove(fn)
-    except ValueError:
-        pass
+    _their.remove_listener(fn)
+
+
+def listener_stats():
+    """Per listener: name, queued, delivered, dropped (queue full), errors."""
+    return _their.listener_stats()
+
+
+def snapshot(timeout=3):
+    """(model, age_s): get_status() plus the seconds since the last message from DSF (monotonic clock)."""
+    _their.launch()
+    return _their.snapshot(timeout)
+
+
+def age():
+    """Seconds since the last message from DSF, or None before the first one."""
+    return _their.age()
 
 
 def stats():

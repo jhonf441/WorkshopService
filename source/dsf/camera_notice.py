@@ -3,7 +3,7 @@ short video for a phone notice (`snapshot`, `clip`, used by notifier.py: they on
 camera and of what kind is the notifier's policy) and the text frame a cut screen receives."""
 import os
 import shutil
-import subprocess
+import os_gateway
 import threading
 import time
 import urllib.request
@@ -125,7 +125,7 @@ def _clip_arm(frames, folder):
            "-c:v", "libx264", "-preset", "veryfast", "-crf", "28", "-pix_fmt", "yuv420p", "-movflags", "+faststart", output]
     if not shutil.which("nice"):
         cmd = cmd[3:]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    r = os_gateway.run(cmd, timeout=120)
     if r.returncode != 0 or not os.path.exists(output):
         camera_context.log("camera: could not build the notice video (" + (r.stderr or "")[-200:] + ")")
         return None

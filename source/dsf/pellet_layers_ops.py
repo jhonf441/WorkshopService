@@ -102,6 +102,8 @@ def build(ctx):
             raise ApiError("failed", M("pellet_layers_store_invalid"), errors=_errors(e))
         except LookupError:
             raise ApiError("invalid_args", M("pellet_layers_err_not_found", name=args["name"]), field="name")
+        except run.Conflict as e:
+            raise ApiError("conflict", e.args[0])
         except ValueError as e:
             raise ApiError("invalid_args", e.args[0])
         _note(ctx, M("pellet_layers_armed", name=args["name"], file=args["file"]))

@@ -299,7 +299,8 @@ export default {
 	beforeDestroy() { if (this.off) this.off() },
 	methods: {
 		// an answer of the old person that is still on its way must not fill the card again
-		onSessionChange() { this._gen++ },
+		// the stale calls no longer put their spinners out (gen), so they are put out here; the identity handler reads again for an admin
+		onSessionChange() { this._gen++; this.loading = false; this.effLoading = false },
 		r(key, params) { return this.$t('plugins.WorkshopService.roles.' + key, params) },
 		roleName(role) { return this.$t('plugins.WorkshopService.users.role_' + role) },
 		className(k) { return this.r(CLASS_KEYS[k] || CLASS_KEYS.read) },

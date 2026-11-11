@@ -13,8 +13,8 @@ import re
 
 ROOT = "0:/sys/config.g"
 BED = "0:/sys/bed.g"
-MAX_FILES = 16   # 8 was reached on the real machine before the FFF mode file (config.g calls six macros, automodeselect.g three more): every plan then saw the CNC file, not modefff.g
-MAX_DEPTH = 2
+MAX_FILES = 24   # 8 was reached on the real machine before the FFF mode file (config.g calls six macros, automodeselect.g three more): every plan then saw the CNC file, not modefff.g
+MAX_DEPTH = 3   # config.g -> hooks/boot.g -> modes/automodeselect.g -> modes/modefff.g: one level more than before the hook blocks (phase 5)
 MAX_BYTES = 400000
 
 _WORD = r"(?:^|\s)%s(?![0-9A-Za-z.])"

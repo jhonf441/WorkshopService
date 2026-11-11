@@ -62,10 +62,44 @@ def record(sample, now=None):
     if all(v is None for v in values):
         return False
     _last[0] = now
-    with db._lock, db._connect() as conn:
-        conn.execute("INSERT OR REPLACE INTO health_samples (ts, cpu, temp, ram, disk, wifi) VALUES (?, ?, ?, ?, ?, ?)",
-                     (time.strftime(FMT, time.localtime(now)), *values))
+    insert_sample(ts=time.strftime(FMT, time.localtime(now)), **dict(zip(SERIES, values)))
     return True
+
+
+# ---- the table health_samples: the only place that holds its SQL ----
+
+def insert_sample(*, ts, cpu=None, temp=None, ram=None, disk=None, wifi=None):
+    """Inserts one row (replaces the one with the same `ts`)."""
+    with db.session() as conn:
+        conn.execute("INSERT OR REPLACE INTO health_samples (ts, cpu, temp, ram, disk, wifi) VALUES (?, ?, ?, ?, ?, ?)",
+                     (ts, cpu, temp, ram, disk, wifi))
+
+
+def list_samples(*, since, until):
+    """The rows with since <= ts <= until (ISO text), oldest first, as (ts, cpu, temp, ram, disk, wifi) tuples."""
+    with db.read_session() as conn:
+        return [tuple(r) for r in conn.execute("SELECT ts, cpu, temp, ram, disk, wifi FROM health_samples WHERE ts >= ? AND ts <= ? ORDER BY ts",
+                                               (since, until)).fetchall()]
+
+
+def purge_older(*, before):
+    """Deletes the rows with ts < `before` (ISO text). Returns how many."""
+    with db.session() as conn:
+        return conn.execute("DELETE FROM health_samples WHERE ts < ?", (before,)).rowcount
+
+
+def thin_older(*, before, bucket_s):
+    """Of the rows with ts < `before`, keeps the first of each `bucket_s` seconds and deletes the rest. Returns how many went."""
+    with db.session() as conn:
+        rows = conn.execute("SELECT ts FROM health_samples WHERE ts < ? ORDER BY ts", (before,)).fetchall()
+        drop, bucket = [], None
+        for (ts,) in rows:
+            b = int(time.mktime(time.strptime(ts, FMT))) // bucket_s
+            if b == bucket:
+                drop.append((ts,))
+            bucket = b
+        conn.executemany("DELETE FROM health_samples WHERE ts = ?", drop)
+    return len(drop)
 
 
 def maintain(now=None):
@@ -73,17 +107,8 @@ def maintain(now=None):
     now = time.time() if now is None else now
     old = time.strftime(FMT, time.localtime(now - RETENTION_DAYS * 86400))
     recent = time.strftime(FMT, time.localtime(now - RECENT_H * 3600))
-    with db._lock, db._connect() as conn:
-        deleted = conn.execute("DELETE FROM health_samples WHERE ts < ?", (old,)).rowcount
-        rows = conn.execute("SELECT ts FROM health_samples WHERE ts < ? ORDER BY ts", (recent,)).fetchall()
-        drop, bucket = [], None
-        for (ts,) in rows:
-            b = int(time.mktime(time.strptime(ts, FMT))) // THIN_S
-            if b == bucket:
-                drop.append((ts,))
-            bucket = b
-        conn.executemany("DELETE FROM health_samples WHERE ts = ?", drop)
-    return len(drop), deleted
+    deleted = purge_older(before=old)
+    return thin_older(before=recent, bucket_s=THIN_S), deleted
 
 
 def history(range_name="1h", limit=300, now=None, since_s=None, until_s=None):
@@ -102,9 +127,7 @@ def history(range_name="1h", limit=300, now=None, since_s=None, until_s=None):
         since = now - seconds
         until = now
     step = max(1, seconds // limit)
-    with db._lock, db._connect() as conn:
-        rows = conn.execute("SELECT ts, cpu, temp, ram, disk, wifi FROM health_samples WHERE ts >= ? AND ts <= ? ORDER BY ts",
-                            (time.strftime(FMT, time.localtime(since)), time.strftime(FMT, time.localtime(until)))).fetchall()
+    rows = list_samples(since=time.strftime(FMT, time.localtime(since)), until=time.strftime(FMT, time.localtime(until)))
     acc = {k: {} for k in SERIES}
     for row in rows:
         t = time.mktime(time.strptime(row[0], FMT))

@@ -15,6 +15,7 @@ import { sessionKey, sessionChangeKind, resetSessionData } from './session-reset
 // A page that defines onSessionChange(kind) is told when the identity changes (not on every whoami); kind is 'signed-in' | 'signed-out' |
 // 'role-changed' | 'known' (the first time the identity is known). The component option `sessionData: ['users', ...]` names the data that
 // depends on who is signed in: it is put back to its initial value on 'signed-out' and 'role-changed', BEFORE onSessionChange runs.
+// `sessionErrors: ['failure', 'msg', ...]` names what a refusal or failure said: it is cleared on 'signed-in' too (the PIN fixes it).
 export const roleMixin = {
 	data() {
 		return { identityTick: 0 }
@@ -28,6 +29,9 @@ export const roleMixin = {
 			if (currentIdentity()) last = key
 			if (!kind) return
 			if (kind === 'signed-out' || kind === 'role-changed') resetSessionData(this, this.$options.sessionData)
+			// a refusal or a failure the page kept ("sign in", "needs the role X") is stale the moment the identity changes, signing IN included:
+			// it used to stay on screen after the PIN. The option `sessionErrors: ['failure', ...]` names those fields.
+			if (kind === 'signed-in' || kind === 'signed-out' || kind === 'role-changed') resetSessionData(this, this.$options.sessionErrors)
 			if (typeof this.onSessionChange === 'function') this.onSessionChange(kind)
 		})
 	},

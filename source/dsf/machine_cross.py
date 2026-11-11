@@ -183,7 +183,10 @@ def _save(corr, previous, m, head, ctx):
     import machine_ops as mo
     who = identity.actor(ctx)
     value = dict(corr, date=time.strftime("%Y-%m-%d %H:%M"))
-    settings_store.merge("laser", {"correction": value})                  # the store write also rewrites macros/lasercorrection.g (settings_store)
+    try:
+        settings_store.merge("laser", {"correction": value})              # the store write also rewrites macros/lasercorrection.g (settings_store)
+    except settings_store.Conflict:                                         # laser.json exists but neither it nor its .bak can be read: nothing is overwritten
+        return {"saved": False, "record_id": None, "zones_applied": False, "zones_reason": "settings_damaged"}
     if laser_correction.in_step():                                          # the file on the card says what the store says: only then is the board told to apply it
         applied, why = laser_correction.apply_now(mo.model())               # the zones take it now; a running job keeps its origin
     else:

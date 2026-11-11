@@ -21,7 +21,7 @@ This module owns:
 
 Old keys that are kept as they were: activo, virtual, estados[id].activo/color,
 state_colors, leds_board.activo/leds/brillo, efectos.blink_pause,
-order_zones... (see handlers/lights.py).
+order_zones... (see lights_profile.py).
 """
 import re
 from messages import M
@@ -142,7 +142,7 @@ def _float(v, default, lo=None, hi=None):
     return n
 
 
-def _color(c, default, with_brightness=False):
+def clean_color(c, default, with_brightness=False):
     c = c if isinstance(c, dict) else {}
     out = {k: _byte(c.get(k, default.get(k, 0))) for k in ("r", "u", "b", "w")}
     if with_brightness:
@@ -210,7 +210,7 @@ def state_full(slc, ident):
     outputs = {k: bool(outs.get(k, dflt[k])) for k in OUTPUTS}
     if kind == "emergency":
         outputs["strip"] = outputs["screen"] = True  # the emergency is always shown
-    return {"active": active, "color": _color(color, d[2]), "effect": effect, "outputs": outputs}
+    return {"active": active, "color": clean_color(color, d[2]), "effect": effect, "outputs": outputs}
 
 
 def state_order(slc):
@@ -270,7 +270,7 @@ def normalize_scenes(raw):
         out.append({
             "id": sid,
             "name": str(s.get("name") or "").strip()[:24] or str(M("lights_scene_default_name")),
-            "color": _color(s.get("color"), {"r": 0, "u": 0, "b": 0, "w": 255, "p": 255}, True),
+            "color": clean_color(s.get("color"), {"r": 0, "u": 0, "b": 0, "w": 255, "p": 255}, True),
         })
     return out
 

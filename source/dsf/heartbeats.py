@@ -24,6 +24,7 @@ import os
 import threading
 import time
 
+import clock
 import ipc_stats
 import messages
 import process_catalog
@@ -35,8 +36,8 @@ PUBLISH_IDLE_S = 30  # nobody looking: one IPC call every 30 s
 
 _lock = threading.Lock()
 _info = {}
-_start_process = time.time()
-_cpu_prev = {}      # tid -> (ticks, wall) for each thread's CPU %
+_start_process = clock.mono()
+_cpu_prev = {}      # tid -> (ticks, monotonic reading) for each thread's CPU %
 try:
     _HZ = os.sysconf("SC_CLK_TCK")
 except (ValueError, OSError, AttributeError):
@@ -53,14 +54,15 @@ def register(label, title, description, expected_s):
             "live": False,
             "last_ok": None,
             "error": None,
-            "error_ts": None,
+            "error_ts": None,       # monotonic: age of the error
+            "error_wall": None,     # wall clock: only for the HH:MM:SS shown on the page
             "restarts": 0,
             # 2026-10-09 (more process health):
             "cycles": 0,             # heartbeats since the backend started
             "errors_total": 0,
             "interval_avg": None,  # s entre latidos (promedio movil)
             "interval_max": None,   # s, the longest of the current window
-            "window_ts": time.time(),
+            "window_ts": clock.mono(),
             "startup_ts": None,     # last (re)start of the thread
             "tid": None,
             "detail": None,         # text set by the process itself
@@ -76,7 +78,7 @@ def ok(label):
     d = _info.get(label)
     if d is None:
         return
-    current_time = time.time()
+    current_time = clock.mono()  # every timestamp kept here is monotonic: an NTP step must not make a beat late
     previous = d["last_ok"]
     d["last_ok"] = current_time
     d["cycles"] += 1
@@ -96,6 +98,13 @@ def ok(label):
             d["interval_max"] = dt
 
 
+def mark_live(label):
+    """The process is alive although its loop is not supervised by launch() (the interceptor runs in the main thread)."""
+    d = _info.get(label)
+    if d is not None:
+        d["live"] = True
+
+
 def detail(label, raw_text):
     """A status line of the process's own (shown in Services)."""
     d = _info.get(label)
@@ -104,7 +113,8 @@ def detail(label, raw_text):
 
 
 def last_beat(label):
-    """(epoch of the last ok(), expected_s) of a registered process, or None if it is not registered. For the protection
+    """(MONOTONIC reading of the last ok() -- compare it with clock.mono(), never with the wall clock --, expected_s) of a
+    registered process, or None if it is not registered. For the protection
     guard (protection_guard.py): it decides by itself how late is too late."""
     d = _info.get(label)
     if d is None:
@@ -120,7 +130,8 @@ def error(label, e):
         else:
             raw_text = f"{type(e).__name__}: {e}" if isinstance(e, BaseException) else str(e)
             d["error"] = raw_text[:300]
-        d["error_ts"] = time.time()
+        d["error_ts"] = clock.mono()
+        d["error_wall"] = clock.wall()  # wall clock: shown as an hour, never subtracted
         d["errors_total"] += 1
 
 
@@ -128,7 +139,7 @@ def error(label, e):
 # In MEMORY only: they do NOT survive a restart of the service (a paused process runs again after one; the page shows the truth because
 # snapshot() publishes them). Only the loops that call gate() obey (process_catalog.PAUSABLE); the rest ignore them. A thread that is
 # blocked inside a call cannot see a restart request: restart_pending_s keeps growing and the page says it did not answer.
-_control = {}   # label -> {"paused": bool, "restart_at": epoch or None, "paused_detail": bool}
+_control = {}   # label -> {"paused": bool, "restart_at": monotonic reading or None, "paused_detail": bool}
 
 
 def _ctl(label):
@@ -160,7 +171,7 @@ def request_restart(label):
     with _lock:
         c = _ctl(label)
         if c["restart_at"] is None:  # a second request does not reset the clock of the first one
-            c["restart_at"] = time.time()
+            c["restart_at"] = clock.mono()
 
 
 def restart_requested(label):
@@ -217,7 +228,7 @@ def launch(label, target, *args):
             _info[label]["effective"] = "idle"  # phase 2: what the supervisor decided (shown by modules.list)
             _info[label]["live"] = True
             _info[label]["idle"] = True
-            _info[label]["last_ok"] = time.time()
+            _info[label]["last_ok"] = clock.mono()
             _info[label]["detail"] = M("heartbeats_at_rest_no_plugin_uses_active")
             time.sleep(3)
         _info[label]["idle"] = False
@@ -226,7 +237,7 @@ def launch(label, target, *args):
         _info[label]["effective"] = "forced" if _info[label]["launch_mode"] == "on" else "running"
         while True:
             _info[label]["live"] = True
-            begin = time.time()
+            begin = clock.mono()
             _info[label]["startup_ts"] = begin
             _info[label]["tid"] = threading.get_native_id()
             clean = False
@@ -244,11 +255,19 @@ def launch(label, target, *args):
                 _info[label]["restarts"] += 1
                 continue  # relaunch at once: no error, no backoff
             # If it ran a good while before dying, retry quickly.
-            waiting = 5 if time.time() - begin > 300 else min(waiting * 2, 120)
+            waiting = 5 if clock.mono() - begin > 300 else min(waiting * 2, 120)
             time.sleep(waiting)
             _info[label]["restarts"] += 1
 
     threading.Thread(target=_supervisor, daemon=True, name=f"latido-{label}").start()
+
+
+def spawn_daemon(name, target, *args):
+    """Starts target(*args) in a plain daemon thread called `name` (no supervision, no heartbeat) and returns it. For helper
+    threads that belong to another module (the model listeners of machine_state): the thread lives in L2, like every thread."""
+    t = threading.Thread(target=target, args=args, daemon=True, name=name)
+    t.start()
+    return t
 
 
 def launch_decision(label):
@@ -282,7 +301,7 @@ def _cpu_pct(tid, current_time):
 
 def process():
     """Data of the whole backend process."""
-    out = {"pid": os.getpid(), "age_s": round(time.time() - _start_process), "threads": threading.active_count()}
+    out = {"pid": os.getpid(), "age_s": round(clock.mono() - _start_process), "threads": threading.active_count()}
     try:
         with open("/proc/self/status") as f:
             for line in f:
@@ -291,7 +310,7 @@ def process():
         with open("/proc/self/stat") as f:
             c = f.read().rsplit(")", 1)[1].split()
         ticks = int(c[11]) + int(c[12])
-        current_time = time.time()
+        current_time = clock.mono()
         prev = _cpu_prev.get("process")
         _cpu_prev["process"] = (ticks, current_time)
         if prev and current_time > prev[1]:
@@ -305,14 +324,14 @@ def snapshot():
     # Ages in seconds (small numbers): DSF stores the plugin data numbers
     # with little precision -- an epoch (~1.8e9) arrived rounded to
     # minutes and everything came out "now" (2026-10-09). Times go as text.
-    current_time = time.time()
+    current_time = clock.mono()
     out = {}
     with _lock:
         for k, v in _info.items():
             d = dict(v)
             d["age_ok_s"] = round(current_time - v["last_ok"], 1) if v["last_ok"] else None
             d["age_error_s"] = round(current_time - v["error_ts"], 1) if v["error_ts"] else None
-            d["error_hour"] = time.strftime("%H:%M:%S", time.localtime(v["error_ts"])) if v["error_ts"] else None
+            d["error_hour"] = time.strftime("%H:%M:%S", time.localtime(v["error_wall"])) if v.get("error_wall") else None
             d["active_s"] = round(current_time - v["startup_ts"]) if v.get("startup_ts") and v["live"] else None
             d["interval_avg"] = round(v["interval_avg"], 2) if v.get("interval_avg") is not None else None
             d["interval_max"] = round(v["interval_max"], 2) if v.get("interval_max") is not None else None
@@ -322,7 +341,7 @@ def snapshot():
             d["paused"] = bool(c.get("paused"))
             d["restart_pending"] = c.get("restart_at") is not None
             d["restart_pending_s"] = round(current_time - c["restart_at"], 1) if c.get("restart_at") is not None else None
-            for k_ in ("last_ok", "error_ts", "startup_ts", "window_ts", "tid"):
+            for k_ in ("last_ok", "error_ts", "error_wall", "startup_ts", "window_ts", "tid"):
                 d.pop(k_, None)
             out[k] = d
     return out
@@ -350,11 +369,11 @@ def _modules():
 
 def _lights():
     """What the lights loop still asks of DSF / the board per minute (it reads
-    the shared subscription, so idle = 0): status_light.ipc_stats()."""
+    the shared subscription, so idle = 0): lights_counters.ipc_stats()."""
     try:
-        import status_light
+        import lights_counters
 
-        return status_light.ipc_stats()
+        return lights_counters.ipc_stats()
     except Exception:
         return None
 

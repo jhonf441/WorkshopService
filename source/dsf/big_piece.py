@@ -29,6 +29,7 @@ import os
 import re
 
 import gcode_plan
+import sd_paths
 from messages import M
 
 SD_ROOT = paths.SD
@@ -40,10 +41,8 @@ _cache = {"path": None, "mtime": None, "data": None}
 
 
 def path_sd(fname):
-    f = str(fname)
-    if len(f) > 2 and f[1] == ":":
-        f = f[2:]
-    return os.path.join(SD_ROOT, f.lstrip("/"))
+    """Real path inside the SD of a file name ("0:/x", "/x" or "x"); SdPathError (a ValueError) if it leaves the SD."""
+    return sd_paths.resolve(fname, root=SD_ROOT)
 
 
 # ---------------------------------------------------------------- lectura

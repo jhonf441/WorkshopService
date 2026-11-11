@@ -27,8 +27,10 @@ Settings: config["guard"] (see DEFAULTS); read live, changed with the API operat
 import threading
 import time
 
+import clock as clock_mod
 import heartbeats
 import messages
+import process_registry
 import service_modules
 from messages import M
 
@@ -49,15 +51,9 @@ LIMITS = {"tolerance_factor": (1.5, 20.0), "min_tolerance_s": (5.0, 600.0), "ext
 
 HEARTBEAT, VISION, RS485 = "heartbeat", "vision", "rs485"
 # protects: what is lost when it dies. "fire" and "servo" are the ones that matter while a laser / CNC job runs.
-WATCHES = (
-    {"id": "status_light", "source": HEARTBEAT, "protects": "lights", "process": "status_light"},
-    {"id": "camera", "source": HEARTBEAT, "protects": "camera", "process": "camera"},
-    {"id": "events", "source": HEARTBEAT, "protects": "events", "process": "events"},
-    {"id": "motion", "source": HEARTBEAT, "protects": "motion", "process": "motion"},
-    {"id": "risk", "source": HEARTBEAT, "protects": "risk", "process": "risk"},
-    {"id": "health", "source": HEARTBEAT, "protects": "health", "process": "health"},
-    {"id": "guardian_laser", "source": HEARTBEAT, "protects": "laser_off", "process": "guardian_laser"},
-    {"id": "intercept_watchdog", "source": HEARTBEAT, "protects": "interception", "process": "intercept_watchdog"},
+WATCHES = tuple(
+    {"id": spec.id, "source": HEARTBEAT, "protects": spec.protects, "process": spec.id} for spec in process_registry.watched()
+) + (
     {"id": "vision", "source": VISION, "protects": "fire", "plugin": service_modules.VISION},
     {"id": "rs485", "source": RS485, "protects": "servo", "plugin": service_modules.RS485},
 )
@@ -92,14 +88,19 @@ class Guard:
     """The decision logic, with every outside thing injected (so the tests drive it with a fake clock).
 
     settings_fn() -> settings; expected_fn(watch) -> bool; beat_fn(watch) -> (epoch of last heartbeat or None,
-    expected_s or None); job_fn() -> {"active", "file_job", "live_job", "mode"}; emit(type, message, detail);
-    pause_fn() -> None (raises if it cannot)."""
+    expected_s or None) -- the reading is MONOTONIC, the same clock as `clock`;
+    job_fn() -> {"active", "file_job", "live_job", "mode"}; emit(type, message, detail);
+    pause_fn() -> None (raises if it cannot). `clock` is the monotonic reading used for every duration; `wall` only
+    stamps the `since` that is published (an epoch to show; tests that inject only `clock` get it for both)."""
 
-    def __init__(self, settings_fn, expected_fn, beat_fn, job_fn, emit, pause_fn, clock=time.time):
+    def __init__(self, settings_fn, expected_fn, beat_fn, job_fn, emit, pause_fn, clock=None, wall=None):
+        clock_fn = clock or clock_mod.mono
+        # wall clock: only stamps the published "since" epoch
+        self.wall = wall or (clock if clock is not None else clock_mod.wall)
         self.settings_fn, self.expected_fn, self.beat_fn = settings_fn, expected_fn, beat_fn
-        self.job_fn, self.emit, self.pause_fn, self.clock = job_fn, emit, pause_fn, clock
+        self.job_fn, self.emit, self.pause_fn, self.clock = job_fn, emit, pause_fn, clock_fn
         self.st = {w["id"]: {"expected_since": None, "down_since": None, "announced": False, "alarmed": False,
-                             "paused": False, "notified_at": None, "reminded_at": None} for w in WATCHES}
+                             "paused": False, "notified_at": None, "reminded_at": None, "down_wall": None} for w in WATCHES}
 
     @staticmethod
     def _title(w):
@@ -134,6 +135,7 @@ class Guard:
             down = self._is_down(w, cfg, now, state)
             if down and state["down_since"] is None:
                 state["down_since"] = now
+                state["down_wall"] = self.wall()  # wall clock: only the epoch published as "since"
             if down and job is None:
                 job = self.job_fn()
             if down:
@@ -141,7 +143,7 @@ class Guard:
             elif state["down_since"] is not None:
                 self._back(w, state, now)
             out.append({"id": w["id"], "protects": w["protects"], "state": "down" if down else "ok",
-                        "since": int(state["down_since"]) if down else None})
+                        "since": int(state["down_wall"]) if down else None})
         return out
 
     @staticmethod
@@ -217,10 +219,11 @@ class InterlockWatch:
 
     SETTLE_S = 10.0  # closed this long after an alarm = recovered (a bouncing contact is not "back" every time)
 
-    def __init__(self, settings_fn, state_fn, job_fn, emit, clock=time.time):
-        self.settings_fn, self.state_fn, self.job_fn, self.emit, self.clock = settings_fn, state_fn, job_fn, emit, clock
-        self.last_alarm = {}  # name -> epoch of the last alarm sent (the debounce)
-        self.closed_since = {}  # name -> epoch since it reads ok, for the interlocks with an alarm not yet closed
+    def __init__(self, settings_fn, state_fn, job_fn, emit, clock=None):
+        self.settings_fn, self.state_fn, self.job_fn, self.emit = settings_fn, state_fn, job_fn, emit
+        self.clock = clock or clock_mod.mono  # monotonic: both maps below only feed durations
+        self.last_alarm = {}  # name -> monotonic reading of the last alarm sent (the debounce)
+        self.closed_since = {}  # name -> monotonic reading since it reads ok, for the interlocks with an alarm not yet closed
 
     def evaluate(self):
         """One pass; returns the names of the interlocks that raised an alarm now."""
@@ -272,12 +275,12 @@ _now = {"snapshot": None, "tick": None}
 
 def _store(snap):
     with _lock:
-        _now["snapshot"], _now["tick"] = snap, time.time()
+        _now["snapshot"], _now["tick"] = snap, clock_mod.mono()  # monotonic: only compared with STALE_S
 
 
 def degraded(now=None):
     """True while an expected protection is down, or while the guard itself stopped ticking (it was running before)."""
-    now = time.time() if now is None else now
+    now = clock_mod.mono() if now is None else now
     with _lock:
         snap, tick = _now["snapshot"], _now["tick"]
     if snap is None:
@@ -312,7 +315,8 @@ def run_loop(bridge, config):
     import activity
     import guard_probes as probes
 
-    vision, rs485 = probes.VisionProbe(), probes.Rs485Probe()
+    # the probes stamp their sign of life with the monotonic clock, the same one as heartbeats.last_beat and the Guard
+    vision, rs485 = probes.VisionProbe(clock=clock_mod.mono), probes.Rs485Probe(clock=clock_mod.mono)
 
     def beat(w):
         if w["source"] == VISION:

@@ -22,7 +22,7 @@ If a test below makes you doubt that the firmware is still in charge, stop and t
 - [ ] The machine is idle, cold, in FFF mode, nobody is printing. Someone is at the machine from test 4 on.
 - [ ] You can sign in as **technician** (settings) and **administrator** (to see everything); also an operator and, if the machine has users, a viewer.
 - [ ] Start with LOW limits: in the settings put **maximum temperature 60** and **timeout 120** until tests 1 to 9 pass. Raise them only after.
-- [ ] Open the service log (`workshop-service.log` in the service folder) and `journalctl -u duetcontrolserver -f` in a second window.
+- [ ] Open the service log (`workshop-service.log` in `0:/sys/workshop/data/logs/`) and `journalctl -u duetcontrolserver -f` in a second window.
 - [ ] Know where the power switch is. Know which bed is physically which zone (label them before testing: bed 0 = front left, and so on).
 - [ ] The installed versions are the ones to test (service and Printing with the section "Bed zones"). Install with the machine idle, as in `CLAUDE.md`
       ("Installing and DWC caches"): stop Vision and RS485 first; after installing check `machine.enabledPlugins` and reload every DWC tab.

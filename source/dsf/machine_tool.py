@@ -27,7 +27,7 @@ BOARD_PINS = ([("out%d" % n, ("pwm", "digital")) for n in range(10)]
               + [("io%d.out" % n, ("pwm", "digital", "servo")) for n in range(9)]
               + [("io%d.in" % n, ("digital", "adc")) for n in range(9)]
               + [("temp%d" % n, ("adc", "temp")) for n in range(4)]
-              + [("spi.cs%d" % n, ("spi", "digital")) for n in range(3)])
+              + [("spi.cs%d" % n, ("spi", "digital")) for n in range(4)])  # the SPI_DB daughterboard connector has FOUR chip selects, spi.cs0 to spi.cs3 (Duet 3 MB6HC hardware overview)
 CAPS = dict(BOARD_PINS)
 SENSOR_PRESETS = {
     "thermistor": ('Y"thermistor" T100000 B3950', "temp"),
@@ -244,6 +244,9 @@ def _model_state(om, used, tools_cfg):
 def _config_texts(read):
     scan = config_scan.scan(read)
     return [(p, read(p) or "") for p in scan["files"]]
+
+
+config_texts = _config_texts  # public name for the planners of other modules (machine_heater_save.py)
 
 
 def _tools_in_config(texts):

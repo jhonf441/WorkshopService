@@ -32,7 +32,7 @@ import workshop_api as wa
 HELPER_REL = "sys/workshop/macros/system/service-call.g"
 HELPER_MARK = "WORKSHOP-SERVICE-CALL v1"
 SD_ROOT = paths.SD
-REPLY_MAX = 200
+REPLY_MAX = 200                 # bytes of the final string literal (RRF limit is 255 per argument)
 
 HELPER_TEXT = f"""; service-call.g -- call an operation of the WorkshopService API from a macro.
 ; {HELPER_MARK} (written by WorkshopService at start; remove this line to keep your own version)
@@ -199,9 +199,18 @@ def parse_request(raw):
 
 
 def _quote(text):
-    """Text for a RepRapFirmware string literal: quotes doubled, one line, short."""
-    t = " ".join(str(text or "").split())[:REPLY_MAX]
-    return t.replace('"', '""')
+    """Text for a RepRapFirmware string literal: quotes doubled, one line, short.
+    The limit counts the FINAL literal in UTF-8 bytes (RRF aborts a line with an argument over 255 bytes in silence), so the
+    cut comes after doubling the quotes and never splits a character or leaves half of a doubled quote."""
+    out = []
+    size = 0
+    for ch in " ".join(str(text or "").split()):
+        piece = '""' if ch == '"' else ch
+        size += len(piece.encode("utf-8"))
+        if size > REPLY_MAX:
+            break
+        out.append(piece)
+    return "".join(out)
 
 
 def handle(raw, registry=None):

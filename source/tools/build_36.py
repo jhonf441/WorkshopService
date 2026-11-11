@@ -2,7 +2,14 @@
 """Builds WorkshopService (service page + Python backend) for DuetWebControl 3.6 (Vue 2, Vuetify 2, Vuex, webpack).
 
     python tools/build_36.py --stage     only lay the plugin out in dist/stage36/WorkshopService
-    python tools/build_36.py             stage, build with the DWC 3.6 clone, rewrite the zip, copy it to dist/WorkshopService-<ver>-dwc3.6.zip
+    python tools/build_36.py             FAST build (default): stage, build with the DWC 3.6 clone using tools/vue.config.fast.js (webpack cache,
+                                         no maps, no .gz, no service worker), rewrite the zip, copy it to dist/WorkshopService-<ver>-dwc3.6.zip
+    python tools/build_36.py --completa  the same with DWC's own config (also TALLER_BUILD_COMPLETO=1): the one to use before publishing
+    python tools/build_36.py --reuse-bundle [--from <ver>]
+                                         NO webpack: the js / css of an earlier 3.6 release zip plus the current dsf/ files and manifest.
+                                         Only valid when the page did not change since that version (reuse_check); otherwise it refuses.
+                                         The earlier zip is looked for in dist/release and TallerPlugins/releases/WorkshopService.
+    Every zip gets dist/WorkshopService-<ver>-dwc3.6.mode (rapida | completa | reuse:<ver>); only 'completa' is meant for publishing.
 
 Mirror of tools/build_37.py (read its docstring for the why). What is different here:
   * the page is dwc36/ (Vue 2), staged as dwc-src/ because that is the name scripts/build-plugin.js looks for; the catalogs are plain
@@ -35,6 +42,60 @@ LOCK = os.environ.get("TALLER_DWC_LOCK_36") or DWC + ".lock"
 STAGE = os.path.join(ROOT, "dist", "stage36", "WorkshopService")
 DWC_VERSION = "3.6"
 PAGE_DIR = "dwc36"
+FAST_CFG = os.path.join(ROOT, "tools", "vue.config.fast.js")
+# what changes the js / css besides the page itself: the run-time guard that release_zips stages. (The fast config only drops maps, .gz and the
+# service worker, which never reach the release zip, so a change of it does not invalidate a bundle.)
+BUNDLE_INPUTS = ("dwc36", "tools/release_zips.py")
+
+
+def build_mode(args=None):
+    """'completa' (DWC's config) with --completa / TALLER_BUILD_COMPLETO=1 or when the fast config is missing, else 'rapida'."""
+    args = sys.argv[1:] if args is None else args
+    if "--completa" in args or os.environ.get("TALLER_BUILD_COMPLETO") == "1" or not os.path.isfile(FAST_CFG):
+        return "completa"
+    return "rapida"
+
+
+def _version_key(v):
+    return tuple(int(p) for p in v.split("."))
+
+
+def _git(*args):
+    return subprocess.check_output(["git", *args], cwd=ROOT).decode("utf-8").strip()
+
+
+def bundle_zips():
+    """{version: path} of the 3.6 release zips found in dist/release and in TallerPlugins/releases/WorkshopService."""
+    found = {}
+    # TallerPlugins sits next to this repo, or two levels up when this is a worktree under Projects/_worktrees-agents; TALLER_RELEASES overrides
+    folders = [os.path.join(ROOT, "dist", "release")]
+    if os.environ.get("TALLER_RELEASES"):
+        folders.append(os.environ["TALLER_RELEASES"])
+    for up in (os.path.dirname(ROOT), os.path.dirname(os.path.dirname(ROOT))):
+        folders.append(os.path.join(up, "TallerPlugins", "releases", "WorkshopService"))
+    for folder in folders:
+        if not os.path.isdir(folder):
+            continue
+        for name in os.listdir(folder):
+            if name.startswith("WorkshopService-") and name.endswith("-dwc3.6.zip"):
+                found.setdefault(name[len("WorkshopService-"):-len("-dwc3.6.zip")], os.path.join(folder, name))
+    return found
+
+
+def reuse_check(base_version, git=_git):
+    """Problems that forbid reusing the bundle of `base_version` (empty list = the page is the same). The release commit is the first one
+    that wrote that version in plugin.json; the page inputs must be identical there and now, and clean in the working tree."""
+    problems = []
+    commits = git("log", "--reverse", "--format=%H", "-S" + '"version": "%s"' % base_version, "--", "plugin.json").splitlines()
+    if not commits:
+        return ["no commit set version %s in plugin.json, so the page of that bundle is unknown" % base_version]
+    changed = git("diff", "--name-only", commits[0], "HEAD", "--", *BUNDLE_INPUTS).splitlines()
+    if changed:
+        problems.append("the page changed since %s (%s): build it in fast mode (%s)" % (base_version, commits[0][:8], ", ".join(changed[:8])))
+    dirty = git("status", "--porcelain", "--", *BUNDLE_INPUTS).splitlines()
+    if dirty:
+        problems.append("uncommitted changes in the page inputs: " + ", ".join(l[3:] for l in dirty[:8]))
+    return problems
 
 
 def listing_order(directory, prefix=""):
@@ -106,11 +167,59 @@ def rewrite_zip(built, out):
     os.replace(tmp, out)
 
 
-def build():
+def write_mode(version, mode):
+    """dist/WorkshopService-<ver>-dwc3.6.mode: how the zip was made. Only 'completa' is meant for publishing."""
+    with open(os.path.join(ROOT, "dist", "WorkshopService-%s-dwc%s.mode" % (version, DWC_VERSION)), "w", encoding="utf-8") as f:
+        f.write(mode)
+
+
+def reuse_bundle(from_version=None):
+    """No webpack: the js / css of an earlier release zip, the dsf/ files and the manifest of the current tree. Returns the zip made."""
+    stage(guard=False)
+    with open(os.path.join(STAGE, "plugin.json"), encoding="utf-8") as f:
+        manifest = json.load(f)
+    version = manifest["version"]
+    zips = bundle_zips()
+    earlier = sorted((v for v in zips if _version_key(v) < _version_key(version)), key=_version_key)
+    base = from_version or (earlier[-1] if earlier else None)
+    if not base or base not in zips:
+        raise SystemExit("no earlier 3.6 zip to take the bundle from (looked for %s in dist/release and TallerPlugins/releases)" % (base or "any version"))
+    problems = reuse_check(base)
+    if problems:
+        raise SystemExit("cannot reuse the bundle of %s:\n  %s" % (base, "\n  ".join(problems)))
+    with zipfile.ZipFile(zips[base]) as z:
+        dwc = sorted(n for n in z.namelist() if n.startswith("dwc/") and n.endswith((".js", ".css")))
+        data = {n: z.read(n) for n in dwc}
+    manifest["dwcFiles"] = [n[4:] for n in dwc]
+    listed = ["dsf/" + r for r in manifest["dsfFiles"]]
+    out = os.path.join(ROOT, "dist", "WorkshopService-%s-dwc%s.zip" % (version, DWC_VERSION))
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    tmp = out + ".tmp"
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as o:
+        o.writestr("plugin.json", json.dumps(manifest, ensure_ascii=False, indent=2))
+        for n in dwc:
+            o.writestr(n, data[n])
+        for n in listed:
+            with open(os.path.join(STAGE, n), "rb") as fh:
+                o.writestr(n, fh.read())
+    os.replace(tmp, out)
+    problems = b37.check_release(out)
+    if problems:
+        print("\n".join(problems), file=sys.stderr)
+        raise SystemExit("the zip is not clean: " + out)
+    write_mode(version, "reuse:" + base)
+    print("OK (bundle of %s reused, no webpack) %s" % (base, out))
+    return out
+
+
+def build(mode="completa"):
     stage()
     with open(os.path.join(STAGE, "plugin.json"), encoding="utf-8") as f:
         version = json.load(f)["version"]
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+    if mode == "rapida":
+        env["VUE_CLI_SERVICE_CONFIG_PATH"] = FAST_CFG
+        env["TALLER_DWC_SRC"] = DWC  # tools/vue.config.fast.js reads the clone from here
     b37.take_lock(lock=LOCK)
     try:
         subprocess.check_call(["node", os.path.join("scripts", "build-plugin.js"), STAGE], cwd=DWC, env=env)
@@ -129,12 +238,16 @@ def build():
     if problems:
         print("\n".join(problems), file=sys.stderr)
         raise SystemExit("the zip is not clean: " + out)
-    print("OK " + out)
+    write_mode(version, mode)
+    print("OK (%s) %s" % (mode, out))
     return out
 
 
 if __name__ == "__main__":
-    if "--stage" in sys.argv[1:]:
-        print(stage(guard="--no-guard" not in sys.argv[1:]))
+    args = sys.argv[1:]
+    if "--stage" in args:
+        print(stage(guard="--no-guard" not in args))
+    elif "--reuse-bundle" in args:
+        reuse_bundle(args[args.index("--from") + 1] if "--from" in args else None)
     else:
-        build()
+        build(build_mode(args))

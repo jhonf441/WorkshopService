@@ -1,0 +1,1624 @@
+{
+ "heartbeat_rows": [
+  [
+   "interceptor",
+   {
+    "key": "main_g_code_interceptor",
+    "params": {}
+   },
+   {
+    "key": "main_handles_m3_m4_m5_automatic_air",
+    "params": {}
+   },
+   15
+  ],
+  [
+   "status_light",
+   {
+    "key": "main_status_lights",
+    "params": {}
+   },
+   {
+    "key": "main_paints_status_zone_led_strip_according",
+    "params": {}
+   },
+   10
+  ],
+  [
+   "consumption",
+   {
+    "key": "main_consumption_meter",
+    "params": {}
+   },
+   {
+    "key": "main_reads_tuya_meter_saves_history",
+    "params": {}
+   },
+   60
+  ],
+  [
+   "jobs",
+   {
+    "key": "main_jobs_and_zones",
+    "params": {}
+   },
+   {
+    "key": "main_detects_job_start_end_mode_zone_changes",
+    "params": {}
+   },
+   30
+  ],
+  [
+   "motors",
+   {
+    "key": "main_motors",
+    "params": {}
+   },
+   {
+    "key": "main_reads_drivers_currents_speeds_motors_page",
+    "params": {}
+   },
+   60
+  ],
+  [
+   "jog",
+   "Jog",
+   {
+    "key": "main_moves_machine_while_jog_button_held",
+    "params": {}
+   },
+   10
+  ],
+  [
+   "bed_zones",
+   {
+    "key": "main_bed_zones",
+    "params": {}
+   },
+   {
+    "key": "main_splits_m140_m190_into_one_heater_per_bed_zone",
+    "params": {}
+   },
+   15
+  ],
+  [
+   "pellet_layers",
+   {
+    "key": "main_pellet_layers",
+    "params": {}
+   },
+   {
+    "key": "main_pellet_layers_detail",
+    "params": {}
+   },
+   15
+  ],
+  [
+   "gcodelib",
+   {
+    "key": "main_gcodelib",
+    "params": {}
+   },
+   {
+    "key": "main_gcodelib_detail",
+    "params": {}
+   },
+   30
+  ],
+  [
+   "pid_trace",
+   {
+    "key": "main_pid_tuning_record",
+    "params": {}
+   },
+   {
+    "key": "main_records_temperature_power_while_heater_tuned_pid",
+    "params": {}
+   },
+   30
+  ],
+  [
+   "maintenance",
+   {
+    "key": "main_maintenance_counters",
+    "params": {}
+   },
+   {
+    "key": "main_counts_hours_distance_axes_maintenance_plan",
+    "params": {}
+   },
+   30
+  ],
+  [
+   "events",
+   {
+    "key": "main_rrf_events",
+    "params": {}
+   },
+   {
+    "key": "main_emergencies_pauses_firmware_errors_for_activity",
+    "params": {}
+   },
+   30
+  ],
+  [
+   "trace",
+   {
+    "key": "main_job_path",
+    "params": {}
+   },
+   {
+    "key": "main_records_job_path_only_while_someone_watches",
+    "params": {}
+   },
+   60
+  ],
+  [
+   "health",
+   {
+    "key": "main_system_health",
+    "params": {}
+   },
+   {
+    "key": "main_temperature_wifi_services_alerts_health_page",
+    "params": {}
+   },
+   60
+  ],
+  [
+   "camera",
+   {
+    "key": "main_camera_relay",
+    "params": {}
+   },
+   {
+    "key": "main_shares_camera_video_all_screens_camera",
+    "params": {}
+   },
+   30
+  ],
+  [
+   "timer",
+   {
+    "key": "main_scheduled_power_off",
+    "params": {}
+   },
+   {
+    "key": "main_counts_timer_power_off_control_bar",
+    "params": {}
+   },
+   10
+  ],
+  [
+   "risk",
+   {
+    "key": "main_active_risk",
+    "params": {}
+   },
+   {
+    "key": "main_warns_screens_leds_while_something_leaves",
+    "params": {}
+   },
+   10
+  ],
+  [
+   "config_guard",
+   {
+    "key": "main_configuration_rollback",
+    "params": {}
+   },
+   {
+    "key": "main_after_saving_new_configuration_watches_board",
+    "params": {}
+   },
+   15
+  ],
+  [
+   "motion",
+   {
+    "key": "main_movement_owner",
+    "params": {}
+   },
+   {
+    "key": "main_decides_whether_possible_move_change_geometry",
+    "params": {}
+   },
+   10
+  ],
+  [
+   "guard",
+   {
+    "key": "main_protection_guard",
+    "params": {}
+   },
+   {
+    "key": "main_watches_that_safety_processes_beat_alarms_when",
+    "params": {}
+   },
+   5
+  ],
+  [
+   "guardian_laser",
+   {
+    "key": "main_laser_power_guard",
+    "params": {}
+   },
+   {
+    "key": "main_laser_power_guard_description",
+    "params": {}
+   },
+   1
+  ],
+  [
+   "intercept_watchdog",
+   {
+    "key": "main_interception_watchdog",
+    "params": {}
+   },
+   {
+    "key": "main_interception_watchdog_description",
+    "params": {}
+   },
+   1
+  ],
+  [
+   "watchdog_lock",
+   {
+    "key": "main_bridge_lock_watchdog",
+    "params": {}
+   },
+   {
+    "key": "main_bridge_lock_watchdog_description",
+    "params": {}
+   },
+   5
+  ],
+  [
+   "publisher",
+   {
+    "key": "main_state_publisher",
+    "params": {}
+   },
+   {
+    "key": "main_state_publisher_description",
+    "params": {}
+   },
+   30
+  ],
+  [
+   "communication",
+   {
+    "key": "main_code_channels",
+    "params": {}
+   },
+   {
+    "key": "main_code_channels_description",
+    "params": {}
+   },
+   10
+  ]
+ ],
+ "services_internal_processes": {
+  "interceptor": {
+   "title": {
+    "key": "main_g_code_interceptor",
+    "params": {}
+   },
+   "description": {
+    "key": "main_handles_m3_m4_m5_automatic_air",
+    "params": {}
+   },
+   "expected_s": 15,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "safety",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "status_light": {
+   "title": {
+    "key": "main_status_lights",
+    "params": {}
+   },
+   "description": {
+    "key": "main_paints_status_zone_led_strip_according",
+    "params": {}
+   },
+   "expected_s": 10,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "machine",
+   "locked": false,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "consumption": {
+   "title": {
+    "key": "main_consumption_meter",
+    "params": {}
+   },
+   "description": {
+    "key": "main_reads_tuya_meter_saves_history",
+    "params": {}
+   },
+   "expected_s": 60,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "data",
+   "locked": false,
+   "pausable": true,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "jobs": {
+   "title": {
+    "key": "main_jobs_and_zones",
+    "params": {}
+   },
+   "description": {
+    "key": "main_detects_job_start_end_mode_zone_changes",
+    "params": {}
+   },
+   "expected_s": 30,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "data",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "motors": {
+   "title": {
+    "key": "main_motors",
+    "params": {}
+   },
+   "description": {
+    "key": "main_reads_drivers_currents_speeds_motors_page",
+    "params": {}
+   },
+   "expected_s": 60,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "data",
+   "locked": false,
+   "pausable": true,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "jog": {
+   "title": "Jog",
+   "description": {
+    "key": "main_moves_machine_while_jog_button_held",
+    "params": {}
+   },
+   "expected_s": 10,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "machine",
+   "locked": false,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "bed_zones": {
+   "title": {
+    "key": "main_bed_zones",
+    "params": {}
+   },
+   "description": {
+    "key": "main_splits_m140_m190_into_one_heater_per_bed_zone",
+    "params": {}
+   },
+   "expected_s": 15,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "machine",
+   "locked": false,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "pellet_layers": {
+   "title": {
+    "key": "main_pellet_layers",
+    "params": {}
+   },
+   "description": {
+    "key": "main_pellet_layers_detail",
+    "params": {}
+   },
+   "expected_s": 15,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "machine",
+   "locked": false,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "gcodelib": {
+   "title": {
+    "key": "main_gcodelib",
+    "params": {}
+   },
+   "description": {
+    "key": "main_gcodelib_detail",
+    "params": {}
+   },
+   "expected_s": 30,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "data",
+   "locked": false,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "pid_trace": {
+   "title": {
+    "key": "main_pid_tuning_record",
+    "params": {}
+   },
+   "description": {
+    "key": "main_records_temperature_power_while_heater_tuned_pid",
+    "params": {}
+   },
+   "expected_s": 30,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "data",
+   "locked": false,
+   "pausable": true,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "maintenance": {
+   "title": {
+    "key": "main_maintenance_counters",
+    "params": {}
+   },
+   "description": {
+    "key": "main_counts_hours_distance_axes_maintenance_plan",
+    "params": {}
+   },
+   "expected_s": 30,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "data",
+   "locked": false,
+   "pausable": true,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "events": {
+   "title": {
+    "key": "main_rrf_events",
+    "params": {}
+   },
+   "description": {
+    "key": "main_emergencies_pauses_firmware_errors_for_activity",
+    "params": {}
+   },
+   "expected_s": 30,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "safety",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "trace": {
+   "title": {
+    "key": "main_job_path",
+    "params": {}
+   },
+   "description": {
+    "key": "main_records_job_path_only_while_someone_watches",
+    "params": {}
+   },
+   "expected_s": 60,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "data",
+   "locked": false,
+   "pausable": true,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "health": {
+   "title": {
+    "key": "main_system_health",
+    "params": {}
+   },
+   "description": {
+    "key": "main_temperature_wifi_services_alerts_health_page",
+    "params": {}
+   },
+   "expected_s": 60,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "safety",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "camera": {
+   "title": {
+    "key": "main_camera_relay",
+    "params": {}
+   },
+   "description": {
+    "key": "main_shares_camera_video_all_screens_camera",
+    "params": {}
+   },
+   "expected_s": 30,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "support",
+   "locked": false,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "timer": {
+   "title": {
+    "key": "main_scheduled_power_off",
+    "params": {}
+   },
+   "description": {
+    "key": "main_counts_timer_power_off_control_bar",
+    "params": {}
+   },
+   "expected_s": 10,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "machine",
+   "locked": false,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "risk": {
+   "title": {
+    "key": "main_active_risk",
+    "params": {}
+   },
+   "description": {
+    "key": "main_warns_screens_leds_while_something_leaves",
+    "params": {}
+   },
+   "expected_s": 10,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "safety",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "config_guard": {
+   "title": {
+    "key": "main_configuration_rollback",
+    "params": {}
+   },
+   "description": {
+    "key": "main_after_saving_new_configuration_watches_board",
+    "params": {}
+   },
+   "expected_s": 15,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "safety",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "motion": {
+   "title": {
+    "key": "main_movement_owner",
+    "params": {}
+   },
+   "description": {
+    "key": "main_decides_whether_possible_move_change_geometry",
+    "params": {}
+   },
+   "expected_s": 10,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "safety",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "guard": {
+   "title": {
+    "key": "main_protection_guard",
+    "params": {}
+   },
+   "description": {
+    "key": "main_watches_that_safety_processes_beat_alarms_when",
+    "params": {}
+   },
+   "expected_s": 5,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "safety",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "guardian_laser": {
+   "title": {
+    "key": "main_laser_power_guard",
+    "params": {}
+   },
+   "description": {
+    "key": "main_laser_power_guard_description",
+    "params": {}
+   },
+   "expected_s": 1,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "safety",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "intercept_watchdog": {
+   "title": {
+    "key": "main_interception_watchdog",
+    "params": {}
+   },
+   "description": {
+    "key": "main_interception_watchdog_description",
+    "params": {}
+   },
+   "expected_s": 1,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "safety",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "watchdog_lock": {
+   "title": {
+    "key": "main_bridge_lock_watchdog",
+    "params": {}
+   },
+   "description": {
+    "key": "main_bridge_lock_watchdog_description",
+    "params": {}
+   },
+   "expected_s": 5,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "safety",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "publisher": {
+   "title": {
+    "key": "main_state_publisher",
+    "params": {}
+   },
+   "description": {
+    "key": "main_state_publisher_description",
+    "params": {}
+   },
+   "expected_s": 30,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "support",
+   "locked": true,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  },
+  "communication": {
+   "title": {
+    "key": "main_code_channels",
+    "params": {}
+   },
+   "description": {
+    "key": "main_code_channels_description",
+    "params": {}
+   },
+   "expected_s": 10,
+   "live": false,
+   "error": null,
+   "restarts": 0,
+   "cycles": 0,
+   "errors_total": 0,
+   "interval_avg": null,
+   "interval_max": null,
+   "detail": null,
+   "group": "support",
+   "locked": false,
+   "pausable": false,
+   "age_ok_s": null,
+   "age_error_s": null,
+   "error_hour": null,
+   "active_s": null,
+   "cpu_pct": null,
+   "idle": false,
+   "paused": false,
+   "restart_pending": false,
+   "restart_pending_s": null
+  }
+ },
+ "service_modules": {
+  "PROCESSES": {
+   "status_light": [
+    "WorkshopLights"
+   ],
+   "consumption": [
+    "WorkshopPower"
+   ],
+   "motors": [
+    "WorkshopMotors"
+   ],
+   "camera": [
+    "WorkshopCamera",
+    "WorkshopVision",
+    "WorkshopWorkbench"
+   ],
+   "trace": [
+    "WorkshopWorkbench"
+   ],
+   "jog": [
+    "WorkshopJog",
+    "WorkshopWorkbench",
+    "WorkshopVision"
+   ],
+   "timer": [
+    "WorkshopControlBar"
+   ],
+   "maintenance": [
+    "WorkshopMachine"
+   ],
+   "pid_trace": [
+    "WorkshopPrinting"
+   ],
+   "bed_zones": [
+    "WorkshopPrinting"
+   ],
+   "pellet_layers": [
+    "WorkshopPrinting"
+   ],
+   "gcodelib": [
+    "WorkshopPrinting"
+   ]
+  },
+  "SAFETY": [
+   "events",
+   "jobs",
+   "risk",
+   "config_guard",
+   "motion",
+   "health",
+   "guard"
+  ],
+  "OWN": [
+   "interceptor"
+  ],
+  "MODES": [
+   "auto",
+   "on",
+   "off"
+  ],
+  "status": {
+   "status_light": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopLights"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "consumption": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopPower"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "motors": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopMotors"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "camera": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopCamera",
+      "WorkshopVision",
+      "WorkshopWorkbench"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "trace": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopWorkbench"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "jog": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopJog",
+      "WorkshopWorkbench",
+      "WorkshopVision"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "timer": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopControlBar"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "maintenance": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopMachine"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "pid_trace": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopPrinting"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "bed_zones": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopPrinting"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": true
+   },
+   "pellet_layers": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopPrinting"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "gcodelib": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "plugin_active",
+     "plugins": [
+      "WorkshopPrinting"
+     ]
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "events": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "safety",
+     "plugins": []
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "jobs": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "safety",
+     "plugins": []
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "risk": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "safety",
+     "plugins": []
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "config_guard": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "safety",
+     "plugins": []
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "motion": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "safety",
+     "plugins": []
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "health": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "safety",
+     "plugins": []
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "guard": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "safety",
+     "plugins": []
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "interceptor": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "air_auto",
+     "plugins": []
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   },
+   "subscription": {
+    "mode": "auto",
+    "active": true,
+    "reason": {
+     "code": "on_demand",
+     "plugins": []
+    },
+    "configured": "auto",
+    "effective": null,
+    "pending_restart": false,
+    "live": false
+   }
+  }
+ },
+ "process_catalog": {
+  "CATALOG": {
+   "guardian_laser": {
+    "group": "safety",
+    "locked": true
+   },
+   "intercept_watchdog": {
+    "group": "safety",
+    "locked": true
+   },
+   "watchdog_lock": {
+    "group": "safety",
+    "locked": true
+   },
+   "guard": {
+    "group": "safety",
+    "locked": true
+   },
+   "motion": {
+    "group": "safety",
+    "locked": true
+   },
+   "risk": {
+    "group": "safety",
+    "locked": true
+   },
+   "events": {
+    "group": "safety",
+    "locked": true
+   },
+   "config_guard": {
+    "group": "safety",
+    "locked": true
+   },
+   "health": {
+    "group": "safety",
+    "locked": true
+   },
+   "interceptor": {
+    "group": "safety",
+    "locked": true
+   },
+   "jog": {
+    "group": "machine",
+    "locked": false
+   },
+   "bed_zones": {
+    "group": "machine",
+    "locked": false
+   },
+   "pellet_layers": {
+    "group": "machine",
+    "locked": false
+   },
+   "timer": {
+    "group": "machine",
+    "locked": false
+   },
+   "status_light": {
+    "group": "machine",
+    "locked": false
+   },
+   "consumption": {
+    "group": "data",
+    "locked": false
+   },
+   "motors": {
+    "group": "data",
+    "locked": false
+   },
+   "maintenance": {
+    "group": "data",
+    "locked": false
+   },
+   "pid_trace": {
+    "group": "data",
+    "locked": false
+   },
+   "trace": {
+    "group": "data",
+    "locked": false
+   },
+   "jobs": {
+    "group": "data",
+    "locked": true
+   },
+   "box_black": {
+    "group": "data",
+    "locked": false
+   },
+   "base_backup": {
+    "group": "data",
+    "locked": false
+   },
+   "commands_extra": {
+    "group": "data",
+    "locked": true
+   },
+   "gcodelib": {
+    "group": "data",
+    "locked": false
+   },
+   "subscription": {
+    "group": "support",
+    "locked": true
+   },
+   "publisher": {
+    "group": "support",
+    "locked": true
+   },
+   "communication": {
+    "group": "support",
+    "locked": false
+   },
+   "camera": {
+    "group": "support",
+    "locked": false
+   },
+   "api": {
+    "group": "support",
+    "locked": true
+   },
+   "api_macros": {
+    "group": "support",
+    "locked": true
+   }
+  },
+  "MODE_LIVE": [
+   "bed_zones"
+  ],
+  "PAUSABLE": [
+   "consumption",
+   "motors",
+   "maintenance",
+   "pid_trace",
+   "trace"
+  ],
+  "GROUPS": [
+   "safety",
+   "machine",
+   "data",
+   "support"
+  ]
+ },
+ "watches": [
+  {
+   "id": "status_light",
+   "source": "heartbeat",
+   "protects": "lights",
+   "process": "status_light"
+  },
+  {
+   "id": "camera",
+   "source": "heartbeat",
+   "protects": "camera",
+   "process": "camera"
+  },
+  {
+   "id": "events",
+   "source": "heartbeat",
+   "protects": "events",
+   "process": "events"
+  },
+  {
+   "id": "motion",
+   "source": "heartbeat",
+   "protects": "motion",
+   "process": "motion"
+  },
+  {
+   "id": "risk",
+   "source": "heartbeat",
+   "protects": "risk",
+   "process": "risk"
+  },
+  {
+   "id": "health",
+   "source": "heartbeat",
+   "protects": "health",
+   "process": "health"
+  },
+  {
+   "id": "guardian_laser",
+   "source": "heartbeat",
+   "protects": "laser_off",
+   "process": "guardian_laser"
+  },
+  {
+   "id": "intercept_watchdog",
+   "source": "heartbeat",
+   "protects": "interception",
+   "process": "intercept_watchdog"
+  },
+  {
+   "id": "vision",
+   "source": "vision",
+   "protects": "fire",
+   "plugin": "WorkshopVision"
+  },
+  {
+   "id": "rs485",
+   "source": "rs485",
+   "protects": "servo",
+   "plugin": "WorkshopRS485"
+  }
+ ]
+}

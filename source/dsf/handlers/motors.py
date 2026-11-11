@@ -17,6 +17,7 @@ Alias: P"motors" S"deshabilitar"|"habilitar"|"releer".
 """
 import json
 
+import board_reply
 import motors_enable
 from messages import M
 
@@ -70,7 +71,7 @@ def run(params, bridge, config):
         r.update(ok=False, error=M("motors_board_did_not_answer", command=r['command'], e=e))
         return json.dumps(r, ensure_ascii=False)
     r["response"] = str(resp or "").strip()
-    if "rror" in r["response"]:
+    if board_reply.is_error(r["response"]):
         r.update(ok=False, error=M("motors_board_rejected", command=r['command'], response=r['response']))
         return json.dumps(r, ensure_ascii=False)
 

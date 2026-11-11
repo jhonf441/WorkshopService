@@ -1,11 +1,11 @@
 {
  "name": "workshop-gcode-bridge",
- "version": "3.8.0",
+ "version": "3.8.2",
  "contract": 1,
  "schema": 2,
  "files": {
   "gcode_bridge.py": {
-   "sha256": "2b86aa02c0da5bf98896f31dbbd6797ebc6188682883d2e0ac4fad53c261d7b3"
+   "sha256": "ad026206d140f07032a0a37410c5b309b890a1c19504eef8961419528dff0d64"
   },
   "live_resume.py": {
    "sha256": "1ab4f4b93dc8682a1c25456735f97f48736278e81c508af2dade69e3a311c475"
@@ -13,11 +13,80 @@
   "live_stop.py": {
    "sha256": "d9043eb113672c72a0534222432a386eaf833a0ce5019f754dff86863afeeaa5"
   },
+  "bridge_pkg/__init__.py": {
+   "sha256": "dccb3e32552d0b6427413f4bcb7e579a2522c45046dda189b25ab048084d0321"
+  },
+  "bridge_pkg/actions.py": {
+   "sha256": "7cb952e821903677cd5ea40f96d7db877fa753cd78669b52859c889c19818f08"
+  },
+  "bridge_pkg/bridge.py": {
+   "sha256": "ce7626cc144aa455e5f736928028bb078e5aa553a32ee700b573909536a650ba"
+  },
+  "bridge_pkg/client.py": {
+   "sha256": "78d4dbe000852f183cbf4389aec2566626613f6ed8d5acb6d7d7c980353a5d9b"
+  },
+  "bridge_pkg/clock.py": {
+   "sha256": "dcc589aeb79fd8aa815f2d819a59194507054a5356a773622804970e3c1f0359"
+  },
+  "bridge_pkg/commands.py": {
+   "sha256": "84aa481ed0ebcb4d0f982e0004d578a157d47f78c71095dfb0098f30259488ed"
+  },
+  "bridge_pkg/debug.py": {
+   "sha256": "b1aaf67b6fdf4ed1088fbee333b64f1b5af43bc79c5f6f78a1b6ec5ca8459a84"
+  },
+  "bridge_pkg/duet.py": {
+   "sha256": "6e34ad07e1cceca5041adb0cb2cb6e172da9d8a1113280aea29106a3005f70af"
+  },
+  "bridge_pkg/fsutil.py": {
+   "sha256": "9e88579367f0d6180d20ff6fdd31646d7587f10792207fc7db647f4ad3780fbc"
+  },
+  "bridge_pkg/gate.py": {
+   "sha256": "647823f866c98ec501b59c430b537536a1a45101bde9a3b8d74e6df63c5f230d"
+  },
+  "bridge_pkg/identity.py": {
+   "sha256": "042ad16ef64eb22f075ae3abc8b18a68279fb84df03948dccc44bd9e3086ed7a"
+  },
+  "bridge_pkg/jobs.py": {
+   "sha256": "aba7da0da5fb67809ee9199b9270d002b1eed71094d577f7e37903c9584b6fa8"
+  },
+  "bridge_pkg/lines.py": {
+   "sha256": "74845023ed9aad0f37ae1160f5dbcb92a650121d18132187a690804bd3cf5aa0"
+  },
+  "bridge_pkg/log.py": {
+   "sha256": "638d89ba2564084fb5edc4b5e3f2a053ec699dc8d559fb5483c1c4d06797b853"
+  },
+  "bridge_pkg/orders.py": {
+   "sha256": "c8b71b4670d5953f6d6f94a6b84b3f2e141777d0e734abdad58061142b8535f6"
+  },
+  "bridge_pkg/queries.py": {
+   "sha256": "c93693cced6dbad499c4d8c85a32a666ac34510117b05c24a031c262cf48da4a"
+  },
+  "bridge_pkg/security.py": {
+   "sha256": "be7151d0ca8bbc43d29697b6bcf6acee72309376dcd7d86007013dc39562b9b4"
+  },
+  "bridge_pkg/server.py": {
+   "sha256": "91d1cff63b21d57764240965dea42c5e05162bcbda6238f71174c52f36ec0a31"
+  },
+  "bridge_pkg/service_link.py": {
+   "sha256": "574a15645ec8a25d1903e3d1fb758a92618c7f48f2ee3a0cbaf3bc41668a9ede"
+  },
+  "bridge_pkg/settings.py": {
+   "sha256": "2e262ae0354f38dc0c0db7a31e5b4df3327c688e0007ed342abd527d31b41f57"
+  },
+  "bridge_pkg/state.py": {
+   "sha256": "44653904a7a359810a12b9e190a0145a126e5033f600ae2401f2cb38c0beb93a"
+  },
+  "bridge_pkg/telnet.py": {
+   "sha256": "c1da234e2b9214e96b357e489b4e18eb8ff02b939e3c37eef64840ece781959e"
+  },
+  "bridge_pkg/textutil.py": {
+   "sha256": "08c022f1410df447e9cbba6d6b7c41aec71d0fe44b16cd568b982b3d8d59e6ac"
+  },
   "workshop-gcode-bridge.service": {
    "sha256": "bc1dad89311c5d6a5eef7802e597b0bad2dd2e3338ed75d406cac7d6cdf30e7e"
   },
   "install.sh": {
-   "sha256": "76541cc7e48182923162c8e31e1b5de5554c7f8482e17e49c4102fea370cb3f3"
+   "sha256": "be6843c25daf9cc93973fb4cd30f9dd25fc47059051de3e508f96988c6cca4cf"
   }
  }
 }

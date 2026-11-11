@@ -29,23 +29,26 @@ import os
 import threading
 import time
 
+import process_registry
+
 PATH_SETTINGS = paths.DWC_SETTINGS
 TTL_S = 3.0
 
-LIGHTS = "WorkshopLights"  # "Lights and states" on screen
-CAMERA = "WorkshopCamera"  # camera relay, timelapse and watchdog
-POWER = "WorkshopPower"  # consumption meter reader
-MOTORS = "WorkshopMotors"  # driver polling
-VISION = "WorkshopVision"  # uses the camera relay
-RS485 = "WorkshopRS485"  # servo alarm pause (own backend process)
-WORKBENCH = "WorkshopWorkbench"  # its camera layer uses the relay
-ACTIVITY = "WorkshopActivity"  # history, board events and phone notices
-HEALTH = "WorkshopPiHealth"  # Pi watchdog
-JOG = "WorkshopJog"  # jog engine
-BAR = "WorkshopControlBar"  # shutdown with timer
-CONFIGURATOR = "WorkshopConfig"  # configuration rollback
-MACHINE = "WorkshopMachine"  # maintenance counters
-PRINTING = "WorkshopPrinting"  # record of the PID tuning (pid_trace.py)
+# Ids of the DWC plugins (the table of the processes, process_registry.py, is where they are used)
+LIGHTS = process_registry.LIGHTS  # "Lights and states" on screen
+CAMERA = process_registry.CAMERA  # camera relay, timelapse and watchdog
+POWER = process_registry.POWER  # consumption meter reader
+MOTORS = process_registry.MOTORS  # driver polling
+VISION = process_registry.VISION  # uses the camera relay
+RS485 = process_registry.RS485  # servo alarm pause (own backend process)
+WORKBENCH = process_registry.WORKBENCH  # its camera layer uses the relay
+ACTIVITY = process_registry.ACTIVITY  # history, board events and phone notices
+HEALTH = process_registry.HEALTH  # Pi watchdog
+JOG = process_registry.JOG  # jog engine
+BAR = process_registry.BAR  # shutdown with timer
+CONFIGURATOR = process_registry.CONFIGURATOR  # configuration rollback
+MACHINE = process_registry.MACHINE  # maintenance counters
+PRINTING = process_registry.PRINTING  # record of the PID tuning (pid_trace.py)
 
 # Each internal process of the service and the DWC plugins that need it (any of them enabled is enough). A process
 # that is not listed here (the G-code interception, the black box, the single subscription) has its own rule below.
@@ -53,27 +56,16 @@ PRINTING = "WorkshopPrinting"  # record of the PID tuning (pid_trace.py)
 # enabled in DWC (Settings > Plugins) or when the user forced it on; the supervisor of heartbeats.py keeps it at rest until
 # then and starts it by itself when it becomes needed. A forced-off process does not start at the next restart. The
 # user can change each one in the service page (config "modulos": {process: "auto" | "on" | "off"}).
-PROCESSES = {
-    "status_light": (LIGHTS,),
-    "consumption": (POWER,),
-    "motors": (MOTORS,),
-    "camera": (CAMERA, VISION, WORKBENCH),
-    "trace": (WORKBENCH,),
-    "jog": (JOG, WORKBENCH, VISION),
-    "timer": (BAR,),
-    "maintenance": (MACHINE,),
-    "pid_trace": (PRINTING,),
-    "bed_zones": (PRINTING,),
-    "pellet_layers": (PRINTING,),
-}
+# Derived from the one table of the processes (process_registry.py): which plugins need each one.
+PROCESSES = process_registry.plugin_needs()
 # Safety processes are NEVER gated by plugins (CLAUDE.md: "Safety modules are never gated"): in "auto" they always run.
 # Only an explicit "off" of the user in config "modulos" stops them.
-SAFETY = ("events", "jobs", "risk", "config_guard", "motion", "health", "guard")
+SAFETY = process_registry.never_gated()
 MODES = ("auto", "on", "off")
 
 # Processes whose rule in "auto" is not a plugin but a setting of the service itself:
 # the G-code interceptor (main.py) connects to DSF only while the automatic air is on.
-OWN = ("interceptor",)
+OWN = process_registry.own_rule()
 _rule_own = {}
 
 

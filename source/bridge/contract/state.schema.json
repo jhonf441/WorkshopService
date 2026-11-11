@@ -42,6 +42,11 @@
           "required": ["active", "name", "since", "client", "last_event_at", "ended_at", "end_reason"],
           "properties": {
             "active": {"type": "boolean"},
+            "name": {"type": ["string", "null"]},
+            "since": {"type": ["number", "null"]},
+            "client": {"type": ["string", "null"]},
+            "last_event_at": {"type": ["number", "null"]},
+            "ended_at": {"type": ["number", "null"]},
             "end_reason": {"type": ["string", "null"], "description": "end, cancel, close, disconnect or null."}
           }
         }

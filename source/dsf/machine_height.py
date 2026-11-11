@@ -29,6 +29,7 @@ import identity
 import machine_geometry as geo
 import machine_gcode
 import machine_parsers as parsers
+import mode_paths
 import motion_owner
 import sd_paths
 import settings_store
@@ -37,7 +38,7 @@ from workshop_api import ApiError, Arg, MOTION, READ, WRITE, Op
 
 NAME = "zcal"
 MODES = ("Laser", "CNC", "FFF")
-MODE_FILES = {"Laser": "sys/modelaser.g", "CNC": "sys/modecnc.g", "FFF": "sys/modefff.g"}
+MODE_FILES = dict(mode_paths.MODE_FILES)   # ONE source: mode_paths.py
 ZCAL_G = "sys/workshop/macros/zcal/zcal.g"
 HOOK_RE = re.compile(r"(?:taller/zcal|workshop/macros/zcal/zcal)\.g")
 HOOK_LINE = '\n; Height calibration per mode (Machine > Height)\nM98 P"0:/sys/workshop/macros/zcal/zcal.g"\n'
@@ -199,6 +200,11 @@ def _stamp():
     return time.strftime("%Y%m%d%H%M%S")
 
 
+def unmigrated():
+    """Old-layout mode files still in sys/: this tool reads only the new paths, so those modes look absent; the answer names them."""
+    return mode_paths.unmigrated(lambda rel: os.path.isfile(sd_paths.sd(rel)))
+
+
 def hooks():
     """{mode: True (the mode file calls zcal.g) / False / None (that mode has no file on this machine)}."""
     out = {}
@@ -237,7 +243,7 @@ def _state(args, ctx):
     ax = geo.axes_by_letter(om)
     lim = geo.limits(om)
     return {
-        "mode": _mode_of(om), "rev": cur["rev"], "data": normalize(cur["value"]), "hooks": hooks(), "applied": _read_text(ZCAL_G) is not None,
+        "mode": _mode_of(om), "rev": cur["rev"], "data": normalize(cur["value"]), "hooks": hooks(), "unmigrated": unmigrated(), "applied": _read_text(ZCAL_G) is not None,
         "probes": _probes(om), "macros": macros_present(),
         "homed": {k: bool((ax.get(k) or {}).get("homed")) for k in "XYZ"},
         "z": geo.rnd(geo.num((ax.get("Z") or {}).get("userPosition"))),
@@ -273,7 +279,7 @@ def _save(args, ctx):
     _write_text(ZCAL_G, generate_g(new, time.strftime("%Y-%m-%d %H:%M")))
     applied, why = _apply_now(_mo().model())
     audit.event("machine.height.saved", {"changes": args.get("changes")}, identity.actor(ctx))
-    return {"rev": res["rev"], "data": new, "applied": applied, "apply_reason": why, "hooks": hooks()}
+    return {"rev": res["rev"], "data": new, "applied": applied, "apply_reason": why, "hooks": hooks(), "unmigrated": unmigrated()}
 
 
 def _hook(args, ctx):
@@ -291,7 +297,7 @@ def _hook(args, ctx):
             _write_text(MODE_FILES[m], text.rstrip() + "\n" + HOOK_LINE)
             done.append(m)
     audit.event("machine.height.hook", {"added": done}, identity.actor(ctx))
-    return {"added": done, "already": already, "absent": absent, "hooks": hooks()}
+    return {"added": done, "already": already, "absent": absent, "hooks": hooks(), "unmigrated": unmigrated()}
 
 
 # ---- the movements of the assistants ----

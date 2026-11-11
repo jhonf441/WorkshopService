@@ -30,9 +30,10 @@ import json
 import os
 import socket
 import sqlite3
-import subprocess
+import os_gateway
 import time
 
+import clock
 import heartbeats
 import viewers
 import urllib.error
@@ -42,10 +43,10 @@ import activity
 import cpu_meter
 import health_history
 import machine_state
+import service_log
 from messages import M, J, B, Msg
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = os.path.join(BASE_DIR, "workshop-service.log")
 STATE_FILE = os.path.join(BASE_DIR, "health_state.json")
 try:
     import db as _db
@@ -100,16 +101,12 @@ THROTTLE_BITS = {
 
 
 def log_file(msg):
-    try:
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} [health_poller] {msg}\n")
-    except Exception:
-        pass
+    service_log.log(msg, "health_poller")
 
 
 def _sh(cmd, timeout=4):
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        r = os_gateway.run(cmd, timeout=timeout)
         return r.stdout if r.returncode == 0 else None
     except Exception:
         return None
@@ -353,9 +350,9 @@ def journal_count(unit, since, pattern, patron2=None):
     (and `pattern2`, if given).
     None if there is no permission to read the system journal."""
     try:
-        r = subprocess.run(
+        r = os_gateway.run(
             ["journalctl", "-u", unit, "--since", since, "--no-pager", "-o", "cat"],
-            capture_output=True, text=True, timeout=10,
+            timeout=10,
         )
     except Exception:
         return None
@@ -395,7 +392,7 @@ def age_data(status=None):
     try:
         d = heartbeats._info.get("motors") or {}
         if d.get("last_ok"):
-            out["motors_s"] = round(time.time() - d["last_ok"])
+            out["motors_s"] = round(clock.mono() - d["last_ok"])  # heartbeats keep monotonic readings
     except Exception:
         pass
     return out
@@ -514,7 +511,7 @@ def watch_bridge(bridge, services):
     request = bridge_service.LAST["t"]
     raw_text = bridge_watchdog.watch(
         _WATCHDOG_BRIDGE, bool(unit.get("active")), since_us, uptime_s(),
-        request_page=(time.time() - request) if request else None,
+        request_page=(clock.mono() - request) if request else None,  # LAST["t"] is a monotonic reading
         restart_request=_events_bridge_recent(),
         flag_shutdown=os.path.exists(bridge_service.FLAG),
     )

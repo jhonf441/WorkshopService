@@ -20,6 +20,10 @@ code deep inside a handler (activity.log_event) can write who did it without rec
 import contextvars
 
 import api_keys
+import audit_alarms
+import access_context
+import access_person
+import permission_caps as caps
 import permissions
 import workshop_api as wa
 from messages import M
@@ -27,6 +31,12 @@ from messages import M
 COMPAT_USER = {"name": "", "role": permissions.ADMIN, "modes": list(permissions.MODES), "camera": True, "sid": None, "compat": True}
 
 _holder = contextvars.ContextVar("workshop_identity", default=None)
+
+# Where the access file of the access model comes from: fn(users store) -> access_store.AccessStore or None. access_ops.build sets it (the registry is built
+# before the users store exists, and the store is made when the first call needs it). A registry can also be given its own: `registry.access`.
+access_source = None
+# Where the last-use file comes from: fn(users store) -> access_usage.UsageStore or None (access_ops.build sets it). A registry can have its own: `registry.usage`.
+usage_source = None
 
 
 def current():
@@ -82,6 +92,19 @@ class AuthRegistry(wa.Registry):
         self.users = None
         self.on_denied = None  # fn(op, args, ctx, body) for refusals of operations that are not logged
         self.mode_of = lambda: None
+        self.usage = None  # access_usage.UsageStore of this registry (tests); else usage_source(self.users)
+        self.access = None  # access_store.AccessStore of this registry (tests); else access_source(self.users)
+        self.state_of = access_context.read_live  # () -> (object model, its age): the live conditions of the rules of a governed person
+
+    def _access_view(self):
+        """The state of the access model now, or None (no store, or its file is damaged: then nobody has attachments and the base roles decide)."""
+        store = self.access
+        if store is None and access_source is not None and self.users is not None:
+            store = access_source(self.users)
+        if store is None:
+            return None
+        audit_alarms.access_file(store.damaged)  # a damaged file raises one visible alarm per period, and a note when it heals
+        return None if store.damaged else store.view()
 
     def call(self, op_name, args=None, ctx=None):
         ctx = dict(ctx or {})
@@ -95,7 +118,7 @@ class AuthRegistry(wa.Registry):
         op = self.ops.get(str(op_name or ""))
         if status == 403 and self.on_denied is not None and op is not None and not op.log:
             try:  # a refused call of an operation that is not logged (jog...) is still worth a line in the audit
-                self.on_denied(op, ctx["args_raw"], dict(ctx, user=holder.get("user")), body)
+                self.on_denied(op, ctx["args_raw"], dict(ctx, user=holder.get("user"), access_decision=holder.get("access_decision")), body)
             except Exception as e:  # noqa: BLE001
                 self.log("audit of a refusal: %s" % e)
         return status, body
@@ -148,9 +171,59 @@ class AuthRegistry(wa.Registry):
             raise wa.ApiError("forbidden", M("auth_users_damaged"), reason="damaged")
         dctx = {"args": ctx.get("args_raw") or {}, "modes": ident.get("modes"), "camera": ident.get("camera"), "mode": self.mode_of(),
                 "role_def": ident.get("role_def")}
+        view = self._access_view()
+        dec = access_context.decide(view, ident, name, dctx, self.state_of) if view is not None else None
+        if dec is not None:  # something is attached to the person: the evaluator governs them (access_person)
+            self._decided(ctx, dec.allowed, dec.reason)
+            if not dec.allowed:
+                raise self._forbidden_access(name, ident, dctx, dec)
+            self._note_use(ident, name)
+            return
         ok, why = permissions.decide(role_name(ident), name, dctx)
+        self._decided(ctx, ok, {"code": why or "role"})
         if not ok:
             raise self._forbidden(name, ident, dctx, why)
+        self._note_use(ident, name)
+
+    def _note_use(self, ident, name):
+        """The last use of the capability of an ALLOWED call (access_usage: memory first, a pair at most once a minute). Never raises, never refuses."""
+        try:
+            who, cap = ident.get("name"), caps.capability_of(name)
+            if not who or cap is None:
+                return
+            store = self.usage
+            if store is None and usage_source is not None and self.users is not None:
+                store = usage_source(self.users)
+            if store is not None:
+                store.touch(who, cap)
+        except Exception:  # noqa: BLE001  the record of a use never decides a call
+            pass
+
+    @staticmethod
+    def _decided(ctx, allowed, reason):
+        """What decided the call (the code, and the profile and rule when the evaluator did), kept for the audit detail."""
+        d = {k: reason[k] for k in ("code", "profile", "id", "ceiling") if reason.get(k) is not None}
+        d["allowed"] = bool(allowed)
+        ctx["access_decision"] = d
+        if ctx.get("holder") is not None:
+            ctx["holder"]["access_decision"] = d
+
+    @staticmethod
+    def _forbidden_access(name, ident, dctx, dec):
+        why = access_person.legacy_why(dec, name, ident, dctx)
+        need = permissions.needed_role(name, dctx)
+        extra = {"reason": why, "role": ident["role"], "needed_role": need, "op_name": name, "access": dict(dec.reason)}
+        if ident.get("role_name"):
+            extra["role_name"] = ident["role_name"]
+        if why == "mode":
+            extra["mode"] = dctx.get("mode")
+        if why == "denied":
+            text = M("auth_forbidden_access_deny", profile=dec.reason.get("profile", "?"))
+        elif why == "ceiling":
+            text = M("auth_forbidden_ceiling", ceiling=dec.reason.get("ceiling", "?"))
+        else:
+            text = forbidden_message(why, ident, need, dctx.get("mode"))
+        return wa.ApiError("forbidden", text, **extra)
 
     @staticmethod
     def _forbidden(name, ident, dctx, why):

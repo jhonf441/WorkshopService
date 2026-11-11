@@ -131,6 +131,14 @@ TEMPLATES = {
     # acknowledgements of the person (the prologue of laser / CNC asks again on the machine)
     "resume_print": ("M916", re.compile(r"^M916$")),
     "work_origins_apply": ('M98 P"0:/sys/workshop/macros/work/wpload.g"', re.compile(r'^M98 P"0:/sys/workshop/macros/work/wpload\.g"$')),
+    # bed zones calibration (machine_bedcal.py): the setpoint of ONE bed heater (M140 with P: the service never intercepts it), its off (RRF reads
+    # -273.15 as "off"), the auto tune of one heater (S 30..150), the report of the last tune (M303 alone) and the READ of a heater model (M307 H only:
+    # a line with any other letter is not in the list, so the model can never be written from here)
+    "bed_set": ("M140 P{bed} S{set_temp}", re.compile(r"^M140 P%s S%s$" % (_INDEX, _NUM))),
+    "bed_off": ("M140 P{bed} S-273.15", re.compile(r"^M140 P%s S-273\.15$" % _INDEX)),
+    "heater_tune": ("M303 H{heater} S{tune_temp}", re.compile(r"^M303 H%s S%s$" % (_INDEX, _NUM))),
+    "tune_report": ("M303", re.compile(r"^M303$")),
+    "heater_model": ("M307 H{heater}", re.compile(r"^M307 H%s$" % _INDEX)),
 }
 
 # range of each named value: ("int", lo, hi), ("num", lo, hi) (decimals, at most 3 places) or ("list", lo, hi, n_min, n_max) (a:b:c).
@@ -146,6 +154,8 @@ PARAMS = {
     "idle": ("int", 0, 100), "secs": ("int", 1, 3600), "pct": ("num", 0, 100), "mult": ("num", 1, 100), "samples": ("int", 100, 3000),
     "pos": ("num", -5000, 5000), "freq": ("num", 4, 300), "damp": ("num", 0, 0.99), "shaper": ("choice", SHAPERS[1:]),
     "fx": ("num", -0.2, 0.2, 6), "fy": ("num", -0.2, 0.2, 6), "fz": ("num", -0.2, 0.2, 6),
+    # bed zones calibration: a bed number, a setpoint of 0..150 C and a tuning target of 30..150 C (the heater number is an index 0..99)
+    "bed": ("int", 0, 31), "set_temp": ("num", 0, 150), "tune_temp": ("num", 30, 150),
 }
 # M671 has its own names for the same letters: coordinates are lists, S P F are decimals
 LIST_TEMPLATES = {"m671_set": {"x": ("list", -5000, 5000, 2, 4), "y": ("list", -5000, 5000, 2, 4), "s": ("num", 0, 100),

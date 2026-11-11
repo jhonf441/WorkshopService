@@ -1,5 +1,5 @@
 <template>
-	<div class="svc-pr" :class="['svc-pr--' + group, 'svc-pr-s-' + key]">
+	<div :id="'svc-proc-' + p.id" class="svc-pr" :class="['svc-pr--' + group, 'svc-pr-s-' + key]" :style="{ '--svc-c': color }">
 		<!-- the row is ONE button (keyboard: Tab, Enter / Space): the state dot, the name, one line of what it does, the tags -->
 		<button type="button" class="svc-pr-head" :aria-expanded="open ? 'true' : 'false'" :aria-controls="'svc-pr-' + p.id" @click="open = !open">
 			<span class="svc-pr-dot" aria-hidden="true" />
@@ -11,7 +11,7 @@
 			<span class="svc-pr-tags">
 				<span v-if="group === 'safety'" class="svc-pr-tag svc-pr-tag--safe">{{ $t(D + 'ui_tag_safety') }}</span>
 				<span class="svc-pr-tag" :class="p.external ? 'svc-pr-tag--own' : ''">{{ $t(D + (p.external ? 'ui_tag_own' : 'ui_tag_thread')) }}</span>
-				<span v-if="key === 'late' || key === 'bad'" class="svc-pr-tag" :class="'svc-pr-tag--' + key" :title="p.state.detail">{{ p.state.text }}</span>
+				<span v-if="key === 'late' || key === 'bad'" class="svc-pr-tag svc-pr-tag--state" :title="p.state.detail">{{ p.state.text }}</span>
 				<span v-if="paused" class="svc-pr-tag svc-pr-tag--paused"><v-icon x-small class="mr-1" aria-hidden="true">mdi-pause-circle-outline</v-icon>{{ $t(D + 'ui_tag_paused') }}</span>
 				<span v-if="p.restarts" class="svc-pr-tag svc-pr-tag--late">{{ $t('plugins.WorkshopService.servicePage.relaunched_n', { n: p.restarts }) }}</span>
 			</span>
@@ -20,6 +20,9 @@
 
 		<!-- the control of the camera relay: the relay is a process of this service (camera-relay.js); it stays in sight, not inside the button -->
 		<relay-card v-if="p.id === 'camera'" class="svc-pr-relay" />
+		<!-- the setting this process OWNS (process-settings.js: the automatic air, the status lights, the bed zones): in sight like the relay, with its
+		     "?" and its lock; the card "Automations" only links here -->
+		<process-setting v-if="setting" :p="p" :settings="settings" @go-path="to => $emit('go-path', to)" />
 
 		<div v-if="p.error && p.errorRecent && !open" class="svc-pr-lasterr">{{ p.error_hour }}: {{ p.error }}</div>
 
@@ -35,7 +38,12 @@
 				</div>
 				<div v-if="effective">
 					<dt>{{ $t(D + 'ui_running_now') }}</dt>
-					<dd>{{ $t(D + effective) }}</dd>
+					<dd class="svc-pr-now">{{ $t(D + effective) }}</dd>
+				</div>
+				<!-- the internal id (what the service, the audit and the API name it by): apart from the readable name -->
+				<div>
+					<dt>{{ $t(D + 'ui_internal_id') }}</dt>
+					<dd><code class="svc-pr-id">{{ p.id }}</code></dd>
 				</div>
 			</dl>
 
@@ -132,13 +140,15 @@
 
 import Spark from './Spark.vue'
 import RelayCard from './RelayCard.vue'
+import ProcessSetting from './ProcessSetting.vue'
 import SessionNotice from './SessionNotice.vue'
 import LockReason from './LockReason.vue'
 import { roleMixin } from './role-mixin.js'
 import { signedOut } from './workshop-auth.js'
 import { blinkLocked } from './lock-attention.js'
 import { sec, duration, age, rhythm } from './format.js'
-import { groupOf, stateKey, configuredMode, modeNote, pendingNote, effectiveKey, canPause, pauseKey, restartNote } from './processes-groups.js'
+import { groupOf, stateKey, stateColor, configuredMode, modeNote, pendingNote, effectiveKey, canPause, pauseKey, restartNote } from './processes-groups.js'
+import { rowSetting } from './process-settings.js'
 
 import { pluginActive } from './workshop-ids.js'
 
@@ -152,12 +162,16 @@ const GROUP_COLOR = { safety: '#b79cf0', machine: '#5aa9ff', data: '#5cc28a', su
 // it fails, who reads it, its history of the last minutes and its control (the mode switch, or the note that it is protected).
 export default {
 	name: 'ProcessRow',
-	components: { Spark, RelayCard, SessionNotice, LockReason },
+	components: { Spark, RelayCard, ProcessSetting, SessionNotice, LockReason },
 	mixins: [roleMixin],
+	// the reason shown after a touch on a locked control belongs to the person who touched it: gone on sign-out / change of role
+	sessionData: ['shown'],
 	props: {
 		p: { type: Object, required: true },
 		hist: { type: Object, default: null },
-		openInitial: { type: Boolean, default: false }
+		openInitial: { type: Boolean, default: false },
+		// what the page reads from the plugin data for the settings the rows own (ProcessSetting.vue)
+		settings: { type: Object, default: null }
 	},
 	data() {
 		return {
@@ -173,8 +187,16 @@ export default {
 		key() {
 			return stateKey(this.p)
 		},
+		// the one colour of the state (processes-groups.js STATE_COLORS): the dot, the state tag and the "right now" word read --svc-c
+		color() {
+			return stateColor(this.p)
+		},
 		title() {
 			return this.p.title || this.p.id
+		},
+		// the setting this row owns ('' for most rows; the camera keeps its relay card above)
+		setting() {
+			return rowSetting(this.p)
 		},
 		// one line of what it does: what the service says, else the first line of its documentation
 		what() {
@@ -294,16 +316,15 @@ export default {
 </script>
 
 <style scoped>
+/* --svc-c is the colour of the state, set inline by the row from STATE_COLORS (processes-groups.js): no state colour is written here */
 .svc-pr {
 	--svc-c: #6e787f;
 	border-bottom: 1px solid var(--wf-line);
 }
 .svc-pr:last-child { border-bottom: 0; }
-.svc-pr-s-ok { --svc-c: var(--wf-ok, #43a047); }
-.svc-pr-s-late { --svc-c: var(--wf-warn, #fb8c00); }
-.svc-pr-s-bad { --svc-c: var(--wf-err, #e53935); }
-.svc-pr-s-idle { --svc-c: #6e787f; }
-.svc-pr-s-paused { --svc-c: #78909c; background: rgba(84, 110, 122, 0.10); box-shadow: inset 3px 0 0 #78909c; }
+.svc-pr-s-paused { background: rgba(84, 110, 122, 0.10); box-shadow: inset 3px 0 0 var(--svc-c); }
+.svc-pr-now { color: var(--svc-c); font-weight: 500; }
+.svc-pr-id { font-size: 12px; opacity: 0.8; }
 .svc-pr-head {
 	display: grid;
 	grid-template-columns: 14px minmax(140px, 1.1fr) minmax(200px, 2fr) auto 18px;
@@ -344,7 +365,8 @@ export default {
 .theme--dark .svc-pr-tag--safe { color: #b79cf0; }
 .svc-pr-tag--own { color: var(--wf-ok, #43a047); border-color: rgba(67, 160, 71, 0.5); background: rgba(67, 160, 71, 0.1); opacity: 1; }
 .svc-pr-tag--late { color: var(--wf-warn, #fb8c00); border-color: rgba(251, 140, 0, 0.55); background: rgba(251, 140, 0, 0.1); opacity: 1; }
-.svc-pr-tag--bad { color: var(--wf-err, #e53935); border-color: rgba(229, 57, 53, 0.55); background: rgba(229, 57, 53, 0.1); opacity: 1; }
+/* the state tag (late / stopped) takes the colour of the dot */
+.svc-pr-tag--state { color: var(--svc-c); border-color: color-mix(in srgb, var(--svc-c) 55%, transparent); background: color-mix(in srgb, var(--svc-c) 10%, transparent); opacity: 1; }
 .svc-pr-tag--paused { color: #fff; border-color: #546e7a; background: #546e7a; font-weight: 600; opacity: 1; }
 .theme--dark .svc-pr-tag--paused { color: #fff; }
 .svc-pr-tag--paused .v-icon { color: inherit; }

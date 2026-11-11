@@ -24,6 +24,7 @@ confirmation of macros/power/shutdown-all.g), so all the screens say
 the same thing about what is going to happen.
 
 """
+import board_reply
 from messages import M
 
 METHODS = ("auto", "meter", "relay", "pson")
@@ -133,7 +134,7 @@ def emit(bridge, config, force=False):
         # set fails (returns "Error: ... unknown variable") if the global does not exist
         try:
             r = bridge.send(f'set global.{label} = "{raw_text}"')
-            missing = bool(r and "rror" in str(r))
+            missing = board_reply.is_error(r)
         except Exception:
             missing = True  # depending on the version, the error arrives as an exception
         if missing:

@@ -12,11 +12,13 @@ import paths
 import importlib.util
 import json
 import os
+import threading
 import time
 
 import api_keys
 import api_users
-import roles_ops
+import startup_ops
+import access_ops, audit_ops, roles_ops
 import role_store
 import camera_access
 import audit
@@ -30,8 +32,17 @@ import users
 import workshop_api as wa
 from workshop_api import ADMIN, MOTION, POWER, READ, STOP, WRITE, Arg, ApiError, Op
 import messages
+import activity_ops
+import energy_ops
+import notifications_ops
+import lights_ops
+import power_ops
+import service_ops
+import jobs_ops
 import settings_ops
-import bed_zones_ops
+import bed_zones_ops, bed_calibration_ops
+import layer_recipes_ops
+import gcodelib_ops
 import pellet_layers_ops
 import stopped_plugins
 import interlocks
@@ -78,7 +89,7 @@ CONFIRM_TEXTS = {
     "machine.test_move": _confirm("machine_confirm_testmove_title", "machine_confirm_testmove_text"),
     "workarea.step": _confirm("machine_confirm_area_step_title", "machine_confirm_area_step_text"),
     "processes.restart": _confirm("processes_confirm_restart_title", "processes_confirm_restart_text"),
-    "service.restart": _confirm("service_restart_confirm_title", "service_restart_confirm_text"),
+    "service.restart": _confirm("service_restart_confirm_title", "service_restart_confirm_text"), **bed_calibration_ops.CONFIRM_TEXTS,
 }
 
 
@@ -91,14 +102,30 @@ def _param(v):
     return v
 
 
+_handler_modules = {}  # name -> (path, (mtime_ns, size), module)
+_handler_lock = threading.Lock()
+
+
+def _load_handler(name, path):
+    """The module of handlers/<name>.py, executed once and reused while its path, mtime and size stay (module state lives across calls)."""
+    st = os.stat(path)
+    stamp = (st.st_mtime_ns, st.st_size)
+    with _handler_lock:
+        hit = _handler_modules.get(name)
+        if hit is not None and hit[0] == path and hit[1] == stamp:
+            return hit[2]
+        module = importlib.util.module_from_spec(spec := importlib.util.spec_from_file_location(f"handler_{name}", path))
+        spec.loader.exec_module(module)
+        _handler_modules[name] = (path, stamp, module)
+        return module
+
+
 def run_handler(name, params):
-    """Runs handlers/<name>.py with a fresh module."""
+    """Runs handlers/<name>.py (module cached by path and mtime, see _load_handler)."""
     path = os.path.join(HANDLERS_DIR, f"{name}.py")
     if not os.path.isfile(path):
         raise ApiError("internal", f"handler {name} is missing in this installation")
-    spec = importlib.util.spec_from_file_location(f"handler_{name}", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    module = _load_handler(name, path)
     return module.run(params, _ctx["bridge"], _ctx["config"])
 
 
@@ -148,16 +175,6 @@ def _service_restart(args, ctx):
 def _hex(v):
     """The meter handler keeps the local key hex encoded (it has quotes and brackets)."""
     return str(v or "").encode("utf-8").hex()
-
-
-def _armed(args, ctx):
-    v = args.get("armed")
-    if isinstance(v, str):
-        s = v.strip().lower()
-        state = "toggle" if s == "toggle" else ("arm" if s in ("1", "true", "on", "yes", "arm") else "disarm")
-    else:
-        state = "arm" if v else "disarm"
-    return run_handler("shutdown", {"S": state})
 
 
 def _jog_move(action, letters):
@@ -310,15 +327,6 @@ def _ops():
     S, I, N, B, O, L = "str", "int", "num", "bool", "obj", "list"
     a = Arg
     # shared argument descriptions
-    d_from = "Start of the range, inclusive: YYYY-MM-DD (from 00:00:00) or a full date and time YYYY-MM-DDTHH:MM:SS."
-    d_to = "End of the range, inclusive, same format; a date alone means the end of that day. Empty: the same as from."
-    d_limit = "Rows per page (default 50, at most 200)."
-    d_offset = "Rows to skip, for paging (default 0)."
-    d_act_type = "Only events of this exact type (for example job_start, job_end, power, config, modo, sistema). Empty: every type."
-    d_act_exclude = "Event types to leave out, for example [\"servicio\"] hides the restarts of the service."
-    d_act_user = "Only the events done by this person (user name, as in rows[].user)."
-    d_act_mine = "true: only the events of the person of this session (the server knows who it is); without users (open mode) it filters nothing."
-    d_act_query = "Text searched in the description, the type and the detail of each event (the first 80 characters are used)."
     d_meter_sel = "Key of the meter (empty: the main one, the one that feeds the system); \"total\" adds up the meters on their own line."
     d_meter_key = "Key of the meter (empty: the main one, the one that feeds the system)."
     d_tuya_id = "Tuya device id of the meter."
@@ -328,8 +336,6 @@ def _ops():
                    "never above the axis speed limits of the board (M203).")
     d_jog_release = ("true: this device lets go of ITS control; ignored when another device holds the jog. "
                      "Without it (or false) the stop stops everything, whoever holds it (safety).")
-    d_lights_secs = "How long the LEDs stay like that, 2 to 30 seconds (default 6); the automatic lighting is paused meanwhile."
-    d_lights_strip_e = "E number of the strip (the E<n> of its M950 line); empty: the main strip."
     d_cfg_who = "Who does it (person or screen); noted in the roll back state and in Activity."
     d_bigpart = "Request of the page as an object (see the operation); errors come back as {ok: false, error}."
     return [
@@ -339,19 +345,6 @@ def _ops():
         *health_history.ops(),  # health.history
         *guard_api.ops(),  # protection guard (guard.status, guard.set)
         # activity
-        Op("activity.list", H("activity_query", {}, {"from": "D", "to": "A", "type": "T", "exclude": "X", "limit": "L", "offset": "O", "query": "Q", "user": "W", "mine": "E"}), READ,
-           {"from": a(S, True, desc=d_from), "to": a(S, desc=d_to), "type": a(S, desc=d_act_type), "exclude": a(L, desc=d_act_exclude),
-            "limit": a(I, min=1, max=200, desc=d_limit), "offset": a(I, min=0, desc=d_offset), "query": a(S, desc=d_act_query),
-            "user": a(S, desc=d_act_user), "mine": a(B, desc=d_act_mine)},
-           "Lists the events of the Activity history (jobs, power, configuration, warnings...) of a date range, paged and filtered; "
-           "also returns the total and the event types that exist."),
-        Op("activity.delete", H("activity_query", {"C": "remove"}, {"id": "I"}), WRITE,
-           {"id": a(I, True, desc="Id of the event, as returned by activity.list (rows[].id).")},
-           "Deletes one event of the Activity history for good."),
-        Op("activity.clear", H("activity_query", {"C": "clean"}, {"from": "D", "to": "A", "type": "T", "exclude": "X", "query": "Q"}), WRITE,
-           {"from": a(S, True, desc=d_from), "to": a(S, desc=d_to), "type": a(S, desc=d_act_type), "exclude": a(L, desc=d_act_exclude),
-            "query": a(S, desc=d_act_query)},
-           "Deletes every Activity event that matches the filter (date range, type, excluded types, text) and returns how many; cannot be undone."),
         Op("activity.log", H("log", {}, {"type": "T", "text": "N", "zone": "Z", "points": "P"}), WRITE,
            {"type": a(S, True, choices=("calibration", "config", "warning", "fire", "safety_check", "job_start"),
                       desc="Kind of event: calibration (a calibration was saved), config (a setting changed), warning, fire (flame or smoke seen: urgent), "
@@ -376,75 +369,13 @@ def _ops():
            {"seconds": a(N, True, min=0, max=60, desc="Delay in seconds after M5, 0 to 60.")},
            "Sets how many seconds the automatic air assist waits after M5 before switching the pump off. Saved."),
         # power
-        Op("power.after_job", _armed, WRITE, {"armed": a("any", True, desc="true arms, false disarms, \"toggle\" switches the current state.")},
-           "Arms or disarms the power off at the end of the current job (or of the next one that starts); sys/daemon.g then runs the power off of power.off. "
-           "Saved, mirrored in global.powerOffOnFinish and logged in Activity.", macro=True),
-        Op("power.timer", H("shutdown", {"S": "temporizar"}, {"minutes": "N"}), WRITE,
-           {"minutes": a(I, True, min=1, max=720, desc="Minutes from now until the power off, 1 to 720.")},
-           "Schedules the power off of the whole machine in N minutes (the same power off as power.off; with a job running at that time it arms "
-           "power.after_job instead). Saved, survives a restart of the service; logged in Activity."),
-        Op("power.timer_cancel", H("shutdown", {"S": "cancel_timer"}), WRITE, {},
-           "Cancels the scheduled power off timer, if any (logged in Activity when there was one)."),
-        Op("power.method", H("shutdown", {"S": "method"}, {"method": "C", "power_off_system": "A", "relay_output": "R", "relay_value": "V"},
-                             {"method": {"meter": "meter", "relay": "relay"}}), WRITE,
-           {"method": a(S, choices=("auto", "meter", "relay", "pson"),
-                        desc="auto (the meter if one is configured, else the relay if set, else PS_ON if the board has it, else only the system), "
-                             "meter (the Tuya meter cuts the whole machine), relay (an output of the board cuts all the power), "
-                             "pson (M81 switches off the power supply controlled by PS_ON)."),
-            "power_off_system": a(B, desc="With PS_ON, also shut the Raspberry Pi (the system) down; the meter and relay methods always shut it down."),
-            "relay_output": a(I, min=0, max=63, desc="Board output that drives the relay (the P number of its M950 line), 0 to 63."),
-            "relay_value": a(I, min=0, max=1, desc="Value written with M42 to that output to CUT the power: 0 or 1.")},
-           "Chooses how power.off, the timer and the power off after the job cut the power. Only the arguments given change; saved, logged in Activity; "
-           "the answer says what will happen."),
-        Op("power.off", H("shutdown_all"), POWER, {},
-           "Cuts the power of the whole machine with the chosen method (power.method): extra meters first, then sync, cut and system shutdown. "
-           "Whatever is running stops. Needs a confirmation.", confirm={"level": 3, "key": "power.off"}, macro=True),
-        Op("power.full_reset", H("reset_all"), POWER, {},
-           "Restarts everything by software without cutting the power: asks the system to reboot and resets the board with M999. "
-           "Whatever is running stops and homing is lost. Needs a confirmation.", confirm={"level": 3, "key": "power.full_reset"}, macro=True),
         # database
-        Op("db.status", H("base", {"S": "state"}), READ, {}, "Returns the state of the service database, its backups and its maintenance."),
-        Op("db.backup", H("base", {"S": "backup"}), WRITE, {},
-           "Makes a backup now: the database and the workshop folders (0:/sys/workshop config, data, zones) in one .tar.gz in the backup folder "
-           "(and in the extra copy if set)."),
-        Op("db.places", H("base", {"S": "places"}), READ, {},
-           "Lists where backups can be kept: the system card and every mounted USB stick, with their free space."),
-        Op("db.folder", H("base", {"S": "folder"}, {"path": "D"}), WRITE,
-           {"path": a(S, True, desc="Absolute folder on the system card (inside the DSF SD folder) or on a USB stick (/media/..., /mnt/...), "
-                                    "for example one of db.places.")},
-           "Changes the backup folder: the existing backups are copied (not moved) and checked; the old folder stays until db.delete_previous."),
-        Op("db.delete_previous", H("base", {"S": "delete_previous"}), WRITE, {},
-           "Deletes the backups of the previous backup folder that already have a copy in the current one; the others are left alone."),
-        Op("db.keep", H("base", {"S": "keep"}, {"file": "F", "keep": "V"}), WRITE,
-           {"file": a(S, True, desc="File name of the backup in the backup folder (as listed by db.status)."),
-            "keep": a(B, default=True, desc="true (default) protects it from the automatic deletion; false lets the rotation delete it again.")},
-           "Marks a backup so the rotation never deletes it automatically, or releases that mark."),
-        Op("db.settings", H("base", {"S": "settings"}, {"auto": "A", "daily": "N", "weekly": "W", "summarize": "R", "extra_copy": "E"}), WRITE,
-           {"auto": a(B, desc="Automatic daily backups on or off."),
-            "daily": a(N, min=0, desc="How many daily backups are kept (the service keeps it between 1 and 60)."),
-            "weekly": a(N, min=0, desc="How many weekly backups are kept among the older ones (0 to 52)."),
-            "summarize": a(B, desc="Summarize meter readings older than 90 days to one per hour (after a warning and a backup); false never summarizes."),
-            "extra_copy": a(S, desc="Extra copy of each backup: \"auto\" (the first USB stick, or the card when the main folder is a stick), "
-                                    "\"no\", or a folder on the card or on a stick.")},
-           "Changes the backup settings; only the arguments given change. Returns the resulting settings."),
         # sound
         Op("sound.beep", H("beep", {}, {"pattern": "S"}), WRITE,
            {"pattern": a(S, choices=("ok", "done", "error", "attention"), default="ok",
                          desc="ok (one beep, default), done (three rising beeps), error (two low beeps) or attention (three short beeps).")},
            "Plays a beep pattern with M300 (DWC sounds it on the screens where it is open); it answers at once and plays in the background.", macro=True),
         # black box
-        Op("blackbox.status", H("blackbox", {"S": "status"}), READ, {},
-           "State of the black box (a line of load, CPU, RAM, temperature and state every few seconds in 0:/sys/workshop/data/blackbox/) "
-           "and the report of the last unclean shutdown."),
-        Op("blackbox.lines", H("blackbox", {"S": "lines"}, {"n": "N"}), READ,
-           {"n": a(I, min=1, max=200, default=20, desc="Number of lines, 1 to 200 (default 20).")},
-           "Returns the last lines written by the black box, as text."),
-        Op("modules.list", H("service_modules", {"C": "list"}), READ, {},
-           "Lists the internal processes of the service with the way each one runs (auto / on / off), whether it runs now and why (a plugin that needs it is enabled, or forced).", log=False),
-        Op("modules.set", H("service_modules", {"C": "set"}, {"process": "P", "mode": "M"}), WRITE,
-           {"process": a(S, True, desc="Id of the internal process (as listed by modules.list)."),
-            "mode": a(S, True, choices=("auto", "on", "off"), desc="auto: runs only while a plugin that needs it is enabled; on: always; off: never (applies at the next start of the service).")},
-           "Chooses how an internal process of the service runs. Saved in the configuration."),
         Op("processes.pause", H("processes", {"C": "pause"}, {"process": "P"}), WRITE,
            {"process": a(S, True, desc="Id of the process (only the ones the list marks pausable: consumption, motors, maintenance, pid_trace, trace).")},
            "Pauses a data process of the service: its loop keeps its heartbeat but does nothing until resumed. In memory only: a restart of the service runs it again."),
@@ -464,19 +395,10 @@ def _ops():
         Op("examples.list", H("examples", {"C": "list"}, {"plugin": "P"}), READ,
            {"plugin": a(S, True, desc="Id of the plugin that offers the examples (for example WorkshopJog).")},
            "Lists the example files a plugin offers (commented macros to edit) with their state: configured, example (all commented, still to configure) or missing.", log=False),
-        Op("examples.create", H("examples", {"C": "create"}, {"plugin": "P", "file": "F"}), WRITE,
+        Op("examples.create", H("examples", {"C": "create"}, {"plugin": "P", "file": "F"}, actor=True), WRITE,
            {"plugin": a(S, True, desc="Id of the plugin that offers the examples."),
             "file": a(S, desc="Destination (relative to 0:/) of one example to create again even if it was created before; without it only the examples never created are made.")},
            "Creates the example files of a plugin that are missing and were never created. It never overwrites a file."),
-        Op("jobs.preview", H("jobs_view", {}, {"file": "F", "max_vertices": "N", "mode": "M"}), READ,
-           {"file": a(S, True, desc="G-code file under 0:/gcodes (for example Taller/frame.gcode)."),
-            "max_vertices": a(I, min=2000, max=100000, default=30000, desc="Most vertices of the path that come back (the numbers are exact anyway)."),
-            "mode": a(S, choices=("Laser", "CNC", "FFF"), desc="Mode used to read the file (default: the mode of the machine).")},
-           "Reads a G-code file WITHOUT running it: the planned path in machine coordinates of the active work zone, estimated time, distances, feed range, pieces, layers, bounding box and the outline (convex hull) of what it works on.", log=False),
-        Op("blackbox.note", H("blackbox", {"S": "note"}, {"text": "T"}), WRITE, {"text": a(S, True, desc="Text of the note.")},
-           "Writes a note event in the black box (for example from a macro, to mark a moment).", macro=True),
-        Op("blackbox.hide", H("blackbox", {"S": "hide"}), WRITE, {}, "Hides the card with the report of the last unclean shutdown of the system."),
-        Op("blackbox.show", H("blackbox", {"S": "show"}), WRITE, {}, "Shows again the card with the report of the last unclean shutdown of the system (the report is never deleted)."),
         # camera
         Op("camera.status", H("camera_relay", {"S": "state"}), READ, {},
            "State of the camera relay (the process that serves the camera stream to the screens), with the number of viewers and the list of cameras "
@@ -562,24 +484,6 @@ def _ops():
            "Calls the Vision service: takes a photo, detects shapes or searches the record. A detection may take several seconds.",
            exclusive=False, slow=True),
         # history of received commands
-        Op("history.list", H("commands_query", {}, {"from": "D", "to": "A", "name": "N", "errors": "E", "query": "Q", "limit": "L", "offset": "O",
-                                                       "rw": "R", "via": "V", "channel": "G", "kind": "T", "plugin": "Y", "result": "Z"}), READ,
-           {"from": a(S, True, desc=d_from), "to": a(S, desc=d_to),
-            "name": a(S, desc="Only the calls of this operation, for example lights.get."),
-            "errors": a(B, desc="true: only the calls that failed."),
-            "query": a(S, desc="Text searched in the call and in its answer."),
-            "limit": a(I, min=1, max=200, desc=d_limit), "offset": a(I, min=0, desc=d_offset),
-            "rw": a(I, min=0, max=2, desc="0 every call, 1 only the ones that change something, 2 only reads."),
-            "via": a(S, desc="Only the calls that arrived this way, as written in the history (for example \"API (DWC session)\", \"macro\", \"service\")."),
-            "channel": a(S, desc="Only the calls of this origin channel (HTTP, SBC, Aux...); \"-\" for rows saved without origin data."),
-            "kind": a(S, desc="Only the calls of this origin kind (page, console, job_file, macro, bridge, service, external...); \"-\" for rows without origin data."),
-            "plugin": a(S, desc="Only the calls of this plugin or page tag; \"-\" for rows without origin data."),
-            "result": a(S, desc="Only the calls with this result: ok, error or blocked; \"-\" for rows without origin data.")},
-           "Lists the API calls received by the service (origin, result, duration) of a date range, paged and filtered; "
-           "also returns counters of the range and of the last hour.", log=False),
-        Op("history.delete", H("commands_query", {"C": "remove"}, {"from": "D", "to": "A"}), WRITE,
-           {"from": a(S, True, desc=d_from), "to": a(S, desc=d_to)},
-           "Deletes the received calls of a date range from the history; cannot be undone."),
         # communication channels
         Op("comms.get", H("communication"), READ, {},
            "Returns the channel the service uses to send its G-codes to the board and the one of the jog moves, with warnings and suggestions."),
@@ -639,20 +543,11 @@ def _ops():
         Op("config.guard", H("config", {"C": "guard"}), READ, {},
            "Returns the state of the roll back (armed or not, deadline, last result), the same as the plugin data configGuard."),
         # energy
-        Op("energy.history", H("consumption_query", {}, {"from": "D", "to": "A", "limit": "L", "offset": "O", "meter": "M"}), READ,
-           {"from": a(S, True, desc=d_from), "to": a(S, desc=d_to), "limit": a(I, min=1, max=200, desc=d_limit), "offset": a(I, min=0, desc=d_offset),
-            "meter": a(S, desc=d_meter_sel)},
-           "Returns the energy meter readings of a date range, paged, with a summary (kWh, peak and average power) and the power series of the range."),
         Op("energy.period", H("consumption_period", {}, {"period": "T", "date": "R", "meter": "M"}), READ,
            {"period": a(S, choices=("day", "month", "year"), default="day", desc="day (its 24 hours, default), month (its days) or year (its months)."),
             "date": a(S, desc="Reference date YYYY-MM-DD (default today): its day, month or year is used."),
             "meter": a(S, desc=d_meter_sel)},
            "Returns the kWh of a meter per hour of a day, per day of a month or per month of a year, ready to draw bars."),
-        Op("energy.rate_get", H("consumption_tariff"), READ, {}, "Returns the currency and the price of one kWh used to show the approximate cost of the energy."),
-        Op("energy.rate_set", H("consumption_tariff", {"C": "save"}, {"currency": "S", "value": "V"}), WRITE,
-           {"currency": a(S, True, desc="Currency code shown next to the costs, for example USD, EUR, MXN (only a label; empty: the currency of the machine profile, or none)."),
-            "value": a(N, True, min=0, desc="Price of one kWh in that currency.")},
-           "Saves the currency and the price of one kWh (a label and a number, no conversion). Logged in Activity."),
         # energy meters
         Op("meter.get", H("consumption_meter", {}, {"meter": "M"}), READ,
            {"meter": a(S, desc="Key of a meter. Accepted, but the answer always lists every meter.")},
@@ -707,66 +602,6 @@ def _ops():
         Op("jog.free", H("jog", {"S": "free"}, {"on": "A"}), MOTION, {"on": a(B, True, desc="true enters the mode, false leaves it.")},
            "Enters or leaves the jog mode without limits (moves without homing or beyond the M208 limits, guarded by stall detection); "
            "the jog loop applies the request.", exclusive=False),
-        # lights
-        Op("light.set", lambda x, c: run_handler("light", {"S": "on" if x["on"] else "off"}), WRITE,
-           {"on": a(B, True, desc="true switches the working light on, false switches it off.")},
-           "Switches the working light (lighting zone of the LED strip) on or off by running light/lighton.g or light/lightoff.g; "
-           "updates the state shown on the pages.", macro=True),
-        Op("statuslight.set", lambda x, c: run_handler("statuslight", {"S": "on" if x["on"] else "off"}), WRITE,
-           {"on": a(B, True, desc="true: automatic control by mode and state; false: switched off by hand.")},
-           "Status LEDs of the strip: back to automatic control (on) or switched off by hand (off), with the macros light/statusledon.g / statusledoff.g.",
-           macro=True),
-        Op("lights.get", H("lights", {"C": "query"}), READ, {},
-           "Returns the configuration of the LED strip, lights and states (zones, colours, effects, scenes, night dimming) and its current state."),
-        Op("lights.save", H("lights", {"C": "save"}, {"config": "J"}), WRITE,
-           {"config": a(O, True, desc="The lights configuration object of the page (the keys of lights.get; unknown keys are ignored).")},
-           "Saves the lights configuration (validated first), writes 0:/sys/workshop/macros/system/lights.g and runs it so the board uses it. Logged in Activity."),
-        Op("lights.pi_pins", H("lights", {"C": "pi_pins"}), READ, {},
-           "Lists the GPIO 2 to 27 of the Pi with what each one is doing (free, in use and by what) and what the lights can do with it (a strip over SPI on a MOSI pin), plus the state of that output.", log=False),
-        Op("lights.pi_test", H("lights", {"C": "pi_test"}, {"seconds": "D", "pin": "N"}), WRITE,
-           {"seconds": a(I, min=1, max=15, desc="How long the test lasts (default 4)."),
-            "pin": a(I, True, min=2, max=27, desc="GPIO of the strip to test (it must be saved with its output on that pin).")},
-           "Shows a short test on a strip whose output is a pin of the Pi (a moving colour). The normal frame comes back by itself."),
-        Op("lights.test", H("lights", {"C": "test"}, {"count": "N", "seconds": "D", "strip": "T"}), WRITE,
-           {"count": a(I, min=1, max=400, desc="How many LEDs to light from the start, 1 to 400 (default: the whole strip)."),
-            "seconds": a(I, min=2, max=30, desc=d_lights_secs), "strip": a(I, desc=d_lights_strip_e)},
-           "Lights the first N LEDs of a strip in blue for a few seconds, to count them. Needs a physical strip."),
-        Op("lights.identify", H("lights", {"C": "identify"}, {"seconds": "D", "strip": "T", "segments": "J"}), WRITE,
-           {"seconds": a(I, min=2, max=30, desc=d_lights_secs), "strip": a(I, desc=d_lights_strip_e),
-            "segments": a(O, desc="Optional [[r, g, b, count], ...] in strip order (what the page shows, even unsaved); the rest of the strip goes off.")},
-           "Paints every zone of a strip in its own colour for a few seconds (or the segments given), to see where each zone is. Needs a physical strip."),
-        Op("lights.animation", H("lights", {"C": "animation"}, {"data": "J"}), WRITE,
-           {"data": a(O, desc="Optional values to try without saving: {tipo: barra|parpadeo|centro|arcoiris, color: {r, u, b, w}, paso: 1-60}.")},
-           "Runs the start-up animation of the strip now (sys/ledstartup.g), with the saved values or with the ones given. Needs a physical strip."),
-        Op("lights.preview", H("lights", {"C": "view_preview"}, {"data": "J"}), WRITE,
-           {"data": a(O, True, desc="{cuadros: [[[r,u,b,w,count], ...], ...], intervalo: 0.15-5 s, segundos: 1-20} for frames, or "
-                                    "{simular: {config, activos, progreso, modo, trabajando}, segundos} to simulate states.")},
-           "Shows example frames on the status zone for a few seconds, or simulates states with unsaved settings; nothing is saved. Needs a physical strip."),
-        Op("lights.apply_m950", H("lights", {"C": "apply_m950"}, {"total": "N", "strip": "T"}), WRITE,
-           {"total": a(I, True, min=1, max=400, desc="New number of LEDs of the strip, 1 to 400."), "strip": a(I, desc=d_lights_strip_e)},
-           "Changes the LED count (U<total>) of the M950 line of a strip in sys/config.g, keeping a copy of config.g; the board must be restarted "
-           "for it to apply. Logged in Activity; needs a confirmation.", confirm={"level": 3, "key": "lights.apply_m950"}),
-        Op("lights.zone", H("lights", {"C": "zone"}, {"index": "N", "on": "S", "strip": "T"}), WRITE,
-           {"index": a(I, True, min=0, desc="Position of the extra zone in its strip's list of extra zones, from 0."),
-            "on": a(B, True, desc="true switches the zone on, false switches it off."),
-            "strip": a(S, desc="Id of an additional strip; empty: the main strip.")},
-           "Switches one extra zone of the strip on or off now (saved; the strip is repainted)."),
-        Op("lights.test_state", H("lights", {"C": "test_state"}, {"state": "S", "seconds": "D", "outputs": "O", "data": "J"}), WRITE,
-           {"state": a(S, True, desc="Id of the state in the lights configuration (for example parada, pausado)."),
-            "seconds": a(I, min=2, max=20, desc="How long it is shown, 2 to 20 seconds (default 6)."),
-            "outputs": a(L, desc="Outputs: strip, screen and/or board (default: the ones enabled for that state; strip is dropped without a strip)."),
-            "data": a(O, desc="Optional {color, effect} to try instead of the saved ones.")},
-           "Shows one light state for a few seconds on the chosen outputs, optionally with another colour or effect."),
-        Op("lights.scene", H("lights", {"C": "scene"}, {"scene": "S", "color": "J"}), WRITE,
-           {"scene": a(S, desc="Id of a saved scene of the working light (ignored when color is given)."),
-            "color": a(O, desc="Free colour {r, u, b, w, p} instead of a scene.")},
-           "Sets the colour of the working light from a scene or a free colour, saves it and switches the working light on. Needs a physical strip."),
-        Op("lights.schedule", H("lights", {"C": "schedule"}, {"on": "S"}), WRITE, {"on": a(B, True, desc="true enables the night dimming, false disables it.")},
-           "Turns the night dimming of the lights on or off (saved)."),
-        Op("lights.import", H("lights", {"C": "import"}, {"data": "J", "hardware": "H"}), READ,
-           {"data": a(O, True, desc="The profile exported by the page (or {config: <profile>})."),
-            "hardware": a(B, desc="true also takes the hardware layout of the profile (strips, zones); false keeps the one of this machine.")},
-           "Checks a lighting profile exported by the page and returns it merged with the current configuration; nothing is saved (use lights.save)."),
         # motors
         Op("motors.enable", H("motors", {"S": "enable"}, {"axes": "A"}), WRITE,
            {"axes": a(L, True, desc="Axes and extruders, for example [\"X\",\"E0\"], or \"all\".")},
@@ -778,51 +613,6 @@ def _ops():
         Op("motors.reread", H("motors", {"S": "reread"}), READ, {},
            "Asks the motors poller to read again which drivers are enabled (the result is published in the plugin data)."),
         # notifications
-        Op("notifications.get", H("notifications", {"C": "query"}), READ, {},
-           "Returns the phone notification settings (ntfy destination, event types and options, quiet hours, mute) and the catalogue of event types."),
-        Op("notifications.active", H("notifications", {"C": "active"}, {"on": "V", "acknowledge_outbound": "Y"}), WRITE,
-           {"on": a(B, True, desc="true sends notifications, false sends none (events are still logged)."),
-            "acknowledge_outbound": a(B, desc="Required true to turn them on: the events (and photos or videos if chosen) are sent to a third-party server, ntfy.sh unless another one is set.")},
-           "Turns every phone notification on or off. They are OFF by default because turning them on sends data out of the machine to a third-party server; "
-           "turning them on is refused unless acknowledge_outbound is true. Saved and logged in Activity."),
-        Op("notifications.destination", H("notifications", {"C": "destination"}, {"server": "S", "topic": "T"}), WRITE,
-           {"server": a(S, desc="ntfy server starting with http:// or https:// (empty: https://ntfy.sh)."),
-            "topic": a(S, desc="ntfy topic: letters, numbers, - and _, up to 64 characters.")},
-           "Changes the ntfy server and topic the notifications go to. Saved and logged in Activity."),
-        Op("notifications.new_topic", H("notifications", {"C": "new_topic"}), WRITE, {},
-           "Replaces the ntfy topic with a new random one; the phone has to subscribe again. Saved and logged in Activity."),
-        Op("notifications.type", H("notifications", {"C": "kind"}, {"type": "T", "on": "V"}), WRITE,
-           {"type": a(S, True, desc="Event type id, for example job_end, error, power, fuego (catalogue in notifications.get)."),
-            "on": a(B, True, desc="true sends this type to the phone, false does not.")},
-           "Turns the phone notifications of one event type on or off. Saved."),
-        Op("notifications.option", H("notifications", {"C": "option"}, {"type": "T", "attachment": "A", "priority": "R", "quiet_hours": "H", "camera": "K", "default_camera": "Z"}), WRITE,
-           {"type": a(S, desc="Event type id (catalogue in notifications.get). Without it only default_camera is changed."),
-            "attachment": a(S, choices=("none", "photo", "video"), desc="What is attached to the notification: none, a photo or a short video."),
-            "priority": a(S, choices=("min", "low", "default", "high", "urgent", "auto"), desc="ntfy priority; auto goes back to the default of the type."),
-            "quiet_hours": a(B, desc="Whether the quiet hours apply to this type."),
-            "camera": a(S, desc="Camera of the photo or video of this type: a camera id, or \"auto\" / \"\" for the default camera of the notices."),
-            "default_camera": a(S, desc="Without type: the camera of the photo or video of every type that does not choose its own: a camera id, or \"auto\" for the main one.")},
-           "Changes the options of one event type (attachment, priority, quiet hours, camera); only the arguments given change. Without type, default_camera sets the camera "
-           "the notices use unless their type chooses another. Whether a notice carries a photo or a video is decided here (the attachment of each type), not by the camera service. Saved."),
-        Op("notifications.quiet_hours", H("notifications", {"C": "schedule"}, {"on": "V", "from": "F", "to": "U", "mode": "Q"}), WRITE,
-           {"on": a(B, desc="Quiet hours on or off."), "from": a(S, desc="Start time HH:MM, for example 22:00."),
-            "to": a(S, desc="End time HH:MM, for example 07:00."),
-            "mode": a(S, choices=("mute", "soft"), desc="mute: nothing is sent; soft: sent without sound.")},
-           "Sets the daily quiet hours of the notifications; only the arguments given change. Saved and logged in Activity."),
-        Op("notifications.video", H("notifications", {"C": "video"}, {"seconds": "D"}), WRITE,
-           {"seconds": a(I, True, min=2, max=10, desc="Video length, 2 to 10 seconds.")},
-           "Sets the length of the short video attached to the notifications that use video. Saved."),
-        Op("notifications.mute", H("notifications", {"C": "silenciar"}, {"minutes": "D"}), WRITE,
-           {"minutes": a(N, True, min=0, max=1440, desc="Minutes to mute, up to 1440; 0 unmutes now.")},
-           "Mutes the phone notifications for N minutes (events are still logged), or unmutes them with 0. Logged in Activity."),
-        Op("notifications.test", H("notifications", {"C": "test"}, {"type": "T"}), WRITE,
-           {"type": a(S, desc="Event type id (catalogue in notifications.get): tests that type with its own attachment, priority and camera, skipping its switch, the quiet hours and the mute. Without it, a plain test.")},
-           "Sends a test notification to the configured destination and returns whether it was accepted, with the settings. With a type it sends what a real event of that type would send, marked as a test."),
-        Op("activity.summary", H("activity_query", {"C": "summary"}, {"from": "D", "to": "A", "exclude": "X", "user": "W", "mine": "E"}), READ,
-           {"from": a(S, True, desc=d_from), "to": a(S, desc=d_to), "exclude": a(L, desc=d_act_exclude),
-            "user": a(S, desc=d_act_user), "mine": a(B, desc=d_act_mine)},
-           "Summary of the Activity history of a date range: events per type, jobs started / finished / cancelled, total job time and kWh, "
-           "the finished jobs (newest first, up to 30), the last failures and emergency stops (up to 8) and the first and last event."),
         Op("notifications.send", _notify_send, WRITE,
            {"title": a(S, desc="Title of the notification (default Workshop)."), "message": a(S, True, desc="Text of the notification.")},
            "Sends a phone notification now to the configured ntfy topic (for macros and jobs); it does not look at the type switches, quiet hours or mute.",
@@ -1097,7 +887,7 @@ def record(op, args, ctx, ok, result, message, code, dur_ms, wait_ms):
         db.command_insert(time.strftime("%Y-%m-%dT%H:%M:%S"), op, raw_text[:400], ok, dur_ms, response[:1000], via, reading, org, who, role)
     except Exception as e:
         _ctx["log_file"](f"could not save the call in the history: {e}")
-    audit.record(op, o.kind if o else "", args, ctx, ok, code, message, _ctx["log_file"])
+    audit.record(op, o.kind if o else "", args, dict(ctx, duration_ms=dur_ms), ok, code, message, _ctx["log_file"])
 
 
 def record_denied(op, args, ctx, body):
@@ -1122,8 +912,10 @@ def current_mode():
 def init(bridge, config, plugin_id, version="", log=print, log_file=print, token_file=TOKEN_FILE, keys_file=KEYS_FILE, users_file=users.USERS_FILE, roles_file=None):
     """Builds the registry of the service. Does not open any connection."""
     _ctx.update(bridge=bridge, config=config, log=log, log_file=log_file)
+    with _handler_lock:
+        _handler_modules.clear()  # a new registry starts with fresh handlers: some read paths.SD at import and the tests change it per case
     reg = identity.AuthRegistry(plugin_id, version, log_file)
-    for op in _ops() + settings_ops.build(_ctx) + bed_zones_ops.build(_ctx) + pellet_layers_ops.build(_ctx) + api_users.make_ops(lambda: _ctx.get("users")) + roles_ops.make_ops(lambda: _ctx.get("roles"), lambda: _ctx.get("users")):
+    for op in _ops() + activity_ops.build(_ctx) + energy_ops.build(_ctx) + notifications_ops.build(_ctx) + lights_ops.build(_ctx) + power_ops.build(_ctx) + service_ops.build(_ctx) + jobs_ops.build(_ctx) + settings_ops.build(_ctx) + bed_zones_ops.build(_ctx) + bed_calibration_ops.build(_ctx) + pellet_layers_ops.build(_ctx) + layer_recipes_ops.build(_ctx) + gcodelib_ops.build(_ctx) + startup_ops.build(_ctx) + api_users.make_ops(lambda: _ctx.get("users")) + roles_ops.make_ops(lambda: _ctx.get("roles"), lambda: _ctx.get("users")) + access_ops.build(_ctx) + audit_ops.make_ops(_ctx):
         reg.add(op)
     _ctx["users"] = reg.users = users.UserStore(users_file, log=log_file) if users_file else None
     if users_file:  # the custom roles live next to the people (outside the plugin folder), and the people point to them by name

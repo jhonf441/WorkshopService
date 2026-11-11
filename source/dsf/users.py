@@ -137,6 +137,7 @@ class UserStore:
         self.settings = dict(DEFAULT_SETTINGS)
         self.damaged = False
         self.role_source = None  # role_store.RoleStore with the custom roles (set by api_ops.init)
+        self.on_removed = []     # fn(name) called after a person is removed (access_store forgets what was attached to the name)
         self.sessions = {}    # token hash -> {name key, created, last, device}
         self.fails = {}       # "u:<name>" / "c:<client>" / "g" -> {"n", "first", "until", "strikes"}
         self.sessions_path = self.path + ".sessions"
@@ -217,6 +218,17 @@ class UserStore:
                 saved = (self.users.get(_key(r["name"])) or {}).get("last_seen")
                 r["last_seen"] = max(live.get(_key(r["name"])) or 0, saved or 0) or None
                 r["sessions"] = sum(1 for s in self.sessions.values() if s["key"] == _key(r["name"]) and self._alive(s, now))
+            return out
+
+    def lockouts(self):
+        """{name: seconds left} of the people whose PIN is locked now (too many wrong PINs); read-only, for the review of accesses."""
+        with self.lock:
+            now = self.now()
+            out = {}
+            for k, rec in self.users.items():
+                e = self.fails.get("u:" + k)
+                if e and e["until"] > now:
+                    out[rec["name"]] = int(e["until"] - now) + 1
             return out
 
     def get_settings(self):
@@ -325,6 +337,11 @@ class UserStore:
             del self.users[_key(name)]
             self.kill_sessions(rec["name"])
             self._save()
+            for hook in list(self.on_removed):
+                try:
+                    hook(rec["name"])
+                except Exception as e:  # noqa: BLE001 -- a hook must never undo the removal
+                    self.log("users: after removing %s: %r" % (rec["name"], e))
             return self._public(rec)
 
     def reset_pin(self, name, pin):

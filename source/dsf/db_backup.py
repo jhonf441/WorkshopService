@@ -358,15 +358,15 @@ def back_up(reason="daily"):
         # the database copy is opened with SQLite (it needs locks): in the
         # plugin folder, which the AppArmor profile does let lock
         tmp = os.path.join(db.BASE_DIR, "." + label + ".db.tmp")
-        with db._lock:
-            src = sqlite3.connect(db.DB_FILE, timeout=30)
-            dst = sqlite3.connect(tmp)
-            try:
-                src.backup(dst)
-            finally:
-                src.close()
-        ok = dst.execute("PRAGMA quick_check").fetchone()[0]
-        dst.close()
+        # The backup API copies one consistent snapshot (WAL): writes in progress do not need to wait and do not tear it.
+        src = sqlite3.connect(db.DB_FILE, timeout=30)
+        dst = sqlite3.connect(tmp)
+        try:
+            src.backup(dst)
+            ok = dst.execute("PRAGMA quick_check").fetchone()[0]
+        finally:
+            src.close()
+            dst.close()
         if ok != "ok":
             _failure(M("db_fail_check", result=ok))
             return {"ok": False, "error": M("db_backup_copy_failed_check")}
@@ -730,6 +730,8 @@ def _loop():
 
 def launch(config, bridge, log=print):
     _st.update(config=config, bridge=bridge, log=log)
+    for key, params in db.take_notices():  # a database set aside by db.init_db: Activity + phone, like the other database warnings
+        _notify("base_backup", M(key, **params))
     try:
         import heartbeats
         heartbeats.register("base_backup", M("db_backup_process_title"), M("db_backup_process_description"), 90000)  # a backup every day

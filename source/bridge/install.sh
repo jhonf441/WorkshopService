@@ -26,7 +26,8 @@
 # With none of them and a terminal, it asks; without a terminal it only says so and installs (the bridge then answers queries only).
 #
 # What "install" does, in order (nothing is deleted):
-#   1. copies gcode_bridge.py, live_resume.py and live_stop.py to /opt/workshop-bridge (root-owned);
+#   1. copies gcode_bridge.py, live_resume.py, live_stop.py and the package bridge_pkg/ (the modules gcode_bridge.py is made of) to
+#      /opt/workshop-bridge (root-owned). It REFUSES to install, changing nothing, if any file of that list is missing next to this script;
 #   2. makes sure 0:/sys/workshop/config and /data exist and the bridge user can write there;
 #   3. writes /etc/systemd/system/workshop-gcode-bridge.service, enables it and starts it;
 #   4. writes /etc/polkit-1/rules.d/49-workshop-gcode-bridge.rules: the user dsf (the Workshop Service) may start and
@@ -44,6 +45,11 @@ POLKIT="${BRIDGE_POLKIT:-/etc/polkit-1/rules.d/49-workshop-gcode-bridge.rules}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PREV="$DEST.prev"
 CODE_FILES="gcode_bridge.py live_resume.py live_stop.py"
+# The modules of the package bridge_pkg/ (gcode_bridge.py imports them: the bridge does not start without any of them). bridge_manifest.py lists
+# the same files and tests/test_bridge_manifest.py fails when this list and the folder differ.
+PKG_DIR="bridge_pkg"
+PKG_FILES="__init__.py actions.py bridge.py client.py clock.py commands.py debug.py duet.py fsutil.py gate.py identity.py jobs.py lines.py log.py orders.py queries.py security.py server.py service_link.py settings.py state.py telnet.py textutil.py"
+SRC_PKG="$HERE/$PKG_DIR"
 
 FORCE="${BRIDGE_FORCE:-0}"
 CMD=install
@@ -114,8 +120,28 @@ refuse_if_in_use() {
 }
 
 installed_version() {
-  # $1 = a folder with gcode_bridge.py
-  [ -f "$1/gcode_bridge.py" ] && sed -n 's/^VERSION = "\(.*\)"/\1/p' "$1/gcode_bridge.py" | head -n 1
+  # $1 = a folder with gcode_bridge.py. The version is in bridge_pkg/identity.py; an install from before the package keeps it in gcode_bridge.py
+  if [ -f "$1/$PKG_DIR/identity.py" ]; then
+    sed -n 's/^VERSION = "\(.*\)"/\1/p' "$1/$PKG_DIR/identity.py" | head -n 1
+  elif [ -f "$1/gcode_bridge.py" ]; then
+    sed -n 's/^VERSION = "\(.*\)"/\1/p' "$1/gcode_bridge.py" | head -n 1
+  fi
+}
+
+# every file of the release must be next to this script before anything is touched (a half-copied package would not start)
+check_release_files() {
+  missing=""
+  for f in $CODE_FILES; do
+    [ -f "$HERE/$f" ] || missing="$missing $f"
+  done
+  for f in $PKG_FILES; do
+    [ -f "$SRC_PKG/$f" ] || missing="$missing $PKG_DIR/$f"
+  done
+  if [ -n "$missing" ]; then
+    echo "REFUSED: files of the bridge are missing next to install.sh:$missing" >&2
+    echo "Nothing was changed. Copy the whole bridge folder (gcode_bridge.py, live_resume.py, live_stop.py and bridge_pkg/)." >&2
+    exit 1
+  fi
 }
 
 # the code and the unit that are installed go to $PREV, unless the new code is the same as what is installed
@@ -126,6 +152,9 @@ backup_installed() {
   for f in $CODE_FILES; do
     cmp -s "$HERE/$f" "$DEST/$f" 2>/dev/null || same=0
   done
+  for f in $PKG_FILES; do
+    cmp -s "$SRC_PKG/$f" "$DEST/$PKG_DIR/$f" 2>/dev/null || same=0
+  done
   if [ "$same" = 1 ] && [ -d "$PREV" ]; then
     echo "  same code as installed: the previous backup in $PREV is kept"
     return 0
@@ -135,6 +164,7 @@ backup_installed() {
   for f in $CODE_FILES; do
     [ -f "$DEST/$f" ] && cp -p "$DEST/$f" "$PREV/$f"
   done
+  [ -d "$DEST/$PKG_DIR" ] && cp -rp "$DEST/$PKG_DIR" "$PREV/$PKG_DIR"
   [ -f "$UNIT_DIR/$UNIT.service" ] && cp -p "$UNIT_DIR/$UNIT.service" "$PREV/$UNIT.service"
   echo "  previous code backed up to $PREV ($(installed_version "$PREV" || true))"
 }
@@ -167,6 +197,7 @@ ensure_sd_dir() {
 }
 
 do_install() {
+  check_release_files
   refuse_if_in_use
   user="$(run_user)"
   if ! sudo -u "$user" python3 -c "import dsf.connections" >/dev/null 2>&1; then
@@ -180,6 +211,12 @@ do_install() {
   # safe stop / resume of live jobs (2026-10-22): the bridge starts without these two, but then it has no safe stop
   install -m 644 "$HERE/live_resume.py" "$DEST/live_resume.py"
   install -m 644 "$HERE/live_stop.py" "$DEST/live_stop.py"
+  # the package is replaced as a whole (a module of an older version that no longer exists must not stay behind)
+  rm -rf "${DEST:?}/$PKG_DIR"
+  install -d -m 755 "$DEST/$PKG_DIR"
+  for f in $PKG_FILES; do
+    install -m 644 "$SRC_PKG/$f" "$DEST/$PKG_DIR/$f"
+  done
 
   echo "2. SD folders"
   ensure_sd_dir "$SD/sys/workshop/config" "$user"
@@ -222,7 +259,7 @@ do_guard() {
     if sudo -u "$user" env CONF="$conf" python3 -c 'import json,os,sys
 try: c=json.load(open(os.environ["CONF"]))
 except Exception: c={}
-sys.exit(0 if (c.get("password_hash") or c.get("allowed") or c.get("trusted")) else 1)'; then
+sys.exit(0 if (str(c.get("password_hash") or "").startswith("scrypt$") or c.get("allowed") or c.get("trusted")) else 1)'; then
       echo "  a password, an allowed list or a trusted address is already set: nothing to ask"
     else
       echo "  Nobody is allowed to send orders yet. Type a password for the programs that send G-code (empty = skip)."
@@ -271,7 +308,7 @@ if changed:
     with open(tmp, "w") as f:
         json.dump(c, f, indent=2)
     os.replace(tmp, conf)
-if not (c.get("password_hash") or c.get("allowed") or c.get("trusted")):
+if not (str(c.get("password_hash") or "").startswith("scrypt$") or c.get("allowed") or c.get("trusted")):
     print("  WARNING: no password, no allowed list and no trusted address: the bridge answers queries from the network but refuses every order.")
     print("           Set one with: sudo BRIDGE_PASSWORD=... ./install.sh guard   (or BRIDGE_ALLOW=<pc address>, or from Services > G-code bridge)")
 PY
@@ -327,6 +364,11 @@ do_rollback() {
       install -m 644 "$PREV/$f" "$DEST/$f"
     fi
   done
+  # the package goes back as a whole too; a backup from before the package has none, and then the installed one is removed
+  rm -rf "${DEST:?}/$PKG_DIR"
+  if [ -d "$PREV/$PKG_DIR" ]; then
+    cp -rp "$PREV/$PKG_DIR" "$DEST/$PKG_DIR"
+  fi
   if [ -f "$PREV/$UNIT.service" ]; then
     cp -p "$PREV/$UNIT.service" "$UNIT_DIR/$UNIT.service"
   fi

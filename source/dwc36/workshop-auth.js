@@ -13,6 +13,7 @@
 // tells the audit which browser did it). All the plugins of a page share ONE state through window.__workshopAuth.
 
 import { pinDialog } from './pin-dialog.js'
+import { sessionStateOf, isSignedOutState, accessStateOf, sessionActionOf } from './session-state.js'
 
 const TOKEN_KEY = 'workshop-token'
 const DEVICE_KEY = 'workshop-device'
@@ -123,6 +124,18 @@ export function setIdentity(w) {
 	})
 }
 
+// The session state changed without a new answer of the service (the PIN dialog opened or closed, the PIN got locked): tell the views to redraw
+function notifyState() {
+	const s = shared()
+	s.listeners.slice().forEach(fn => {
+		try {
+			fn(s.identity)
+		} catch (e) {
+			/* a listener must not break the others */
+		}
+	})
+}
+
 export function onIdentity(fn) {
 	const s = shared()
 	s.listeners.push(fn)
@@ -191,14 +204,32 @@ export function workshopRole() {
 // call(op, args) must resolve the JSON body of the API ({ok, result, error}) and never ask for a login itself.
 
 export async function refreshIdentity(call) {
-	const j = await call('auth.whoami', {})
+	let j = null
+	try {
+		j = await call('auth.whoami', {})
+	} catch (e) {
+		j = null
+	}
+	// the service did not answer: the session stays unknown, but it is not "resolving" any more (no view waits for an answer that is not coming)
+	shared().whoamiFailed = !(j && j.ok)
 	if (j && j.ok) setIdentity(j.result)
 	return j && j.ok ? j.result : null
 }
 
+// A sign-in on a browser that still holds an accepted session is a CHANGE of person ("Change role", 2026-11-09): the session that was there is kept
+// until the service accepts the new name and PIN; only then is it closed (with its own token, still in the headers) and the new one adopted. A
+// refused or cancelled attempt leaves the current session as it was.
 export async function loginWith(call, name, pin) {
+	const before = getToken()
 	const j = await call('auth.login', { name, pin })
 	if (!j.ok) return j
+	if (before && before !== j.result.token) {
+		try {
+			await call('auth.logout', {})
+		} catch (e) {
+			/* the previous session ends by itself when it expires */
+		}
+	}
 	setToken(j.result.token)
 	await refreshIdentity(call)
 	return j
@@ -222,16 +253,31 @@ export async function logoutWith(call) {
 
 // The service has users and this browser has no session (a visitor, or nothing allowed yet).
 export function signedOut() {
-	const id = shared().identity
-	// no token, or a token the service no longer accepts (expired, the service restarted): its whoami says login_required
-	return !!(id && id.configured && (!getToken() || id.login_required))
+	return isSignedOutState(sessionState())
+}
+
+// 'resolving' | 'signed-out' | 'signing-in' | 'active' | 'expired' | 'pin-locked' (session-state.js): the one answer the views ask
+export function sessionState() {
+	const s = shared()
+	return sessionStateOf({ identity: s.identity, token: getToken(), flight: s.flight, lockUntil: s.lockUntil, unreachable: s.whoamiFailed }, Date.now())
+}
+
+// 'resolving' | 'ok' | 'session' | 'role' for one operation (what a view draws: nothing yet, nothing, the sign-in notice, the role notice)
+export function accessState(op, ctx) {
+	return accessStateOf(sessionState(), workshopCan(op, ctx))
 }
 
 // Why the person cannot do something: '' (they can), 'signed_out' (nobody is signed in: signing in may fix it) or 'role' (signed in,
 // but the role is too low: only another role fixes it). The pages say which one next to the thing that does not move.
 export function accessReason(op, ctx) {
-	if (workshopCan(op, ctx)) return ''
-	return signedOut() ? 'signed_out' : 'role'
+	const a = accessState(op, ctx)
+	return a === 'session' ? 'signed_out' : a === 'role' ? 'role' : ''
+}
+
+// The word of the button next to a lock: 'sign-in' (nobody is signed in), 'change-role' (someone is, with a role that is too low: another
+// person signs in, the current session stays until that succeeds) or '' (nothing blocks). Both words open the ONE dialog: askLogin() of workshop-api.js.
+export function sessionAction(op, ctx) {
+	return sessionActionOf(accessState(op, ctx))
 }
 
 // The person touched the page a moment ago: what fails now is probably their action (so it is worth telling them).
@@ -239,20 +285,28 @@ export function recentGesture() {
 	return Date.now() - (shared().gestureAt || 0) < GESTURE_MS
 }
 
-// Asks the person for name and PIN (one dialog for all the callers). Resolves true when logged in, false when cancelled.
+// Asks the person for name and PIN (one dialog for all the callers: "Sign in" and "Change role" are the same dialog). Resolves true when logged in,
+// false when cancelled. The session this browser has (if any) is NOT touched here: it is kept until loginWith() adopts the new one, so a cancelled
+// or refused "Change role" leaves the person signed in as before.
 export function ensureLogin(call, t) {
 	const s = shared()
 	if (s.flight) return s.flight
-	// Nothing opens the dialog by itself (a poll, a refresh): only a touch just before the failed call, or the "sign in" button
-	if (!shared().forceAsk && Date.now() - (s.gestureAt || 0) >= GESTURE_MS) return Promise.resolve(false)
+	// Nothing opens the dialog by itself (a poll, a refresh, not even a touch on a locked control): only the "sign in" button does.
+	// A refused touch makes the sign-in chip blink instead (session-attention.js).
+	if (!shared().forceAsk) return Promise.resolve(false)
 	if (shared().forceAsk) s.quietUntil = 0
 	// after cancelling, not even a touch brings it back: the refusal message and the "sign in" button tell what to do
 	if (Date.now() < s.quietUntil) return Promise.resolve(false)
-	setToken('')
 	s.flight = pinDialog(async (name, pin) => {
 		const j = await loginWith(call, name, pin)
-		if (j.ok) return null
+		if (j.ok) {
+			s.lockUntil = 0
+			return null
+		}
 		const e = j.error || {}
+		// the service asks to wait (too many wrong PINs): the views can say "PIN locked" while it lasts
+		s.lockUntil = e.wait_s > 0 ? Date.now() + e.wait_s * 1000 : 0
+		notifyState()
 		return { code: e.code, message: e.message, wait_s: e.wait_s }
 	}, t)
 		.then(ok => {
@@ -261,11 +315,14 @@ export function ensureLogin(call, t) {
 		})
 		.finally(() => {
 			s.flight = null
+			notifyState()
 		})
+	notifyState()
 	return s.flight
 }
 
-// The person pressed "log in" (not a call that failed): the dialog opens even if it was cancelled a moment ago.
+// The person pressed "Sign in" or "Change role" (not a call that failed): the dialog opens even if it was cancelled a moment ago. The ONE entry point
+// of every button that asks for a name and a PIN (askLogin() of workshop-api.js wraps it with the real call).
 export function askLoginNow(call, t) {
 	shared().forceAsk = true
 	try {

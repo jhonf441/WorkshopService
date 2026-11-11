@@ -18,7 +18,7 @@ import os
 import re
 import shutil
 import socket
-import subprocess
+import os_gateway
 import sys
 
 import paths
@@ -89,9 +89,9 @@ class System:
 
     def run(self, argv, timeout=8):
         try:
-            r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+            r = os_gateway.run(argv, timeout=timeout)
             return r.returncode, r.stdout
-        except (OSError, subprocess.SubprocessError):
+        except (OSError, os_gateway.SubprocessError):
             return None, ""
 
     def port_free(self, port):

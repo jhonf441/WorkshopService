@@ -3,7 +3,7 @@ or alternating cameras) with their .json and thumbnail. The filters of the cinem
 import json
 import os
 import shutil
-import subprocess
+import os_gateway
 
 import timelapse_look as look
 import camera_context
@@ -101,15 +101,15 @@ def _close(d, cfg, meta, h):
 
 def _ffmpeg(args, output, cfg):
     cmd = ["nice", "-n", "15", "ffmpeg", "-y", "-loglevel", "error"] + args + look.encoder_args(cfg) + [output]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=14400)
+    r = os_gateway.run(cmd, timeout=14400)
     if r.returncode != 0 or not os.path.exists(output):
         raise RuntimeError("ffmpeg: " + (r.stderr or "")[-400:])
 
 
 def _thumbnail(video, backup):
     jpg = video[:-4] + ".jpg"
-    r = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-sseof", "-0.6", "-i", video, "-frames:v", "1", "-update", "1", jpg],
-                       capture_output=True, timeout=120)
+    r = os_gateway.run(["ffmpeg", "-y", "-loglevel", "error", "-sseof", "-0.6", "-i", video, "-frames:v", "1", "-update", "1", jpg],
+                       timeout=120, text=False)
     if r.returncode != 0 or not os.path.exists(jpg):
         shutil.copyfile(backup, jpg)
 

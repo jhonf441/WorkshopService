@@ -22,7 +22,7 @@ import paths
 import json
 import os
 import re
-import subprocess
+import os_gateway
 import threading
 import time
 
@@ -172,7 +172,7 @@ def list_items_pins(raw_text=None, dsf=None, spidev=None):
     DSF are NOT in the list. `texto` = the output of `pinctrl get` (tests)."""
     if raw_text is None:
         try:
-            raw_text = subprocess.run(["pinctrl", "get"], capture_output=True, text=True, timeout=3).stdout
+            raw_text = os_gateway.run(["pinctrl", "get"], timeout=3).stdout
         except Exception:
             raw_text = ""
     dsf = pins_dsf() if dsf is None else dsf

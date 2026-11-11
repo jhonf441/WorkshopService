@@ -12,13 +12,18 @@ save() separates them. Both are written in one step (tmp + fsync + rename) with
 the previous version in .bak; if one cannot be read its .bak is used.
 """
 import paths as dsf_paths
+import copy
+import fs_atomic
 import json
 import os
-import shutil
+import threading
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SETTINGS_FILE = os.environ.get("WORKSHOP_CONFIG") or dsf_paths.CONFIG_DIR + "/service.json"
 SECRETS_FILE = os.environ.get("WORKSHOP_SECRETS") or dsf_paths.SECRETS_FILE
+# ONE lock for both files: the background threads (consumption, shutdown timer, db backup...) and the handlers all save through here
+# (review A6). Re-entrant because save() reads the stored copy through load_data().
+LOCK = threading.RLock()
 SECRETS_BACKUP = os.path.join(BASE_DIR, "secrets.json")  # if /opt/dsf/conf cannot be written (tests on another PC)
 # field names that are secrets, wherever they are (medidores[i].key, ntfy_topic, notificaciones.topic...)
 KEYS = {"key", "local_key", "topic", "ntfy_topic", "password", "token", "api_key", "secret"}
@@ -65,23 +70,10 @@ def _read(p):
 
 
 def _write(p, data, private):
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    tmp = p + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as fh:
-        json.dump(data, fh, indent=2, ensure_ascii=False)
-        fh.flush()
-        os.fsync(fh.fileno())  # to the card before the rename (power cut)
-    if private:
-        os.chmod(tmp, 0o600)
-    try:  # the previous version, if it was healthy, stays as .bak
-        with open(p, encoding="utf-8") as f0:
-            json.load(f0)
-        shutil.copy2(p, p + ".bak")
-        if private:
-            os.chmod(p + ".bak", 0o600)
-    except (OSError, ValueError):
-        pass
-    os.replace(tmp, p)
+    """One temporary per writer, fsync, the healthy previous version as .bak, rename, fsync of the folder (fs_atomic).
+    The bytes are the same as ever: json.dump(indent=2, ensure_ascii=False). A private file is created 0600 from the start."""
+    raw = json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
+    fs_atomic.write_with_backup(p, raw, mode=0o600 if private else 0o666)
 
 
 def _secrets_path():
@@ -134,22 +126,37 @@ def _keep_keys(pub, sec, old):
                 sec.pop(k, None)
 
 
+def _snapshot(cfg):
+    """Deep copy of the live dict. Code that still mutates it by hand (outside ServiceSettings.update) can change its size during the
+    copy: retry a few times instead of losing the save."""
+    for _ in range(5):
+        try:
+            return copy.deepcopy(cfg)
+        except RuntimeError:  # dictionary changed size during iteration
+            continue
+    return copy.deepcopy(cfg)
+
+
 def save(cfg):
-    pub, sec = _split(cfg)
-    try:
-        _keep_keys(pub, sec, load_data())
-    except Exception:
-        pass  # no stored configuration to compare with
-    _write(_secrets_path(), sec or {}, True)  # keys first: they are never left only on the card
-    _write(SETTINGS_FILE, pub, False)
+    with LOCK:
+        # a copy taken under the lock: another thread adding a key while json.dump iterates cannot break the save
+        # (config is a shared dict that code still mutates by hand; see service_settings.ServiceSettings.update)
+        pub, sec = _split(_snapshot(cfg))
+        try:
+            _keep_keys(pub, sec, load_data())
+        except Exception:
+            pass  # no stored configuration to compare with
+        _write(_secrets_path(), sec or {}, True)  # keys first: they are never left only on the card
+        _write(SETTINGS_FILE, pub, False)
 
 
 def load_data():
     """The complete dict, or None if there is no configuration yet."""
-    pub = _read(SETTINGS_FILE)
-    if pub is None:
-        return None
-    return _join(pub, _read(_secrets_path()) or {})
+    with LOCK:
+        pub = _read(SETTINGS_FILE)
+        if pub is None:
+            return None
+        return _join(pub, _read(_secrets_path()) or {})
 
 
 def paths():

@@ -121,3 +121,97 @@ export function liveStopEnabled(read) {
 	const ls = read.state.live_stop
 	return isObj(ls) ? truthy(ls.enabled) : false
 }
+
+// ---- what the contract viewer shows about the real file (read-only: nothing here writes anything) ----
+
+// one word for the card: 'stopped' (the unit was stopped from its own switch) | 'down' | 'unknown_format' | 'newer' | 'old' | 'ok'
+export function verdict(read, stopped) {
+	if (stopped) return 'stopped'
+	if (!read || read.status === 'missing' || read.status === 'garbage') return 'down'
+	if (read.status === 'incompatible') return read.ageS != null && read.ageS <= ALIVE_S ? 'unknown_format' : 'down'
+	if (!alive(read)) return 'down'
+	if (read.newer) return 'newer'
+	return read.legacy ? 'old' : 'ok'
+}
+
+function jsType(v) {
+	if (v === null) return 'null'
+	if (Array.isArray(v)) return 'array'
+	if (isObj(v)) return 'object'
+	if (typeof v === 'number') return Number.isInteger(v) ? 'integer' : 'number'
+	return typeof v
+}
+
+function typeOk(v, types) {
+	if (!types || types.length === 0) return true
+	return types.some((t) => {
+		if (t === 'null') return v === null
+		if (t === 'array') return Array.isArray(v)
+		if (t === 'object') return isObj(v)
+		if (t === 'integer') return isInt(v)
+		if (t === 'number') return isNum(v)
+		if (t === 'string') return typeof v === 'string'
+		if (t === 'boolean') return typeof v === 'boolean'
+		return true
+	})
+}
+
+// the objects found at a path of the schema ("activity.live_job", "clients[]"): the elements of an array count one by one
+function objectsAt(state, segs) {
+	let nodes = [state]
+	for (const seg of segs) {
+		const isArr = seg.endsWith('[]')
+		const name = isArr ? seg.slice(0, -2) : seg
+		const next = []
+		for (const n of nodes) {
+			if (!isObj(n)) continue
+			const v = n[name]
+			if (isArr) {
+				if (Array.isArray(v)) v.forEach((e) => { if (isObj(e)) next.push(e) })
+			} else if (isObj(v)) next.push(v)
+		}
+		nodes = next
+	}
+	return nodes
+}
+
+// state: the parsed file (any value); keys: STATE_KEYS of bridge-contract-data.js ({path, types, required}).
+// -> { available, rows: [{path, status, found?}], extras: [paths] }
+//    status: 'ok' | 'missing_required' | 'missing_optional' | 'wrong_type' (found = the type seen) | 'na' (the parent is missing, null or an empty array)
+//    extras: keys of the file the schema does not list, inside the objects the schema describes (informational: the contract lets the bridge add keys)
+export function compareState(state, keys) {
+	const list = Array.isArray(keys) ? keys : []
+	if (!isObj(state)) return { available: false, rows: list.map((k) => ({ path: k.path, status: 'na' })), extras: [] }
+	const rows = list.map((k) => {
+		const segs = k.path.split('.')
+		const leaf = segs.pop()
+		const nodes = objectsAt(state, segs)
+		if (nodes.length === 0) return { path: k.path, status: 'na' }
+		let missing = false
+		let wrong = null
+		for (const n of nodes) {
+			if (!(leaf in n)) missing = true
+			else if (!typeOk(n[leaf], k.types) && wrong === null) wrong = jsType(n[leaf])
+		}
+		if (missing && k.required) return { path: k.path, status: 'missing_required' }
+		if (wrong !== null) return { path: k.path, status: 'wrong_type', found: wrong }
+		return { path: k.path, status: missing ? 'missing_optional' : 'ok' }
+	})
+	// the objects the schema describes (the root, "activity", "clients[]"...) and the names it lists in each
+	const declared = new Map()
+	for (const k of list) {
+		const dot = k.path.lastIndexOf('.')
+		const parent = dot < 0 ? '' : k.path.slice(0, dot)
+		if (!declared.has(parent)) declared.set(parent, new Set())
+		declared.get(parent).add(dot < 0 ? k.path : k.path.slice(dot + 1))
+	}
+	const extras = new Set()
+	for (const [objPath, names] of declared) {
+		const segs = objPath === '' ? [] : objPath.split('.')
+		for (const n of objectsAt(state, segs)) {
+			for (const key of Object.keys(n)) if (!names.has(key)) extras.add((objPath ? objPath + '.' : '') + key)
+		}
+	}
+	return { available: true, rows, extras: [...extras].sort() }
+}
+

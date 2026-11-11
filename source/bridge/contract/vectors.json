@@ -12,7 +12,7 @@
    "name": "healthy",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -51,7 +51,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -61,7 +61,7 @@
    "name": "healthy, file 9.9 s old",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -100,7 +100,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -110,7 +110,7 @@
    "name": "healthy, file exactly 10 s old",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -149,7 +149,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -159,7 +159,7 @@
    "name": "healthy, file exactly 15 s old (still alive)",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -198,7 +198,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -208,7 +208,7 @@
    "name": "healthy, file 15.01 s old (not alive)",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -247,7 +247,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -257,7 +257,7 @@
    "name": "healthy, file 600 s old",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -296,7 +296,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -306,7 +306,7 @@
    "name": "order pending, fresh file",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -345,7 +345,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -355,7 +355,7 @@
    "name": "order pending, file exactly 10 s old (still proves now)",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -394,7 +394,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -404,7 +404,7 @@
    "name": "order pending, file 10.01 s old (proves nothing)",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -443,7 +443,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -453,7 +453,7 @@
    "name": "order pending, file 600 s old",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -492,7 +492,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -502,7 +502,7 @@
    "name": "two clients, the youngest order wins",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -548,7 +548,7 @@
     "live_stop_enabled": true,
     "clients": 2,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -558,7 +558,7 @@
    "name": "client without last order, another with",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -604,7 +604,7 @@
     "live_stop_enabled": true,
     "clients": 2,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -614,7 +614,7 @@
    "name": "no client carries an age: activity fallback, pending and fresh",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -644,7 +644,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -654,7 +654,7 @@
    "name": "activity fallback, pending but generated 11 s ago",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [],
@@ -680,7 +680,7 @@
     "live_stop_enabled": true,
     "clients": 0,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -690,7 +690,7 @@
    "name": "activity fallback, idle",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [],
@@ -716,7 +716,7 @@
     "live_stop_enabled": true,
     "clients": 0,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -726,7 +726,7 @@
    "name": "activity fallback, last order never",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [],
@@ -752,7 +752,7 @@
     "live_stop_enabled": true,
     "clients": 0,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -762,7 +762,7 @@
    "name": "activity fallback, last order in the future (clock went back)",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [],
@@ -788,7 +788,7 @@
     "live_stop_enabled": true,
     "clients": 0,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -798,7 +798,7 @@
    "name": "no activity, no client ages",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [],
@@ -819,7 +819,7 @@
     "live_stop_enabled": true,
     "clients": 0,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1029,7 +1029,7 @@
    "name": "no schema key",
    "note": "read leniently, like the readers of the service always did",
    "state": {
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -1068,7 +1068,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": null,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1079,7 +1079,7 @@
    "note": "a null schema is the same as none",
    "state": {
     "schema": null,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -1118,7 +1118,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": null,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1128,7 +1128,7 @@
    "name": "schema 1",
    "state": {
     "schema": 1,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -1167,7 +1167,7 @@
     "live_stop_enabled": null,
     "clients": 0,
     "schema": 1,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1177,7 +1177,7 @@
    "name": "schema 3",
    "state": {
     "schema": 3,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -1216,7 +1216,7 @@
     "live_stop_enabled": null,
     "clients": 0,
     "schema": 3,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1226,7 +1226,7 @@
    "name": "schema as text",
    "state": {
     "schema": "2",
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -1265,7 +1265,7 @@
     "live_stop_enabled": null,
     "clients": 0,
     "schema": "2",
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1275,7 +1275,7 @@
    "name": "schema true",
    "state": {
     "schema": true,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -1314,7 +1314,7 @@
     "live_stop_enabled": null,
     "clients": 0,
     "schema": true,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1324,7 +1324,7 @@
    "name": "schema 2.5",
    "state": {
     "schema": 2.5,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -1363,7 +1363,7 @@
     "live_stop_enabled": null,
     "clients": 0,
     "schema": 2.5,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1373,7 +1373,7 @@
    "name": "contract absent (bridge 3.8.0 and older)",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "port": 2323,
     "clients": [
      {
@@ -1411,7 +1411,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": true,
     "newer": false
@@ -1421,7 +1421,7 @@
    "name": "contract 2 (newer)",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 2,
     "port": 2323,
     "clients": [
@@ -1463,7 +1463,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 2,
     "legacy": false,
     "newer": true
@@ -1473,7 +1473,7 @@
    "name": "contract 0",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 0,
     "port": 2323,
     "clients": [
@@ -1512,7 +1512,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": true,
     "newer": false
@@ -1522,7 +1522,7 @@
    "name": "contract as text",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": "x",
     "port": 2323,
     "clients": [
@@ -1561,7 +1561,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": true,
     "newer": false
@@ -1571,7 +1571,7 @@
    "name": "contract true",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": true,
     "port": 2323,
     "clients": [
@@ -1610,7 +1610,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": true,
     "newer": false
@@ -1620,7 +1620,7 @@
    "name": "contract null",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": null,
     "port": 2323,
     "clients": [
@@ -1659,7 +1659,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": true,
     "newer": false
@@ -1766,7 +1766,7 @@
    "name": "clients missing",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "activity": {
@@ -1796,7 +1796,7 @@
     "live_stop_enabled": true,
     "clients": 0,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1806,7 +1806,7 @@
    "name": "clients is text",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": "x",
@@ -1837,7 +1837,7 @@
     "live_stop_enabled": true,
     "clients": 0,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1847,7 +1847,7 @@
    "name": "clients with junk items",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -1889,7 +1889,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1899,7 +1899,7 @@
    "name": "pending as text",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -1938,7 +1938,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1948,7 +1948,7 @@
    "name": "pending true",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -1987,7 +1987,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -1997,7 +1997,7 @@
    "name": "age as text",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -2036,7 +2036,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2046,7 +2046,7 @@
    "name": "age true",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -2085,7 +2085,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2095,7 +2095,7 @@
    "name": "activity is text",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [],
@@ -2117,7 +2117,7 @@
     "live_stop_enabled": true,
     "clients": 0,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2127,7 +2127,7 @@
    "name": "activity is a list",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [],
@@ -2149,7 +2149,7 @@
     "live_stop_enabled": true,
     "clients": 0,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2159,7 +2159,7 @@
    "name": "port missing",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "clients": [
      {
@@ -2197,7 +2197,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2207,7 +2207,7 @@
    "name": "port null",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": null,
     "clients": [
@@ -2246,7 +2246,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2256,7 +2256,7 @@
    "name": "port zero",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 0,
     "clients": [
@@ -2295,7 +2295,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2305,7 +2305,7 @@
    "name": "port as number text",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": "2424",
     "clients": [
@@ -2344,7 +2344,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2354,7 +2354,7 @@
    "name": "port as junk text",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": "abc",
     "clients": [
@@ -2393,7 +2393,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2403,7 +2403,7 @@
    "name": "port is a list",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": [],
     "clients": [
@@ -2442,7 +2442,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2452,7 +2452,7 @@
    "name": "port is an object",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": {},
     "clients": [
@@ -2491,7 +2491,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2501,7 +2501,7 @@
    "name": "port 23",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 23,
     "clients": [
@@ -2540,7 +2540,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2550,7 +2550,7 @@
    "name": "live_stop disabled",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -2589,7 +2589,7 @@
     "live_stop_enabled": false,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2599,7 +2599,7 @@
    "name": "live_stop missing",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -2635,7 +2635,7 @@
     "live_stop_enabled": false,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2645,7 +2645,7 @@
    "name": "live_stop is a number",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -2682,7 +2682,7 @@
     "live_stop_enabled": false,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2692,7 +2692,7 @@
    "name": "live_stop enabled as 1",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -2731,7 +2731,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false
@@ -2741,7 +2741,7 @@
    "name": "unknown extra keys everywhere",
    "state": {
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "port": 2323,
     "clients": [
@@ -2787,7 +2787,7 @@
     "live_stop_enabled": true,
     "clients": 1,
     "schema": 2,
-    "version": "3.8.0",
+    "version": "3.8.2",
     "contract": 1,
     "legacy": false,
     "newer": false

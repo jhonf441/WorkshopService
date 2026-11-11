@@ -4,7 +4,7 @@ import json
 import os
 import re
 import shutil
-import subprocess
+import os_gateway
 import threading
 import time
 
@@ -191,7 +191,7 @@ def edit(file, since=0.0, until=None, speed=1.0):
                 cmd += ["-to", f"{until:.2f}"]
             cmd += ["-i", src, "-an", "-vf", f"setpts=PTS/{velocity:g}", "-c:v", "libx264", "-preset", "veryfast", "-crf", "23",
                     "-pix_fmt", "yuv420p", "-movflags", "+faststart", output]
-            r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+            r = os_gateway.run(cmd, timeout=1800)
             if r.returncode != 0 or not os.path.exists(output):
                 camera_context.log(f"camera: could not edit {file} ({(r.stderr or '')[-300:]})")
                 return
@@ -376,8 +376,8 @@ def encoders():
     if _encoders_found[0] is None:
         want = {"h264": "libx264", "h265": "libx265", "prores": "prores_ks", "dnxhr": "dnxhd"}
         try:
-            out = subprocess.run(["ffmpeg", "-hide_banner", "-encoders"], capture_output=True, text=True, timeout=20).stdout
-        except (OSError, subprocess.SubprocessError):
+            out = os_gateway.run(["ffmpeg", "-hide_banner", "-encoders"], timeout=20).stdout
+        except (OSError, os_gateway.SubprocessError):
             out = ""
         _encoders_found[0] = {k: (v in out) for k, v in want.items()} if out else {k: k == "h264" for k in want}
     return dict(_encoders_found[0])
@@ -408,8 +408,8 @@ def look_preview(cid, overrides):
         chain.append(crop)
     chain += look.grade_filters(cfg, camera_context.LUTS_DIR)
     chain.append(f"scale={max(2, int(ow * scale) // 2 * 2)}:{max(2, int(oh * scale) // 2 * 2)}:flags=lanczos")
-    r = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", "pipe:0", "-vf", ",".join(chain), "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg",
-                        "-q:v", "3", "pipe:1"], input=jpg, capture_output=True, timeout=30)
+    r = os_gateway.run(["ffmpeg", "-loglevel", "error", "-i", "pipe:0", "-vf", ",".join(chain), "-frames:v", "1", "-f", "image2pipe", "-vcodec", "mjpeg",
+                       "-q:v", "3", "pipe:1"], input=jpg, timeout=30, text=False)
     return r.stdout if r.returncode == 0 and r.stdout else None
 
 

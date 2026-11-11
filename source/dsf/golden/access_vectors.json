@@ -1,0 +1,3008 @@
+{
+ "format": "workshop-access-vectors",
+ "version": 1,
+ "note": "Shared by the Python tests (test_access_eval.py) and, later, the clients. A profile given as a string ('base.operator') is a base profile of access_base. A request has operation and an optional target; context has args, mode, modes (of the person), job_running, machine_on, via. expect lists the fields of the decision that must be equal (allowed, code, profile, id, needed_tier, failed_conditions). documents: a profile document and the ProfileError code expected (null = valid). store: the text of a workshop-access.json (null = no file) and whether it is damaged. A request may carry args instead of target: the target is then the one the call declares (access_targets.target_of), as the service derives it.",
+ "decisions": [
+  {
+   "name": "deny wins over a base allow",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "NoScenes",
+     "rules": [
+      {
+       "id": "NoScene",
+       "decision": "deny",
+       "operations": [
+        "lights.scene"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.scene"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny",
+    "profile": "NoScenes",
+    "id": "NoScene"
+   }
+  },
+  {
+   "name": "the base allow without the deny",
+   "profiles": [
+    "base.operator"
+   ],
+   "request": {
+    "operation": "lights.scene"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow",
+    "profile": "base.operator",
+    "id": "OperatorOperations"
+   }
+  },
+  {
+   "name": "deny wins even over the administrator",
+   "profiles": [
+    "base.administrator",
+    {
+     "version": 1,
+     "name": "NoScenes",
+     "rules": [
+      {
+       "id": "NoScene",
+       "decision": "deny",
+       "operations": [
+        "lights.scene"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.scene"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny"
+   }
+  },
+  {
+   "name": "stop is allowed with no profile",
+   "profiles": [],
+   "request": {
+    "operation": "power.off"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "stop"
+   }
+  },
+  {
+   "name": "stop is not blocked by a deny of everything",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "DenyAll",
+     "rules": [
+      {
+       "id": "All",
+       "decision": "deny",
+       "operations": [
+        "*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "jog.stop_xy"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "stop"
+   }
+  },
+  {
+   "name": "a deny of everything blocks the rest",
+   "profiles": [
+    "base.administrator",
+    {
+     "version": 1,
+     "name": "DenyAll",
+     "rules": [
+      {
+       "id": "All",
+       "decision": "deny",
+       "operations": [
+        "*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "jog.xy"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny",
+    "profile": "DenyAll",
+    "id": "All"
+   }
+  },
+  {
+   "name": "stop is not blocked by a ceiling",
+   "profiles": [],
+   "request": {
+    "operation": "machine.stop"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "stop"
+   },
+   "ceiling": {
+    "version": 1,
+    "name": "Nothing",
+    "rules": [
+     {
+      "id": "N",
+      "decision": "allow",
+      "operations": [
+       "state.get"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "a custom allow of everything does not give users.list",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "Everything",
+     "rules": [
+      {
+       "id": "Star",
+       "decision": "allow",
+       "operations": [
+        "*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "users.list"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "not_delegable"
+   }
+  },
+  {
+   "name": "a custom allow of everything does not give roles.set",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "Everything",
+     "rules": [
+      {
+       "id": "Star",
+       "decision": "allow",
+       "operations": [
+        "*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "roles.set"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "not_delegable"
+   }
+  },
+  {
+   "name": "the administrator base gives users.list",
+   "profiles": [
+    "base.administrator"
+   ],
+   "request": {
+    "operation": "users.list"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow",
+    "profile": "base.administrator",
+    "id": "FullAccess"
+   }
+  },
+  {
+   "name": "the technician base keeps password.status",
+   "profiles": [
+    "base.technician"
+   ],
+   "request": {
+    "operation": "password.status"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "the technician base does not give users.list",
+   "profiles": [
+    "base.technician"
+   ],
+   "request": {
+    "operation": "users.list"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "not_delegable"
+   }
+  },
+  {
+   "name": "an operation nobody classified is the administrator's",
+   "profiles": [
+    "base.technician"
+   ],
+   "request": {
+    "operation": "zz.unclassified"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   }
+  },
+  {
+   "name": "an unclassified operation is not cut by a wildcard of a custom profile for a non-delegable one",
+   "profiles": [
+    "base.technician",
+    {
+     "version": 1,
+     "name": "Everything",
+     "rules": [
+      {
+       "id": "Star",
+       "decision": "allow",
+       "operations": [
+        "*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "zz.unclassified"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow",
+    "profile": "Everything",
+    "id": "Star"
+   }
+  },
+  {
+   "name": "target: cam2 allowed",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "OnlyCam2",
+     "rules": [
+      {
+       "id": "Cam2",
+       "decision": "allow",
+       "operations": [
+        "cap:camera.capture"
+       ],
+       "targets": [
+        "workshop:camera:camera/cam2"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture",
+    "target": "workshop:camera:camera/cam2"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow",
+    "profile": "OnlyCam2",
+    "id": "Cam2"
+   }
+  },
+  {
+   "name": "target: cam1 denied",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "OnlyCam2",
+     "rules": [
+      {
+       "id": "Cam2",
+       "decision": "allow",
+       "operations": [
+        "cap:camera.capture"
+       ],
+       "targets": [
+        "workshop:camera:camera/cam2"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture",
+    "target": "workshop:camera:camera/cam1"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   }
+  },
+  {
+   "name": "target: a call without target is not covered by a restricted rule",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "OnlyCam2",
+     "rules": [
+      {
+       "id": "Cam2",
+       "decision": "allow",
+       "operations": [
+        "cap:camera.capture"
+       ],
+       "targets": [
+        "workshop:camera:camera/cam2"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   }
+  },
+  {
+   "name": "target: a prefix with a star",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "CamPrefix",
+     "rules": [
+      {
+       "id": "Cams",
+       "decision": "allow",
+       "operations": [
+        "camera.capture"
+       ],
+       "targets": [
+        "workshop:camera:camera/cam*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture",
+    "target": "workshop:camera:camera/cam17"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "target: a rule for the whole plugin covers a call without target",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "AllCam",
+     "rules": [
+      {
+       "id": "C",
+       "decision": "allow",
+       "operations": [
+        "camera.capture"
+       ],
+       "targets": [
+        "workshop:camera:*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "target: a malformed target is refused",
+   "profiles": [
+    "base.administrator"
+   ],
+   "request": {
+    "operation": "camera.capture",
+    "target": "camera 2"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "bad_request"
+   }
+  },
+  {
+   "name": "target: a deny of one camera leaves the other",
+   "profiles": [
+    "base.administrator",
+    {
+     "version": 1,
+     "name": "NoCam1",
+     "rules": [
+      {
+       "id": "C1",
+       "decision": "deny",
+       "operations": [
+        "camera.*"
+       ],
+       "targets": [
+        "workshop:camera:camera/cam1"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture",
+    "target": "workshop:camera:camera/cam2"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "target: a deny of one camera blocks it",
+   "profiles": [
+    "base.administrator",
+    {
+     "version": 1,
+     "name": "NoCam1",
+     "rules": [
+      {
+       "id": "C1",
+       "decision": "deny",
+       "operations": [
+        "camera.*"
+       ],
+       "targets": [
+        "workshop:camera:camera/cam1"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture",
+    "target": "workshop:camera:camera/cam1"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny",
+    "id": "C1"
+   }
+  },
+  {
+   "name": "condition holds",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "FffIdle",
+     "rules": [
+      {
+       "id": "Idle",
+       "decision": "allow",
+       "operations": [
+        "cap:camera.capture"
+       ],
+       "when": {
+        "mode": [
+         "fff"
+        ],
+        "job_running": false
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "mode": "fff",
+    "job_running": false
+   }
+  },
+  {
+   "name": "condition: mode fails",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "FffIdle",
+     "rules": [
+      {
+       "id": "Idle",
+       "decision": "allow",
+       "operations": [
+        "cap:camera.capture"
+       ],
+       "when": {
+        "mode": [
+         "fff"
+        ],
+        "job_running": false
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny",
+    "failed_conditions": [
+     "mode"
+    ]
+   },
+   "context": {
+    "mode": "cnc",
+    "job_running": false
+   }
+  },
+  {
+   "name": "condition: job_running fails",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "FffIdle",
+     "rules": [
+      {
+       "id": "Idle",
+       "decision": "allow",
+       "operations": [
+        "cap:camera.capture"
+       ],
+       "when": {
+        "mode": [
+         "fff"
+        ],
+        "job_running": false
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny",
+    "failed_conditions": [
+     "job_running"
+    ]
+   },
+   "context": {
+    "mode": "fff",
+    "job_running": true
+   }
+  },
+  {
+   "name": "condition: a missing value does not hold for an allow",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "FffIdle",
+     "rules": [
+      {
+       "id": "Idle",
+       "decision": "allow",
+       "operations": [
+        "cap:camera.capture"
+       ],
+       "when": {
+        "mode": [
+         "fff"
+        ],
+        "job_running": false
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   },
+   "context": {}
+  },
+  {
+   "name": "condition: a deny holds when the value is missing (fail closed)",
+   "profiles": [
+    "base.administrator",
+    {
+     "version": 1,
+     "name": "NoMoveWhileJob",
+     "rules": [
+      {
+       "id": "NoJob",
+       "decision": "deny",
+       "operations": [
+        "cap:machine.move"
+       ],
+       "when": {
+        "job_running": true
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "jog.xy"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny"
+   },
+   "context": {}
+  },
+  {
+   "name": "condition: a deny does not apply when the condition is false",
+   "profiles": [
+    "base.administrator",
+    {
+     "version": 1,
+     "name": "NoMoveWhileJob",
+     "rules": [
+      {
+       "id": "NoJob",
+       "decision": "deny",
+       "operations": [
+        "cap:machine.move"
+       ],
+       "when": {
+        "job_running": true
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "jog.xy"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "job_running": false
+   }
+  },
+  {
+   "name": "condition: via matches",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "OnlyMacros",
+     "rules": [
+      {
+       "id": "M",
+       "decision": "allow",
+       "operations": [
+        "cap:lights.use"
+       ],
+       "when": {
+        "via": [
+         "macro",
+         "local"
+        ]
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "light.set"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "via": "macro"
+   }
+  },
+  {
+   "name": "condition: via does not match",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "OnlyMacros",
+     "rules": [
+      {
+       "id": "M",
+       "decision": "allow",
+       "operations": [
+        "cap:lights.use"
+       ],
+       "when": {
+        "via": [
+         "macro",
+         "local"
+        ]
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "light.set"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   },
+   "context": {
+    "via": "session"
+   }
+  },
+  {
+   "name": "condition: risk_max allows the low risk (jog.xy is risk 2)",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "LowRisk",
+     "rules": [
+      {
+       "id": "Low",
+       "decision": "allow",
+       "operations": [
+        "*"
+       ],
+       "when": {
+        "risk_max": 2
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "jog.xy"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "condition: risk_max refuses a higher risk (motion.take_over is 3)",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "LowRisk",
+     "rules": [
+      {
+       "id": "Low",
+       "decision": "allow",
+       "operations": [
+        "*"
+       ],
+       "when": {
+        "risk_max": 2
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "motion.take_over"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny",
+    "failed_conditions": [
+     "risk_max"
+    ]
+   }
+  },
+  {
+   "name": "operator: a mode of the person allows motion",
+   "profiles": [
+    "base.operator"
+   ],
+   "request": {
+    "operation": "jog.xy"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "mode": "cnc",
+    "modes": [
+     "laser",
+     "cnc"
+    ]
+   }
+  },
+  {
+   "name": "operator: another mode does not",
+   "profiles": [
+    "base.operator"
+   ],
+   "request": {
+    "operation": "jog.xy"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny",
+    "failed_conditions": [
+     "mode"
+    ]
+   },
+   "context": {
+    "mode": "fff",
+    "modes": [
+     "laser",
+     "cnc"
+    ]
+   }
+  },
+  {
+   "name": "operator: an unknown mode with fewer than three modes does not",
+   "profiles": [
+    "base.operator"
+   ],
+   "request": {
+    "operation": "jog.xy"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   },
+   "context": {
+    "modes": [
+     "laser",
+     "cnc"
+    ]
+   }
+  },
+  {
+   "name": "operator: all three modes allow an unknown mode",
+   "profiles": [
+    "base.operator"
+   ],
+   "request": {
+    "operation": "jog.xy"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "modes": [
+     "laser",
+     "cnc",
+     "fff"
+    ]
+   }
+  },
+  {
+   "name": "viewer: no camera without the camera profile",
+   "profiles": [
+    "base.viewer"
+   ],
+   "request": {
+    "operation": "camera.status"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   }
+  },
+  {
+   "name": "viewer: the camera profile gives it",
+   "profiles": [
+    "base.viewer",
+    "base.viewer_camera"
+   ],
+   "request": {
+    "operation": "camera.status"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow",
+    "profile": "base.viewer_camera"
+   }
+  },
+  {
+   "name": "ceiling: inside",
+   "profiles": [
+    "base.operator"
+   ],
+   "request": {
+    "operation": "lights.scene"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "ceiling": {
+    "version": 1,
+    "name": "OnlyLights",
+    "rules": [
+     {
+      "id": "L",
+      "decision": "allow",
+      "operations": [
+       "lights.*",
+       "light.set"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "ceiling: outside",
+   "profiles": [
+    "base.operator"
+   ],
+   "request": {
+    "operation": "camera.capture"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "ceiling"
+   },
+   "ceiling": {
+    "version": 1,
+    "name": "OnlyLights",
+    "rules": [
+     {
+      "id": "L",
+      "decision": "allow",
+      "operations": [
+       "lights.*",
+       "light.set"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "ceiling does not grant",
+   "profiles": [
+    "base.viewer"
+   ],
+   "request": {
+    "operation": "lights.scene"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   },
+   "ceiling": {
+    "version": 1,
+    "name": "OnlyLights",
+    "rules": [
+     {
+      "id": "L",
+      "decision": "allow",
+      "operations": [
+       "lights.*",
+       "light.set"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "ceiling deny counts",
+   "profiles": [
+    "base.operator"
+   ],
+   "request": {
+    "operation": "lights.scene"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny",
+    "profile": "NoScene2"
+   },
+   "ceiling": {
+    "version": 1,
+    "name": "NoScene2",
+    "rules": [
+     {
+      "id": "X",
+      "decision": "deny",
+      "operations": [
+       "lights.scene"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "ceiling does not hide a non-delegable operation from the administrator",
+   "profiles": [
+    "base.administrator"
+   ],
+   "request": {
+    "operation": "users.list"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "ceiling": {
+    "version": 1,
+    "name": "Wide",
+    "rules": [
+     {
+      "id": "W",
+      "decision": "allow",
+      "operations": [
+       "*"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "ceiling: a wildcard ceiling does not lift an escalation",
+   "profiles": [
+    "base.administrator"
+   ],
+   "request": {
+    "operation": "machine.config.apply"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "ceiling"
+   },
+   "context": {
+    "args": {
+     "kind": "config.m208"
+    }
+   },
+   "ceiling": {
+    "version": 1,
+    "name": "Wide",
+    "rules": [
+     {
+      "id": "W",
+      "decision": "allow",
+      "operations": [
+       "*"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "escalation: the technician base cannot write M208",
+   "profiles": [
+    "base.technician"
+   ],
+   "request": {
+    "operation": "machine.config.apply"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "escalated",
+    "needed_tier": "admin"
+   },
+   "context": {
+    "args": {
+     "kind": "config.m208"
+    }
+   }
+  },
+  {
+   "name": "escalation: the same call with a harmless kind",
+   "profiles": [
+    "base.technician"
+   ],
+   "request": {
+    "operation": "machine.config.apply"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "args": {
+     "kind": "config.g31"
+    }
+   }
+  },
+  {
+   "name": "escalation: a call without the kind needs the administrator",
+   "profiles": [
+    "base.technician"
+   ],
+   "request": {
+    "operation": "machine.config.apply"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "escalated"
+   },
+   "context": {
+    "args": {}
+   }
+  },
+  {
+   "name": "escalation: the administrator base writes M208",
+   "profiles": [
+    "base.administrator"
+   ],
+   "request": {
+    "operation": "machine.config.apply"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "args": {
+     "kind": "config.m208"
+    }
+   }
+  },
+  {
+   "name": "escalation: a custom allow of the operation does not lift it",
+   "profiles": [
+    "base.technician",
+    {
+     "version": 1,
+     "name": "Cfg",
+     "rules": [
+      {
+       "id": "A",
+       "decision": "allow",
+       "operations": [
+        "machine.config.apply"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "machine.config.apply"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "escalated"
+   },
+   "context": {
+    "args": {
+     "kind": "config.m208"
+    }
+   }
+  },
+  {
+   "name": "escalation: a custom allow of everything does not lift it",
+   "profiles": [
+    "base.technician",
+    {
+     "version": 1,
+     "name": "Everything",
+     "rules": [
+      {
+       "id": "Star",
+       "decision": "allow",
+       "operations": [
+        "*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "machine.config.apply"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "escalated"
+   },
+   "context": {
+    "args": {
+     "kind": "config.m208"
+    }
+   }
+  },
+  {
+   "name": "escalation: the explicit hardware key lifts it",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "Hw",
+     "rules": [
+      {
+       "id": "A",
+       "decision": "allow",
+       "operations": [
+        "cap:machine.config_apply",
+        "cap:machine.hardware_params"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "machine.config.apply"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "args": {
+     "kind": "config.m208"
+    }
+   }
+  },
+  {
+   "name": "escalation: a deny of the hardware key withdraws it",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "Hw",
+     "rules": [
+      {
+       "id": "A",
+       "decision": "allow",
+       "operations": [
+        "cap:machine.config_apply",
+        "cap:machine.hardware_params"
+       ]
+      }
+     ]
+    },
+    {
+     "version": 1,
+     "name": "NoHw",
+     "rules": [
+      {
+       "id": "D",
+       "decision": "deny",
+       "operations": [
+        "cap:machine.hardware_params"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "machine.config.apply"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny",
+    "profile": "NoHw"
+   },
+   "context": {
+    "args": {
+     "kind": "config.m208"
+    }
+   }
+  },
+  {
+   "name": "escalation: vision.post that changes settings needs the technician",
+   "profiles": [
+    "base.operator"
+   ],
+   "request": {
+    "operation": "vision.post"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "escalated",
+    "needed_tier": "technician"
+   },
+   "context": {
+    "args": {
+     "path": "/settings"
+    }
+   }
+  },
+  {
+   "name": "escalation: vision.post that only looks is the operator's",
+   "profiles": [
+    "base.operator"
+   ],
+   "request": {
+    "operation": "vision.post"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "args": {
+     "path": "/photo"
+    }
+   }
+  },
+  {
+   "name": "escalation: the hardware key does not lift the settings change of vision.post",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "Hw2",
+     "rules": [
+      {
+       "id": "A",
+       "decision": "allow",
+       "operations": [
+        "cap:machine.hardware_params"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "vision.post"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "escalated"
+   },
+   "context": {
+    "args": {
+     "path": "/settings"
+    }
+   }
+  },
+  {
+   "name": "namespace: a deny of lights:* blocks lights.get",
+   "profiles": [
+    "base.administrator",
+    {
+     "version": 1,
+     "name": "NoLights",
+     "rules": [
+      {
+       "id": "N",
+       "decision": "deny",
+       "operations": [
+        "lights:*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.get"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny"
+   }
+  },
+  {
+   "name": "namespace: it leaves the other plugins",
+   "profiles": [
+    "base.administrator",
+    {
+     "version": 1,
+     "name": "NoLights",
+     "rules": [
+      {
+       "id": "N",
+       "decision": "deny",
+       "operations": [
+        "lights:*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "namespace: an allow of a plugin operation",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "Ui",
+     "rules": [
+      {
+       "id": "U",
+       "decision": "allow",
+       "operations": [
+        "lights:ui.open"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights:ui.open"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "capability: a custom allow by capability",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "Lights",
+     "rules": [
+      {
+       "id": "L",
+       "decision": "allow",
+       "operations": [
+        "cap:lights.use"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.scene"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "capability: it does not reach another one",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "Lights",
+     "rules": [
+      {
+       "id": "L",
+       "decision": "allow",
+       "operations": [
+        "cap:lights.use"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   }
+  },
+  {
+   "name": "no profiles: nothing but stopping",
+   "profiles": [],
+   "request": {
+    "operation": "state.get"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   }
+  },
+  {
+   "name": "deny wins over an allow in the same profile",
+   "profiles": [
+    {
+     "version": 1,
+     "name": "Mixed",
+     "rules": [
+      {
+       "id": "A",
+       "decision": "allow",
+       "operations": [
+        "lights.*"
+       ]
+      },
+      {
+       "id": "D",
+       "decision": "deny",
+       "operations": [
+        "lights.save"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny",
+    "profile": "Mixed",
+    "id": "D"
+   }
+  },
+  {
+   "name": "target: a deny on one camera denies that camera (declared by the call)",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "NoCam1",
+     "rules": [
+      {
+       "id": "NoCam1",
+       "decision": "deny",
+       "operations": [
+        "camera.*"
+       ],
+       "targets": [
+        "workshop:camera:camera/cam1"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture",
+    "args": {
+     "camera": "cam1"
+    }
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny",
+    "profile": "NoCam1",
+    "id": "NoCam1"
+   }
+  },
+  {
+   "name": "target: the same deny lets another camera through",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "NoCam1",
+     "rules": [
+      {
+       "id": "NoCam1",
+       "decision": "deny",
+       "operations": [
+        "camera.*"
+       ],
+       "targets": [
+        "workshop:camera:camera/cam1"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture",
+    "args": {
+     "camera": "cam2"
+    }
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "target: an empty camera argument is the main camera",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "NoMain",
+     "rules": [
+      {
+       "id": "NoMain",
+       "decision": "deny",
+       "operations": [
+        "camera.capture"
+       ],
+       "targets": [
+        "workshop:camera:camera/main"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.capture",
+    "args": {}
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny"
+   }
+  },
+  {
+   "name": "target: an operation that declares no target is not caught by a deny on a target (documented)",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "NoCam1",
+     "rules": [
+      {
+       "id": "NoCam1",
+       "decision": "deny",
+       "operations": [
+        "camera.*"
+       ],
+       "targets": [
+        "workshop:camera:camera/cam1"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "camera.status",
+    "args": {}
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "target: a call that omits its argument declares no target and escapes a target deny (documented)",
+   "profiles": [
+    "base.technician",
+    {
+     "version": 1,
+     "name": "NoMeter",
+     "rules": [
+      {
+       "id": "NoMeter",
+       "decision": "deny",
+       "operations": [
+        "meter.get"
+       ],
+       "targets": [
+        "workshop:power:meter/shed"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "meter.get",
+    "args": {}
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "target: an allow on one material lets that material pass",
+   "profiles": [
+    "base.viewer",
+    {
+     "version": 1,
+     "name": "OnlyMaterialA",
+     "rules": [
+      {
+       "id": "A",
+       "decision": "allow",
+       "operations": [
+        "layerrecipes.set",
+        "layerrecipes.remove"
+       ],
+       "targets": [
+        "workshop:printing:recipe/PLA"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "layerrecipes.set",
+    "args": {
+     "name": "PLA"
+    }
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow",
+    "profile": "OnlyMaterialA"
+   }
+  },
+  {
+   "name": "target: the same allow does not cover another material",
+   "profiles": [
+    "base.viewer",
+    {
+     "version": 1,
+     "name": "OnlyMaterialA",
+     "rules": [
+      {
+       "id": "A",
+       "decision": "allow",
+       "operations": [
+        "layerrecipes.set",
+        "layerrecipes.remove"
+       ],
+       "targets": [
+        "workshop:printing:recipe/PLA"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "layerrecipes.set",
+    "args": {
+     "name": "ABS"
+    }
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   }
+  },
+  {
+   "name": "target: a prefix of targets covers every material that starts with it",
+   "profiles": [
+    "base.viewer",
+    {
+     "version": 1,
+     "name": "Pellets",
+     "rules": [
+      {
+       "id": "P",
+       "decision": "allow",
+       "operations": [
+        "pelletlayers.remove"
+       ],
+       "targets": [
+        "workshop:printing:pellet/PE*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "pelletlayers.remove",
+    "args": {
+     "name": "PE-HD"
+    }
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "target: a file path is normalised (drive, dots and slashes) before it is matched",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "NoFile",
+     "rules": [
+      {
+       "id": "F",
+       "decision": "deny",
+       "operations": [
+        "gcodelib.*"
+       ],
+       "targets": [
+        "workshop:printing:file/gcodes/secret/*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "gcodelib.info",
+    "args": {
+     "file": "0:/gcodes/other/../secret/a b.gcode"
+    }
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny"
+   }
+  },
+  {
+   "name": "target: a wildcard typed in an id cannot widen the target",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "NoPLA",
+     "rules": [
+      {
+       "id": "N",
+       "decision": "deny",
+       "operations": [
+        "layerrecipes.get"
+       ],
+       "targets": [
+        "workshop:printing:recipe/PLA"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "layerrecipes.get",
+    "args": {
+     "name": "PLA*"
+    }
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   }
+  },
+  {
+   "name": "target: a stop operation is never caught by a deny on its target",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "NoZone",
+     "rules": [
+      {
+       "id": "Z",
+       "decision": "deny",
+       "operations": [
+        "bedzones.*"
+       ],
+       "targets": [
+        "workshop:printing:bedzone/*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "bedzones.off",
+    "args": {}
+   },
+   "expect": {
+    "allowed": true,
+    "code": "stop"
+   }
+  },
+  {
+   "name": "target: the timer has a target of its own",
+   "profiles": [
+    "base.operator",
+    {
+     "version": 1,
+     "name": "NoTimer",
+     "rules": [
+      {
+       "id": "T",
+       "decision": "deny",
+       "operations": [
+        "power.timer"
+       ],
+       "targets": [
+        "workshop:power:timer/*"
+       ]
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "power.timer",
+    "args": {
+     "minutes": 5
+    }
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny"
+   }
+  },
+  {
+   "name": "context: job_running false holds when no job runs",
+   "profiles": [
+    "base.viewer",
+    {
+     "version": 1,
+     "name": "IdleOnly",
+     "rules": [
+      {
+       "id": "I",
+       "decision": "allow",
+       "operations": [
+        "cap:lights.config"
+       ],
+       "when": {
+        "job_running": false
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "job_running": false
+   }
+  },
+  {
+   "name": "context: job_running false does not hold while a job runs",
+   "profiles": [
+    "base.viewer",
+    {
+     "version": 1,
+     "name": "IdleOnly",
+     "rules": [
+      {
+       "id": "I",
+       "decision": "allow",
+       "operations": [
+        "cap:lights.config"
+       ],
+       "when": {
+        "job_running": false
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny",
+    "failed_conditions": [
+     "job_running"
+    ]
+   },
+   "context": {
+    "job_running": true
+   }
+  },
+  {
+   "name": "context: an allow with a condition fails closed when the model is missing",
+   "profiles": [
+    "base.viewer",
+    {
+     "version": 1,
+     "name": "IdleOnly",
+     "rules": [
+      {
+       "id": "I",
+       "decision": "allow",
+       "operations": [
+        "cap:lights.config"
+       ],
+       "when": {
+        "job_running": false
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny",
+    "failed_conditions": [
+     "job_running"
+    ]
+   },
+   "context": {}
+  },
+  {
+   "name": "context: a deny with a condition holds while a job runs",
+   "profiles": [
+    "base.technician",
+    {
+     "version": 1,
+     "name": "NoSaveInJob",
+     "rules": [
+      {
+       "id": "D",
+       "decision": "deny",
+       "operations": [
+        "lights.save"
+       ],
+       "when": {
+        "job_running": true
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny"
+   },
+   "context": {
+    "job_running": true
+   }
+  },
+  {
+   "name": "context: a deny with a condition does not hold when no job runs",
+   "profiles": [
+    "base.technician",
+    {
+     "version": 1,
+     "name": "NoSaveInJob",
+     "rules": [
+      {
+       "id": "D",
+       "decision": "deny",
+       "operations": [
+        "lights.save"
+       ],
+       "when": {
+        "job_running": true
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "job_running": false
+   }
+  },
+  {
+   "name": "context: a deny with a condition closes when the model is missing",
+   "profiles": [
+    "base.technician",
+    {
+     "version": 1,
+     "name": "NoSaveInJob",
+     "rules": [
+      {
+       "id": "D",
+       "decision": "deny",
+       "operations": [
+        "lights.save"
+       ],
+       "when": {
+        "job_running": true
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "explicit_deny"
+   },
+   "context": {}
+  },
+  {
+   "name": "context: machine_on true holds when the machine is on",
+   "profiles": [
+    "base.viewer",
+    {
+     "version": 1,
+     "name": "OnlyOn",
+     "rules": [
+      {
+       "id": "O",
+       "decision": "allow",
+       "operations": [
+        "cap:lights.config"
+       ],
+       "when": {
+        "machine_on": true
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {
+    "machine_on": true
+   }
+  },
+  {
+   "name": "context: machine_on true does not hold when the supply is off",
+   "profiles": [
+    "base.viewer",
+    {
+     "version": 1,
+     "name": "OnlyOn",
+     "rules": [
+      {
+       "id": "O",
+       "decision": "allow",
+       "operations": [
+        "cap:lights.config"
+       ],
+       "when": {
+        "machine_on": true
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   },
+   "context": {
+    "machine_on": false
+   }
+  },
+  {
+   "name": "context: risk_max is the risk of the capability of the operation",
+   "profiles": [
+    "base.viewer",
+    {
+     "version": 1,
+     "name": "Low",
+     "rules": [
+      {
+       "id": "L",
+       "decision": "allow",
+       "operations": [
+        "cap:lights.use",
+        "cap:machine.config_apply"
+       ],
+       "when": {
+        "risk_max": 1
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.scene"
+   },
+   "expect": {
+    "allowed": true,
+    "code": "allow"
+   },
+   "context": {}
+  },
+  {
+   "name": "context: via session holds for a session and a rule for a key does not",
+   "profiles": [
+    "base.viewer",
+    {
+     "version": 1,
+     "name": "Keys",
+     "rules": [
+      {
+       "id": "K",
+       "decision": "allow",
+       "operations": [
+        "lights.config"
+       ],
+       "when": {
+        "via": [
+         "key"
+        ]
+       }
+      }
+     ]
+    }
+   ],
+   "request": {
+    "operation": "lights.save"
+   },
+   "expect": {
+    "allowed": false,
+    "code": "implicit_deny"
+   },
+   "context": {
+    "via": "session"
+   }
+  }
+ ],
+ "documents": [
+  {
+   "name": "a valid document",
+   "document": {
+    "version": 1,
+    "name": "Good",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "lights.*"
+      ]
+     }
+    ]
+   },
+   "error": null
+  },
+  {
+   "name": "a valid document with every condition",
+   "document": {
+    "version": 1,
+    "name": "Full",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "cap:lights.use",
+       "lights:*"
+      ],
+      "targets": [
+       "workshop:lights:scene/*",
+       "*"
+      ],
+      "when": {
+       "mode": [
+        "fff"
+       ],
+       "job_running": false,
+       "machine_on": true,
+       "via": [
+        "session"
+       ],
+       "risk_max": 3
+      }
+     }
+    ]
+   },
+   "error": null
+  },
+  {
+   "name": "unknown field in the document",
+   "document": {
+    "version": 1,
+    "name": "Good",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "lights.*"
+      ]
+     }
+    ],
+    "extra": 1
+   },
+   "error": "unknown_field"
+  },
+  {
+   "name": "unknown field in a rule",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "notes": "x"
+     }
+    ]
+   },
+   "error": "unknown_field"
+  },
+  {
+   "name": "bad version",
+   "document": {
+    "version": 2,
+    "name": "Good",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "lights.*"
+      ]
+     }
+    ]
+   },
+   "error": "invalid_version"
+  },
+  {
+   "name": "bad decision",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "permit",
+      "operations": [
+       "a.b"
+      ]
+     }
+    ]
+   },
+   "error": "invalid_decision"
+  },
+  {
+   "name": "no rules",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": []
+   },
+   "error": "invalid_document"
+  },
+  {
+   "name": "duplicate id",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ]
+     },
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.c"
+      ]
+     }
+    ]
+   },
+   "error": "duplicate_id"
+  },
+  {
+   "name": "bad name",
+   "document": {
+    "version": 1,
+    "name": "1 bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "lights.*"
+      ]
+     }
+    ]
+   },
+   "error": "invalid_name"
+  },
+  {
+   "name": "unknown capability",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "cap:nothing.here"
+      ]
+     }
+    ]
+   },
+   "error": "unknown_capability"
+  },
+  {
+   "name": "reserved namespace tier",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "tier:admin"
+      ]
+     }
+    ]
+   },
+   "error": "reserved_namespace"
+  },
+  {
+   "name": "reserved namespace in a pattern",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "tier:*"
+      ]
+     }
+    ]
+   },
+   "error": "reserved_namespace"
+  },
+  {
+   "name": "bad operation",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "Not An Operation"
+      ]
+     }
+    ]
+   },
+   "error": "invalid_operation"
+  },
+  {
+   "name": "bad target",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "targets": [
+       "camera/cam1"
+      ]
+     }
+    ]
+   },
+   "error": "invalid_target"
+  },
+  {
+   "name": "no hour condition",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "hour": [
+        8,
+        17
+       ]
+      }
+     }
+    ]
+   },
+   "error": "forbidden_condition"
+  },
+  {
+   "name": "no time condition",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "time": {
+        "after": "08:00"
+       }
+      }
+     }
+    ]
+   },
+   "error": "forbidden_condition"
+  },
+  {
+   "name": "no date condition",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "date": {
+        "before": "2027-01-01"
+       }
+      }
+     }
+    ]
+   },
+   "error": "forbidden_condition"
+  },
+  {
+   "name": "no source_ip condition",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "source_ip": "10.0.0.0/8"
+      }
+     }
+    ]
+   },
+   "error": "forbidden_condition"
+  },
+  {
+   "name": "no expires condition",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "expires": 1
+      }
+     }
+    ]
+   },
+   "error": "forbidden_condition"
+  },
+  {
+   "name": "no ip condition",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "ip": [
+        "10.0.0.1"
+       ]
+      }
+     }
+    ]
+   },
+   "error": "forbidden_condition"
+  },
+  {
+   "name": "no mfa condition",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "mfa": true
+      }
+     }
+    ]
+   },
+   "error": "forbidden_condition"
+  },
+  {
+   "name": "unknown condition",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "color": "red"
+      }
+     }
+    ]
+   },
+   "error": "invalid_condition"
+  },
+  {
+   "name": "bad mode value",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "mode": [
+        "steam"
+       ]
+      }
+     }
+    ]
+   },
+   "error": "invalid_condition"
+  },
+  {
+   "name": "bad boolean",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "job_running": "yes"
+      }
+     }
+    ]
+   },
+   "error": "invalid_condition"
+  },
+  {
+   "name": "bad risk",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "risk_max": 5
+      }
+     }
+    ]
+   },
+   "error": "invalid_condition"
+  },
+  {
+   "name": "bad via",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "allow",
+      "operations": [
+       "a.b"
+      ],
+      "when": {
+       "via": [
+        "ssh"
+       ]
+      }
+     }
+    ]
+   },
+   "error": "invalid_condition"
+  },
+  {
+   "name": "a deny of a stop operation",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "deny",
+      "operations": [
+       "power.off"
+      ]
+     }
+    ]
+   },
+   "error": "stop_deny"
+  },
+  {
+   "name": "a deny of a pattern that only covers stop",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "deny",
+      "operations": [
+       "jog.stop_*"
+      ]
+     }
+    ]
+   },
+   "error": "stop_deny"
+  },
+  {
+   "name": "a deny of a capability with a stop",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "deny",
+      "operations": [
+       "cap:machine.stop"
+      ]
+     }
+    ]
+   },
+   "error": "stop_deny"
+  },
+  {
+   "name": "a deny of the shutdown capability",
+   "document": {
+    "version": 1,
+    "name": "Bad",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "deny",
+      "operations": [
+       "cap:energy.shutdown"
+      ]
+     }
+    ]
+   },
+   "error": "stop_deny"
+  },
+  {
+   "name": "a deny of everything is saved (stopping still wins in the evaluator)",
+   "document": {
+    "version": 1,
+    "name": "DenyAll",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "deny",
+      "operations": [
+       "*"
+      ]
+     }
+    ]
+   },
+   "error": null
+  },
+  {
+   "name": "a deny of a whole plugin is saved",
+   "document": {
+    "version": 1,
+    "name": "NoMachine",
+    "rules": [
+     {
+      "id": "A",
+      "decision": "deny",
+      "operations": [
+       "machine:*"
+      ]
+     }
+    ]
+   },
+   "error": null
+  }
+ ],
+ "store": [
+  {
+   "name": "no file",
+   "file": null,
+   "damaged": false,
+   "profiles": 0
+  },
+  {
+   "name": "an empty list",
+   "file": "{\"version\": 1, \"profiles\": []}",
+   "damaged": false,
+   "profiles": 0
+  },
+  {
+   "name": "one profile",
+   "file": "{\"version\": 1, \"profiles\": [{\"version\": 1, \"name\": \"Good\", \"rules\": [{\"id\": \"A\", \"decision\": \"allow\", \"operations\": [\"lights.*\"]}]}]}",
+   "damaged": false,
+   "profiles": 1
+  },
+  {
+   "name": "not JSON",
+   "file": "{not json",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "empty file",
+   "file": "",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "a list instead of an object",
+   "file": "[]",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "a field more",
+   "file": "{\"version\": 1, \"profiles\": [], \"extra\": []}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "another version",
+   "file": "{\"version\": 2, \"profiles\": []}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "a profile with a field more",
+   "file": "{\"version\": 1, \"profiles\": [{\"version\": 1, \"name\": \"Good\", \"rules\": [{\"id\": \"A\", \"decision\": \"allow\", \"operations\": [\"lights.*\"]}], \"extra\": 1}]}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "a profile with a time condition",
+   "file": "{\"version\": 1, \"profiles\": [{\"version\": 1, \"name\": \"T\", \"rules\": [{\"id\": \"A\", \"decision\": \"allow\", \"operations\": [\"a.b\"], \"when\": {\"hour\": [8]}}]}]}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "a deny of a stop",
+   "file": "{\"version\": 1, \"profiles\": [{\"version\": 1, \"name\": \"T\", \"rules\": [{\"id\": \"A\", \"decision\": \"deny\", \"operations\": [\"power.off\"]}]}]}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "a base name",
+   "file": "{\"version\": 1, \"profiles\": [{\"version\": 1, \"name\": \"base.operator\", \"rules\": [{\"id\": \"A\", \"decision\": \"allow\", \"operations\": [\"a.b\"]}]}]}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "a name twice",
+   "file": "{\"version\": 1, \"profiles\": [{\"version\": 1, \"name\": \"Good\", \"rules\": [{\"id\": \"A\", \"decision\": \"allow\", \"operations\": [\"lights.*\"]}]}, {\"version\": 1, \"name\": \"good\", \"rules\": [{\"id\": \"A\", \"decision\": \"allow\", \"operations\": [\"a.c\"]}]}]}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "groups and a person",
+   "file": "{\"version\":1,\"profiles\":[{\"version\": 1, \"name\": \"Good\", \"rules\": [{\"id\": \"A\", \"decision\": \"allow\", \"operations\": [\"lights.*\"]}]}],\"groups\":[{\"name\":\"Crew\",\"profiles\":[\"Good\",\"base.viewer\"]}],\"users\":[{\"name\":\"Ana\",\"profiles\":[],\"groups\":[\"Crew\"],\"ceiling\":null}]}",
+   "damaged": false,
+   "profiles": 1
+  },
+  {
+   "name": "a group that lists a profile that does not exist",
+   "file": "{\"version\":1,\"profiles\":[],\"groups\":[{\"name\":\"Crew\",\"profiles\":[\"Nope\"]}]}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "the administrator profile attached",
+   "file": "{\"version\":1,\"profiles\":[],\"groups\":[{\"name\":\"Crew\",\"profiles\":[\"base.administrator\"]}]}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "a person in a group that does not exist",
+   "file": "{\"version\":1,\"profiles\":[],\"users\":[{\"name\":\"Ana\",\"profiles\":[],\"groups\":[\"Crew\"],\"ceiling\":null}]}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "an empty person record",
+   "file": "{\"version\":1,\"profiles\":[],\"users\":[{\"name\":\"Ana\",\"profiles\":[],\"groups\":[],\"ceiling\":null}]}",
+   "damaged": true,
+   "profiles": 0
+  },
+  {
+   "name": "versions of a profile that is not there",
+   "file": "{\"version\":1,\"profiles\":[],\"versions\":{\"Ghost\":{\"active\":1,\"items\":[]}}}",
+   "damaged": true,
+   "profiles": 0
+  }
+ ]
+}

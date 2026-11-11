@@ -4,6 +4,167 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.41.0 -- 2026-11-11 (access control: activity record with a verification chain, plugin manifests, review of accesses, first screen)
+
+- Activity record with a verification chain (access control phase 4): every row of `audit` gets a link to the previous one (hash of its content plus the hash before) in a NEW table `audit_chain`; the detail of a decision (rule that decided, target, context) goes in `audit_detail`; the state of the four alarms in `audit_alarm_state`. The `audit` table itself is not touched and `PRAGMA user_version` stays 7: the three tables are created when missing, so going back to an earlier service version leaves them unused and harmless. New operations (administrator only): `audit.verify` (walks the chain in pages and says where it breaks), `audit.export` (by pages), `audit.settings` (optional reads, off by default because they wear the SD card). Four alarms with a phone notice: access file damaged, burst of refusals, a profile that grants risk 4 or administrator rights, a key created or the groups of an administrator changed, chain broken.
+- Plugin manifests (phase 5): `dsf/access_plugin_manifest.py` and `dsf/access_plugin_files.py` read `<plugins folder>/<Id>/dsf/permissions.json` (the 14 plugins carry one in TallerPlugins), validate that every operation a plugin calls exists, is classified and is its own or declared shared, and register three profiles per plugin (`plugin.<namespace>.readonly`, `.operator`, `.admin`) that can be attached like any profile. `ui:<plugin>:open` is a valid operation and `<plugin>:*` covers it; `base.viewer`, `base.operator` and `base.technician` get the rule `OpenPages` so nobody loses a page today. New operation `access.plugins.validate` (administrator only). Nothing changes for people without attached profiles.
+- Review of accesses and last use (phase 6): `access.review` (findings with severity: profile that reaches risk 4, deny rule that can never match, profile nobody has, person without group or profile, wide key unused for 30 days, administrator without a recent sign-in) and `access.report` (people and keys: locks, last sign-in, age of the PIN, last use). The last use per person and capability is written to `workshop-access-usage.json` (at most once a minute per pair, flushed at shutdown, a damaged file starts empty and never breaks a decision).
+- Page: new section Access (administrators only) with the tab Profiles, read only: list with filter, one profile with Builder, JSON and Versions, the table of the 65 capabilities with category, risk and lock, the fixed note that G-code sent from DWC pages does not pass through the profiles yet, and every state (loading, empty, error, no permission, damaged file, read only, users disabled). The tabs People and groups and Keys say they come later. The page needs a real build (webpack).
+
+## 2.40.0 -- 2026-11-11 (restore only for administrators, the library indexes subfolders)
+
+- `machine.history.restore` is administrator-only and can never be delegated (decision of the owner, 2026-11-11). It was a technician's operation (admin only for the hardware-risk kinds) and part of the delegable capability `machine.config_apply`. Now: `OP_ROLES` says admin, it is in `permission_caps.NOT_DELEGABLE`, it lives in its own non-delegable capability `machine.config_restore` (class admin, risk 4; texts in both catalogs), it is out of `ESCALATE_IN`, `ESCALATION_PROBES` and `HARDWARE_OPS` (the `machine.hardware_params` capability no longer says anything about it). `machine.config_apply` now holds only `machine.config.apply`, whose behaviour (technician, admin for the hardware kinds) is unchanged. `restore_info.role_needed` is always `admin`. Docs: `docs/api/README.md`, `docs/MACHINE-PHASE2-CONTRACT.md`, `dsf/golden/api_contract.json`.
+- The frozen golden fixtures (`permissions_golden.json`, `key_decisions_golden.json`) are kept as they are; their tests list this one operation as an owner-approved difference.
+- G-code library: the background indexer now descends into the sub-folders of the watched folders by itself, so a file in a sub-folder is already indexed when somebody opens that folder. New `gcodelib_files.scan_tree` (depth 4 below the watched folder, folders starting with a dot skipped, symbolic links not followed, at most 5000 files per folder and scan, folders visited in name order so the cut is stable); `Indexer.rescan` uses it. Same cache cap (`cache_mb`, 200 MB by default), same single worker, and the list op still never parses (it queues only and keeps answering `dirs` and the files of the folder asked for). A watched folder inside another watched one is queued once; the entries of deleted files in sub-folders are dropped as before. Tests in `test_gcodelib_library.py` (class `Subfolders`).
+
+## 2.39.0 -- 2026-11-11 (service review: one launcher of OS processes, targets of the access control, typed board answers)
+
+Backend only: the page is the bundle of 2.38.0. The review of the service (reports in `Projects/informes/rediseno-servicio/`) merged much more than this version adds; the pieces that were already in 2.35.0 to 2.38.0 without a changelog line are listed at the end so the history is complete.
+
+- `dsf/os_gateway.py`: the ONE place that starts OS processes. It refuses `shell`, needs a timeout and checks the program against a closed list (ffmpeg, nice, systemctl, journalctl, vcgencmd, nmcli, ip, ping, ss, timedatectl, pinctrl, dpkg-query, dotnet). The 11 uses of `subprocess` of the camera, the health poller, the bridge service, the LEDs and the preflight go through it; only `power_off` and `power_reset` still start their own processes (a held branch changes them). Same commands, same timeouts, same handling of the answers: 36 characterization tests pin each use.
+- Access control, phase 3 (`access_targets`, `access_context`): the operations that touch one thing declare it as a target `workshop:<plugin>:<type>/<id>` (camera, camera media, timelapse, light scene, light zone, recipe, pellet profile, bed zone, file, folder, meter, timer, interrupted job), and the decision of a person who has profiles or groups gets live conditions (`job_running`, `machine_on`, `via`, `risk_max`). A person without attached profiles decides exactly as before and the machine model is not even read for them. `access.check` now takes `operation` and `target`.
+- Typed board answers (`dsf/board_reply.py`): an answer is `ok`, `warning` or `error` by its exact `Error:` / `Warning:` prefix, not by the word anywhere in the text (a real M122 line `Error status: 0x00` is not an error). Used where the word check was wrong: the API (`Registry.call`), the motors handler, the password change and the shutdown method. The start message of the camera relay now begins with `Error:` so it still counts as a failure. A guard test forbids new text checks of the word. The four codes that were raised without an entry in the status table (`refused`, `not_found`, `not_implemented`, `too_big`) are in it, with the 400 they already got.
+- Already installed since 2.35.0 to 2.38.0, never listed: guards of the architecture (layer map, frozen debt lists, API contract snapshot); atomic writes with the folder sync and a lock around the settings (`fs_atomic.write_with_backup`, `ServiceSettings`); `ServiceContext`, `bootstrap` and the single process table (`process_registry`); listeners of the model with their own queue and the age of the model; reads, settings, lights and shutdown operations as typed functions (`*_ops.py`); `status_light` and `motor_status` split in layers; one rotated service log (`0:/sys/workshop/data/logs/workshop-service.log`); monotonic clock for the in-process timers (`dsf/clock.py`); the database opens one connection per call, closes it always and reads without the global lock (`db_conn`), sets a newer or unreadable database aside instead of touching it, and has typed table functions; `sd_paths.resolve`; the access control phases 1 and 2 (groups, attached profiles, ceilings, 15 `access.*` operations, `access.check`); the scheduled power-off timer, which never fired since 2026-10-18 because it called a handler renamed that day, calls `power_off` again.
+
+## 2.38.0 -- 2026-11-10 (bed zones calibration: the service does the work)
+
+- The calibration assistant of the bed zones no longer only shows G-code. The SERVICE heats and tunes, with the person present: `bedcal.plan` (read: the exact lines, every temperature bounded), `bedcal.preheat` (the zones in the given order with the stagger between starts, then held `hold_min` minutes and turned off; confirmation level 3), `bedcal.tune` (M303 per zone, one zone or all in order, the neighbours held at the working temperature or off; confirmation level 4; opens an active risk), `bedcal.stop` (a stop: any role, no login; turns EVERY configured zone off at once) and `bedcal.status` (viewer). They are the procedures `bedcal.preheat` / `bedcal.tune` of `machine.run` (`dsf/machine_bedcal.py`, plan in `machine_bedcal_plan.py`, operations in `bed_calibration_ops.py`): one procedure at a time, the movement reserved (denied with a job, a live job or the bridge), technician role and the delegable capability `system.bed_calibration`, audit of who started what, and `machine.stop` also stops them.
+- Heaters are never left on: every way out (success, Stop, fault, cap, job started, refused send, error, exit of the service) turns the zones of the run off, through the connection and, if that fails, through the bridge. Temperatures are bounded by the range 30 to 150 C, the `max_temp` / `max_offset` of the bed zones and the cap of each heater (a tuning stays 10 C under it).
+- Closed G-code list: `M140 P<bed> S<t>`, `M140 P<bed> S-273.15`, `M303 H<h> S<t>`, `M303` (report), `M307 H<h>` (read only). Never `M569.2`.
+- Saving: plan kinds `config.heater_model` (the M307 of bed heaters) and `config.heater_cap` (their M143) of `machine.config.plan` / `apply` (technician, exact diff, snapshot first, restart note); only bed heaters are accepted.
+
+## 2.37.2 -- 2026-11-10 (library thumbnails without light blue)
+
+- The synthetic thumbnails of the G-code library use warm colours (cut amber, plunge red, feature types orange / yellow / green / pink) instead of the light blue; the cache version is 4, so every thumbnail is drawn again once.,
+
+## 2.37.1 -- 2026-11-10 (four SPI chip selects)
+
+- The pin list of the board offers `spi.cs0` to `spi.cs3`: the SPI_DB daughterboard connector of the Duet 3 MB6HC has four chip selects and only three were offered (thermocouple, PT100 and ADC daughterboards, accelerometer).
+
+## 2.37.0 -- 2026-11-10 (bed zone sensor types, synthetic thumbnails of the G-code library)
+
+- G-code library: a file with geometry and no embedded thumbnail gets a small synthetic PNG (192x144) rendered once while it is indexed (`<key>.thumb.png`, at most 30000 sampled segments, no extra read of the file); `gcodelib.thumbnail` answers it with `synthetic: true` and the summary has `has_preview_thumb`. The cache version is 3: every file is indexed once more.
+- Bed zones sensors (sensors-svc):
+
+- Bed zones: more sensor types for `config.bed_heaters` (new module `dsf/machine_sensors.py`, M308 of RRF 3.x checked against the Duet3D docs and the RRF 3.6 sources): MAX31856 thermocouple with its type letter and 50/60 Hz (`tc-max31856`, `K"J" F50`), MAX31865 PT100 with wires, reference resistor and 50/60 Hz (`pt100`, `R430 W3 F50`), thermistor with Steinhart-Hart C, linear analog (`linear-analog`, `F1 B0 C300`, range required). New refusals `tc_type`, `mains`, `wires`, `rtd_ref`, `analog_range`, `analog_filter`, `therm_c` (messages in both languages). The old presets write the same lines as before. Not offered: PT1000 on the MAX31865 (RRF reads that chip with the PT100 table only), DS18B20 and LM75 (not in RRF 3.6 nor in the docs).
+
+## 2.36.0 -- 2026-11-10 (G-code library: file kinds, laser and CNC toolpaths)
+
+- Every file of the library has a kind (`fff`, `laser`, `cnc`, `travel`, `unknown`), tags and a plane (`3d` / `2d`); laser files (LightBurn and others) get one 2D layer per `;Layer Cxx` comment, CNC files one per cut depth, test files the path of their G0 moves. `gcodelib.list` takes `kind` and answers `counts`; `query` also matches tags. `.gc`, `.ngc` and `.tap` files are listed. The cache version is 2: every file is read once more.
+
+## 2.35.0 -- 2026-11-10 (G-code library, whole-bed insulation test)
+
+- G-code library (`gcodelib.list`, `info`, `thumbnail`, `layers`, `refresh`, `forget`; `docs/GCODE-LIBRARY.md`): files of `0:/gcodes` are read ONCE by a background worker (streaming, one file at a time) and kept in a cache under `0:/sys/workshop/data/gcodelib/` (summary, thumbnails, simplified geometry per layer); only a changed size or modification time re-reads a file. Listing never parses. Setting area `gcodelib` (enabled, cache_mb, auto_index). Capabilities `jobs.library` and `jobs.library_manage`.
+- Bed estimates: an insulation run may carry no zone (whole bed); runs saved with a zone stay valid.
+- Includes 2.34.4 (flat preview of a material without layers) and 2.34.5 (step 1).
+
+## 2.34.5 -- 2026-11-10 (step 1 of the review: jog, publisher, config.g, handler cache; bridge 3.8.1)
+
+- Jog: a queued G1 now carries a gesture id and a deadline (2 x LEAD_S, monotonic clock). The sender drops it when the gesture ended or the deadline passed, and a G1 tries the connection to DSF once instead of waiting forever, so a segment can no longer leave minutes after the stick was released. The closing G90 still goes out.
+- Publisher: a value that changes while the previous one is on the wire is no longer lost; it stays queued and goes out next.
+- Password change: `config.g` is rewritten in bytes through `fs_atomic` (a failure leaves the original; non-UTF-8 bytes are kept).
+- API: the module of each handler is cached by path, mtime and size instead of being compiled and executed on every call, so module-level state (such as the lock of `jobs.preview`) now lives across calls.
+- G-code bridge 3.8.1: a line is a query only if it matches the closed grammar of its code completely; `M114 G1 X100`, `M105 M3 S255` and `M122 P1001` are orders now and pass password, exclusive control, machine gate and log. A `queries` entry without a grammar is ignored with a warning.
+
+## 2.34.4 -- 2026-11-10 (flat preview, SD manifest of Jog 3.15.1 and Printing 2.26.1)
+
+- `layerrecipes.preview` accepts `flat` (zone temperatures of a material without layers) instead of `name`: a flat recipe is built on the fly for the preview, nothing is saved. Same role (viewer).
+
+## 2.34.3 -- 2026-11-10 (reader: no false missing hook line, reads when it opens)
+
+- The "lines of the workshop" check of `sys/config.g`, `sys/daemon.g`, `sys/homeall.g` and `sys/homez.g` looks for the managed block (`WORKSHOP hook=<name>`) instead of the old inline lines: the reader said "Le faltan 1 lineas de enlace" on a file whose block was applied. Informational only; nothing on the SD changes.
+- "Archivos por plugin" opened empty until "Leer de nuevo" was pressed: the dialog now reads when it opens.
+
+## 2.34.2 -- 2026-11-10 (reader accents, no false "missing" for the moved mode files)
+
+- The manifest no longer expects `sys/modecnc.g`, `sys/modefff.g` and `sys/modelaser.g`: they live in `sys/workshop/modes/` since the move, so "Archivos por plugin" showed "Faltan (3)" for nothing. The `zcal` hook now belongs to the files in the new folder.
+- The file reader shows legacy files (Windows-1252 accents, or a mix with UTF-8) with their accents instead of replacement marks. The file on the SD is not touched.
+
+## 2.34.1 -- 2026-11-10 (manifest of the final plugin zips)
+
+- SD manifest regenerated from the plugin zips that are installed (Jog 3.15.0, Printing 2.26.0): only the two plugin versions change.
+
+## 2.34.0 -- 2026-11-10 (file reader, one Start-up section, cleanup of old staged copies)
+
+- New read-only operation `startup.file.view` (technician and up, not logged, `dsf/sd_view.py`): one file of the SD to read. Returns whether it is there, size, line count, state, kind, who uses it, the text (cut at 200 KB with `truncated`; a binary file has no text), plain-language `summary` entries as keys and parameters (`loaded_ok`, `missing`, `edited_lines` with the line ranges, ...), the comparison with the factory copy when there is one (workshop-owned files: `dsf/factory`; templates: the staged copy; only if its sha is the manifest's) as ranges plus a flag per line (`same`, `changed`, `added`) and the factory lines the file lost, and `applied` (was it applied?). Only paths the manifest lists, its staged copies and the extras of the list; `..`, absolute paths and names of users, keys, tokens or passwords are refused; network and password lines (M551, M552-M554, M587-M589) are masked. Nothing is written.
+- `startup.files` rows carry `applied`: `applied_by` (date and person, from the install log), `applied_plugin` (installed by the plugin and equal to the manifest), `applied_pending` (the wizard proposes a change), `applied_skipped`, `applied_never`.
+- "Archivos por plugin": a "Ver archivo" button on every row and on every extra, for every role that sees the dialog: a header with the state in a sentence ("Se cargo bien", "Falta en la tarjeta", "Lo editaste: lineas 12 a 15"), "Se aplico?", the whole file with line numbers, the lines that differ highlighted (legend "tuyo" / "de fabrica"), "Solo lo que cambio" with two lines of context and "Copiar". The administrator's diff is explained in everyday words and says why it shows nothing (same as factory, no factory copy, own file). Failures read as one short sentence with what to do; no raw message and no empty panel. Logic in `dwc36/sd-viewer.js`.
+- Cause of the "falla": the diff of an edited file asked `startup.integrity.restore.preview` and showed only its `diff`; when the preview refused (no factory copy, copy not matching the list, already equal) the diff was empty and the panel said "no hay diferencias", and any failed call printed the raw message ("No se pudo leer: ..."). The state "Revisar" (wrong mark, comments only, unreadable) had no way to see the file at all.
+- Start-up plan: new group `cleanup` (item `cleanup:<path>`, kind `remove`): the staged copies under `sys/workshop/examples/` that the manifest does not list. Shown in the wizard with the diff (file removed), accepted or skipped like the others, applied only by `startup.apply` (administrator, `expected_sha`; the machine does not need to be off: the folder is never live). The old file is copied to `sys/workshop/legacy/<date>/` and read back before it goes, empty folders left in `examples/` go with it, and the run is recorded (`quarantined`). Nothing outside that folder can be touched; a stale copy the templates group still offers to create is not offered twice.
+- Service page: the two cards titled "Puesta en marcha" are ONE section (`dwc36/StartupSection.vue`) with one header, one total (steps pending + file changes pending, `dwc36/startup-total.js`) and one refresh button, and two named parts: "Pasos de cada complemento" and "Archivos de la tarjeta SD" (with the "Archivos por plugin" button). The two components keep their own logic and session handling (`embedded` prop).
+- Wizard: "Marcar todos" opens the diff of every item that can be applied and ticks it, "Quitar todas las marcas" clears marks and confirmations; safety files still need their own confirmation and the machine off (never ticked for the person) and blocked items stay unticked. A closed box says why, and the confirmation of a safety file offers a button that opens the change.
+
+## 2.33.4 -- 2026-11-10 (mode move also rewrites legacy single-byte macros)
+
+- Mode move: a file that is not UTF-8 but is single-byte text (Windows-1252 accents, as in the DWC macros `macros/mode/select*.g` written by old tools) was skipped in silence by the scan, so its references to the old mode paths stayed and the mode buttons would have called a file that no longer exists. It is now rewritten byte for byte (only the ASCII paths change). A file with a NUL byte (UTF-16 and the like) is still left alone.
+
+## 2.33.3 -- 2026-11-10 (stale staged templates no longer block the mode move)
+
+- Start-up plan: the old staged copies that an earlier release leaves under `sys/workshop/examples/` (written by DSF, never live) were counted as workshop-owned files with references to the old mode paths and blocked the whole mode move ("hay referencias que esta herramienta no puede cambiar"). That folder is no longer scanned.
+
+## 2.33.2 -- 2026-11-10 (start-up wizard spinner)
+
+- Service page (DWC 3.6), "Puesta en marcha": the plan stayed loading for ever when the session settled while the first read was in flight (the stale call dropped its result and nobody put the spinner out). A change of person now puts the spinner out and reads the plan again for the one who is there.
+
+## 2.33.1 -- 2026-11-10 (bed heaters, active risks, settings per process)
+
+- Machine bed heaters: `output.kind: "dc"` (the heater hangs straight from a bed or heater MOSFET of the board, `out0` 18 A, `out1`..`out3` 6 A): the `M950 H<n>` line carries no `Q` and no `workshop:` mark, like the extruder of the 3D printing page. Any other pin with `dc` (a fan output, a low-current output, `ioN.out`, an expansion board, an inverted pin) is refused with `pin_not_mosfet` on `output.pin` by the preview and by the plan (`dsf/machine_beds.py`, message in both languages); the relay kinds are unchanged. The client (WorkshopMachine `lib/bed-output.js`) already sends `dc` and knows that code.
+- Active risks: `riskActive` entries carry `until` (epoch milliseconds, whole) when the risk ends by itself: an explicit risk with its seconds, the no-limits jog with its timeout (`jog_move.free_until()`, the same clock as the jog's `remainingS`). `since` and `until` are the one source of the counter: every screen counts down to `until` and up from `since` without it; a change of the end is published again. Contract in `docs/api/README.md` ("Active risks").
+- Service page (DWC 3.6), one owner per setting: the automatic air with the laser (switch + delay after M5, `air.auto` / `air.delay`), the status lights (read only, link to Lights and status) and the bed zones on / off (`bedzones.get` / `bedzones.set`, the whole configuration with the rev it read; a conflict is said and the zones are read again) are set in the row of their process (`dwc36/ProcessSetting.vue`, rules in `dwc36/process-settings.js`), each with its "?" (what, why, without it, how), the control disabled for a role that may not (lock, ONE reason after a touch, the sign-in chip blinks when nobody is signed in) and a notice when a save fails; what a person saw is forgotten on sign-out / change of role. The card "Automations" keeps the global rules (shutdown when done, protected movement, live job) and, for what moved (air, lights, bed zones, camera relay), one summary line with the state of the row (the one colour map) and a link to the row; no second switch.
+
+## 2.33.0 -- 2026-11-10
+
+Temperature recipes per layer are RELATIVE to the G-code.
+
+- A recipe point holds DELTAS per zone over what the job file already asks (extruder: over the stagger of the zones; bed: over the M140/M190 S plus the zone offset). Limits (track max, heater max minus 10 C, bed zones max, minimum 30 C, step per layer, spread) stay ABSOLUTE on the resulting temperature. Recipes saved without `format: 2` are ignored on read and dropped on the next write; importing a pellet profile converts it to deltas
+- Preview with the whole file (`dsf/gcode_temps.py`, `layer_recipes_file.py`): what the file asks versus what the recipe sends, per layer, with conflicts marked
+- Live: the status says when the G-code overrides the recipe (`overridden`, `overridden_layer`) and the base in use (`base`); one Activity note per episode
+- Permissions: `layerrecipes.preview` read, `layerrecipes.set` and `arm` technician (role-gates table updated)
+
+## 2.32.1 -- 2026-11-09
+
+SD layout: the factory tree travels in the zip (decision G12) and the manifest knows the new templates.
+
+- `dsf/factory/<path>`: the bytes of every workshop-owned file of the manifest (45), listed in plugin.json `dsfFiles`, so `startup.integrity.restore` has the copy it restores from. `tools/gen_sd_manifest.py` lays it out from the plugin zips together with `dsf/sd_manifest.json` and the `dsfFiles` entries; `.gitattributes` keeps those files byte for byte
+- Release check: `tools/build_37.py check_release` (so `build_release.py --check` and both line builds) fails when the factory tree inside the zip is not the manifest's (missing copy, other sha, copy of a file the manifest does not own). Test: `dsf/test_factory_tree.py`
+- Manifest: 8 new templates of WorkshopControlBar 2.7.35 (airon, airoff, statusledon, statusledoff, statuslight_on, statuslight_off, setzero, capturezero); they were `expected-external`
+
+## 2.32.0 -- 2026-11-07
+
+SD layout: start-up wizard with the diff of every change before it is made, safe merge of the hook blocks into the native G-code files, move of the mode files to `sys/workshop/modes`, restore of workshop-owned files, retention of `zones/history`. Nothing is changed on the SD without the person accepting each item.
+
+- `startup.plan` (technician, writes nothing) and `startup.apply` (administrator, owner only): the page lists every change with its diff, the person accepts or skips each one; safety files ask for a separate confirmation and the machine off.
+- `startup.integrity.restore.preview` / `startup.integrity.restore` (administrator): restore of a workshop-owned file from the factory copy, never silent and never for files that run in pause, cancel, homing, laser guard or boot. The factory tree is not packaged yet, so a restore answers `factory_missing` until the build ships it.
+- Mode files move to `sys/workshop/modes/` and `modestate.g` to `sys/workshop/data/`; one source of truth for the paths (`dsf/mode_paths.py`).
+- `zones_history.py`: the newest copy of each zone is never deleted; at most 20 per zone and 90 days.
+- Phases 0 and 1:
+
+- Manifest of the SD files (`dsf/sd_manifest.json`, read and checked by `dsf/sd_manifest.py`): every file the workshop plugins ship, generate, expect or hook into, with its path, kind (workshop-owned, template, native-managed, generated, expected-external), factory sha256 and who uses it. It is built from the released plugin zips by `tools/gen_sd_manifest.py` (67 shipped files: 45 own, 22 templates). Nothing on the SD changes.
+- Read-only integrity report (`dsf/sd_integrity.py`, operation `startup.integrity`, technician): compares the SD with the manifest and tells which files are ok, edited, deleted, missing, generated with a wrong or old mark (the old `driver-stall.g` mark is reported as such, not touched) or unknown. It never writes, restores or deletes; a test proves it opens nothing for writing.
+- Report of the start-up per run: tables `install_runs` and `install_actions` (database schema 7, append only, 365 days kept) and the operations `startup.runs.list` and `startup.runs.get` (technician; the text of a diff only for an administrator, with network and password lines masked). Today the creation of the example files (`examples.create`) writes its run (who, which files were created or skipped and why, sha of the result); what the start-up does is exactly the same and a failure of the log never reaches the person.
+- `tools/sd_backup.sh`: backup of `sys/` and `macros/` with checksums for phase 0 of the plan. Delivered only; it has not been run on the machine.
+- The new modules are added to `dsfFiles` of plugin.json (the version is not changed). The permission golden fixture is untouched: the three new operations are added to the list of newer ones in its test.
+
+## 2.31.1 -- 2026-11-07 (service page, DWC 3.6)
+
+- People: one chip for the four roles (`dwc36/RoleChip.vue`, map in `dwc36/role-colors.js`, only the semantic colours of the design family: viewer no colour, operator blue, technician orange, administrator red). "Técnico" was a solid orange badge while the others were outlined chips with a dot: the map used a Vuetify palette name that escapes the family rule. The audit rows use the same chip.
+- Processes and automations: one map state -> colour (`STATE_COLORS` in `dwc36/processes-groups.js`) for the dot, the state tag and the "Right now" word of a row; the style sheet writes no state colour. A process whose loop says it is resting (the bed zones with the zones off) now says "Resting" in its "Right now" line instead of "Running" next to a gray dot. The internal id of a process is shown apart from its readable name. The texts the bed zones process publishes (`bed_zones_at_rest` and the rest of `bed_zones_intercept.py`) reach the page catalogs (`dsf/published_texts.py` lists the module): the page showed the key.
+- G-code bridge card: with users on and nobody signed in the body is the session cover with its cause (the sign-in is the chip of the bar), and the state chip says "Not signed in" instead of "..."; a state file that cannot be read three times in a row is said with its cause and a retry instead of "Reading status..." for ever; the chip says "Reading..." the first seconds and "No data" after that. Every message, result, form and armed button of the card is forgotten on sign-out / change of role; the forms are filled again for the person who signs in.
+- Session: the reason shown after a touch on a locked control of a process row, the refused mode changes and the last accepted pause / resume / restart are forgotten on sign-out / change of role.
+
+## 2.31.0 -- 2026-11-07
+
+- Temperature-by-layer recipes: a recipe holds an extruder track and / or a bed track that follow the same layer rule, with a kind (pellet or filament) and a material. Operations `layerrecipes.list/get/set/remove/import_pellet`; the pellet profiles can be copied as recipes (nothing is replaced).
+- Run: `layerrecipes.arm` / `disarm` / `status`. Armed for ONE job file, off by default and in memory; it sends only while the machine is processing, a pause holds, cancel / end / a refusal of the board disarm it and leave the temperatures as they are, it never switches a heater on or off, and the temperature never goes above the track cap, the heater maximum minus 10 C (and the bed-zones cap for the bed) or below 30 C. One planner for both tracks (`layer_recipes_plan.py`), the same rules as the pellet profiles.
+- `layerrecipes.preview`: read only; the real lines of the job file around every layer where a temperature would change and the exact codes the service would send.
+- `bedestimates.get/set`: the optional data of the bed power estimate and the insulation test live in the service (they were kept in the browser).
+- Fix: a pellet profile with no heaters and no temperatures made the check raise instead of answering with a validation error.
+
+## 2.30.6 -- 2026-11-07
+
+- G-code bridge card: a "Contract" button opens a read-only viewer of the contract between the bridge and the service: the channels, every key of the state file with its type and meaning, the key rules with their section of the contract, and a live comparison of what the bridge publishes now against the schema (contract version, format, bridge version, age of the file, keys present, missing, extra or of the wrong type). The data of the viewer is generated from the contract schemas and a test fails if it is out of date.
+- The contract documents (`bridge/CONTRACT.md`, `bridge/ARCHITECTURE.md`) now state the rule of this stage: a breaking change raises the schema, the service and the bridge are updated together, the service refuses to act on a format it does not know, and the installer refuses while a job runs. That an unknown format blocks the manual movement is decided but its code waits for a test with the machine present.
+
 ## 2.30.5 -- 2026-11-06
 
 - G-code bridge contract put to work. The Services page and four readers of the service (health poller, origin of the calls, the safe-stop operations, the bridge probe) now read the bridge state through ONE adapter (`dsf/bridge_contract.py`) and the page through the same rules in `dwc36/bridge-contract.js`; both pass the same 65 test vectors (`bridge/contract/vectors.json`), so they cannot drift. With a healthy bridge nothing changes. A stopped bridge no longer shows the programs it had when it died, and a bridge state of a format the service does not know is not acted on (the safe stop says the bridge is too old; the page warns). The bridge card shows which contract version the bridge declares ("old" until the bridge is installed again).

@@ -127,7 +127,7 @@ def validate_profile(raw):
                 errors.append(_err(field + ".at", "pellet_layers_err_point_order"))
             last = at
             temps = p.get("temps")
-            if not isinstance(temps, list) or (heaters is not None and len(temps) != len(heaters)):
+            if not isinstance(temps, list) or not temps or (heaters is not None and len(temps) != len(heaters)):  # an empty list is no temperatures (max() of it would crash the check)
                 errors.append(_err(field + ".temps", "pellet_layers_err_point_temps"))
                 continue
             cap = max_temp if max_temp is not None else HARD_MAX_TEMP

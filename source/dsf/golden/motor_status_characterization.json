@@ -1,0 +1,6420 @@
+{
+ "chip_of_board": [
+  null,
+  "tmc51xx",
+  "tmc22xx",
+  null,
+  null,
+  "tmc51xx",
+  "tmc22xx",
+  null,
+  "tmc51xx",
+  "tmc51xx",
+  "tmc22xx",
+  "tmc51xx",
+  "tmc22xx",
+  "tmc51xx",
+  "tmc22xx",
+  "tmc22xx",
+  null,
+  "tmc51xx",
+  "tmc22xx",
+  null,
+  null,
+  "tmc51xx",
+  "tmc22xx",
+  null
+ ],
+ "cs_ma": [
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  84.375,
+  null,
+  null,
+  null,
+  null,
+  null,
+  158.8235294117647,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  1350.0,
+  null,
+  null,
+  null,
+  null,
+  null,
+  2541.176470588235,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  null,
+  2700.0,
+  null,
+  null,
+  null,
+  null,
+  null,
+  5082.35294117647
+ ],
+ "dc42": [
+  null,
+  null,
+  {
+   "a_motor_length_khz": 83,
+   "three_motors_length_khz": 70,
+   "three_motors_short_khz": 41,
+   "timing": "fast"
+  },
+  {
+   "a_motor_length_khz": 83,
+   "three_motors_length_khz": 70,
+   "three_motors_short_khz": 41,
+   "timing": "fast"
+  },
+  {
+   "a_motor_length_khz": 55,
+   "three_motors_length_khz": 51,
+   "three_motors_short_khz": 44,
+   "timing": "1"
+  },
+  {
+   "a_motor_length_khz": 48,
+   "three_motors_length_khz": 48,
+   "three_motors_short_khz": 40,
+   "timing": "2.5"
+  },
+  {
+   "a_motor_length_khz": 48,
+   "three_motors_length_khz": 48,
+   "three_motors_short_khz": 40,
+   "timing": "2.5"
+  },
+  {
+   "a_motor_length_khz": 40,
+   "three_motors_length_khz": 40,
+   "three_motors_short_khz": 36,
+   "timing": "5"
+  },
+  {
+   "a_motor_length_khz": 30,
+   "three_motors_length_khz": 30,
+   "three_motors_short_khz": 27,
+   "timing": "10"
+  },
+  null,
+  null
+ ],
+ "decode": {
+  "None|0x0": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 0,
+   "raw_hex": "0x00000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "None|0x10000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 65536,
+   "raw_hex": "0x00010000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "None|0x1f0000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 2031616,
+   "raw_hex": "0x001F0000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "None|0x3ff": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 1023,
+   "raw_hex": "0x000003FF",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "None|0x6000000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 100663296,
+   "raw_hex": "0x06000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "None|0x60000000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 1610612736,
+   "raw_hex": "0x60000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "None|0x80000000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 2147483648,
+   "raw_hex": "0x80000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "None|0x80000001": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 2147483649,
+   "raw_hex": "0x80000001",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "None|0xc115002b": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 3239378987,
+   "raw_hex": "0xC115002B",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "None|0xffffffff": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 4294967295,
+   "raw_hex": "0xFFFFFFFF",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "None|None": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": null,
+   "raw_hex": null,
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|0x0": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 0,
+   "raw_hex": "0x00000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|0x10000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 65536,
+   "raw_hex": "0x00010000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|0x1f0000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 2031616,
+   "raw_hex": "0x001F0000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|0x3ff": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 1023,
+   "raw_hex": "0x000003FF",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|0x6000000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 100663296,
+   "raw_hex": "0x06000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|0x60000000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 1610612736,
+   "raw_hex": "0x60000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|0x80000000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 2147483648,
+   "raw_hex": "0x80000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|0x80000001": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 2147483649,
+   "raw_hex": "0x80000001",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|0xc115002b": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 3239378987,
+   "raw_hex": "0xC115002B",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|0xffffffff": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": 4294967295,
+   "raw_hex": "0xFFFFFFFF",
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "bogus|None": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": null,
+   "raw_hex": null,
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "rrf|0x0": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": "rrf",
+   "ol_discarded": false,
+   "raw": 0,
+   "raw_hex": "0x00000000",
+   "sg_result": 0,
+   "stall": false,
+   "standstill": false,
+   "stealth": null
+  },
+  "rrf|0x10000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": "rrf",
+   "ol_discarded": false,
+   "raw": 65536,
+   "raw_hex": "0x00010000",
+   "sg_result": null,
+   "stall": false,
+   "standstill": true,
+   "stealth": null
+  },
+  "rrf|0x1f0000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": "rrf",
+   "ol_discarded": false,
+   "raw": 2031616,
+   "raw_hex": "0x001F0000",
+   "sg_result": null,
+   "stall": false,
+   "standstill": true,
+   "stealth": null
+  },
+  "rrf|0x3ff": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [
+    {
+     "key": "otpw",
+     "label": {
+      "msg": {
+       "key": "motor_status_temperature_warning",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "ot",
+     "label": {
+      "msg": {
+       "key": "motor_status_overtemperature_shut_down",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2ga",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_a",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2gb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsa",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "ola",
+     "label": {
+      "msg": {
+       "key": "motor_status_possible_open_coil_phase_a",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "olb",
+     "label": {
+      "msg": {
+       "key": "motor_status_possible_open_coil_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "ext",
+     "label": {
+      "msg": {
+       "key": "motor_status_external_driver_error",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    }
+   ],
+   "format": "rrf",
+   "ol_discarded": false,
+   "raw": 1023,
+   "raw_hex": "0x000003FF",
+   "sg_result": 0,
+   "stall": true,
+   "standstill": false,
+   "stealth": null
+  },
+  "rrf|0x6000000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": "rrf",
+   "ol_discarded": false,
+   "raw": 100663296,
+   "raw_hex": "0x06000000",
+   "sg_result": 24,
+   "stall": false,
+   "standstill": false,
+   "stealth": null
+  },
+  "rrf|0x60000000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": "rrf",
+   "ol_discarded": false,
+   "raw": 1610612736,
+   "raw_hex": "0x60000000",
+   "sg_result": 384,
+   "stall": false,
+   "standstill": false,
+   "stealth": null
+  },
+  "rrf|0x80000000": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": "rrf",
+   "ol_discarded": false,
+   "raw": 2147483648,
+   "raw_hex": "0x80000000",
+   "sg_result": 512,
+   "stall": false,
+   "standstill": false,
+   "stealth": null
+  },
+  "rrf|0x80000001": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [
+    {
+     "key": "otpw",
+     "label": {
+      "msg": {
+       "key": "motor_status_temperature_warning",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    }
+   ],
+   "format": "rrf",
+   "ol_discarded": false,
+   "raw": 2147483649,
+   "raw_hex": "0x80000001",
+   "sg_result": 512,
+   "stall": false,
+   "standstill": false,
+   "stealth": null
+  },
+  "rrf|0xc115002b": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [
+    {
+     "key": "otpw",
+     "label": {
+      "msg": {
+       "key": "motor_status_temperature_warning",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "ot",
+     "label": {
+      "msg": {
+       "key": "motor_status_overtemperature_shut_down",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2gb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    }
+   ],
+   "format": "rrf",
+   "ol_discarded": false,
+   "raw": 3239378987,
+   "raw_hex": "0xC115002B",
+   "sg_result": null,
+   "stall": false,
+   "standstill": true,
+   "stealth": null
+  },
+  "rrf|0xffffffff": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [
+    {
+     "key": "otpw",
+     "label": {
+      "msg": {
+       "key": "motor_status_temperature_warning",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "ot",
+     "label": {
+      "msg": {
+       "key": "motor_status_overtemperature_shut_down",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2ga",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_a",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2gb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsa",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "ola",
+     "label": {
+      "msg": {
+       "key": "motor_status_possible_open_coil_phase_a",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "olb",
+     "label": {
+      "msg": {
+       "key": "motor_status_possible_open_coil_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "ext",
+     "label": {
+      "msg": {
+       "key": "motor_status_external_driver_error",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "pos_tol",
+     "label": {
+      "msg": {
+       "key": "motor_status_outside_position_tolerance",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "pos_lost",
+     "label": {
+      "msg": {
+       "key": "motor_status_does_not_hold_position",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "setting_error",
+     "label": {
+      "msg": {
+       "key": "motor_status_closed_loop_tuning_failed",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "mov_ilegal",
+     "label": {
+      "msg": {
+       "key": "motor_status_move_without_closed_loop_tuned",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    }
+   ],
+   "format": "rrf",
+   "ol_discarded": false,
+   "raw": 4294967295,
+   "raw_hex": "0xFFFFFFFF",
+   "sg_result": null,
+   "stall": true,
+   "standstill": true,
+   "stealth": null
+  },
+  "rrf|None": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": null,
+   "raw_hex": null,
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "tmc22xx|0x0": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc22xx",
+   "ol_discarded": false,
+   "raw": 0,
+   "raw_hex": "0x00000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc22xx|0x10000": {
+   "cs_current": 1,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc22xx",
+   "ol_discarded": false,
+   "raw": 65536,
+   "raw_hex": "0x00010000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc22xx|0x1f0000": {
+   "cs_current": 31,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc22xx",
+   "ol_discarded": false,
+   "raw": 2031616,
+   "raw_hex": "0x001F0000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc22xx|0x3ff": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [
+    {
+     "key": "otpw",
+     "label": {
+      "msg": {
+       "key": "motor_status_temperature_warning",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "ot",
+     "label": {
+      "msg": {
+       "key": "motor_status_overtemperature_shut_down",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2ga",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_a",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2gb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsa",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "ola",
+     "label": {
+      "msg": {
+       "key": "motor_status_possible_open_coil_phase_a",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "olb",
+     "label": {
+      "msg": {
+       "key": "motor_status_possible_open_coil_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    }
+   ],
+   "format": "tmc22xx",
+   "ol_discarded": false,
+   "raw": 1023,
+   "raw_hex": "0x000003FF",
+   "sg_result": null,
+   "stall": null,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc22xx|0x6000000": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc22xx",
+   "ol_discarded": false,
+   "raw": 100663296,
+   "raw_hex": "0x06000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc22xx|0x60000000": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc22xx",
+   "ol_discarded": false,
+   "raw": 1610612736,
+   "raw_hex": "0x60000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": false,
+   "stealth": true
+  },
+  "tmc22xx|0x80000000": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc22xx",
+   "ol_discarded": false,
+   "raw": 2147483648,
+   "raw_hex": "0x80000000",
+   "sg_result": null,
+   "stall": null,
+   "standstill": true,
+   "stealth": false
+  },
+  "tmc22xx|0x80000001": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [
+    {
+     "key": "otpw",
+     "label": {
+      "msg": {
+       "key": "motor_status_temperature_warning",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    }
+   ],
+   "format": "tmc22xx",
+   "ol_discarded": false,
+   "raw": 2147483649,
+   "raw_hex": "0x80000001",
+   "sg_result": null,
+   "stall": null,
+   "standstill": true,
+   "stealth": false
+  },
+  "tmc22xx|0xc115002b": {
+   "cs_current": 21,
+   "cs_current_max": 31,
+   "flags": [
+    {
+     "key": "otpw",
+     "label": {
+      "msg": {
+       "key": "motor_status_temperature_warning",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "ot",
+     "label": {
+      "msg": {
+       "key": "motor_status_overtemperature_shut_down",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2gb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    }
+   ],
+   "format": "tmc22xx",
+   "ol_discarded": false,
+   "raw": 3239378987,
+   "raw_hex": "0xC115002B",
+   "sg_result": null,
+   "stall": null,
+   "standstill": true,
+   "stealth": true
+  },
+  "tmc22xx|0xffffffff": {
+   "cs_current": 31,
+   "cs_current_max": 31,
+   "flags": [
+    {
+     "key": "otpw",
+     "label": {
+      "msg": {
+       "key": "motor_status_temperature_warning",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "ot",
+     "label": {
+      "msg": {
+       "key": "motor_status_overtemperature_shut_down",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2ga",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_a",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2gb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsa",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    }
+   ],
+   "format": "tmc22xx",
+   "ol_discarded": true,
+   "raw": 4294967295,
+   "raw_hex": "0xFFFFFFFF",
+   "sg_result": null,
+   "stall": null,
+   "standstill": true,
+   "stealth": true
+  },
+  "tmc22xx|None": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": null,
+   "raw_hex": null,
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  },
+  "tmc51xx|0x0": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc51xx",
+   "ol_discarded": false,
+   "raw": 0,
+   "raw_hex": "0x00000000",
+   "sg_result": 0,
+   "stall": false,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc51xx|0x10000": {
+   "cs_current": 1,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc51xx",
+   "ol_discarded": false,
+   "raw": 65536,
+   "raw_hex": "0x00010000",
+   "sg_result": 0,
+   "stall": false,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc51xx|0x1f0000": {
+   "cs_current": 31,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc51xx",
+   "ol_discarded": false,
+   "raw": 2031616,
+   "raw_hex": "0x001F0000",
+   "sg_result": 0,
+   "stall": false,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc51xx|0x3ff": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc51xx",
+   "ol_discarded": false,
+   "raw": 1023,
+   "raw_hex": "0x000003FF",
+   "sg_result": 1023,
+   "stall": false,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc51xx|0x6000000": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [
+    {
+     "key": "otpw",
+     "label": {
+      "msg": {
+       "key": "motor_status_temperature_warning",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "ot",
+     "label": {
+      "msg": {
+       "key": "motor_status_overtemperature_shut_down",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    }
+   ],
+   "format": "tmc51xx",
+   "ol_discarded": false,
+   "raw": 100663296,
+   "raw_hex": "0x06000000",
+   "sg_result": 0,
+   "stall": false,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc51xx|0x60000000": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [
+    {
+     "key": "ola",
+     "label": {
+      "msg": {
+       "key": "motor_status_possible_open_coil_phase_a",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "olb",
+     "label": {
+      "msg": {
+       "key": "motor_status_possible_open_coil_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    }
+   ],
+   "format": "tmc51xx",
+   "ol_discarded": false,
+   "raw": 1610612736,
+   "raw_hex": "0x60000000",
+   "sg_result": 0,
+   "stall": false,
+   "standstill": false,
+   "stealth": false
+  },
+  "tmc51xx|0x80000000": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc51xx",
+   "ol_discarded": false,
+   "raw": 2147483648,
+   "raw_hex": "0x80000000",
+   "sg_result": null,
+   "stall": false,
+   "standstill": true,
+   "stealth": false
+  },
+  "tmc51xx|0x80000001": {
+   "cs_current": 0,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc51xx",
+   "ol_discarded": false,
+   "raw": 2147483649,
+   "raw_hex": "0x80000001",
+   "sg_result": null,
+   "stall": false,
+   "standstill": true,
+   "stealth": false
+  },
+  "tmc51xx|0xc115002b": {
+   "cs_current": 21,
+   "cs_current_max": 31,
+   "flags": [],
+   "format": "tmc51xx",
+   "ol_discarded": true,
+   "raw": 3239378987,
+   "raw_hex": "0xC115002B",
+   "sg_result": null,
+   "stall": true,
+   "standstill": true,
+   "stealth": false
+  },
+  "tmc51xx|0xffffffff": {
+   "cs_current": 31,
+   "cs_current_max": 31,
+   "flags": [
+    {
+     "key": "otpw",
+     "label": {
+      "msg": {
+       "key": "motor_status_temperature_warning",
+       "params": {}
+      }
+     },
+     "severity": "warning"
+    },
+    {
+     "key": "ot",
+     "label": {
+      "msg": {
+       "key": "motor_status_overtemperature_shut_down",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2ga",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_a",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2gb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_to_ground_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsa",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    },
+    {
+     "key": "s2vsb",
+     "label": {
+      "msg": {
+       "key": "motor_status_short_supply_phase_b",
+       "params": {}
+      }
+     },
+     "severity": "error"
+    }
+   ],
+   "format": "tmc51xx",
+   "ol_discarded": true,
+   "raw": 4294967295,
+   "raw_hex": "0xFFFFFFFF",
+   "sg_result": null,
+   "stall": true,
+   "standstill": true,
+   "stealth": true
+  },
+  "tmc51xx|None": {
+   "cs_current": null,
+   "cs_current_max": null,
+   "flags": [],
+   "format": null,
+   "ol_discarded": false,
+   "raw": null,
+   "raw_hex": null,
+   "sg_result": null,
+   "stall": null,
+   "standstill": null,
+   "stealth": null
+  }
+ },
+ "decode_default_fmt": {
+  "cs_current": null,
+  "cs_current_max": null,
+  "flags": [
+   {
+    "key": "otpw",
+    "label": {
+     "msg": {
+      "key": "motor_status_temperature_warning",
+      "params": {}
+     }
+    },
+    "severity": "warning"
+   },
+   {
+    "key": "ot",
+    "label": {
+     "msg": {
+      "key": "motor_status_overtemperature_shut_down",
+      "params": {}
+     }
+    },
+    "severity": "error"
+   }
+  ],
+  "format": "rrf",
+  "ol_discarded": false,
+  "raw": 65539,
+  "raw_hex": "0x00010003",
+  "sg_result": null,
+  "stall": false,
+  "standstill": true,
+  "stealth": null
+ },
+ "enabled": [
+  null,
+  null,
+  false,
+  true,
+  false,
+  false,
+  true
+ ],
+ "entry": [
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 4000.0,
+   "current_ma": 1800,
+   "current_rpm": 75.0,
+   "current_speed_mm_min": 3000.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 50.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "motion_current",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "without_datum",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 4000.0,
+   "current_ma": 1800,
+   "current_rpm": 75.0,
+   "current_speed_mm_min": 3000.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 50.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "motion_current",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "without_datum",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 4000.0,
+   "current_ma": 1800,
+   "current_rpm": 75.0,
+   "current_speed_mm_min": 3000.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 50.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "motion_current",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 4000.0,
+   "current_ma": 1800,
+   "current_rpm": 75.0,
+   "current_speed_mm_min": 3000.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 50.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "motion_current",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 4000.0,
+   "current_ma": 1800,
+   "current_rpm": 75.0,
+   "current_speed_mm_min": 3000.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 50.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "motion_current",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 4000.0,
+   "current_ma": 1800,
+   "current_rpm": 75.0,
+   "current_speed_mm_min": 3000.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 50.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "motion_current",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "without_datum",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "without_datum",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 40.0,
+   "current_ma": 1800,
+   "current_rpm": 0.75,
+   "current_speed_mm_min": 30.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.5,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "position",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "without_datum",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "without_datum",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "without_datum",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 40.0,
+   "current_ma": 1800,
+   "current_rpm": 0.75,
+   "current_speed_mm_min": 30.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.5,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "position",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 40.0,
+   "current_ma": 1800,
+   "current_rpm": 0.75,
+   "current_speed_mm_min": 30.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.5,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "position",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  },
+  {
+   "acceleration": 1000,
+   "current_freq_hz": 0.0,
+   "current_ma": 1800,
+   "current_rpm": 0.0,
+   "current_speed_mm_min": 0.0,
+   "drivers": [
+    {
+     "cs_current": 21,
+     "cs_current_ma": 1237.5,
+     "cs_current_max": 31,
+     "flags": [],
+     "format": "tmc51xx",
+     "gstat": {
+      "raw": 1
+     },
+     "gstat_supported": true,
+     "id": "0.0",
+     "in_standstill": true,
+     "m122": {
+      "state": "standstill"
+     },
+     "m569": {
+      "irun": 31
+     },
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "cs_current_ma": null,
+     "gstat": null,
+     "gstat_supported": false,
+     "id": "1.2",
+     "in_standstill": false,
+     "m122": null,
+     "m569": null
+    }
+   ],
+   "full_steps_per_rev": 200,
+   "label": "X",
+   "level": "ok",
+   "max_freq_hz": 8000.0,
+   "max_rpm": 150.0,
+   "max_speed_mm_min": 6000,
+   "microstepping": 16,
+   "pct_of_max": 0.0,
+   "percent_current": 100,
+   "percent_stst_current": 30,
+   "speed_source": "still",
+   "steps_per_mm": 80
+  }
+ ],
+ "entry_none": [
+  null,
+  null
+ ],
+ "inventory": [
+  {
+   "can_address": 0,
+   "drivers": [
+    {
+     "assigned_to": "X",
+     "cs_current": 21,
+     "cs_current_max": 31,
+     "enabled": null,
+     "flags": [],
+     "format": "tmc51xx",
+     "id": "0.0",
+     "in_idle_live": true,
+     "ol_discarded": true,
+     "raw": 3239378987,
+     "raw_hex": "0xC115002B",
+     "sg_result": null,
+     "stall": true,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "assigned_to": "Y",
+     "cs_current": 0,
+     "cs_current_max": 31,
+     "enabled": null,
+     "flags": [],
+     "format": "tmc51xx",
+     "id": "0.1",
+     "in_idle_live": true,
+     "ol_discarded": false,
+     "raw": 1,
+     "raw_hex": "0x00000001",
+     "sg_result": 1,
+     "stall": false,
+     "standstill": false,
+     "stealth": false
+    },
+    {
+     "assigned_to": "Z",
+     "cs_current": 0,
+     "cs_current_max": 31,
+     "enabled": null,
+     "flags": [],
+     "format": "tmc51xx",
+     "id": "0.2",
+     "in_idle_live": false,
+     "ol_discarded": false,
+     "raw": 2147483648,
+     "raw_hex": "0x80000000",
+     "sg_result": null,
+     "stall": false,
+     "standstill": true,
+     "stealth": false
+    },
+    {
+     "assigned_to": "E0",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [],
+     "format": "rrf",
+     "id": "0.3",
+     "in_idle_live": false,
+     "ol_discarded": false,
+     "raw": 0,
+     "raw_hex": "0x00000000",
+     "sg_result": 0,
+     "stall": false,
+     "standstill": false,
+     "stealth": null
+    },
+    {
+     "assigned_to": "V",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [],
+     "format": "rrf",
+     "id": "0.4",
+     "in_idle_live": true,
+     "ol_discarded": false,
+     "raw": 65536,
+     "raw_hex": "0x00010000",
+     "sg_result": null,
+     "stall": false,
+     "standstill": true,
+     "stealth": null
+    },
+    {
+     "assigned_to": null,
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [],
+     "format": null,
+     "id": "0.5",
+     "in_idle_live": null,
+     "ol_discarded": false,
+     "raw": null,
+     "raw_hex": null,
+     "sg_result": null,
+     "stall": null,
+     "standstill": null,
+     "stealth": null
+    }
+   ],
+   "is_local": true,
+   "name": "Duet 3 MB6HC",
+   "short_name": "MB6HC"
+  },
+  {
+   "can_address": 1,
+   "drivers": [
+    {
+     "assigned_to": "Y",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [],
+     "format": "rrf",
+     "id": "1.0",
+     "in_idle_live": null,
+     "ol_discarded": false,
+     "raw": 65536,
+     "raw_hex": "0x00010000",
+     "sg_result": null,
+     "stall": false,
+     "standstill": true,
+     "stealth": null
+    },
+    {
+     "assigned_to": null,
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [
+      {
+       "key": "ot",
+       "label": {
+        "msg": {
+         "key": "motor_status_overtemperature_shut_down",
+         "params": {}
+        }
+       },
+       "severity": "error"
+      }
+     ],
+     "format": "rrf",
+     "id": "1.1",
+     "in_idle_live": null,
+     "ol_discarded": false,
+     "raw": 2,
+     "raw_hex": "0x00000002",
+     "sg_result": 0,
+     "stall": false,
+     "standstill": false,
+     "stealth": null
+    }
+   ],
+   "is_local": false,
+   "name": "EXP3HC",
+   "short_name": "EXP3HC"
+  },
+  {
+   "can_address": 2,
+   "drivers": [
+    {
+     "assigned_to": "U",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [
+      {
+       "key": "otpw",
+       "label": {
+        "msg": {
+         "key": "motor_status_temperature_warning",
+         "params": {}
+        }
+       },
+       "severity": "warning"
+      },
+      {
+       "key": "s2ga",
+       "label": {
+        "msg": {
+         "key": "motor_status_short_to_ground_phase_a",
+         "params": {}
+        }
+       },
+       "severity": "error"
+      }
+     ],
+     "format": "rrf",
+     "id": "2.0",
+     "in_idle_live": null,
+     "ol_discarded": false,
+     "raw": 5,
+     "raw_hex": "0x00000005",
+     "sg_result": 0,
+     "stall": false,
+     "standstill": false,
+     "stealth": null
+    }
+   ],
+   "is_local": false,
+   "name": "Unknown",
+   "short_name": "XYZ"
+  }
+ ],
+ "inventory_plain": [
+  {
+   "can_address": 0,
+   "drivers": [
+    {
+     "assigned_to": "X",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [],
+     "format": "rrf",
+     "id": "0.0",
+     "in_idle_live": true,
+     "ol_discarded": false,
+     "raw": 65536,
+     "raw_hex": "0x00010000",
+     "sg_result": null,
+     "stall": false,
+     "standstill": true,
+     "stealth": null
+    },
+    {
+     "assigned_to": "Y",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [
+      {
+       "key": "otpw",
+       "label": {
+        "msg": {
+         "key": "motor_status_temperature_warning",
+         "params": {}
+        }
+       },
+       "severity": "warning"
+      },
+      {
+       "key": "ot",
+       "label": {
+        "msg": {
+         "key": "motor_status_overtemperature_shut_down",
+         "params": {}
+        }
+       },
+       "severity": "error"
+      }
+     ],
+     "format": "rrf",
+     "id": "0.1",
+     "in_idle_live": true,
+     "ol_discarded": false,
+     "raw": 65539,
+     "raw_hex": "0x00010003",
+     "sg_result": null,
+     "stall": false,
+     "standstill": true,
+     "stealth": null
+    },
+    {
+     "assigned_to": "Z",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [
+      {
+       "key": "ola",
+       "label": {
+        "msg": {
+         "key": "motor_status_possible_open_coil_phase_a",
+         "params": {}
+        }
+       },
+       "severity": "warning"
+      }
+     ],
+     "format": "rrf",
+     "id": "0.2",
+     "in_idle_live": false,
+     "ol_discarded": false,
+     "raw": 64,
+     "raw_hex": "0x00000040",
+     "sg_result": 0,
+     "stall": false,
+     "standstill": false,
+     "stealth": null
+    },
+    {
+     "assigned_to": "E0",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [],
+     "format": "rrf",
+     "id": "0.3",
+     "in_idle_live": false,
+     "ol_discarded": false,
+     "raw": 0,
+     "raw_hex": "0x00000000",
+     "sg_result": 0,
+     "stall": false,
+     "standstill": false,
+     "stealth": null
+    },
+    {
+     "assigned_to": "V",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [],
+     "format": "rrf",
+     "id": "0.4",
+     "in_idle_live": true,
+     "ol_discarded": false,
+     "raw": 65536,
+     "raw_hex": "0x00010000",
+     "sg_result": null,
+     "stall": false,
+     "standstill": true,
+     "stealth": null
+    },
+    {
+     "assigned_to": null,
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [],
+     "format": null,
+     "id": "0.5",
+     "in_idle_live": null,
+     "ol_discarded": false,
+     "raw": null,
+     "raw_hex": null,
+     "sg_result": null,
+     "stall": null,
+     "standstill": null,
+     "stealth": null
+    }
+   ],
+   "is_local": true,
+   "name": "Duet 3 MB6HC",
+   "short_name": "MB6HC"
+  },
+  {
+   "can_address": 1,
+   "drivers": [
+    {
+     "assigned_to": "Y",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [],
+     "format": "rrf",
+     "id": "1.0",
+     "in_idle_live": null,
+     "ol_discarded": false,
+     "raw": 65536,
+     "raw_hex": "0x00010000",
+     "sg_result": null,
+     "stall": false,
+     "standstill": true,
+     "stealth": null
+    },
+    {
+     "assigned_to": null,
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [
+      {
+       "key": "ot",
+       "label": {
+        "msg": {
+         "key": "motor_status_overtemperature_shut_down",
+         "params": {}
+        }
+       },
+       "severity": "error"
+      }
+     ],
+     "format": "rrf",
+     "id": "1.1",
+     "in_idle_live": null,
+     "ol_discarded": false,
+     "raw": 2,
+     "raw_hex": "0x00000002",
+     "sg_result": 0,
+     "stall": false,
+     "standstill": false,
+     "stealth": null
+    }
+   ],
+   "is_local": false,
+   "name": "EXP3HC",
+   "short_name": "EXP3HC"
+  },
+  {
+   "can_address": 2,
+   "drivers": [
+    {
+     "assigned_to": "U",
+     "cs_current": null,
+     "cs_current_max": null,
+     "enabled": null,
+     "flags": [
+      {
+       "key": "otpw",
+       "label": {
+        "msg": {
+         "key": "motor_status_temperature_warning",
+         "params": {}
+        }
+       },
+       "severity": "warning"
+      },
+      {
+       "key": "s2ga",
+       "label": {
+        "msg": {
+         "key": "motor_status_short_to_ground_phase_a",
+         "params": {}
+        }
+       },
+       "severity": "error"
+      }
+     ],
+     "format": "rrf",
+     "id": "2.0",
+     "in_idle_live": null,
+     "ol_discarded": false,
+     "raw": 5,
+     "raw_hex": "0x00000005",
+     "sg_result": 0,
+     "stall": false,
+     "standstill": false,
+     "stealth": null
+    }
+   ],
+   "is_local": false,
+   "name": "Unknown",
+   "short_name": "XYZ"
+  }
+ ],
+ "local": {
+  "board_local": [
+   {
+    "canAddress": 0,
+    "drivers": [
+     {
+      "status": 65536
+     },
+     {
+      "status": 65539
+     },
+     {
+      "status": 64
+     },
+     {
+      "status": 0
+     },
+     {
+      "status": 65536
+     },
+     {}
+    ],
+    "name": "Duet 3 MB6HC",
+    "shortName": "MB6HC",
+    "vIn": {
+     "current": 24.0
+    }
+   },
+   null,
+   null,
+   null
+  ],
+  "indices": [
+   0,
+   1,
+   2,
+   3,
+   4
+  ],
+  "indices_empty": [
+   [],
+   []
+  ],
+  "no_power": [
+   false,
+   true,
+   false,
+   true,
+   false,
+   false
+  ]
+ },
+ "m122_empty": [
+  null,
+  null,
+  null,
+  {},
+  {},
+  {}
+ ],
+ "m122_real": {
+  "capacity": {
+   "hiccups_ring0": 0,
+   "hiccups_ring1": 0,
+   "loop_hz_max": 2083,
+   "loop_hz_min": 0,
+   "loop_us_max": 17,
+   "loop_us_min": 0,
+   "max_steps_late": 0
+  },
+  "drivers": {
+   "0": {
+    "mspos": 8,
+    "sg_min": 0,
+    "state": "standstill",
+    "timeouts": 0
+   },
+   "1": {
+    "mspos": 8,
+    "sg_min": 0,
+    "state": "standstill",
+    "timeouts": 0
+   },
+   "2": {
+    "mspos": 8,
+    "sg_min": 0,
+    "state": "standstill",
+    "timeouts": 0
+   },
+   "3": {
+    "mspos": 8,
+    "sg_min": 0,
+    "state": "standstill",
+    "timeouts": 0
+   },
+   "4": {
+    "mspos": 8,
+    "sg_min": 0,
+    "state": "standstill",
+    "timeouts": 0
+   },
+   "5": {
+    "mspos": 8,
+    "sg_min": 0,
+    "state": "standstill",
+    "timeouts": 0
+   }
+  }
+ },
+ "m122_synth": {
+  "capacity": {
+   "hiccups_ring0": 3,
+   "hiccups_ring1": 4,
+   "loop_hz_max": 2054,
+   "loop_hz_min": 1937,
+   "loop_us_max": 2,
+   "loop_us_min": 0,
+   "max_steps_late": 5
+  },
+  "drivers": {
+   "0": {
+    "mspos": 312,
+    "sg_min": 0,
+    "state": "standstill",
+    "timeouts": 0
+   },
+   "1": {
+    "mspos": 7,
+    "sg_min": null,
+    "state": "stall",
+    "timeouts": 3
+   },
+   "2": {
+    "mspos": 1,
+    "sg_min": -12,
+    "state": "-",
+    "timeouts": 1
+   }
+  }
+ },
+ "motion": {
+  "in_motion": [
+   [
+    false,
+    "standstill"
+   ],
+   [
+    true,
+    "standstill"
+   ],
+   [
+    null,
+    null
+   ],
+   [
+    true,
+    "position"
+   ],
+   [
+    false,
+    "position"
+   ],
+   [
+    null,
+    null
+   ]
+  ],
+  "kin": [
+   {
+    "msg": {
+     "key": "motor_status_each_motor_independent_straight_cut",
+     "params": {}
+    }
+   },
+   {
+    "msg": {
+     "key": "motor_status_coupled_any_movement_x_y_moves",
+     "params": {}
+    }
+   },
+   {
+    "msg": {
+     "key": "motor_status_coupled_like_corexy_between_x_z",
+     "params": {}
+    }
+   },
+   {
+    "msg": {
+     "key": "motor_status_coupled_any_xyz_move_moves_3_towers",
+     "params": {}
+    }
+   },
+   {
+    "msg": {
+     "key": "motor_status_coupled_like_linear_delta_3_motors",
+     "params": {}
+    }
+   },
+   {
+    "msg": {
+     "key": "motor_status_kinematics_not_recognized_by_plugin",
+     "params": {}
+    }
+   },
+   {
+    "msg": {
+     "key": "motor_status_kinematics_not_recognized_by_plugin",
+     "params": {}
+    }
+   }
+  ],
+  "speed": [
+   null,
+   null,
+   null,
+   5.0,
+   7.0
+  ],
+  "spr": [
+   400,
+   200
+  ]
+ },
+ "names": [
+  "CHIP_BY_BOARD",
+  "CHOPCONF_REGISTER",
+  "CHOPCONF_TOFF_MASK",
+  "DC42_MB6HC_RRF32_KHZ",
+  "DRIVER_FAULTS",
+  "DRIVER_STATUS_BITS",
+  "DRV_STATUS_MAPS",
+  "DRV_STATUS_REGISTER",
+  "GSTAT_REGISTER",
+  "M",
+  "THRESHOLD_ALERT_PCT",
+  "THRESHOLD_LIMIT_PCT",
+  "THRESHOLD_OFFSET_MM",
+  "VIN_MIN_DRIVERS_V",
+  "_KINEMATICS_SHARING_NOTES",
+  "_M122_DRIVER_RE",
+  "_M122_HICCUPS_RE",
+  "_M122_PHASE_LOOP_RE",
+  "_M569_2_READ_RE",
+  "_M569_RE",
+  "_aggregate_board_motion",
+  "_axis_deltas_from_positions",
+  "_driver_lookup",
+  "_level",
+  "_motor_entry",
+  "_prev_axis_pos",
+  "_standstill_reliable",
+  "_timing_key",
+  "axis_in_motion",
+  "board_inventory",
+  "board_local",
+  "chip_of_board",
+  "compute_motor_report",
+  "dc42_reference",
+  "decode_driver_status",
+  "drivers_without_power_supply",
+  "enabled_of_chopconf",
+  "estimate_cs_current_ma",
+  "fetch_status",
+  "json",
+  "kinematics_sharing_note",
+  "local_driver_indices",
+  "parse_m122_board_capacity",
+  "parse_m122_drivers",
+  "re",
+  "read_chopconf_raw",
+  "read_drv_status_raw",
+  "read_gstat",
+  "read_m569",
+  "real_mode",
+  "speed_motion_current",
+  "steps_per_rev_resolver",
+  "time"
+ ],
+ "reads": {
+  "read_chopconf_raw|bad": {
+   "result": null,
+   "sent": [
+    "M569.2 P3 R108"
+   ]
+  },
+  "read_chopconf_raw|none": {
+   "result": null,
+   "sent": [
+    "M569.2 P3 R108"
+   ]
+  },
+  "read_chopconf_raw|ok": {
+   "result": 3239378987,
+   "sent": [
+    "M569.2 P3 R108"
+   ]
+  },
+  "read_chopconf_raw|ok_up": {
+   "result": 3,
+   "sent": [
+    "M569.2 P3 R108"
+   ]
+  },
+  "read_chopconf_raw|raise": {
+   "result": null,
+   "sent": [
+    "M569.2 P3 R108"
+   ]
+  },
+  "read_drv_status_raw|bad": {
+   "result": null,
+   "sent": [
+    "M569.2 P3 R111"
+   ]
+  },
+  "read_drv_status_raw|none": {
+   "result": null,
+   "sent": [
+    "M569.2 P3 R111"
+   ]
+  },
+  "read_drv_status_raw|ok": {
+   "result": 3239378987,
+   "sent": [
+    "M569.2 P3 R111"
+   ]
+  },
+  "read_drv_status_raw|ok_up": {
+   "result": 3,
+   "sent": [
+    "M569.2 P3 R111"
+   ]
+  },
+  "read_drv_status_raw|raise": {
+   "result": null,
+   "sent": [
+    "M569.2 P3 R111"
+   ]
+  },
+  "read_gstat|bad": {
+   "result": null,
+   "sent": [
+    "M569.2 P3 R1"
+   ]
+  },
+  "read_gstat|none": {
+   "result": null,
+   "sent": [
+    "M569.2 P3 R1"
+   ]
+  },
+  "read_gstat|ok": {
+   "result": {
+    "driver_error_latched": true,
+    "raw": 3239378987,
+    "reset_detected": true
+   },
+   "sent": [
+    "M569.2 P3 R1"
+   ]
+  },
+  "read_gstat|ok_up": {
+   "result": {
+    "driver_error_latched": true,
+    "raw": 3,
+    "reset_detected": true
+   },
+   "sent": [
+    "M569.2 P3 R1"
+   ]
+  },
+  "read_gstat|raise": {
+   "result": null,
+   "sent": [
+    "M569.2 P3 R1"
+   ]
+  },
+  "read_m569|bad": {
+   "result": null,
+   "sent": [
+    "M569 P2"
+   ]
+  },
+  "read_m569|ok": {
+   "result": {
+    "current_ma_m569": 812.5,
+    "dc42_ref": {
+     "a_motor_length_khz": 83,
+     "three_motors_length_khz": 70,
+     "three_motors_short_khz": 41,
+     "timing": "fast"
+    },
+    "ihold": 15,
+    "irun": 31,
+    "mode": "spreadCycle",
+    "timing_raw": "fast"
+   },
+   "sent": [
+    "M569 P2"
+   ]
+  },
+  "read_m569|ok2": {
+   "result": {
+    "current_ma_m569": 1500.0,
+    "dc42_ref": {
+     "a_motor_length_khz": 48,
+     "three_motors_length_khz": 48,
+     "three_motors_short_khz": 40,
+     "timing": "2.5"
+    },
+    "ihold": 10,
+    "irun": 20,
+    "mode": "stealthChop",
+    "timing_raw": "2.5"
+   },
+   "sent": [
+    "M569 P2"
+   ]
+  },
+  "read_m569|raise": {
+   "result": null,
+   "sent": [
+    "M569 P2"
+   ]
+  }
+ },
+ "reports": [
+  {
+   "board_capacity": null,
+   "boards": [
+    {
+     "can_address": 0,
+     "combined_freq_hz": 29784.0,
+     "combined_max_freq_hz": 69200.0,
+     "combined_max_speed_mm_min": 34200.0,
+     "combined_speed_mm_min": 4284.0,
+     "drivers": [
+      {
+       "assigned_to": "X",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": true,
+       "flags": [],
+       "format": "rrf",
+       "id": "0.0",
+       "in_idle_live": true,
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      },
+      {
+       "assigned_to": "Y",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": false,
+       "flags": [
+        {
+         "key": "otpw",
+         "label": {
+          "msg": {
+           "key": "motor_status_temperature_warning",
+           "params": {}
+          }
+         },
+         "severity": "warning"
+        },
+        {
+         "key": "ot",
+         "label": {
+          "msg": {
+           "key": "motor_status_overtemperature_shut_down",
+           "params": {}
+          }
+         },
+         "severity": "error"
+        }
+       ],
+       "format": "rrf",
+       "id": "0.1",
+       "in_idle_live": true,
+       "ol_discarded": false,
+       "raw": 65539,
+       "raw_hex": "0x00010003",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      },
+      {
+       "assigned_to": "Z",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [
+        {
+         "key": "ola",
+         "label": {
+          "msg": {
+           "key": "motor_status_possible_open_coil_phase_a",
+           "params": {}
+          }
+         },
+         "severity": "warning"
+        }
+       ],
+       "format": "rrf",
+       "id": "0.2",
+       "in_idle_live": false,
+       "ol_discarded": false,
+       "raw": 64,
+       "raw_hex": "0x00000040",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      },
+      {
+       "assigned_to": "E0",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "id": "0.3",
+       "in_idle_live": false,
+       "ol_discarded": false,
+       "raw": 0,
+       "raw_hex": "0x00000000",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      },
+      {
+       "assigned_to": "V",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "id": "0.4",
+       "in_idle_live": true,
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      },
+      {
+       "assigned_to": null,
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": null,
+       "id": "0.5",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": null,
+       "raw_hex": null,
+       "sg_result": null,
+       "stall": null,
+       "standstill": null,
+       "stealth": null
+      }
+     ],
+     "is_local": true,
+     "motors": [
+      {
+       "current_freq_hz": 0.0,
+       "current_speed_mm_min": 0.0,
+       "label": "X",
+       "max_freq_hz": 24000.0,
+       "max_speed_mm_min": 18000,
+       "pct_of_max": 0.0
+      },
+      {
+       "current_freq_hz": 0.0,
+       "current_speed_mm_min": 0.0,
+       "label": "Y",
+       "max_freq_hz": 16000.0,
+       "max_speed_mm_min": 12000,
+       "pct_of_max": 0.0
+      },
+      {
+       "current_freq_hz": 4079.9999999999995,
+       "current_speed_mm_min": 612.0,
+       "label": "Z",
+       "max_freq_hz": 4000.0,
+       "max_speed_mm_min": 600,
+       "pct_of_max": 102.0
+      },
+      {
+       "current_freq_hz": 25704.0,
+       "current_speed_mm_min": 3672.0,
+       "label": "E0",
+       "max_freq_hz": 25200.0,
+       "max_speed_mm_min": 3600,
+       "pct_of_max": 102.0
+      }
+     ],
+     "name": "Duet 3 MB6HC",
+     "short_name": "MB6HC"
+    },
+    {
+     "can_address": 1,
+     "combined_freq_hz": 0.0,
+     "combined_max_freq_hz": 16000.0,
+     "combined_max_speed_mm_min": 12000.0,
+     "combined_speed_mm_min": 0.0,
+     "drivers": [
+      {
+       "assigned_to": "Y",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "id": "1.0",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      },
+      {
+       "assigned_to": null,
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [
+        {
+         "key": "ot",
+         "label": {
+          "msg": {
+           "key": "motor_status_overtemperature_shut_down",
+           "params": {}
+          }
+         },
+         "severity": "error"
+        }
+       ],
+       "format": "rrf",
+       "id": "1.1",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": 2,
+       "raw_hex": "0x00000002",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      }
+     ],
+     "is_local": false,
+     "motors": [
+      {
+       "current_freq_hz": 0.0,
+       "current_speed_mm_min": 0.0,
+       "label": "Y",
+       "max_freq_hz": 16000.0,
+       "max_speed_mm_min": 12000,
+       "pct_of_max": 0.0
+      }
+     ],
+     "name": "EXP3HC",
+     "short_name": "EXP3HC"
+    },
+    {
+     "can_address": 2,
+     "combined_freq_hz": 0.0,
+     "combined_max_freq_hz": 0.0,
+     "combined_max_speed_mm_min": 0.0,
+     "combined_speed_mm_min": 0.0,
+     "drivers": [
+      {
+       "assigned_to": "U",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [
+        {
+         "key": "otpw",
+         "label": {
+          "msg": {
+           "key": "motor_status_temperature_warning",
+           "params": {}
+          }
+         },
+         "severity": "warning"
+        },
+        {
+         "key": "s2ga",
+         "label": {
+          "msg": {
+           "key": "motor_status_short_to_ground_phase_a",
+           "params": {}
+          }
+         },
+         "severity": "error"
+        }
+       ],
+       "format": "rrf",
+       "id": "2.0",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": 5,
+       "raw_hex": "0x00000005",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      }
+     ],
+     "is_local": false,
+     "motors": [],
+     "name": "Unknown",
+     "short_name": "XYZ"
+    }
+   ],
+   "combined_actual_freq_hz": 29784.0,
+   "entries": [
+    {
+     "acceleration": 1000,
+     "current_freq_hz": 0.0,
+     "current_ma": 1800,
+     "current_rpm": 0.0,
+     "current_speed_mm_min": 0.0,
+     "drivers": [
+      {
+       "cs_current": null,
+       "cs_current_ma": null,
+       "cs_current_max": null,
+       "enabled": true,
+       "flags": [],
+       "format": "rrf",
+       "gstat": {
+        "raw": 0
+       },
+       "gstat_supported": true,
+       "id": "0.0",
+       "in_idle_live": true,
+       "in_standstill": true,
+       "m122": null,
+       "m569": {
+        "ihold": 15,
+        "irun": 31,
+        "timing_raw": "fast"
+       },
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "X",
+     "level": "ok",
+     "max_freq_hz": 24000.0,
+     "max_rpm": 450.0,
+     "max_speed_mm_min": 18000,
+     "microstepping": 16,
+     "pct_of_max": 0.0,
+     "percent_current": 100,
+     "percent_stst_current": 30,
+     "speed_source": "still",
+     "steps_per_mm": 80
+    },
+    {
+     "acceleration": 800,
+     "current_freq_hz": 0.0,
+     "current_ma": 1800,
+     "current_rpm": 0.0,
+     "current_speed_mm_min": 0.0,
+     "drivers": [
+      {
+       "cs_current": null,
+       "cs_current_ma": null,
+       "cs_current_max": null,
+       "enabled": false,
+       "flags": [
+        {
+         "key": "otpw",
+         "label": {
+          "msg": {
+           "key": "motor_status_temperature_warning",
+           "params": {}
+          }
+         },
+         "severity": "warning"
+        },
+        {
+         "key": "ot",
+         "label": {
+          "msg": {
+           "key": "motor_status_overtemperature_shut_down",
+           "params": {}
+          }
+         },
+         "severity": "error"
+        }
+       ],
+       "format": "rrf",
+       "gstat": null,
+       "gstat_supported": true,
+       "id": "0.1",
+       "in_idle_live": true,
+       "in_standstill": true,
+       "m122": null,
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 65539,
+       "raw_hex": "0x00010003",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      },
+      {
+       "cs_current": null,
+       "cs_current_ma": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "gstat": null,
+       "gstat_supported": false,
+       "id": "1.0",
+       "in_idle_live": null,
+       "in_standstill": true,
+       "m122": null,
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "Y",
+     "level": "ok",
+     "max_freq_hz": 16000.0,
+     "max_rpm": 300.0,
+     "max_speed_mm_min": 12000,
+     "microstepping": 16,
+     "pct_of_max": 0.0,
+     "percent_current": null,
+     "percent_stst_current": null,
+     "speed_source": "without_datum",
+     "steps_per_mm": 80
+    },
+    {
+     "acceleration": null,
+     "current_freq_hz": 4079.9999999999995,
+     "current_ma": null,
+     "current_rpm": 76.5,
+     "current_speed_mm_min": 612.0,
+     "drivers": [
+      {
+       "cs_current": null,
+       "cs_current_ma": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [
+        {
+         "key": "ola",
+         "label": {
+          "msg": {
+           "key": "motor_status_possible_open_coil_phase_a",
+           "params": {}
+          }
+         },
+         "severity": "warning"
+        }
+       ],
+       "format": "rrf",
+       "gstat": null,
+       "gstat_supported": true,
+       "id": "0.2",
+       "in_idle_live": false,
+       "in_standstill": false,
+       "m122": null,
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 64,
+       "raw_hex": "0x00000040",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "Z",
+     "level": "limit",
+     "max_freq_hz": 4000.0,
+     "max_rpm": 75.0,
+     "max_speed_mm_min": 600,
+     "microstepping": 16,
+     "pct_of_max": 102.0,
+     "percent_current": null,
+     "percent_stst_current": null,
+     "speed_source": "motion_current",
+     "steps_per_mm": 400
+    },
+    {
+     "acceleration": 500,
+     "current_freq_hz": 25704.0,
+     "current_ma": null,
+     "current_rpm": 481.95000000000005,
+     "current_speed_mm_min": 3672.0,
+     "drivers": [
+      {
+       "cs_current": null,
+       "cs_current_ma": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "gstat": null,
+       "gstat_supported": true,
+       "id": "0.3",
+       "in_idle_live": false,
+       "in_standstill": false,
+       "m122": null,
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 0,
+       "raw_hex": "0x00000000",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "E0",
+     "level": "limit",
+     "max_freq_hz": 25200.0,
+     "max_rpm": 472.5,
+     "max_speed_mm_min": 3600,
+     "microstepping": 16,
+     "pct_of_max": 102.0,
+     "percent_current": null,
+     "percent_stst_current": null,
+     "speed_source": "motion_current",
+     "steps_per_mm": 420
+    }
+   ],
+   "kinematics": "coreXY",
+   "kinematics_note": {
+    "msg": {
+     "key": "motor_status_coupled_any_movement_x_y_moves",
+     "params": {}
+    }
+   },
+   "loop_hz_max_ever": null,
+   "mode": "FFF",
+   "pct_of_board_capacity": null,
+   "requested_speed_mm_s": 120.0,
+   "top_speed_mm_s": 100.0,
+   "updated_at": null,
+   "vector_speed_mm_s": 120.0
+  },
+  {
+   "board_capacity": {
+    "hiccups_ring0": 3,
+    "hiccups_ring1": 4,
+    "loop_hz_max": 2054,
+    "loop_hz_min": 1937,
+    "loop_us_max": 2,
+    "loop_us_min": 0,
+    "max_steps_late": 5
+   },
+   "boards": [
+    {
+     "can_address": 0,
+     "combined_freq_hz": 37784.0,
+     "combined_max_freq_hz": 69200.0,
+     "combined_max_speed_mm_min": 34200.0,
+     "combined_speed_mm_min": 10284.0,
+     "drivers": [
+      {
+       "assigned_to": "X",
+       "cs_current": 21,
+       "cs_current_max": 31,
+       "enabled": true,
+       "flags": [],
+       "format": "tmc51xx",
+       "id": "0.0",
+       "in_idle_live": true,
+       "ol_discarded": true,
+       "raw": 3239378987,
+       "raw_hex": "0xC115002B",
+       "sg_result": null,
+       "stall": true,
+       "standstill": true,
+       "stealth": false
+      },
+      {
+       "assigned_to": "Y",
+       "cs_current": 0,
+       "cs_current_max": 31,
+       "enabled": false,
+       "flags": [],
+       "format": "tmc51xx",
+       "id": "0.1",
+       "in_idle_live": true,
+       "ol_discarded": false,
+       "raw": 1,
+       "raw_hex": "0x00000001",
+       "sg_result": 1,
+       "stall": false,
+       "standstill": false,
+       "stealth": false
+      },
+      {
+       "assigned_to": "Z",
+       "cs_current": 0,
+       "cs_current_max": 31,
+       "enabled": null,
+       "flags": [],
+       "format": "tmc51xx",
+       "id": "0.2",
+       "in_idle_live": false,
+       "ol_discarded": false,
+       "raw": 2147483648,
+       "raw_hex": "0x80000000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": false
+      },
+      {
+       "assigned_to": "E0",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "id": "0.3",
+       "in_idle_live": false,
+       "ol_discarded": false,
+       "raw": 0,
+       "raw_hex": "0x00000000",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      },
+      {
+       "assigned_to": "V",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "id": "0.4",
+       "in_idle_live": true,
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      },
+      {
+       "assigned_to": null,
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": null,
+       "id": "0.5",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": null,
+       "raw_hex": null,
+       "sg_result": null,
+       "stall": null,
+       "standstill": null,
+       "stealth": null
+      }
+     ],
+     "is_local": true,
+     "motors": [
+      {
+       "current_freq_hz": 0.0,
+       "current_speed_mm_min": 0.0,
+       "label": "X",
+       "max_freq_hz": 24000.0,
+       "max_speed_mm_min": 18000,
+       "pct_of_max": 0.0
+      },
+      {
+       "current_freq_hz": 8000.0,
+       "current_speed_mm_min": 6000.0,
+       "label": "Y",
+       "max_freq_hz": 16000.0,
+       "max_speed_mm_min": 12000,
+       "pct_of_max": 50.0
+      },
+      {
+       "current_freq_hz": 4079.9999999999995,
+       "current_speed_mm_min": 612.0,
+       "label": "Z",
+       "max_freq_hz": 4000.0,
+       "max_speed_mm_min": 600,
+       "pct_of_max": 102.0
+      },
+      {
+       "current_freq_hz": 25704.0,
+       "current_speed_mm_min": 3672.0,
+       "label": "E0",
+       "max_freq_hz": 25200.0,
+       "max_speed_mm_min": 3600,
+       "pct_of_max": 102.0
+      }
+     ],
+     "name": "Duet 3 MB6HC",
+     "short_name": "MB6HC"
+    },
+    {
+     "can_address": 1,
+     "combined_freq_hz": 8000.0,
+     "combined_max_freq_hz": 16000.0,
+     "combined_max_speed_mm_min": 12000.0,
+     "combined_speed_mm_min": 6000.0,
+     "drivers": [
+      {
+       "assigned_to": "Y",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "id": "1.0",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      },
+      {
+       "assigned_to": null,
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [
+        {
+         "key": "ot",
+         "label": {
+          "msg": {
+           "key": "motor_status_overtemperature_shut_down",
+           "params": {}
+          }
+         },
+         "severity": "error"
+        }
+       ],
+       "format": "rrf",
+       "id": "1.1",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": 2,
+       "raw_hex": "0x00000002",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      }
+     ],
+     "is_local": false,
+     "motors": [
+      {
+       "current_freq_hz": 8000.0,
+       "current_speed_mm_min": 6000.0,
+       "label": "Y",
+       "max_freq_hz": 16000.0,
+       "max_speed_mm_min": 12000,
+       "pct_of_max": 50.0
+      }
+     ],
+     "name": "EXP3HC",
+     "short_name": "EXP3HC"
+    },
+    {
+     "can_address": 2,
+     "combined_freq_hz": 0.0,
+     "combined_max_freq_hz": 0.0,
+     "combined_max_speed_mm_min": 0.0,
+     "combined_speed_mm_min": 0.0,
+     "drivers": [
+      {
+       "assigned_to": "U",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [
+        {
+         "key": "otpw",
+         "label": {
+          "msg": {
+           "key": "motor_status_temperature_warning",
+           "params": {}
+          }
+         },
+         "severity": "warning"
+        },
+        {
+         "key": "s2ga",
+         "label": {
+          "msg": {
+           "key": "motor_status_short_to_ground_phase_a",
+           "params": {}
+          }
+         },
+         "severity": "error"
+        }
+       ],
+       "format": "rrf",
+       "id": "2.0",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": 5,
+       "raw_hex": "0x00000005",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      }
+     ],
+     "is_local": false,
+     "motors": [],
+     "name": "Unknown",
+     "short_name": "XYZ"
+    }
+   ],
+   "combined_actual_freq_hz": 37784.0,
+   "entries": [
+    {
+     "acceleration": 1000,
+     "current_freq_hz": 0.0,
+     "current_ma": 1800,
+     "current_rpm": 0.0,
+     "current_speed_mm_min": 0.0,
+     "drivers": [
+      {
+       "cs_current": 21,
+       "cs_current_ma": 1237.5,
+       "cs_current_max": 31,
+       "enabled": true,
+       "flags": [],
+       "format": "tmc51xx",
+       "gstat": {
+        "raw": 0
+       },
+       "gstat_supported": true,
+       "id": "0.0",
+       "in_idle_live": true,
+       "in_standstill": true,
+       "m122": {
+        "mspos": 312,
+        "sg_min": 0,
+        "state": "standstill",
+        "timeouts": 0
+       },
+       "m569": {
+        "ihold": 15,
+        "irun": 31,
+        "timing_raw": "fast"
+       },
+       "ol_discarded": true,
+       "raw": 3239378987,
+       "raw_hex": "0xC115002B",
+       "sg_result": null,
+       "stall": true,
+       "standstill": true,
+       "stealth": false
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "X",
+     "level": "ok",
+     "max_freq_hz": 24000.0,
+     "max_rpm": 450.0,
+     "max_speed_mm_min": 18000,
+     "microstepping": 16,
+     "pct_of_max": 0.0,
+     "percent_current": 100,
+     "percent_stst_current": 30,
+     "speed_source": "still",
+     "steps_per_mm": 80
+    },
+    {
+     "acceleration": 800,
+     "current_freq_hz": 8000.0,
+     "current_ma": 1800,
+     "current_rpm": 150.0,
+     "current_speed_mm_min": 6000.0,
+     "drivers": [
+      {
+       "cs_current": 0,
+       "cs_current_ma": null,
+       "cs_current_max": 31,
+       "enabled": false,
+       "flags": [],
+       "format": "tmc51xx",
+       "gstat": null,
+       "gstat_supported": true,
+       "id": "0.1",
+       "in_idle_live": true,
+       "in_standstill": false,
+       "m122": {
+        "mspos": 7,
+        "sg_min": null,
+        "state": "stall",
+        "timeouts": 3
+       },
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 1,
+       "raw_hex": "0x00000001",
+       "sg_result": 1,
+       "stall": false,
+       "standstill": false,
+       "stealth": false
+      },
+      {
+       "cs_current": null,
+       "cs_current_ma": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "gstat": null,
+       "gstat_supported": false,
+       "id": "1.0",
+       "in_idle_live": null,
+       "in_standstill": true,
+       "m122": null,
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "Y",
+     "level": "ok",
+     "max_freq_hz": 16000.0,
+     "max_rpm": 300.0,
+     "max_speed_mm_min": 12000,
+     "microstepping": 16,
+     "pct_of_max": 50.0,
+     "percent_current": null,
+     "percent_stst_current": null,
+     "speed_source": "motion_current",
+     "steps_per_mm": 80
+    },
+    {
+     "acceleration": null,
+     "current_freq_hz": 4079.9999999999995,
+     "current_ma": null,
+     "current_rpm": 76.5,
+     "current_speed_mm_min": 612.0,
+     "drivers": [
+      {
+       "cs_current": 0,
+       "cs_current_ma": null,
+       "cs_current_max": 31,
+       "enabled": null,
+       "flags": [],
+       "format": "tmc51xx",
+       "gstat": null,
+       "gstat_supported": true,
+       "id": "0.2",
+       "in_idle_live": false,
+       "in_standstill": true,
+       "m122": {
+        "mspos": 1,
+        "sg_min": -12,
+        "state": "-",
+        "timeouts": 1
+       },
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 2147483648,
+       "raw_hex": "0x80000000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": false
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "Z",
+     "level": "limit",
+     "max_freq_hz": 4000.0,
+     "max_rpm": 75.0,
+     "max_speed_mm_min": 600,
+     "microstepping": 16,
+     "pct_of_max": 102.0,
+     "percent_current": null,
+     "percent_stst_current": null,
+     "speed_source": "motion_current",
+     "steps_per_mm": 400
+    },
+    {
+     "acceleration": 500,
+     "current_freq_hz": 25704.0,
+     "current_ma": null,
+     "current_rpm": 481.95000000000005,
+     "current_speed_mm_min": 3672.0,
+     "drivers": [
+      {
+       "cs_current": null,
+       "cs_current_ma": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "gstat": null,
+       "gstat_supported": true,
+       "id": "0.3",
+       "in_idle_live": false,
+       "in_standstill": false,
+       "m122": null,
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 0,
+       "raw_hex": "0x00000000",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "E0",
+     "level": "limit",
+     "max_freq_hz": 25200.0,
+     "max_rpm": 472.5,
+     "max_speed_mm_min": 3600,
+     "microstepping": 16,
+     "pct_of_max": 102.0,
+     "percent_current": null,
+     "percent_stst_current": null,
+     "speed_source": "motion_current",
+     "steps_per_mm": 420
+    }
+   ],
+   "kinematics": "coreXY",
+   "kinematics_note": {
+    "msg": {
+     "key": "motor_status_coupled_any_movement_x_y_moves",
+     "params": {}
+    }
+   },
+   "loop_hz_max_ever": 2054,
+   "mode": "FFF",
+   "pct_of_board_capacity": 1839.5326192794546,
+   "requested_speed_mm_s": 120.0,
+   "top_speed_mm_s": 100.0,
+   "updated_at": null,
+   "vector_speed_mm_s": 120.0
+  },
+  {
+   "board_capacity": {
+    "hiccups_ring0": 3,
+    "hiccups_ring1": 4,
+    "loop_hz_max": 2054,
+    "loop_hz_min": 1937,
+    "loop_us_max": 2,
+    "loop_us_min": 0,
+    "max_steps_late": 5
+   },
+   "boards": [
+    {
+     "can_address": 0,
+     "combined_freq_hz": 37784.0,
+     "combined_max_freq_hz": 69200.0,
+     "combined_max_speed_mm_min": 34200.0,
+     "combined_speed_mm_min": 10284.0,
+     "drivers": [
+      {
+       "assigned_to": "X",
+       "cs_current": 21,
+       "cs_current_max": 31,
+       "enabled": true,
+       "flags": [],
+       "format": "tmc51xx",
+       "id": "0.0",
+       "in_idle_live": true,
+       "ol_discarded": true,
+       "raw": 3239378987,
+       "raw_hex": "0xC115002B",
+       "sg_result": null,
+       "stall": true,
+       "standstill": true,
+       "stealth": false
+      },
+      {
+       "assigned_to": "Y",
+       "cs_current": 0,
+       "cs_current_max": 31,
+       "enabled": false,
+       "flags": [],
+       "format": "tmc51xx",
+       "id": "0.1",
+       "in_idle_live": true,
+       "ol_discarded": false,
+       "raw": 1,
+       "raw_hex": "0x00000001",
+       "sg_result": 1,
+       "stall": false,
+       "standstill": false,
+       "stealth": false
+      },
+      {
+       "assigned_to": "Z",
+       "cs_current": 0,
+       "cs_current_max": 31,
+       "enabled": null,
+       "flags": [],
+       "format": "tmc51xx",
+       "id": "0.2",
+       "in_idle_live": false,
+       "ol_discarded": false,
+       "raw": 2147483648,
+       "raw_hex": "0x80000000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": false
+      },
+      {
+       "assigned_to": "E0",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "id": "0.3",
+       "in_idle_live": false,
+       "ol_discarded": false,
+       "raw": 0,
+       "raw_hex": "0x00000000",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      },
+      {
+       "assigned_to": "V",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "id": "0.4",
+       "in_idle_live": true,
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      },
+      {
+       "assigned_to": null,
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": null,
+       "id": "0.5",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": null,
+       "raw_hex": null,
+       "sg_result": null,
+       "stall": null,
+       "standstill": null,
+       "stealth": null
+      }
+     ],
+     "is_local": true,
+     "motors": [
+      {
+       "current_freq_hz": 0.0,
+       "current_speed_mm_min": 0.0,
+       "label": "X",
+       "max_freq_hz": 24000.0,
+       "max_speed_mm_min": 18000,
+       "pct_of_max": 0.0
+      },
+      {
+       "current_freq_hz": 8000.0,
+       "current_speed_mm_min": 6000.0,
+       "label": "Y",
+       "max_freq_hz": 16000.0,
+       "max_speed_mm_min": 12000,
+       "pct_of_max": 50.0
+      },
+      {
+       "current_freq_hz": 4079.9999999999995,
+       "current_speed_mm_min": 612.0,
+       "label": "Z",
+       "max_freq_hz": 4000.0,
+       "max_speed_mm_min": 600,
+       "pct_of_max": 102.0
+      },
+      {
+       "current_freq_hz": 25704.0,
+       "current_speed_mm_min": 3672.0,
+       "label": "E0",
+       "max_freq_hz": 25200.0,
+       "max_speed_mm_min": 3600,
+       "pct_of_max": 102.0
+      }
+     ],
+     "name": "Duet 3 MB6HC",
+     "short_name": "MB6HC"
+    },
+    {
+     "can_address": 1,
+     "combined_freq_hz": 8000.0,
+     "combined_max_freq_hz": 16000.0,
+     "combined_max_speed_mm_min": 12000.0,
+     "combined_speed_mm_min": 6000.0,
+     "drivers": [
+      {
+       "assigned_to": "Y",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "id": "1.0",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      },
+      {
+       "assigned_to": null,
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [
+        {
+         "key": "ot",
+         "label": {
+          "msg": {
+           "key": "motor_status_overtemperature_shut_down",
+           "params": {}
+          }
+         },
+         "severity": "error"
+        }
+       ],
+       "format": "rrf",
+       "id": "1.1",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": 2,
+       "raw_hex": "0x00000002",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      }
+     ],
+     "is_local": false,
+     "motors": [
+      {
+       "current_freq_hz": 8000.0,
+       "current_speed_mm_min": 6000.0,
+       "label": "Y",
+       "max_freq_hz": 16000.0,
+       "max_speed_mm_min": 12000,
+       "pct_of_max": 50.0
+      }
+     ],
+     "name": "EXP3HC",
+     "short_name": "EXP3HC"
+    },
+    {
+     "can_address": 2,
+     "combined_freq_hz": 0.0,
+     "combined_max_freq_hz": 0.0,
+     "combined_max_speed_mm_min": 0.0,
+     "combined_speed_mm_min": 0.0,
+     "drivers": [
+      {
+       "assigned_to": "U",
+       "cs_current": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [
+        {
+         "key": "otpw",
+         "label": {
+          "msg": {
+           "key": "motor_status_temperature_warning",
+           "params": {}
+          }
+         },
+         "severity": "warning"
+        },
+        {
+         "key": "s2ga",
+         "label": {
+          "msg": {
+           "key": "motor_status_short_to_ground_phase_a",
+           "params": {}
+          }
+         },
+         "severity": "error"
+        }
+       ],
+       "format": "rrf",
+       "id": "2.0",
+       "in_idle_live": null,
+       "ol_discarded": false,
+       "raw": 5,
+       "raw_hex": "0x00000005",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      }
+     ],
+     "is_local": false,
+     "motors": [],
+     "name": "Unknown",
+     "short_name": "XYZ"
+    }
+   ],
+   "combined_actual_freq_hz": 37784.0,
+   "entries": [
+    {
+     "acceleration": 1000,
+     "current_freq_hz": 0.0,
+     "current_ma": 1800,
+     "current_rpm": 0.0,
+     "current_speed_mm_min": 0.0,
+     "drivers": [
+      {
+       "cs_current": 21,
+       "cs_current_ma": 1237.5,
+       "cs_current_max": 31,
+       "enabled": true,
+       "flags": [],
+       "format": "tmc51xx",
+       "gstat": {
+        "raw": 0
+       },
+       "gstat_supported": true,
+       "id": "0.0",
+       "in_idle_live": true,
+       "in_standstill": true,
+       "m122": {
+        "mspos": 312,
+        "sg_min": 0,
+        "state": "standstill",
+        "timeouts": 0
+       },
+       "m569": {
+        "ihold": 15,
+        "irun": 31,
+        "timing_raw": "fast"
+       },
+       "ol_discarded": true,
+       "raw": 3239378987,
+       "raw_hex": "0xC115002B",
+       "sg_result": null,
+       "stall": true,
+       "standstill": true,
+       "stealth": false
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "X",
+     "level": "ok",
+     "max_freq_hz": 24000.0,
+     "max_rpm": 450.0,
+     "max_speed_mm_min": 18000,
+     "microstepping": 16,
+     "pct_of_max": 0.0,
+     "percent_current": 100,
+     "percent_stst_current": 30,
+     "speed_source": "still",
+     "steps_per_mm": 80
+    },
+    {
+     "acceleration": 800,
+     "current_freq_hz": 8000.0,
+     "current_ma": 1800,
+     "current_rpm": 150.0,
+     "current_speed_mm_min": 6000.0,
+     "drivers": [
+      {
+       "cs_current": 0,
+       "cs_current_ma": null,
+       "cs_current_max": 31,
+       "enabled": false,
+       "flags": [],
+       "format": "tmc51xx",
+       "gstat": null,
+       "gstat_supported": true,
+       "id": "0.1",
+       "in_idle_live": true,
+       "in_standstill": false,
+       "m122": {
+        "mspos": 7,
+        "sg_min": null,
+        "state": "stall",
+        "timeouts": 3
+       },
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 1,
+       "raw_hex": "0x00000001",
+       "sg_result": 1,
+       "stall": false,
+       "standstill": false,
+       "stealth": false
+      },
+      {
+       "cs_current": null,
+       "cs_current_ma": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "gstat": null,
+       "gstat_supported": false,
+       "id": "1.0",
+       "in_idle_live": null,
+       "in_standstill": true,
+       "m122": null,
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 65536,
+       "raw_hex": "0x00010000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": null
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "Y",
+     "level": "ok",
+     "max_freq_hz": 16000.0,
+     "max_rpm": 300.0,
+     "max_speed_mm_min": 12000,
+     "microstepping": 16,
+     "pct_of_max": 50.0,
+     "percent_current": null,
+     "percent_stst_current": null,
+     "speed_source": "motion_current",
+     "steps_per_mm": 80
+    },
+    {
+     "acceleration": null,
+     "current_freq_hz": 4079.9999999999995,
+     "current_ma": null,
+     "current_rpm": 38.25,
+     "current_speed_mm_min": 612.0,
+     "drivers": [
+      {
+       "cs_current": 0,
+       "cs_current_ma": null,
+       "cs_current_max": 31,
+       "enabled": null,
+       "flags": [],
+       "format": "tmc51xx",
+       "gstat": null,
+       "gstat_supported": true,
+       "id": "0.2",
+       "in_idle_live": false,
+       "in_standstill": true,
+       "m122": {
+        "mspos": 1,
+        "sg_min": -12,
+        "state": "-",
+        "timeouts": 1
+       },
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 2147483648,
+       "raw_hex": "0x80000000",
+       "sg_result": null,
+       "stall": false,
+       "standstill": true,
+       "stealth": false
+      }
+     ],
+     "full_steps_per_rev": 400,
+     "label": "Z",
+     "level": "limit",
+     "max_freq_hz": 4000.0,
+     "max_rpm": 37.5,
+     "max_speed_mm_min": 600,
+     "microstepping": 16,
+     "pct_of_max": 102.0,
+     "percent_current": null,
+     "percent_stst_current": null,
+     "speed_source": "motion_current",
+     "steps_per_mm": 400
+    },
+    {
+     "acceleration": 500,
+     "current_freq_hz": 25704.0,
+     "current_ma": null,
+     "current_rpm": 481.95000000000005,
+     "current_speed_mm_min": 3672.0,
+     "drivers": [
+      {
+       "cs_current": null,
+       "cs_current_ma": null,
+       "cs_current_max": null,
+       "enabled": null,
+       "flags": [],
+       "format": "rrf",
+       "gstat": null,
+       "gstat_supported": true,
+       "id": "0.3",
+       "in_idle_live": false,
+       "in_standstill": false,
+       "m122": null,
+       "m569": null,
+       "ol_discarded": false,
+       "raw": 0,
+       "raw_hex": "0x00000000",
+       "sg_result": 0,
+       "stall": false,
+       "standstill": false,
+       "stealth": null
+      }
+     ],
+     "full_steps_per_rev": 200,
+     "label": "E0",
+     "level": "limit",
+     "max_freq_hz": 25200.0,
+     "max_rpm": 472.5,
+     "max_speed_mm_min": 3600,
+     "microstepping": 16,
+     "pct_of_max": 102.0,
+     "percent_current": null,
+     "percent_stst_current": null,
+     "speed_source": "motion_current",
+     "steps_per_mm": 420
+    }
+   ],
+   "kinematics": "coreXY",
+   "kinematics_note": {
+    "msg": {
+     "key": "motor_status_coupled_any_movement_x_y_moves",
+     "params": {}
+    }
+   },
+   "loop_hz_max_ever": 2054,
+   "mode": "FFF",
+   "pct_of_board_capacity": 1839.5326192794546,
+   "requested_speed_mm_s": 120.0,
+   "top_speed_mm_s": 100.0,
+   "updated_at": null,
+   "vector_speed_mm_s": 120.0
+  }
+ ],
+ "tables": {
+  "bits": [
+   [
+    0,
+    "otpw",
+    {
+     "msg": {
+      "key": "motor_status_temperature_warning",
+      "params": {}
+     }
+    },
+    "warning"
+   ],
+   [
+    1,
+    "ot",
+    {
+     "msg": {
+      "key": "motor_status_overtemperature_shut_down",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   [
+    2,
+    "s2ga",
+    {
+     "msg": {
+      "key": "motor_status_short_to_ground_phase_a",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   [
+    3,
+    "s2gb",
+    {
+     "msg": {
+      "key": "motor_status_short_to_ground_phase_b",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   [
+    4,
+    "s2vsa",
+    {
+     "msg": {
+      "key": "motor_status_short_supply_phase",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   [
+    5,
+    "s2vsb",
+    {
+     "msg": {
+      "key": "motor_status_short_supply_phase_b",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   [
+    6,
+    "ola",
+    {
+     "msg": {
+      "key": "motor_status_possible_open_coil_phase_a",
+      "params": {}
+     }
+    },
+    "warning"
+   ],
+   [
+    7,
+    "olb",
+    {
+     "msg": {
+      "key": "motor_status_possible_open_coil_phase_b",
+      "params": {}
+     }
+    },
+    "warning"
+   ],
+   [
+    9,
+    "ext",
+    {
+     "msg": {
+      "key": "motor_status_external_driver_error",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   [
+    10,
+    "pos_tol",
+    {
+     "msg": {
+      "key": "motor_status_outside_position_tolerance",
+      "params": {}
+     }
+    },
+    "warning"
+   ],
+   [
+    11,
+    "pos_lost",
+    {
+     "msg": {
+      "key": "motor_status_does_not_hold_position",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   [
+    13,
+    "setting_error",
+    {
+     "msg": {
+      "key": "motor_status_closed_loop_tuning_failed",
+      "params": {}
+     }
+    },
+    "warning"
+   ],
+   [
+    14,
+    "mov_ilegal",
+    {
+     "msg": {
+      "key": "motor_status_move_without_closed_loop_tuned",
+      "params": {}
+     }
+    },
+    "error"
+   ]
+  ],
+  "chips": {
+   "EXP1HCL": "tmc51xx",
+   "EXP3HC": "tmc51xx",
+   "MB6HC": "tmc51xx",
+   "Mini5plus": "tmc22xx",
+   "TOOL1LC": "tmc22xx"
+  },
+  "consts": [
+   80,
+   95,
+   1,
+   111,
+   108,
+   15,
+   10.0,
+   0.005
+  ],
+  "dc42": {
+   "1": {
+    "a_motor_length": 55,
+    "three_motors_length": 51,
+    "three_motors_short": 44
+   },
+   "10": {
+    "a_motor_length": 30,
+    "three_motors_length": 30,
+    "three_motors_short": 27
+   },
+   "2.5": {
+    "a_motor_length": 48,
+    "three_motors_length": 48,
+    "three_motors_short": 40
+   },
+   "5": {
+    "a_motor_length": 40,
+    "three_motors_length": 40,
+    "three_motors_short": 36
+   },
+   "fast": {
+    "a_motor_length": 83,
+    "three_motors_length": 70,
+    "three_motors_short": 41
+   }
+  },
+  "faults": {
+   "ext": [
+    {
+     "msg": {
+      "key": "motor_status_external_driver_error",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   "mov_ilegal": [
+    {
+     "msg": {
+      "key": "motor_status_move_without_closed_loop_tuned",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   "ola": [
+    {
+     "msg": {
+      "key": "motor_status_possible_open_coil_phase_a",
+      "params": {}
+     }
+    },
+    "warning"
+   ],
+   "olb": [
+    {
+     "msg": {
+      "key": "motor_status_possible_open_coil_phase_b",
+      "params": {}
+     }
+    },
+    "warning"
+   ],
+   "ot": [
+    {
+     "msg": {
+      "key": "motor_status_overtemperature_shut_down",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   "otpw": [
+    {
+     "msg": {
+      "key": "motor_status_temperature_warning",
+      "params": {}
+     }
+    },
+    "warning"
+   ],
+   "pos_lost": [
+    {
+     "msg": {
+      "key": "motor_status_does_not_hold_position",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   "pos_tol": [
+    {
+     "msg": {
+      "key": "motor_status_outside_position_tolerance",
+      "params": {}
+     }
+    },
+    "warning"
+   ],
+   "s2ga": [
+    {
+     "msg": {
+      "key": "motor_status_short_to_ground_phase_a",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   "s2gb": [
+    {
+     "msg": {
+      "key": "motor_status_short_to_ground_phase_b",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   "s2vsa": [
+    {
+     "msg": {
+      "key": "motor_status_short_supply_phase",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   "s2vsb": [
+    {
+     "msg": {
+      "key": "motor_status_short_supply_phase_b",
+      "params": {}
+     }
+    },
+    "error"
+   ],
+   "setting_error": [
+    {
+     "msg": {
+      "key": "motor_status_closed_loop_tuning_failed",
+      "params": {}
+     }
+    },
+    "warning"
+   ]
+  },
+  "maps": {
+   "rrf": {
+    "cs_current": null,
+    "faults": [
+     [
+      0,
+      "otpw"
+     ],
+     [
+      1,
+      "ot"
+     ],
+     [
+      2,
+      "s2ga"
+     ],
+     [
+      3,
+      "s2gb"
+     ],
+     [
+      4,
+      "s2vsa"
+     ],
+     [
+      5,
+      "s2vsb"
+     ],
+     [
+      6,
+      "ola"
+     ],
+     [
+      7,
+      "olb"
+     ],
+     [
+      9,
+      "ext"
+     ],
+     [
+      10,
+      "pos_tol"
+     ],
+     [
+      11,
+      "pos_lost"
+     ],
+     [
+      13,
+      "setting_error"
+     ],
+     [
+      14,
+      "mov_ilegal"
+     ]
+    ],
+    "no_present": 17,
+    "ol_only_in_motion": false,
+    "sg": [
+     22,
+     1023
+    ],
+    "stall": 8,
+    "stealth": null,
+    "stst": 16
+   },
+   "tmc22xx": {
+    "cs_current": [
+     16,
+     31
+    ],
+    "faults": [
+     [
+      0,
+      "otpw"
+     ],
+     [
+      1,
+      "ot"
+     ],
+     [
+      2,
+      "s2ga"
+     ],
+     [
+      3,
+      "s2gb"
+     ],
+     [
+      4,
+      "s2vsa"
+     ],
+     [
+      5,
+      "s2vsb"
+     ],
+     [
+      6,
+      "ola"
+     ],
+     [
+      7,
+      "olb"
+     ]
+    ],
+    "no_present": null,
+    "ol_only_in_motion": true,
+    "sg": null,
+    "stall": null,
+    "stealth": 30,
+    "stst": 31
+   },
+   "tmc51xx": {
+    "cs_current": [
+     16,
+     31
+    ],
+    "faults": [
+     [
+      26,
+      "otpw"
+     ],
+     [
+      25,
+      "ot"
+     ],
+     [
+      27,
+      "s2ga"
+     ],
+     [
+      28,
+      "s2gb"
+     ],
+     [
+      12,
+      "s2vsa"
+     ],
+     [
+      13,
+      "s2vsb"
+     ],
+     [
+      29,
+      "ola"
+     ],
+     [
+      30,
+      "olb"
+     ]
+    ],
+    "no_present": null,
+    "ol_only_in_motion": true,
+    "sg": [
+     0,
+     1023
+    ],
+    "stall": 24,
+    "stealth": 14,
+    "stst": 31
+   }
+  }
+ }
+}

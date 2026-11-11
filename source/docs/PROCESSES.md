@@ -24,7 +24,7 @@ loops, errors, relaunches and the last minutes of CPU and interval.
 - **What it relies on:** The board object model, the M150 commands and the rules of the Lights and status page.
 - **Where to adjust it:** Lights and status page. It rests when that plugin is stopped.
 
-### Energy meter (`consumo`)
+### Energy meter (`consumption`)
 
 - **What it is:** Reads the Tuya energy meter (W, V, A and accumulated kWh).
 - **What it is for:** Stores the consumption history so the cost per day, month or job can be worked out.
@@ -32,7 +32,7 @@ loops, errors, relaunches and the last minutes of CPU and interval.
 - **What it relies on:** The Tuya meter over the local network and the database.
 - **Where to adjust it:** Power page (rate and meter). It rests when that plugin is stopped.
 
-### Jobs and zones (`trabajos`)
+### Jobs and zones (`jobs`)
 
 - **What it is:** Detects when a job starts and ends, the mode changes or the work zone changes.
 - **What it is for:** Feeds the Activity history, the phone alerts and the hours and energy per job.
@@ -56,7 +56,7 @@ loops, errors, relaunches and the last minutes of CPU and interval.
 - **What it relies on:** Its own connection to the board and the motion owner.
 - **Where to adjust it:** Floating Jog panel.
 
-### Board events (`eventos`)
+### Board events (`events`)
 
 - **What it is:** Watches the board messages: emergencies, pauses, errors and warnings.
 - **What it is for:** Stores them in Activity and sends them to the phone when needed.
@@ -64,7 +64,7 @@ loops, errors, relaunches and the last minutes of CPU and interval.
 - **What it relies on:** The object model messages (single subscription) and the notifier.
 - **Where to adjust it:** Activity page > phone alerts.
 
-### Job path (`traza`)
+### Job path (`trace`)
 
 - **What it is:** Records the path of the running job.
 - **What it is for:** Lets Zones > Job draw the path. It only records while someone is watching; otherwise it sleeps.
@@ -72,7 +72,7 @@ loops, errors, relaunches and the last minutes of CPU and interval.
 - **What it relies on:** The object model (position) and files on the SD.
 - **Where to adjust it:** Zones > Job.
 
-### System health (`salud`)
+### System health (`health`)
 
 - **What it is:** Measures the Pi temperature, WiFi, services and power supply.
 - **What it is for:** Warns before something fails: high temperature, WiFi down, a stopped service or an unexpected reboot.
@@ -80,7 +80,7 @@ loops, errors, relaunches and the last minutes of CPU and interval.
 - **What it relies on:** System commands (vcgencmd, nmcli, systemctl) and the object model.
 - **Where to adjust it:** Health page (thresholds in the settings).
 
-### Camera relay (`camara`)
+### Camera relay (`camera`)
 
 - **What it is:** Shares the camera video with all screens and records the timelapses.
 - **What it is for:** Prevents every screen from opening its own connection to the weak camera.
@@ -88,7 +88,7 @@ loops, errors, relaunches and the last minutes of CPU and interval.
 - **What it relies on:** The ESP32-CAM camera, ffmpeg and the SD.
 - **Where to adjust it:** Camera page. The relay is shared with Vision and Workbench.
 
-### Timed shutdown (`temporizador`)
+### Timed shutdown (`timer`)
 
 - **What it is:** Counts down the timed shutdown of the bar.
 - **What it is for:** Turns everything off at the chosen time, without cutting a running job.
@@ -96,7 +96,7 @@ loops, errors, relaunches and the last minutes of CPU and interval.
 - **What it relies on:** The system clock and the power cut.
 - **Where to adjust it:** Side bar > Shutdown.
 
-### Active risk (`riesgo`)
+### Active risk (`risk`)
 
 - **What it is:** Detects when something leaves the machine without a protection: calibrations and released motors.
 - **What it is for:** Warns on screens and LEDs for as long as the risk lasts and clears itself when it ends.
@@ -128,7 +128,7 @@ loops, errors, relaunches and the last minutes of CPU and interval.
 - **What it relies on:** The DSF socket.
 - **Where to adjust it:** See patches/s and KB/s under 'Load this service puts on the Duet'.
 
-### Black box (`caja_negra`)
+### Black box (`box_black`)
 
 - **What it is:** Writes a line every few seconds with load, CPU, RAM, temperature and state to the SD.
 - **What it is for:** If the Pi hangs or is switched off by force, there is a record of the last moments.

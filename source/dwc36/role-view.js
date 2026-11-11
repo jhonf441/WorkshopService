@@ -13,7 +13,7 @@
 
 import { workshopCan } from './workshop-auth.js'
 
-export const RANK_OPS = { viewer: '', operator: 'light.set', technician: 'settings.set', admin: 'power.off' }
+export const RANK_OPS = { viewer: '', operator: 'light.set', technician: 'settings.set', admin: 'power.full_reset' }
 
 // without a browser (tests, no session yet) workshopCan cannot read the identity: nothing is hidden
 function currentCan(op) {
@@ -32,6 +32,18 @@ export function roleAtLeast(min, can) {
 
 export function visibleItems(items, can) {
 	return (items || []).filter(i => !i.min || roleAtLeast(i.min, can))
+}
+
+// ALL the items, the ones above the person's role marked `locked: <the role that opens it>` (locked-in-place rule: what you cannot use stays in its place, locked,
+// with the reason; nothing disappears in silence). A page draws them with the lock in the side bar and a cover when one is opened.
+export function lockedItems(items, can) {
+	return (items || []).map(i => (i.min && !roleAtLeast(i.min, can) ? Object.assign({}, i, { locked: i.min }) : i))
+}
+
+// the role that opens the section `id`, or '' when the person may open it
+export function lockedNeed(items, id, can) {
+	const it = (items || []).find(i => i.id === id)
+	return it && it.min && !roleAtLeast(it.min, can) ? it.min : ''
 }
 
 export function pickAllowed(items, id, can) {

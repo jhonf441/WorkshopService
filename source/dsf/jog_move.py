@@ -69,6 +69,7 @@ import os
 import queue
 import communication
 import ipc_stats  # IPC calls to DCS per minute
+import service_log
 import threading
 import time
 
@@ -78,6 +79,20 @@ import json
 
 from dsf.connections import CommandConnection
 from messages import M, J, Msg
+from jog_pure import (  # noqa: F401  (re-exported: other modules and tests use these names from jog_move)
+    BRIDGE_STATE_FRESH_S,
+    FREE_MODES,
+    STALL_MACRO_MARK,
+    STALL_MACRO_TEXT,
+    Segment,
+    _name_channel,
+    segment_stale,
+    _FREE_DEF,
+    _FREE_LIM,
+    _free_cfg_clean,
+    _parse_m915,
+    bridge_state_age_s,
+)
 
 
 TICK_MS = 60
@@ -176,14 +191,8 @@ def set_log_file(path):
 
 
 def _log(msg):
-    path = _log_file[0]
-    if not path:
-        return
-    try:
-        with open(path, "a") as f:
-            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} [jog_move] {msg}\n")
-    except Exception:
-        pass
+    if _log_file[0]:  # set by main: the same rotated file, written under service_log's lock
+        service_log.log(msg, "jog_move")
 
 
 class _State:
@@ -502,6 +511,8 @@ SEND_QUEUE_MAXSIZE = 1
 
 _send_queue = None
 _sender_started = False
+# id: live gesture (bumped on release); dropped: segments the sender discarded (the loop re-syncs)
+_gesture = {"id": 0, "dropped": 0}
 
 
 class _JogConnection:
@@ -510,9 +521,7 @@ class _JogConnection:
     def __init__(self):
         self.lock = threading.Lock()
         self.conn = None
-        # how many times it connected (the first counts): the sender sends G91 again before the
-        # first G1 that goes out through a new connection (2026-10-12, finding 1 of MOVEMENT-AUDIT;
-        # see _sender_loop)
+        # times connected (the first counts): G91 is sent again before the first G1 of a new connection
         self.connections = 0
 
     def _ensure_connected(self, attempts=None):
@@ -532,14 +541,14 @@ class _JogConnection:
                 _log(f"could not connect the dedicated CommandConnection ({e}), retrying in 2s")
                 time.sleep(2)
 
-    def connect_to(self):
-        """Connects if needed (before deciding whether the G91 has to be repeated)."""
+    def connect_to(self, attempts=None):
+        """Connects if needed (before deciding whether the G91 has to be repeated). A number of attempts raises ConnectionError instead of waiting."""
         with self.lock:
-            self._ensure_connected()
+            self._ensure_connected(attempts)
 
-    def send(self, gcode, chan=None):
+    def send(self, gcode, chan=None, attempts=None):
         with self.lock:
-            self._ensure_connected()
+            self._ensure_connected(attempts)
             try:
                 # async_exec=True -- see the note "2026-10-08 (third round)" at the top of the file:
                 # perform_simple_code WITHOUT this blocks ~75-80 ms waiting for the formatted reply
@@ -603,11 +612,6 @@ _modal = {
     "last_attempt": 0.0,  # monotonic of the last requested G90 (retries of the loop)
     "risk": False,
 }
-
-
-def _name_channel(ch):
-    n = getattr(ch, "name", None) or str(ch or "")
-    return n.split(".")[-1]
 
 
 def _channel_of(label):
@@ -710,19 +714,26 @@ def _send_modal(code):
 
 def _sender_loop():
     while True:
-        code = _send_queue.get()
+        item = _send_queue.get()
+        code = item if isinstance(item, str) else item.code
         try:
             if code in MODAL:
                 _send_modal(code)
+            elif segment_stale(item, _gesture["id"]):
+                _gesture["dropped"] += 1
             else:
-                # a relative G1 through a channel without a confirmed G91 would come out ABSOLUTE:
-                # if the jog channel changed or the connection was rebuilt (the board may have
-                # restarted), G91 again first
-                _jog_conn.connect_to()
-                if _modal["open"] != _name_channel(communication.channel_jog()) or _modal["connection"] != _jog_conn.connections:
+                # G91 again first if the channel changed or the connection was rebuilt (a relative G1
+                # without it would come out ABSOLUTE). ONE connection attempt: a G1 never waits for DSF
+                # (a segment minutes old must not move the machine), it is dropped instead.
+                _jog_conn.connect_to(attempts=1)
+                if not segment_stale(item, _gesture["id"]) and (_modal["open"] != _name_channel(communication.channel_jog()) or _modal["connection"] != _jog_conn.connections):
                     _send_modal("G91")
-                if not _modal["failure_g91"]:
-                    _jog_conn.send(code)
+                if _modal["failure_g91"] or segment_stale(item, _gesture["id"]):
+                    _gesture["dropped"] += 1
+                else:
+                    _jog_conn.send(code, attempts=1)
+        except ConnectionError as e:
+            _gesture["dropped"] += 1  # no DSF: segment dropped
         except Exception as e:
             _log(f"error sending '{code}': {type(e).__name__}: {e}")
             heartbeats.error("jog", e)
@@ -740,20 +751,15 @@ def _ensure_sender():
 
 def _enqueue_g1(code):
     try:
-        _send_queue.put_nowait(code)
+        _send_queue.put_nowait(Segment(_gesture["id"], time.monotonic() + 2 * LEAD_S, code))
         return True
     except queue.Full:
-        # The sender cannot keep up at this instant -- skip this tick instead of blocking the
-        # scheduler (better to lose a segment of ~TICK_MS than to let the loop fall behind and
-        # desynchronise the watchdog).
-        pass
+        pass  # the sender cannot keep up: skip this tick rather than block the scheduler
 
 
 def _enqueue_mode(code, wait_s=0.5):
-    # G91/G90: unlike the G1s (see _enqueue_g1), these always have to arrive -- they are rare (once
-    # per gesture), so waiting for room in the queue here does not affect the real cadence of the
-    # tick. With a cap: if the sender is stuck (no connection) the loop does not hang; the caller
-    # retries (False = it did not go in).
+    # G91/G90 always have to arrive (rare: once per gesture), so waiting for room here does not hurt
+    # the tick. Capped: if the sender is stuck the loop does not hang; the caller retries (False).
     try:
         _send_queue.put(code, timeout=wait_s)
     except queue.Full:
@@ -777,13 +783,10 @@ def _g90_due():
 
 
 def _drain_pending_g1():
-    # Empties any G1 that was left queued WITHOUT being sent (the sender has not picked it up yet)
-    # at the moment of release -- see the note "2026-10-08 (second round)" at the top of the file.
-    # That segment never reaches the machine. What the sender is already sending at this instant (if
-    # any) is still unavoidable, but this avoids adding a second stretch of overshoot on top.
-    # 2026-10-12: ONLY the G1s. A queued G90/G91 goes back to the queue in the same order (before,
-    # the releasing G90 was discarded: finding 1). The loop is the only one that queues, so there is
-    # room again.
+    # On release: empties the G1s still queued (see "2026-10-08 (second round)" at the top) and ends
+    # the gesture (id += 1), so a G1 the sender already holds is dropped too. ONLY the G1s: a queued
+    # G90/G91 goes back in the same order (finding 1, 2026-10-12).
+    _gesture["id"] += 1
     remaining = []
     while True:
         try:
@@ -791,7 +794,7 @@ def _drain_pending_g1():
             _send_queue.task_done()
         except queue.Empty:
             break
-        if c in MODAL:
+        if isinstance(c, str) and c in MODAL:
             remaining.append(c)
     for c in remaining:
         _send_queue.put(c)
@@ -832,62 +835,12 @@ def _drain_pending_g1():
 # Two modes: "noHoming" (M564 S0 H0: no homing and outside M208) and "outsideLimits" (M564 S0 H1:
 # requires homing of X/Y/Z, only lets the margin through).
 # When the plugin starts, if global.jogFree was left true, it is restored anyway.
-FREE_MODES = ("withoutHoming", "outsideLimits")
-_FREE_DEF = {"mode": "withoutHoming", "color": "#ff1744", "timeoutS": 60, "marginMm": 5.0, "speedPct": 25, "correctionXY": 50, "correctionZ": 100, "crash": True, "crashSens": 8, "crashSteps": 100}
-_FREE_LIM = {"timeoutS": (10, 600), "marginMm": (0.0, 30.0), "speedPct": (5, 100), "correctionXY": (20, 100), "correctionZ": (40, 100), "crashSens": (-64, 63), "crashSteps": (20, 400)}
 _FREE_CFG = dict(_FREE_DEF)
 STALL_MACRO = paths.SYS + "/driver-stall.g"
-STALL_MACRO_MARK = "workshop-JOG-free"
 DAEMON_G = paths.SYS + "/daemon.g"
 FAILSAFE_MACRO = "0:/sys/workshop/macros/work/jogFreeSet.g"
 FREE_HEARTBEAT_S = 2.0
 FREE_PUBLISH_S = 1.0
-STALL_MACRO_TEXT = f"""; driver-stall.g -- RepRapFirmware runs it when a driver configured with
-; M915 ... R2 detects a stall (StallGuard). WorkshopService created it for the
-; "without limits" mode of the WorkshopJog jog. If you change it, delete the mark
-; below and the jog never touches it again (and does not use the stall detection).
-; {STALL_MACRO_MARK}
-; Crash calibration (Motors page, sys/workshop/macros/axis/crash-cal.g): only counts. With the
-; jog without limits active it ALWAYS stops (even if a calibration cut halfway
-; left global.crashCal at true).
-if exists(global.crashCal) && global.crashCal && !(exists(global.jogFree) && global.jogFree)
-  if exists(global.crashCalHit)
-    set global.crashCalHit = global.crashCalHit + 1
-elif exists(global.jogFree) && global.jogFree
-  ; WorkshopService sees these two globals in its object model subscription and stops the jog
-  if !exists(global.jogFreeStallN)
-    global jogFreeStallN = 0
-  if !exists(global.jogFreeStallDrv)
-    global jogFreeStallDrv = ""
-  set global.jogFreeStallDrv = param.B ^ "." ^ param.D
-  set global.jogFreeStallN = global.jogFreeStallN + 1
-else
-  var en = exists(global.workshopLanguage) ? (global.workshopLanguage == "en") : false
-  if var.en
-    echo "Stall detected on driver " ^ param.B ^ "." ^ param.D ^ ": " ^ param.S
-  else
-    echo "Choque detectado en el driver " ^ param.B ^ "." ^ param.D ^ ": " ^ param.S
-"""
-
-
-def _free_cfg_clean(o):
-    c = dict(_FREE_DEF)
-    if isinstance(o, dict):
-        for k, (lo, hi) in _FREE_LIM.items():
-            v = o.get(k)
-            if isinstance(v, (int, float)) and not isinstance(v, bool):
-                c[k] = min(max(v, lo), hi)
-        if isinstance(o.get("crash"), bool):
-            c["crash"] = o["crash"]
-        if o.get("mode") in FREE_MODES:
-            c["mode"] = o["mode"]
-        import re as _re
-
-        if isinstance(o.get("color"), str) and _re.fullmatch(r"#[0-9a-fA-F]{6}", o["color"]):
-            c["color"] = o["color"]
-    return c
-
-
 class _Free:
     def __init__(self):
         self.lock = threading.Lock()
@@ -961,6 +914,16 @@ def free_crash(board, driver):
 
 def free_active():
     return _free.is_active
+
+
+def free_until():
+    """The instant (epoch SECONDS, whole) the no-limits mode leaves by itself when nobody moves: `timeoutS` after the last move. None while the mode
+    is off. It is the one source of the countdown: the jog shows `remainingS` (jogFree) and the risk bar `until` (riskActive) from the same clock."""
+    if not _free.is_active:
+        return None
+    c = _free.cfg or {}
+    remaining = max(0.0, float(c.get("timeoutS") or 0) - (time.monotonic() - _free.last_mov))
+    return int(time.time() + remaining)
 
 
 def free_color():
@@ -1060,29 +1023,6 @@ def _free_macro_crash():
     except OSError as e:
         _log(f"without limits: could not create driver-stall.g ({e})")
         return False
-
-
-def _parse_m915(raw_text):
-    """'Driver 0.0: stall threshold 3, filter on, full steps/sec 200 (40.0 mm/sec),
-    ... action on stall: none' -> [{id, sgt, filt, pasos, mms, accion}]"""
-    import re
-
-    out = []
-    for m in re.finditer(
-        r"Driver ([\d.]+): stall threshold (-?\d+), filter (on|off), full steps/sec (\d+) \(([\d.]+) mm/sec\).*?action on stall: (none|log|raise event)",
-        raw_text,
-    ):
-        out.append(
-            {
-                "id": m.group(1),
-                "sgt": int(m.group(2)),
-                "filt": m.group(3) == "on",
-                "steps": int(m.group(4)),
-                "mms": float(m.group(5)),
-                "action": {"none": 0, "log": 1, "raise event": 2}[m.group(6)],
-            }
-        )
-    return out
 
 
 def _free_error(raw_text):
@@ -1381,48 +1321,6 @@ def mark_bridge_si(code, jog_id=None):
         _bridge["last_order"] = time.time()
     except Exception:
         pass
-
-
-BRIDGE_STATE_FRESH_S = 10  # a bridge-state.json older than this does not prove orders are still pending
-
-
-def bridge_state_age_s(state, file_age_s=0.0, now=None):
-    """Seconds since the last non-query line of any client, from a parsed
-    bridge-state.json; None if there is no data.
-
-    Schema 2 (bridge 3.0): state["activity"] has absolute times, so the age
-    does not depend on when the file was written:
-      pending_orders  orders sent to the machine and not finished yet (counted
-                      only while the file is fresh, so a dead bridge cannot
-                      block the jog forever);
-      last_order_at   epoch of the last non-query line (received or finished).
-    A state without either returns None."""
-    now = time.time() if now is None else now
-    # Bridge 3.x: the clients carry RELATIVE ages in whole seconds. The absolute epochs of the file reach us rounded to 6
-    # digits (1.7921e9 = steps of 27 h), which made "last order 0 s ago" true half of the time (2026-10-15: the jog stayed
-    # blocked after the live job had ended). The relative ages are the reliable data.
-    cls = state.get("clients") if isinstance(state, dict) else None
-    if isinstance(cls, list) and any(isinstance(c, dict) and "last_order_age_s" in c for c in cls):
-        val = None
-        for c in cls:
-            if not isinstance(c, dict):
-                continue
-            if (c.get("pending_orders") or 0) > 0 and file_age_s <= BRIDGE_STATE_FRESH_S:
-                return 0.0
-            ag = c.get("last_order_age_s")
-            if isinstance(ag, (int, float)):
-                h = float(ag) + file_age_s
-                val = h if val is None else min(val, h)
-        return val
-    act = state.get("activity") if isinstance(state, dict) else None
-    if isinstance(act, dict):
-        gen = act.get("generated_at")
-        fresh = isinstance(gen, (int, float)) and (now - gen) <= BRIDGE_STATE_FRESH_S
-        if fresh and (act.get("pending_orders") or 0) > 0:
-            return 0.0
-        last = act.get("last_order_at")
-        return max(0.0, now - float(last)) if isinstance(last, (int, float)) else None
-    return None
 
 
 def _bridge_file_does_s():
@@ -1734,6 +1632,7 @@ def run_loop(bridge, config):
     # Estimated position during a gesture: the real one at the start (read from the object model) +
     # the segments that were sent. None = no gesture.
     est_pos = None
+    dropped_seen = _gesture["dropped"]
     only_z = False  # the previous tick only moved Z (short cycle, see Z_TICK_S)
     last_check = 0.0  # block_reason: at the start of each gesture and every BLOCK_CHECK_S
 
@@ -1918,6 +1817,8 @@ def run_loop(bridge, config):
             if dx == 0 and dy == 0 and dz == 0 and of == 0:
                 continue
 
+            if _gesture["dropped"] != dropped_seen:  # the sender dropped a segment: re-read the real position
+                dropped_seen, est_pos, ahead_until = _gesture["dropped"], None, 0.0
             if est_pos is None:
                 _free.gesture_since = time.monotonic()
                 # Start of gesture: fresh real position (without waiting for the poll)

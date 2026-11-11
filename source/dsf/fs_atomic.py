@@ -13,25 +13,96 @@ def _tmp(path):
     return path + ".tmp-%d-%d" % (os.getpid(), threading.get_ident())
 
 
-def write_bytes(path, data, make_dirs=True):
-    """Writes `data` (bytes) to `path` atomically. Creates the folder when it is missing."""
+def _sync_dir(path):
+    """fsync of the folder that holds `path`, so the rename itself reaches the card (a power cut right after os.replace can otherwise
+    bring the old name back). Not possible on Windows (a folder cannot be opened that way): there it is a no-op."""
+    if os.name == "nt":
+        return
+    folder = os.path.dirname(os.path.abspath(path))
+    try:
+        fd = os.open(folder, os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(fd)
+    except OSError:
+        pass
+    finally:
+        os.close(fd)
+
+
+def _write_tmp(tmp, data, mode):
+    """Writes `data` to the temporary file `tmp`, created exclusively with `mode` from the start (a secret is never briefly readable)."""
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), mode)
+    with os.fdopen(fd, "wb") as fh:
+        fh.write(data)
+        fh.flush()
+        os.fsync(fh.fileno())  # to the card before the rename (power cut)
+
+
+def _remove_quiet(path):
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+
+
+def write_bytes(path, data, make_dirs=True, mode=0o666):
+    """Writes `data` (bytes) to `path` atomically. Creates the folder when it is missing. `mode` is the file mode (0o600 for secrets)."""
     if make_dirs:
         folder = os.path.dirname(path)
         if folder:
             os.makedirs(folder, exist_ok=True)
     tmp = _tmp(path)
+    _remove_quiet(tmp)  # a leftover of an earlier crash of the same pid/thread number
     try:
-        with open(tmp, "wb") as fh:
-            fh.write(data)
-            fh.flush()
-            os.fsync(fh.fileno())  # to the card before the rename (power cut)
+        _write_tmp(tmp, data, mode)
         os.replace(tmp, path)
     except BaseException:
-        try:
-            os.remove(tmp)
-        except OSError:
-            pass
+        _remove_quiet(tmp)
         raise
+    _sync_dir(path)
+
+
+def write_with_backup(path, data, validate=None, mode=0o666, make_dirs=True):
+    """write_bytes plus a rolling copy: the file that is there NOW stays as <path>.bak, but only if `validate(old_bytes)` accepts it
+    (raises ValueError or returns False to refuse; default: it parses as JSON), so a damaged file never replaces a healthy .bak. The copy is written atomically and synced too.
+    The new content goes through its own temporary file (one per writer) and the swap is the last step: a cut anywhere before it
+    leaves the old file, and the .bak is always a complete file."""
+    if validate is None:
+        validate = _is_json
+    if make_dirs:
+        folder = os.path.dirname(path)
+        if folder:
+            os.makedirs(folder, exist_ok=True)
+    tmp = _tmp(path)
+    _remove_quiet(tmp)
+    try:
+        _write_tmp(tmp, data, mode)  # the new content is complete on the card before anything else is touched
+        try:
+            with open(path, "rb") as fh:
+                old = fh.read()
+            healthy = validate(old) is not False  # raising ValueError or returning False means damaged
+        except (OSError, ValueError):
+            healthy = False
+        if healthy:
+            try:
+                write_bytes(path + ".bak", old, make_dirs=False, mode=mode)
+            except OSError:
+                pass  # the copy is best effort: the new file is what matters
+        os.replace(tmp, path)
+    except BaseException:
+        _remove_quiet(tmp)
+        raise
+    _sync_dir(path)
+
+
+def _is_json(raw):
+    try:
+        json.loads(raw.decode("utf-8-sig"))
+        return True
+    except ValueError:
+        return False
 
 
 def write_text(path, text, make_dirs=True):

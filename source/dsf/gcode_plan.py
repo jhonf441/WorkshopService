@@ -115,7 +115,7 @@ def arm(path, kind, om, smax=255.0, stats=None, rapid=6000.0, tool0=None, wcs0=N
     clock = [0.0]  # seconds since the start
     if stats is not None:
         stats.update(time_s=0.0, dist_cut=0.0, dist_travel=0.0, f_min=None, f_max=None, pieces=0, layers=0,
-                     z_min=None, z_max=None, v_min=None, v_max=None, layer_z=[])
+                     z_min=None, z_max=None, v_min=None, v_max=None, layer_z=[], layer_line=[])
 
     def add(x, y, z, w, v, fpos, dt=0.0, fd=0.0):
         nonlocal cur, nvert
@@ -135,7 +135,7 @@ def arm(path, kind, om, smax=255.0, stats=None, rapid=6000.0, tool0=None, wcs0=N
 
     fpos = 0
     with open(path, "rb") as fh:
-        for raw in fh:
+        for lineno, raw in enumerate(fh, 1):
             line_pos = fpos
             fpos += len(raw)
             line = raw.decode("utf-8", "replace")
@@ -218,6 +218,7 @@ def arm(path, kind, om, smax=255.0, stats=None, rapid=6000.0, tool0=None, wcs0=N
                     z_layer = tgt["Z"]
                     if stats is not None:
                         stats["layer_z"].append(round(z_layer, 3))  # height of layer N = layer_z[N - 1] (pellet_layers.py reads it)
+                        stats["layer_line"].append(lineno)  # 1-based line of the first extruding move of layer N (layer_recipes_preview.py)
                 w = 1 if extrudes else 0
                 v = 0.0
             elif kind == "CNC":
@@ -268,7 +269,7 @@ def arm(path, kind, om, smax=255.0, stats=None, rapid=6000.0, tool0=None, wcs0=N
         stats["dist_cut"] = round(stats["dist_cut"], 1)
         stats["dist_travel"] = round(stats["dist_travel"], 1)
     if nvert > MAX_VERTICES:
-        plan = _simplify(plan, nvert)
+        plan = simplify(plan, nvert)
     return plan
 
 
@@ -301,7 +302,7 @@ def _arc(a, b, d, cw, unit):
     return pts
 
 
-def _simplify(plan, nvert):
+def simplify(plan, nvert):
     """Huge job: vertices are discarded until under MAX_VERTICES
     (the first and the last of each run stay)."""
     step = int(math.ceil(nvert / float(MAX_VERTICES)))

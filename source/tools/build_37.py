@@ -44,6 +44,7 @@ import zipfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import release_zips  # noqa: E402  (strict per-line manifest, run-time guard; copy of TallerPlugins tools/release_zips.py)
+import factory_tree  # noqa: E402  (the factory tree of the workshop-owned SD files, checked inside every release zip)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DWC = os.environ.get("TALLER_DWC_SRC") or os.path.join(os.path.expanduser("~"), "Projects", "dwc-src-37")
@@ -178,6 +179,7 @@ def check_release(path):
     for rel in manifest.get("dsfFiles", []):
         if "dsf/" + rel not in names:
             problems.append("listed in dsfFiles but missing: dsf/" + rel)
+    problems += factory_tree.check_zip(path)  # G12: the factory tree inside the zip is the manifest's, file by file, sha by sha
     return problems
 
 

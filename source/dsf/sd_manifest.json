@@ -1,0 +1,1091 @@
+{
+ "files": [
+  {
+   "breaks_if_missing": "a default button of the bar points at a missing file",
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/cnc/capturezero.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "a999564295ede440f3fab89ebd3455e1a66dcc49972ffe941cd2036a5d224e99",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/cnc/capturezero.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "breaks_if_missing": "a default button of the bar points at a missing file",
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/cnc/setzero.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "9ed7303203a7d63f5ede29b4532237bba4bbc7ac674953a636c0277591e3a74a",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/cnc/setzero.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/laser/air_off_sync.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "3dd42db7335a4b3e9189ca5974c9bf2e3a3e7d66aa36e2f56b7ef6028d6fdcc6",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/laser/air_off_sync.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/laser/air_on_sync.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "daf2afe8ade39e8debc3f60628164a4dca6e868b273df30b3391398df6ef52bc",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/laser/air_on_sync.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "breaks_if_missing": "air.set warns and the page state is wrong",
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/laser/airoff.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "d658a4be4f80c8c3d85ed74f8a3538f89c09f11988cce5bd36142e4f135eea75",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/laser/airoff.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "breaks_if_missing": "air.set warns and the page state is wrong",
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/laser/airon.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "1e93f78394980818ba5c4c4e6a75815556ffd3964c2bfa4b592feb719c298f38",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/laser/airon.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/light/light_off_sync.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "0072fd7ced5a9084b91689189561ac58e80e67bf8391c00de33037f501322c4e",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/light/light_off_sync.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/light/light_on_sync.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "42c92b36cae468da7417e6b1b730c0ace8a86bf2c2df813e58e168d4249094bf",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/light/light_on_sync.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/light/lightoff.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "2a363033974f82913315b4496258ba5983ac06d0d1880f4b0ec3290fa24f6a67",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/light/lightoff.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/light/lighton.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "52dea02ed71dbf91b74b9cb48815c2631c81d7a8d5bf9ced7d8d1bd45bb52dbc",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/light/lighton.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "breaks_if_missing": "the automatic status LEDs toggle does nothing",
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/light/statusledoff.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "2c0e01c8a678492a7401f26ef983c9fdd3c58dbf33c75c07a0b7074ac4585540",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/light/statusledoff.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "breaks_if_missing": "the automatic status LEDs toggle does nothing",
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/light/statusledon.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "78f8912489278cfd8bd27b56e436d5623347d5fb66b863e1c0ce8dc59bef9234",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/light/statusledon.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "breaks_if_missing": "a default button of the bar points at a missing file",
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/light/statuslight_off.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "27e4dc213f76bad785f060e4aa71bf44b07d848eafdb51834cef91fd1a2031b6",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/light/statuslight_off.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "breaks_if_missing": "a default button of the bar points at a missing file",
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/light/statuslight_on.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "95fc7a766085e4b885c3a9299178e2580a5dfeedb6d72c892e52556a58d4a11b",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/light/statuslight_on.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/mode/selectcnc.g",
+   "plugin": "WorkshopPrinting",
+   "sha256": "e0d45fd957a0b4cb045e656d0bc827ec425009f0680e0e1761fee42efbd007ab",
+   "stage": "sys/workshop/examples/WorkshopPrinting/macros/mode/selectcnc.g",
+   "used_by": [
+    "WorkshopPrinting"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/mode/selectfff.g",
+   "plugin": "WorkshopPrinting",
+   "sha256": "95b73a186dfb6bf0bf642b84bfa93095ca94e0d0c7a7ec5af2cf11af2ba84b7e",
+   "stage": "sys/workshop/examples/WorkshopPrinting/macros/mode/selectfff.g",
+   "used_by": [
+    "WorkshopPrinting"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/mode/selectlaser.g",
+   "plugin": "WorkshopPrinting",
+   "sha256": "1f74f5f9f4efa4119b7ac68b2b7bdc57371eb08ff8e41cd300eebeedaa33f8db",
+   "stage": "sys/workshop/examples/WorkshopPrinting/macros/mode/selectlaser.g",
+   "used_by": [
+    "WorkshopPrinting"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/power/full-reset.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "c2de409baf2b1b048e0e04eb0fbdf6bf71b9bb50c03bf0a025eb184d39cf7e8f",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/power/full-reset.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/power/shutdown-after-job.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "6aa980f8835b53c2eeb85c0078e5ed60931c453067f27d0ea760cca8aa5f707c",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/power/shutdown-after-job.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/power/shutdown-all.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "6ebc013217f2dfbcfe42cb23068487e5eab8dc7b69c216125d0d0df6382857cd",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/power/shutdown-all.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/probe/homezhere.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "a0d1e7018ce1e53c403709964b84a7c4afb6904be8f931d2562c4a801dc56030",
+   "stage": "sys/workshop/examples/WorkshopWorkbench/macros/probe/homezhere.g",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/psu/start.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "1205cbeb34e6d64c101820ece84c4896651c397433f0f07d416e3a32e31e48cb",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/psu/start.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "macros/psu/stop.g",
+   "plugin": "WorkshopControlBar",
+   "sha256": "f5fd1c9b647dbc7d282f0c6badccca9f2b873e4d1ea78239d15699f2ac134346",
+   "stage": "sys/workshop/examples/WorkshopControlBar/macros/psu/stop.g",
+   "used_by": [
+    "WorkshopControlBar"
+   ]
+  },
+  {
+   "hooks": [
+    "WORKSHOP hook=boot"
+   ],
+   "kind": "native-managed",
+   "mode": "read-only",
+   "path": "sys/config.g",
+   "plugin": "WorkshopPrinting",
+   "used_by": [
+    "WorkshopPrinting",
+    "WorkshopWorkbench",
+    "WorkshopLights"
+   ]
+  },
+  {
+   "hooks": [
+    "WORKSHOP hook=daemon-tail"
+   ],
+   "kind": "native-managed",
+   "mode": "read-only",
+   "path": "sys/daemon.g",
+   "plugin": "WorkshopControlBar",
+   "used_by": [
+    "WorkshopControlBar",
+    "WorkshopJog",
+    "WorkshopPrinting"
+   ]
+  },
+  {
+   "generator": "jog_move",
+   "kind": "generated",
+   "mark": "workshop-JOG-free",
+   "path": "sys/driver-stall.g",
+   "plugin": "WorkshopService",
+   "used_by": [
+    "WorkshopJog",
+    "WorkshopMotors"
+   ]
+  },
+  {
+   "hooks": [
+    "WORKSHOP hook=homeall-tail"
+   ],
+   "kind": "native-managed",
+   "mode": "read-only",
+   "path": "sys/homeall.g",
+   "plugin": "WorkshopWorkbench",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "breaks_if_missing": "handcorner.g and framecutarea.g call it",
+   "kind": "expected-external",
+   "path": "sys/homex.g",
+   "plugin": "WorkshopWorkbench",
+   "provider": "user",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "breaks_if_missing": "handcorner.g and framecutarea.g call it",
+   "kind": "expected-external",
+   "path": "sys/homey.g",
+   "plugin": "WorkshopWorkbench",
+   "provider": "user",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "hooks": [
+    "WORKSHOP hook=homez-tail"
+   ],
+   "kind": "native-managed",
+   "mode": "read-only",
+   "path": "sys/homez.g",
+   "plugin": "WorkshopWorkbench",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "breaks_if_missing": "the LED start-up of the Lights page has nothing to run",
+   "kind": "expected-external",
+   "path": "sys/ledstartup.g",
+   "plugin": "WorkshopLights",
+   "provider": "user",
+   "used_by": [
+    "WorkshopLights",
+    "WorkshopService:lights.startup"
+   ]
+  },
+  {
+   "generator": "machine_power",
+   "kind": "generated",
+   "mark": "",
+   "path": "sys/resurrect-prologue.g",
+   "plugin": "WorkshopService",
+   "used_by": [
+    "WorkshopMachine"
+   ]
+  },
+  {
+   "generator": "bed_zones_mirror",
+   "kind": "generated",
+   "mark": "GENERATED by WorkshopService",
+   "path": "sys/workshop/config/bedzones.g",
+   "plugin": "WorkshopService",
+   "used_by": [
+    "WorkshopPrinting"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "generator": "focus_geometry",
+   "kind": "template",
+   "mark": "GENERATED by WorkshopService",
+   "overwrite": "never",
+   "path": "sys/workshop/config/focus.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "9b697c7054ab0d6b1b052d2a0f4c6a2915f623815c30fe77805c7ebf55d51cf3",
+   "stage": "sys/workshop/examples/WorkshopWorkbench/sys/workshop/config/focus.g",
+   "used_by": [
+    "WorkshopWorkbench",
+    "sys/workshop/macros/focus/focusrule.g"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "sys/workshop/config/focus.json",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "439f77920e005871f219b1418cb162d55f00babe588ea07fc692f9c22c4d4fd2",
+   "stage": "sys/workshop/examples/WorkshopWorkbench/sys/workshop/config/focus.json",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "sys/workshop/data/modestate.g",
+   "plugin": "WorkshopPrinting",
+   "sha256": "7c9162e1187d884c18972e1b444106a09285e67a5a40cce041dadf5ea97389e6",
+   "stage": "sys/workshop/examples/WorkshopPrinting/sys/workshop/data/modestate.g",
+   "used_by": [
+    "WorkshopPrinting",
+    "sys/workshop/hooks/boot.g",
+    "sys/workshop/modes/automodeselect.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/hooks/boot.g",
+   "plugin": "WorkshopPrinting",
+   "sha256": "92a818178b8512975f028961723ff6a96650ec04e617d93dd8069a59567efdf7",
+   "used_by": [
+    "WorkshopPrinting"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/hooks/daemon-tail.g",
+   "plugin": "WorkshopJog",
+   "sha256": "b4cc7ea330997247e2257085c4ce7be9a64846e9cb6e7c9cd9b6e99b9e9d5728",
+   "used_by": [
+    "WorkshopJog"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/hooks/homeall-tail.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "8b7d1d91aa774404619196924b46baf0234dbfa655557c7c6bf48ce7198d1b90",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/hooks/homez-tail.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "1d1d7748e78534891b5435d70e65dd59fcf6a7c1edbe8a1f327f515b3c8f653c",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/axis/axis-limits.g",
+   "plugin": "WorkshopMotors",
+   "sha256": "0186fe5bc0810218f7a0c279a6ac7ddaf5bfc7a4a33ecb1449f0eb35c09429ef",
+   "used_by": [
+    "WorkshopMotors",
+    "sys/workshop/macros/axis/axis-test.g",
+    "sys/workshop/macros/axis/step-ceiling.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/axis/axis-measure.g",
+   "plugin": "WorkshopMotors",
+   "sha256": "bab792fccaa055df77323584871cf687c87d91d19286d9e3ed5ba8e5b76bf24a",
+   "used_by": [
+    "WorkshopMotors",
+    "sys/workshop/macros/axis/axis-test.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/axis/axis-microstep.g",
+   "plugin": "WorkshopMotors",
+   "sha256": "1ae11dcec87b333eeb136eb1b46ecdf6f036a5de8612ddd83dff2a3c6569f349",
+   "used_by": [
+    "WorkshopMotors",
+    "sys/workshop/macros/axis/step-ceiling.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/axis/axis-move.g",
+   "plugin": "WorkshopMotors",
+   "sha256": "c881f3eaab21bfb10f3c880ca5287b540fa92dbb6ba6def55815fd2f1695a1d4",
+   "used_by": [
+    "WorkshopMotors",
+    "sys/workshop/macros/axis/axis-measure.g",
+    "sys/workshop/macros/axis/axis-test.g",
+    "sys/workshop/macros/axis/step-ceiling.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/axis/axis-probe.g",
+   "plugin": "WorkshopMotors",
+   "sha256": "11425522af3ad4225fc325cefa0ebc74aedaaa8ab52700ad68331d486a3708ef",
+   "used_by": [
+    "WorkshopMotors",
+    "sys/workshop/macros/axis/axis-test.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/axis/axis-test.g",
+   "plugin": "WorkshopMotors",
+   "sha256": "dc91271445348ca7b01716dd9fa3f1cb7179a4b3a5fcc21d3fcd68a0f84b71f4",
+   "used_by": [
+    "WorkshopMotors"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/axis/axis-touch.g",
+   "plugin": "WorkshopMotors",
+   "sha256": "f40d649b05f0915910c93605eec5756a55229de5b917dd71f4ebb8540e36d72c",
+   "used_by": [
+    "WorkshopMotors",
+    "sys/workshop/macros/axis/axis-measure.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/axis/crash-cal.g",
+   "plugin": "WorkshopMotors",
+   "sha256": "6beb27dcb6f4bce0e56001da5d62fb41a6e4d0f8896dcd5bc22543d5d3478210",
+   "used_by": [
+    "WorkshopMotors"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/axis/step-ceiling.g",
+   "plugin": "WorkshopMotors",
+   "sha256": "3cbcd4c3a92d6ab37f0b2d2ca90377e9da34fb5970f3db4500bcfc040631a1f6",
+   "used_by": [
+    "WorkshopMotors"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/focus/focushere.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "35cb70ad26fc09453db459b03b272c3dfe09bd1e7a52e962a28f8614f678312a",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/focus/focusref.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "dab7efc26fee42cf2b867e1e4509f867042bcd68b507b6dde1a93a1171b8194a",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/focus/focusrule.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "25e762a4a51238612dd85e1cc513d670649206a17f2b9c331ec7fd1eb9478655",
+   "used_by": [
+    "WorkshopWorkbench",
+    "sys/workshop/macros/focus/laserfocus.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/focus/laserfocus.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "c78ec91fea240968887cac3ab42f246e0df1dc582e86ed1e9179417b2f6a71fa",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/focus/zfocusgo.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "77bd4b62761fe36b00cb4122778f52bd0e0e23f1b726979e08ecdf26d6b72ce9",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/guard/cncguard.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "ecc4950143fa329cb6d14deae2eed509c733591234f072cc273da26ba09a39d3",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/guard/cutguard.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "16cd0eb1d269dab5cd1598c0e28cd013b70a9714a42995ab5692d82cc15c0e62",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/guard/jobarm.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "b744c5e7eb1d3f93dd323eeb1e1bfd95c5710a12e25289efba30a0c5f0a8615e",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/guard/laserguard.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "8e745f15582175ba6d72ba49c80d7e2249b6a8fdfd477d7a9c02ff12c87815d9",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "generator": "laser_correction",
+   "kind": "generated",
+   "mark": "GENERATED by WorkshopService",
+   "path": "sys/workshop/macros/laser/lasercorrection.g",
+   "plugin": "WorkshopService",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/laser/laseroffset.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "594ccd876e72286ded5d4329b1e4cc83ad7a33aedca815996607ac64f00c07c4",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/laser/livemark.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "f488993cd22f010f4b7196fad9c42c06bfcd1f7aba880f78d8c67153bcb27160",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/probe/visionpose.g",
+   "plugin": "WorkshopVision",
+   "sha256": "afdb5113044b5c4c87099f9a07c02fc2df405dfcbaa4f9487fe7c916e8ffc5e5",
+   "used_by": [
+    "WorkshopVision"
+   ]
+  },
+  {
+   "generator": "api_macros",
+   "kind": "generated",
+   "mark": "WORKSHOP-SERVICE-MACRO",
+   "path": "sys/workshop/macros/system/disable_pi_status.g",
+   "plugin": "WorkshopService",
+   "used_by": [
+    "status_light"
+   ]
+  },
+  {
+   "generator": "api_macros",
+   "kind": "generated",
+   "mark": "WORKSHOP-SERVICE-MACRO",
+   "path": "sys/workshop/macros/system/enable_pi_status.g",
+   "plugin": "WorkshopService",
+   "used_by": [
+    "status_light"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/system/language.g",
+   "plugin": "WorkshopJog",
+   "sha256": "95fe88e5f122e296f445d1fdab2461c2a7c4b8419f33861e9527b1c692d76435",
+   "used_by": [
+    "WorkshopJog"
+   ]
+  },
+  {
+   "generator": "lights_profile",
+   "kind": "generated",
+   "mark": "",
+   "path": "sys/workshop/macros/system/lights.g",
+   "plugin": "WorkshopService",
+   "used_by": [
+    "WorkshopLights"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/system/rs485-read.g",
+   "plugin": "WorkshopRS485",
+   "sha256": "3695ac39329b1cda4a3474d4834a077a8144a7e5b9ce1490fd3e8d8d62268ff2",
+   "used_by": [
+    "WorkshopRS485"
+   ]
+  },
+  {
+   "generator": "api_macros",
+   "kind": "generated",
+   "mark": "WORKSHOP-SERVICE-CALL v1",
+   "path": "sys/workshop/macros/system/service-call.g",
+   "plugin": "WorkshopService",
+   "used_by": [
+    "WorkshopWorkbench",
+    "WorkshopJog"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/bedzones-set.g",
+   "plugin": "WorkshopPrinting",
+   "sha256": "decf4ca1e9dc7e04214171f6cb645b1b035e74d8909a85da99a10d46c6f6ea71",
+   "used_by": [
+    "WorkshopPrinting"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/framecutarea.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "93c3b345f1205dc4d0ba6ffccfa3774f35dfbb16c0c1aae5b05106ddd06307a5",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/framerect.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "ab748fa512f69000f4de7206b7aac302d7e1c2c501bb1dd6bad5b2425f26ec20",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/gotobed.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "b248dd5bf2d8d2d1a1ee1c44d3306cff0ab17cf8ac56834dc301107e8269f257",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/handcorner.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "2e9df5afea1d4503ca075e9ae2bd522ebebcf8e5b180817a450e82360f227869",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/handfree.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "60f917fdb55a5eaeee4a4921729044b9d73cb9746e7e4a8bbd21c4a2d8066804",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/jogFreeFailsafe.g",
+   "plugin": "WorkshopJog",
+   "sha256": "df33f846088fb7e626af02134253b3428071e9d15ccb93b1a9debfc83c51b20d",
+   "used_by": [
+    "WorkshopJog",
+    "sys/workshop/hooks/daemon-tail.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/jogFreeSet.g",
+   "plugin": "WorkshopJog",
+   "sha256": "870b100533c133fed0ad8e1fda7f11bd408fd3b590808be932bfcb96b743c8bb",
+   "used_by": [
+    "WorkshopJog"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/saveworkplace.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "947b22b319a0c1ae50a8ad2554d19b3583899ff865b52f72569ed78ceb9f7286",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/workplaces.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "9241db6bc489aff1ba2c18ad05398927057908e442d05c6133cb5c46a42723d9",
+   "used_by": [
+    "WorkshopWorkbench",
+    "sys/workshop/hooks/boot.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/workzero.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "8af7a7d5ada1e76810b4129dfab083d70ccf8b2429da6ba5605fe01be2dd4170",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/workzeroaxis.g",
+   "plugin": "WorkshopJog",
+   "sha256": "716696dec1a0a2dc000ebf703ee409e7bafa8d10ea5af0a37a85c8796ac88de1",
+   "used_by": [
+    "WorkshopJog"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/work/wpload.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "556b10091a8fba0afa38ca99d83ebfb6f7277a9d98254e7be08c93a4d7793213",
+   "used_by": [
+    "WorkshopWorkbench",
+    "sys/workshop/macros/focus/laserfocus.g",
+    "sys/workshop/macros/laser/laseroffset.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/zcal/zbedref.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "f51e2f86d72b539e8cf726c252a97ddcf855503f9244632e19e4375bf31b89cb",
+   "used_by": [
+    "WorkshopWorkbench",
+    "sys/workshop/hooks/homeall-tail.g",
+    "sys/workshop/hooks/homez-tail.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/zcal/zcal-goto.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "4b43900e4e00b4e7f45bd136af047f95d7ec8ffd6c98f43dc33be20bcecbf035",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/zcal/zcal-mark.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "e20d53bf994a81ee0e0dacc49965856697d6a9fa4eeb6d218a9e825da02b8e86",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/zcal/zcal-probe.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "4a4a2e37994add76475ea2e8edf5fbad7d335d85b1ad01069970dc64bcb6fc1c",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/zcal/zcal-szp.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "62c954bc4154408d0ef3ee9f23452f8e8b39c098f5485c13522a7fb8fbd11bb8",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "generator": "machine_height",
+   "kind": "generated",
+   "mark": "GENERATED by the service",
+   "path": "sys/workshop/macros/zcal/zcal.g",
+   "plugin": "WorkshopService",
+   "used_by": [
+    "WorkshopMachine"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/zcal/zhere0.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "85cf928e2a5386c9e57978579aa2d2fa86172d3b464257867fd3358c8f2fcb62",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/zcal/zmeasure.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "b41fc8a69212846a71a2e6a19b6699337bb22b66e5067893213d1a6b73400e74",
+   "used_by": [
+    "WorkshopWorkbench",
+    "sys/workshop/macros/focus/focushere.g",
+    "sys/workshop/macros/focus/laserfocus.g",
+    "sys/workshop/macros/zcal/zprobepoint.g"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/zcal/zprobepoint.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "06f7fac94c8c4d1c12e3dd08a3e6344babb0e7dd25ee3b65191a3d55cb0aad81",
+   "used_by": [
+    "WorkshopWorkbench"
+   ]
+  },
+  {
+   "kind": "workshop-owned",
+   "overwrite": "always",
+   "path": "sys/workshop/macros/zcal/zsurface.g",
+   "plugin": "WorkshopWorkbench",
+   "sha256": "7a2afd98768839499b6004c9ab3106a8ff7bab024fdb039c5165fe316118e33f",
+   "used_by": [
+    "WorkshopWorkbench",
+    "macros/probe/homezhere.g",
+    "sys/workshop/macros/focus/focushere.g",
+    "sys/workshop/macros/focus/laserfocus.g",
+    "sys/workshop/macros/zcal/zprobepoint.g"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "kind": "template",
+   "overwrite": "never",
+   "path": "sys/workshop/modes/automodeselect.g",
+   "plugin": "WorkshopPrinting",
+   "sha256": "8113c7a4abd9828ec35a3e120dbc72e6facdf6d0431f1e549043c115f578a48e",
+   "stage": "sys/workshop/examples/WorkshopPrinting/sys/workshop/modes/automodeselect.g",
+   "used_by": [
+    "WorkshopPrinting",
+    "sys/workshop/hooks/boot.g"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "hooks": [
+    "zcal/zcal.g"
+   ],
+   "kind": "template",
+   "native": true,
+   "overwrite": "never",
+   "path": "sys/workshop/modes/modecnc.g",
+   "plugin": "WorkshopPrinting",
+   "sha256": "9486af02a002d7a060d2215bf2d70a8ca191095a9faa025ca6236d0c5850eec1",
+   "stage": "sys/workshop/examples/WorkshopPrinting/sys/workshop/modes/modecnc.g",
+   "used_by": [
+    "WorkshopPrinting",
+    "sys/workshop/modes/automodeselect.g"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "hooks": [
+    "zcal/zcal.g"
+   ],
+   "kind": "template",
+   "native": true,
+   "overwrite": "never",
+   "path": "sys/workshop/modes/modefff.g",
+   "plugin": "WorkshopPrinting",
+   "sha256": "427b6105820401c85a79238e33d92ba1460a8fdb7d87a65abfde7ff531f759a2",
+   "stage": "sys/workshop/examples/WorkshopPrinting/sys/workshop/modes/modefff.g",
+   "used_by": [
+    "WorkshopPrinting",
+    "sys/workshop/modes/automodeselect.g"
+   ]
+  },
+  {
+   "create": "if-missing-and-never-created",
+   "hooks": [
+    "zcal/zcal.g"
+   ],
+   "kind": "template",
+   "native": true,
+   "overwrite": "never",
+   "path": "sys/workshop/modes/modelaser.g",
+   "plugin": "WorkshopPrinting",
+   "sha256": "f4b13390a3046c552a6c6c93810dda2418d2db79adb9c46bbac8a4c2e075a4b2",
+   "stage": "sys/workshop/examples/WorkshopPrinting/sys/workshop/modes/modelaser.g",
+   "used_by": [
+    "WorkshopPrinting",
+    "sys/workshop/modes/automodeselect.g"
+   ]
+  }
+ ],
+ "plugins": {
+  "WorkshopControlBar": "2.7.37",
+  "WorkshopJog": "3.15.1",
+  "WorkshopMotors": "2.6.30",
+  "WorkshopPrinting": "2.29.0",
+  "WorkshopRS485": "2.6.28",
+  "WorkshopVision": "2.7.33",
+  "WorkshopWorkbench": "2.22.39"
+ },
+ "schema": 1
+}

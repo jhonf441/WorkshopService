@@ -64,6 +64,8 @@ KINDS = [
     # F1-C: a safety process died / a protection is unwatched (protection_guard.py); the alarm is with a job running
     ("guard", M("notice_kind_guard"), True, "high", "warning"),
     ("guard_alarm", M("notice_kind_guard_alarm"), True, "urgent", "rotating_light"),
+    # phase 4 of access control: an alarm of the activity record (access file damaged, burst of refusals, sensitive change, broken chain)
+    ("security_alarm", M("notice_kind_security_alarm"), True, "high", "warning"),
 ]
 # Types that until 2026-10-12 went with a photo (fixed list): now it is the
 # default value of the "adjunto" option of each type (item 21).

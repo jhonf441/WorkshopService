@@ -1,0 +1,505 @@
+{
+ "comment": "line -> class, exempt. Source of truth: dsf/gcode_classes.py; this is the frozen vector (test_gcode_classes.py).",
+ "cases": [
+  {
+   "line": "M112",
+   "class": "stop",
+   "exempt": true
+  },
+  {
+   "line": "m112",
+   "class": "stop",
+   "exempt": true
+  },
+  {
+   "line": "M999",
+   "class": "stop",
+   "exempt": true
+  },
+  {
+   "line": "M0",
+   "class": "stop",
+   "exempt": true
+  },
+  {
+   "line": "M1",
+   "class": "stop",
+   "exempt": true
+  },
+  {
+   "line": "M25",
+   "class": "stop",
+   "exempt": true
+  },
+  {
+   "line": "N12 M999",
+   "class": "stop",
+   "exempt": true
+  },
+  {
+   "line": "",
+   "class": "empty",
+   "exempt": true
+  },
+  {
+   "line": "; M569.2 V5",
+   "class": "empty",
+   "exempt": true
+  },
+  {
+   "line": "(M112) ",
+   "class": "empty",
+   "exempt": true
+  },
+  {
+   "line": "M105",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M114 ;position",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M409 K\"move.axes\"",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M118 S\"G1 X5\"",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M118 S\"M112\" ; M569.2 V1",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M92",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M92 X80",
+   "class": "hardware",
+   "exempt": false
+  },
+  {
+   "line": "M92 E{var.x}",
+   "class": "hardware",
+   "exempt": false
+  },
+  {
+   "line": "M550",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M550 P\"name\"",
+   "class": "network",
+   "exempt": false
+  },
+  {
+   "line": "M551 P\"pw\"",
+   "class": "network",
+   "exempt": false
+  },
+  {
+   "line": "M552 S1",
+   "class": "network",
+   "exempt": false
+  },
+  {
+   "line": "M569",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M569 P0",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M569 P0 S1",
+   "class": "hardware",
+   "exempt": false
+  },
+  {
+   "line": "M569.2 P0 R111",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M569.2 P0 R111 V5",
+   "class": "never",
+   "exempt": false
+  },
+  {
+   "line": "m569.2 p0 r111 v5",
+   "class": "never",
+   "exempt": false
+  },
+  {
+   "line": "M569.2 P0 R1 W5",
+   "class": "never",
+   "exempt": false
+  },
+  {
+   "line": "M569.1 P0",
+   "class": "never",
+   "exempt": false
+  },
+  {
+   "line": "M569.3 P0",
+   "class": "never",
+   "exempt": false
+  },
+  {
+   "line": "M918 P1",
+   "class": "never",
+   "exempt": false
+  },
+  {
+   "line": "M950 P0",
+   "class": "pins",
+   "exempt": false
+  },
+  {
+   "line": "M906 X800",
+   "class": "hardware",
+   "exempt": false
+  },
+  {
+   "line": "M906",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M208 X0:200",
+   "class": "hardware",
+   "exempt": false
+  },
+  {
+   "line": "M584 X0.0",
+   "class": "hardware",
+   "exempt": false
+  },
+  {
+   "line": "M915 X S3",
+   "class": "hardware",
+   "exempt": false
+  },
+  {
+   "line": "G0 X1",
+   "class": "move_g0g3",
+   "exempt": false
+  },
+  {
+   "line": "G1 X5 F600",
+   "class": "move_g0g3",
+   "exempt": false
+  },
+  {
+   "line": "G01 X5",
+   "class": "move_g0g3",
+   "exempt": false
+  },
+  {
+   "line": "G2 X1 I1",
+   "class": "move_g0g3",
+   "exempt": false
+  },
+  {
+   "line": "g3 x1",
+   "class": "move_g0g3",
+   "exempt": false
+  },
+  {
+   "line": "G1X5Y5",
+   "class": "move_g0g3",
+   "exempt": false
+  },
+  {
+   "line": "G53 G1 X5",
+   "class": "move_g0g3",
+   "exempt": false
+  },
+  {
+   "line": "G28",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "G28 Z",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "G90",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "G91",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "G4 P1",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "G30 S-1",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "G29 S1",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "M400",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "M290 Z0.05",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "T0",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "G10 L2 P1 X0",
+   "class": "workplace",
+   "exempt": false
+  },
+  {
+   "line": "G10 L20 P1 X0",
+   "class": "workplace",
+   "exempt": false
+  },
+  {
+   "line": "G10 P0 S200 R150",
+   "class": "heat",
+   "exempt": false
+  },
+  {
+   "line": "G10",
+   "class": "move",
+   "exempt": false
+  },
+  {
+   "line": "G54",
+   "class": "workplace",
+   "exempt": false
+  },
+  {
+   "line": "G59.1",
+   "class": "workplace",
+   "exempt": false
+  },
+  {
+   "line": "G92 X0",
+   "class": "workplace",
+   "exempt": false
+  },
+  {
+   "line": "G68 A45",
+   "class": "workplace",
+   "exempt": false
+  },
+  {
+   "line": "M140 S60",
+   "class": "heat",
+   "exempt": false
+  },
+  {
+   "line": "M104 S200",
+   "class": "heat",
+   "exempt": false
+  },
+  {
+   "line": "M106 S255",
+   "class": "heat",
+   "exempt": false
+  },
+  {
+   "line": "M5",
+   "class": "heat",
+   "exempt": false
+  },
+  {
+   "line": "M17",
+   "class": "motors",
+   "exempt": false
+  },
+  {
+   "line": "M18",
+   "class": "motors",
+   "exempt": false
+  },
+  {
+   "line": "M203 X500",
+   "class": "motors",
+   "exempt": false
+  },
+  {
+   "line": "M307 H0 A1",
+   "class": "tuning",
+   "exempt": false
+  },
+  {
+   "line": "M308 S0 P\"t\" T100000",
+   "class": "tuning",
+   "exempt": false
+  },
+  {
+   "line": "M671 X1:2 Y1:2",
+   "class": "tuning",
+   "exempt": false
+  },
+  {
+   "line": "G31 K0",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "G31 K0 P500 Z1",
+   "class": "tuning",
+   "exempt": false
+  },
+  {
+   "line": "M500",
+   "class": "persist",
+   "exempt": false
+  },
+  {
+   "line": "M997",
+   "class": "persist",
+   "exempt": false
+  },
+  {
+   "line": "M451",
+   "class": "mode",
+   "exempt": false
+  },
+  {
+   "line": "set global.selectedMode = 1",
+   "class": "mode",
+   "exempt": false
+  },
+  {
+   "line": "M98 P\"0:/sys/workshop/macros/zcal/zcal.g\"",
+   "class": "job",
+   "exempt": false
+  },
+  {
+   "line": "M98 P\"0:/macros/other.g\"",
+   "class": "macro-ajena",
+   "exempt": false
+  },
+  {
+   "line": "M98 P{var.m}",
+   "class": "macro-ajena",
+   "exempt": false
+  },
+  {
+   "line": "M32 \"a.g\"",
+   "class": "job",
+   "exempt": false
+  },
+  {
+   "line": "M226",
+   "class": "job",
+   "exempt": false
+  },
+  {
+   "line": "M80",
+   "class": "power",
+   "exempt": false
+  },
+  {
+   "line": "M81",
+   "class": "power",
+   "exempt": false
+  },
+  {
+   "line": "G1 X5 M569.2 V1",
+   "class": "never",
+   "exempt": false
+  },
+  {
+   "line": "M112 M569.1",
+   "class": "never",
+   "exempt": false
+  },
+  {
+   "line": "M105 G1 X1",
+   "class": "move_g0g3",
+   "exempt": false
+  },
+  {
+   "line": "G1 X1 M550 P\"a\" M92 X5",
+   "class": "network",
+   "exempt": false
+  },
+  {
+   "line": "M999 M105",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "M7.41",
+   "class": "unknown",
+   "exempt": false
+  },
+  {
+   "line": "M12",
+   "class": "unknown",
+   "exempt": false
+  },
+  {
+   "line": "M9999",
+   "class": "unknown",
+   "exempt": false
+  },
+  {
+   "line": "G999",
+   "class": "unknown",
+   "exempt": false
+  },
+  {
+   "line": "M8.5",
+   "class": "unknown",
+   "exempt": false
+  },
+  {
+   "line": "echo \"hi\"",
+   "class": "read",
+   "exempt": false
+  },
+  {
+   "line": "if true",
+   "class": "unknown",
+   "exempt": false
+  },
+  {
+   "line": "set global.x = 1",
+   "class": "unknown",
+   "exempt": false
+  },
+  {
+   "line": "foo bar",
+   "class": "unknown",
+   "exempt": false
+  }
+ ]
+}

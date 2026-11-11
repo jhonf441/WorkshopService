@@ -8,7 +8,7 @@ What goes in (category -> where it comes from, on the SD):
   config   sys/workshop/config/*.json     (any field named like a key / topic / password is taken out, config_store.KEYS)
   zones    sys/workshop/zones/*           (work zones, cut area)
   macros   macros/**                      (the person's own macros: lights, power, laser, jog, cnc...)
-  system   sys/modestate.g, sys/automodeselect.g, sys/mode*.g   (machine modes: hardware specific, reference only)
+  system   sys/workshop/data/modestate.g, sys/workshop/modes/*.g   (machine modes: hardware specific, reference only)
 
 What never goes in: users and PINs, the secrets file, the camera key, the Tuya key, the database, API keys, captures,
 plugin-owned macros (sys/workshop/macros come with their plugin) and config.g.
@@ -32,7 +32,9 @@ import time
 import zipfile
 
 import config_store
+import mode_paths
 import paths
+import sd_paths
 from workshop_api import ADMIN, READ, Arg, ApiError, Op
 
 FORMAT = 1
@@ -44,7 +46,7 @@ MAX_FILES = 500
 MAX_TOTAL = 8 * 1024 * 1024    # uncompressed bytes of the whole package
 MAX_ZIP = 700 * 1024           # the API request is limited to 1 MB, and base64 adds a third
 MACRO_EXT = (".g", ".gcode", ".txt", ".json", ".md")
-SYSTEM_FILES = re.compile(r"^sys/(modestate|automodeselect|mode[a-z0-9_]*)\.g$")
+SYSTEM_FILES = re.compile(r"^sys/workshop/(modes/(automodeselect|mode[a-z0-9_]*)|data/modestate)\.g$")   # mode_paths.py
 _lock = threading.Lock()
 
 
@@ -54,11 +56,11 @@ def _sd():
 
 def _safe(rel):
     """A path under the SD without .. or absolute parts, or None."""
-    rel = str(rel or "").replace("\\", "/").lstrip("/")
-    parts = [p for p in rel.split("/") if p]
-    if not parts or any(p in (".", "..") or ":" in p for p in parts):
+    try:
+        clean = sd_paths.clean_rel(rel, allow_absolute_sd=False)
+    except sd_paths.SdPathError:
         return None
-    return "/".join(parts)
+    return clean if clean and ":" not in clean else None
 
 
 def _category_of(rel):
@@ -98,9 +100,9 @@ def _walk(base, rel_base):
 
 def _candidates(sd):
     out = _walk(sd, "sys/workshop/config") + _walk(sd, "sys/workshop/zones") + _walk(sd, "macros")
-    out += [f for f in (os.path.join("sys", n) for n in sorted(os.listdir(os.path.join(sd, "sys")))
-                        if os.path.isfile(os.path.join(sd, "sys", n))) if SYSTEM_FILES.match(f.replace(os.sep, "/"))] \
-        if os.path.isdir(os.path.join(sd, "sys")) else []
+    out += [f for f in _walk(sd, mode_paths.MODES_DIR) if SYSTEM_FILES.match(f)]
+    if os.path.isfile(os.path.join(sd, *mode_paths.STATE.split("/"))):
+        out.append(mode_paths.STATE)
     return [f.replace(os.sep, "/") for f in out]
 
 
@@ -135,6 +137,10 @@ def build(categories=None, sd=None, now=None):
             continue
         payloads[rel] = raw
         entries.append({"path": rel, "category": cat, "size": len(raw), "sha256": hashlib.sha256(raw).hexdigest()})
+    if "system" in wanted:
+        # the export looks only at the new paths: say what it could not include instead of leaving it out in silence
+        for old in mode_paths.unmigrated(lambda r: os.path.isfile(os.path.join(sd, *r.split("/")))):
+            skipped.append({"path": old, "reason": "modes_unmigrated"})
     manifest = {"format": FORMAT, "created": int(now if now is not None else time.time()),
                 "categories": sorted(wanted), "files": entries}
     buf = io.BytesIO()
@@ -276,7 +282,8 @@ def _export(args, ctx):
     if len(blob) > MAX_ZIP:
         raise ApiError("too_big", "the package is bigger than the API allows; leave a category out")
     return {"name": "workshop-config-%s.zip" % time.strftime("%Y%m%d", time.localtime(manifest["created"])),
-            "data": base64.b64encode(blob).decode("ascii"), "manifest": manifest, "skipped": skipped}
+            "data": base64.b64encode(blob).decode("ascii"), "manifest": manifest, "skipped": skipped,
+            "warnings": sorted({"modes_unmigrated" for s in skipped if s["reason"] == "modes_unmigrated"})}
 
 
 def _preview(args, ctx):

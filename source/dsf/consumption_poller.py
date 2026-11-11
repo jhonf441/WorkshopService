@@ -25,6 +25,7 @@ import viewers
 import db
 import meters
 import tuya_meter
+import service_log
 from messages import M, J, B
 
 POLL_INTERVAL_S = 30
@@ -33,15 +34,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Same file used by main.py and status_light.py -- so the three sources
 # are interleaved in chronological order in a single log.
-LOG_FILE = os.path.join(BASE_DIR, "workshop-service.log")
 
 
 def log_file(msg):
-    try:
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} [consumption_poller] {msg}\n")
-    except Exception:
-        pass
+    service_log.log(msg, "consumption_poller")
 
 
 # Counter (dp 1) that goes down: a single reading at 0 is a read failure (it is not

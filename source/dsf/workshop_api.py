@@ -28,6 +28,7 @@ import secrets
 import threading
 import time
 
+import board_reply
 import messages
 
 API_VERSION = 1
@@ -61,6 +62,8 @@ class ApiError(Exception):
         "failed": 424,             # Failed Dependency: the operation ran and the machine or a program answered with an error
         "invalid_args": 422,
         "internal": 500, "busy": 503,
+        # D-15: these were raised without an entry and answered the default 400; listed with that same status, so nothing changes for a client.
+        "refused": 400, "not_found": 400, "not_implemented": 400, "too_big": 400,
     }
 
     def __init__(self, code, message, **extra):
@@ -326,7 +329,7 @@ class Registry:
             t0 = time.time()
             out = op.fn(clean, ctx)
             result, message = split_result(out)
-            if isinstance(message, str) and message.lstrip().lower().startswith("error"):
+            if isinstance(message, str) and board_reply.is_error(message, first_line_only=True):
                 raise ApiError("failed", message.strip())
             body = {"ok": True, "op": op.name, "result": result, "message": message}
             status = 200

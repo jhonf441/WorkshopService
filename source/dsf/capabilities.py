@@ -18,8 +18,9 @@ was found (present is False). Every capability has the same two keys so a
 client can do `caps[name]["present"]` without checking.
 
 env (all optional):
-    mode_files   file names found as sys/mode*.g
-    auto_mode    True if sys/automodeselect.g exists
+    modes_unmigrated  old-layout mode files still in sys/ (the wizard has not moved them): the modes are then reported as "unmigrated"
+    mode_files   file names found as sys/workshop/modes/mode*.g
+    auto_mode    True if sys/workshop/modes/automodeselect.g exists
     config_g     True if sys/config.g exists
     workshop_dir True if sys/workshop exists
     ledstrips    object model ledStrips (outside the common subscription) or None
@@ -31,6 +32,7 @@ env (all optional):
 
 get() (the I/O side) is in capabilities_io.py.
 """
+import mode_paths
 import real_mode
 import re
 
@@ -39,7 +41,7 @@ import boards_table
 SCHEMA = 1
 DISCOVERED, DECLARED, DEFAULT = "discovered", "declared", "default"
 MODE_NAMES = {"fff": "FFF", "laser": "Laser", "cnc": "CNC"}
-MODE_FILES_IGNORED = ("state",)   # sys/modestate.g is a helper of the workshop, not a mode
+MODE_FILES_IGNORED = ("state",)   # modestate.g is a helper of the workshop, not a mode (it lives in sys/workshop/data now; kept for a folder from before the move)
 
 
 def cap(present, source, **detail):
@@ -197,6 +199,17 @@ def mode_from_file(name):
 
 
 def _modes(model, env):
+    res = _modes_found(model, env)
+    old = list(env.get("modes_unmigrated") or [])
+    if old:
+        # no fallback to the old paths: the state is said out loud, so a page does not read "no modes" as "this machine has none"
+        res["state"] = "unmigrated"
+        res["unmigrated"] = old
+        res["notice"] = "modes_unmigrated: the mode files are still in the old place (%s); apply the start-up wizard (Puesta en marcha) to move them" % ", ".join(old)
+    return res
+
+
+def _modes_found(model, env):
     from_files = []
     for f in env.get("mode_files") or []:
         n = mode_from_file(f)
@@ -282,7 +295,7 @@ def _workshop(model, env):
     if "selectedMode" in ((model or {}).get("global") or {}):
         signals.append("global.selectedMode")
     if env.get("auto_mode"):
-        signals.append("sys/automodeselect.g")
+        signals.append(mode_paths.AUTO)
     return cap(True, DISCOVERED, signals=signals) if signals else _absent(signals=[])
 
 

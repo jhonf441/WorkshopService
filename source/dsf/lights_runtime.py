@@ -11,7 +11,7 @@ testable on a PC):
   build_indicator   the payload of the on-screen status indicator
   board_leds_ui     the board LEDs as the page shows them
 
-status_light.py calls these from its loop; handlers/lights.py uses a few.
+status_light.py calls these from its loop; lights_probe uses a few.
 """
 import math
 

@@ -14,14 +14,15 @@ off creates the flag and stops it. Reading the state needs no permission at all 
 import paths
 import os
 import shutil
-import subprocess
-import time
+import os_gateway
+
+import clock
 
 UNIT = "workshop-gcode-bridge.service"
 ACTIONS = ("start", "stop")
 FLAG = paths.DATA_DIR + "/bridge-disabled"   # exists = the bridge does not start by itself at boot
 _notified = {"permission": False}
-LAST = {"t": 0.0}   # when the page last asked to turn the bridge on / off (bridge_watchdog.py uses it for the reason of a start)
+LAST = {"t": 0.0}   # when (monotonic reading) the page last asked to turn the bridge on / off (bridge_watchdog.py uses it for the reason of a start)
 _permission = {"value": None, "until": 0.0}   # last known answer of the probe (True / False / None = not known yet)
 PERMISSION_S = 60
 
@@ -32,7 +33,7 @@ def _systemctl():
 
 def _run(cmd, timeout=15):
     try:
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+        r = os_gateway.run(cmd, timeout=timeout)
         return r.returncode, (r.stdout or "").strip(), (r.stderr or "").strip()
     except Exception as e:  # no systemctl (a PC), timeout...
         return 127, "", str(e)
@@ -47,7 +48,7 @@ def _can_control(active):
     """Whether polkit lets this process start the unit: True / False, or None when it cannot be known without changing
     something. pkcheck cannot be used (it only lets root pass details), so the real action is tried: "start" of a unit that
     is already running does nothing, so it is the probe; with the unit stopped it is not tried (the last answer is kept)."""
-    current_time = time.time()
+    current_time = clock.mono()  # monotonic: the cached answer expires after PERMISSION_S, whatever the wall clock does
     if _permission["value"] is not None and current_time < _permission["until"]:
         return _permission["value"]
     if not active:
@@ -109,9 +110,9 @@ def put(switched_on):
         ok, msg = fn(arg)
         if not ok:
             if _without_permission(msg):
-                _permission.update(value=False, until=time.time() + PERMISSION_S)
+                _permission.update(value=False, until=clock.mono() + PERMISSION_S)
                 return {"ok": False, "error": "no_permission", "state": status()}
             return {"ok": False, "error": msg or str(arg), "state": status()}
-    _permission.update(value=True, until=time.time() + PERMISSION_S)
-    LAST["t"] = time.time()
+    _permission.update(value=True, until=clock.mono() + PERMISSION_S)
+    LAST["t"] = clock.mono()
     return {"ok": True, "error": None, "state": status()}

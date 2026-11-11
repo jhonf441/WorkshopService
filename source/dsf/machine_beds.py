@@ -15,6 +15,7 @@ import config_scan
 import machine_config as mc
 import machine_patch as pt
 import machine_plans as plans
+import machine_sensors as ms
 import machine_tool as mt
 from workshop_api import READ, Arg, Op
 
@@ -24,9 +25,16 @@ MAX_BED = 31
 MAX_BEDS = MAX_BED + 1
 MAX_HEATER = 19
 MAX_SENSOR = 99
-PRESETS = ("thermistor", "pt1000", "thermocouple", "pt100")
-# output kind -> (mark kept in the comment of the M950 line (the extruder configuration reads it), PWM frequency, capability the pin needs)
-OUTPUTS = {"ssr": ("ssr-ca", 10, "pwm"), "ssrdc": ("ssr-dc", 10, "pwm"), "relay": ("relay", 1, "digital")}
+PRESETS = tuple(ms.PRESETS)  # the sensor types of a zone: machine_sensors.py (M308 of RepRapFirmware 3.x)
+# output kind -> (mark kept in the comment of the M950 line (the extruder configuration reads it), PWM frequency, capability the pin needs).
+# "dc" = the heater hangs straight from a MOSFET of the board (no relay): the M950 line carries no mark and no Q (the firmware default, what the
+# 3D printing page reads as "DC board"); it is only accepted on a pin that really is a bed or heater MOSFET (DIRECT_PINS), never on a fan output,
+# a low-current output, a logic io pin or an expansion board: a heater wired to the wrong output is a fire risk, so any doubt is a refusal.
+OUTPUTS = {"dc": (None, None, "pwm"), "ssr": ("ssr-ca", 10, "pwm"), "ssrdc": ("ssr-dc", 10, "pwm"), "relay": ("relay", 1, "digital")}
+# the Duet 3 MB6HC main board: out0 = the bed heater MOSFET (18 A), out1..out3 = the heater MOSFETs (6 A); the same table as the client
+# (WorkshopMachine lib/bed-output.js). out4..out9 drive fans and small loads, ioN.out is logic level, N.outM is another board: none is direct.
+DIRECT_PINS = ("out0", "out1", "out2", "out3")
+DIRECT = "dc"
 # a heater that is really defined: the mode files of the other modes DELETE the heaters with `M950 H0 C"nil"`, and those lines are not a definition
 HEATER_DEFINITION = re.compile(r'^[ \t]*M950[ \t]+H\d+[ \t]+C"(?!nil")', re.M)
 ANCHORS = ("M308", "M950", "M143", "M140", "M563")
@@ -78,6 +86,20 @@ def _state(read, om):
     return out
 
 
+def is_direct_pin(raw):
+    """True only for a bed or heater MOSFET of the main board written plainly (no inversion, no pull-up, no board prefix): the pin a heater may hang
+    from without a relay. Anything else (a fan output, a logic pin, an expansion board, an inverted pin) is not direct."""
+    text = str(raw or "").strip()
+    return text in DIRECT_PINS
+
+
+def heater_line(heater, pin, sensor, mark, freq):
+    """The M950 line of a bed heater: with a relay it carries the PWM frequency and the mark of the relay kind; direct to a MOSFET it carries neither."""
+    if mark is None:
+        return 'M950 H%d C"%s" T%d' % (heater, pin, sensor)
+    return 'M950 H%d C"%s" Q%d T%d   ; workshop:%s' % (heater, pin, freq, sensor, mark)
+
+
 def _free(used, taken, top):
     n = 0
     while n <= top and (n in used or n in taken):
@@ -115,8 +137,13 @@ def build_lines(spec, state):
         if not isinstance(output, dict) or output.get("kind") not in OUTPUTS:
             raise mt.ToolError("values", field + ".output.kind")
         mark, freq, need = OUTPUTS[output["kind"]]
-        sensor_pin = mt._pin(sensor.get("pin"), mt.SENSOR_PRESETS[sensor["preset"]][1], used, taken, field + ".sensor.pin")
-        sensor_text = mt.sensor_text(sensor["preset"], sensor, field + ".sensor")
+        sensor_pin = mt._pin(sensor.get("pin"), ms.need(sensor["preset"]), used, taken, field + ".sensor.pin")
+        try:
+            sensor_text = ms.sensor_text(sensor["preset"], sensor, sensor_pin)
+        except ms.SensorError as e:
+            raise mt.ToolError(e.code, "%s.sensor.%s" % (field, e.field))
+        if output["kind"] == DIRECT and not is_direct_pin(output.get("pin")):
+            raise mt.ToolError("pin_not_mosfet", field + ".output.pin")
         output_pin = mt._pin(output.get("pin"), need, used, taken, field + ".output.pin")
         tmax = mt._number(item.get("max_temp"), 50, 280, field + ".max_temp")
         heater = _free(state["heaters"], heaters, max_heaters - 1)
@@ -124,7 +151,7 @@ def build_lines(spec, state):
         heaters.add(heater)
         sensors.add(sensor_number)
         lines.append('M308 S%d P"%s" %s A"%s"' % (sensor_number, sensor_pin, sensor_text, name[:24]))
-        lines.append('M950 H%d C"%s" Q%d T%d   ; workshop:%s' % (heater, output_pin, freq, sensor_number, mark))
+        lines.append(heater_line(heater, output_pin, sensor_number, mark, freq))
         lines.append("M143 H%d S%s" % (heater, pt.num_text(tmax)))
         lines.append("M140 P%d H%d" % (bed, heater))
         summary.append({"bed": bed, "heater": heater, "sensor": sensor_number})
@@ -211,8 +238,9 @@ def _preview(args, ctx):
 def ops():
     return [Op("machine.beds.get", _get, READ, {}, "The beds the machine has now ([{bed, heater, sensor, editable}]), the beds that only a configuration file defines (a mode file that is not "
                "loaded now), the first heater and sensor numbers nothing uses and the first free bed numbers.", log=False),
-            Op("machine.beds.preview", _preview, READ, {"spec": Arg("obj", desc="{beds: [{bed, name?, sensor: {preset: thermistor|pt1000, pin}, output: {kind: ssr|ssrdc|relay, pin}, max_temp}]}")},
-               "The exact configuration lines the plan config.bed_heaters would write for these beds and the file they go into, or what is wrong with them. Writes nothing.", log=False)]
+            Op("machine.beds.preview", _preview, READ, {"spec": Arg("obj", desc="{beds: [{bed, name?, sensor: {preset: thermistor|pt1000|thermocouple|tc-max31856|pt100|linear-analog, pin, + the fields of the type (see docs/api)}, output: {kind: dc|ssr|ssrdc|relay, pin}, max_temp}]}")},
+               "The exact configuration lines the plan config.bed_heaters would write for these beds and the file they go into, or what is wrong with them "
+               "(dc = straight to a bed or heater MOSFET of the board, out0..out3 only: error pin_not_mosfet on any other pin). Writes nothing.", log=False)]
 
 
 PLANNERS = {"config.bed_heaters": plan_bed_heaters}

@@ -41,7 +41,7 @@
 			<v-card-text class="d-flex align-center flex-wrap" style="gap:8px">
 				<template v-if="me && me.name">
 					<strong>{{ me.name }}</strong>
-					<v-chip small outlined :color="roleColor(me.role)">{{ roleName(me.role) }}</v-chip>
+					<role-chip :role="me.role" :text="roleName(me.role)" size="small" />
 					<v-spacer />
 					<v-btn small outlined @click="openPin"><v-icon left small>mdi-form-textbox-password</v-icon>{{ $t('plugins.WorkshopService.users.change_my_pin') }}</v-btn>
 					<v-btn small outlined @click="logout"><v-icon left small>mdi-logout</v-icon>{{ $t('plugins.WorkshopService.users.log_out') }}</v-btn>
@@ -80,7 +80,7 @@
 						<tbody>
 							<tr v-for="u in state.users" :key="u.name">
 								<td><strong>{{ u.name }}</strong></td>
-								<td><v-chip x-small label :color="roleColor(u.role)" dark>{{ roleName(u.role) }}</v-chip></td>
+								<td><role-chip :role="u.role" :text="roleName(u.role)" /></td>
 								<td>
 									<span v-if="u.role === 'operator'">
 										<v-chip v-for="m in u.modes" :key="m" x-small label outlined class="mr-1">{{ modeName(m) }}</v-chip>
@@ -210,8 +210,8 @@ import { api, adoptSession, changePin, currentIdentity, logout, onIdentity, whoa
 import { signedOut } from './workshop-auth.js'
 import { roleMixin } from './role-mixin.js'
 import SessionNotice from './SessionNotice.vue'
+import RoleChip from './RoleChip.vue'
 
-const ROLE_COLORS = { viewer: 'blue-grey', operator: 'primary', technician: 'amber darken-3', admin: 'error' };
 const PIN_RE = /^[0-9]{4,12}$/;
 
 function emptyForm() {
@@ -220,7 +220,7 @@ function emptyForm() {
 
 export default {
 	name: 'UsersCard',
-	components: { SessionNotice },
+	components: { SessionNotice, RoleChip },
 	mixins: [roleMixin],
 	// the people, the sessions and every open form or dialog came from the session that left (ESTANDAR 3.3): emptied on sign-out / change of role
 	sessionData: ['state', 'cfg', 'showPins', 'dlgOff', 'offPin', 'offError', 'first', 'form', 'dlg', 'pinForm', 'dlgPin', 'armed', 'busy', 'error', 'formError', 'msg', 'closeMsg'],
@@ -271,7 +271,6 @@ export default {
 		// a custom role shows its own name (users.list sends custom_roles)
 		roleName(r) { return (this.state.custom_roles || []).includes(r) ? r : this.$t('plugins.WorkshopService.users.role_' + r); },
 		modeName(m) { return this.$t('plugins.WorkshopService.users.mode_' + m); },
-		roleColor(r) { return ROLE_COLORS[r] || 'grey'; },
 		date(t) { try { return new Date(t * 1000).toLocaleString(this.$i18n.locale); } catch (e) { return String(t); } },
 		isMe(u) { return !!this.me && this.me.name.toLowerCase() === String(u.name).toLowerCase(); },
 		fail(e) { return e && e.code !== 'cancelled' ? (e.message || String(e)) : ''; },

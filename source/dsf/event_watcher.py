@@ -36,9 +36,9 @@ import heartbeats
 
 import activity
 import machine_state
+import service_log
 from messages import M, Msg
 
-LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workshop-service.log")
 REPEAT_WINDOW_S = 30  # same message within this window = same burst
 EVENTLOG = paths.SYS + "/eventlog.txt"
 EVENTLOG_POLL_S = 2
@@ -71,11 +71,7 @@ def _summary_plugin(lines):
 
 
 def log_file(msg):
-    try:
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} [event_watcher] {msg}\n")
-    except Exception:
-        pass
+    service_log.log(msg, "event_watcher")
 
 
 

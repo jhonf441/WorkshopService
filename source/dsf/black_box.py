@@ -45,6 +45,7 @@ It reads the machine state ONLY from what someone else already read (machine_sta
 without asking DSF for anything): the black box cannot add load or hang with DSF.
 
 """
+import clock
 import paths
 import json
 import os
@@ -592,6 +593,11 @@ def _hz():
 _box = {"c": None, "pending": [], "bridge": None}
 
 
+def current():
+    """The running black box, or None while it is not active."""
+    return _box["c"]
+
+
 def _sources_service(bridge):
     """What the black box reads from the rest of the service, without asking for anything new."""
     import machine_state
@@ -617,7 +623,7 @@ def _sources_service(bridge):
 
     def slow():
         import heartbeats
-        current_time = time.time()
+        current_time = clock.mono()  # heartbeats keep monotonic readings
         out = []
         for n, d in list(heartbeats._info.items()):
             u, e = d.get("last_ok"), d.get("expected_s") or 0

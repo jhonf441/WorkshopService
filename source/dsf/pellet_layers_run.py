@@ -22,6 +22,10 @@ _lock = threading.RLock()
 _state = {"run": None, "last": None, "tables": {}}
 
 
+class Conflict(ValueError):
+    """Another run already holds what this one needs (a pellet profile and a recipe with an extruder track never run together)."""
+
+
 def _is_error(answer):
     return bool(re.search(r"error|abort", str(answer or ""), re.I))
 
@@ -43,6 +47,9 @@ def arm(name, file, who, now=None):
         cur = _state["run"]
         if cur is not None and not cur.ended:
             raise ValueError(M("pellet_layers_err_already_armed", profile=cur.name))
+        import layer_recipes_run  # imported here: that module imports this one
+        if layer_recipes_run.armed_extruder():
+            raise Conflict(M("pellet_layers_err_recipe_armed", recipe=layer_recipes_run.armed_recipe()))
         _state["run"] = pl.Run(name, profiles[name], file.strip(), now, who)
         _state["last"] = None
     return status()
@@ -180,6 +187,8 @@ def run_loop(bridge, config):
                 continue
             model = machine_state.get_status(timeout=2)
             tick(model, send, record)
+            import layer_recipes_run  # a recipe armed for a job runs in this same pass (one thread, one heartbeat)
+            layer_recipes_run.tick(model, send, record)
             try:
                 import messages
                 bridge.set_status(KEY_STATE, messages.data(status()))

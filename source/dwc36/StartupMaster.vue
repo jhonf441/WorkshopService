@@ -1,15 +1,15 @@
 <template>
-	<v-card v-if="rows.length" class="mb-3 svc-startup-master">
+	<v-card v-if="rows.length" :flat="embedded" :class="embedded ? 'svc-startup-master' : 'mb-3 svc-startup-master'">
 		<!-- Setup of the whole machine (2026-10-24). One line per INSTALLED plugin with what its own start-up card last said
 		     (readiness.list). A plugin that is not installed or not enabled has no line; one that was never opened says
 		     "not checked yet", never "ready". The card itself lives in each plugin's page: this only points at it. -->
-		<v-card-title class="d-flex align-center flex-wrap" style="gap:8px">
+		<v-card-title v-if="!embedded" class="d-flex align-center flex-wrap" style="gap:8px">
 			<span><v-icon small class="mr-2 svx-ico">mdi-rocket-launch-outline</v-icon>{{ $t(T + 'title') }}</span>
 			<v-chip small outlined :color="needsLogin ? undefined : summary.pending ? 'warning' : summary.unchecked ? undefined : 'success'">{{ summaryText }}</v-chip>
 			<v-spacer />
 			<v-btn small text :loading="loading" @click="read()"><v-icon small left>mdi-refresh</v-icon>{{ $t('plugins.WorkshopService.common.refresh') }}</v-btn>
 		</v-card-title>
-		<v-card-text>
+		<v-card-text :class="{ 'pa-0': embedded }">
 			<div class="text-body-2 mb-3 svc-sm-intro">{{ $t(T + 'intro') }}</div>
 			<session-notice v-if="needsLogin" kind="session" variant="section" />
 			<lock-reason v-else-if="refusedRole" kind="role" need="viewer" />
@@ -70,6 +70,8 @@ const PLUGINS = [
 export default {
 	components: { SessionNotice, LockReason },
 	mixins: [roleMixin],
+	// embedded: drawn inside the one "Puesta en marcha" section (StartupSection.vue), which owns the title, the total and the refresh button
+	props: { embedded: { type: Boolean, default: false } },
 	// what each plugin reported was read with the session that left (ESTANDAR 3.3): emptied on sign-out / change of role, read again by the listener below
 	sessionData: ['reported', 'needsLogin', 'refusedRole', 'loading'],
 	data() {
@@ -100,6 +102,8 @@ export default {
 				unchecked: this.rows.length - withData.length
 			};
 		},
+		// what the section above needs for its total
+		reportState() { return { rows: this.rows.length, pending: this.summary.pending, unchecked: this.summary.unchecked, needsLogin: this.needsLogin, loading: this.loading }; },
 		summaryText() {
 			const s = this.summary;
 			if (this.needsLogin) return this.$t(this.T + 'sum_login');
@@ -145,6 +149,7 @@ export default {
 			}
 		}
 	},
+	watch: { reportState: { immediate: true, deep: true, handler(v) { this.$emit('state', v); } } },
 	created() { this._gen = 0; },
 	mounted() {
 		this.read();

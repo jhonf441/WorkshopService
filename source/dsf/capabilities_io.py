@@ -15,6 +15,7 @@ import time
 
 import capabilities
 import config_scan
+import mode_paths
 import paths
 
 CACHE_S = 30
@@ -46,15 +47,22 @@ def _led_strips():
 
 
 def sd_listing(sys_dir=None):
-    """Files of sys/ that decide the modes, plus the markers of the workshop."""
+    """Files that decide the modes (sys/workshop/modes, see mode_paths.py) and the markers of the workshop. `sys_dir` is the sys/ folder."""
     sys_dir = sys_dir or paths.SYS
     try:
         names = os.listdir(sys_dir)
     except OSError:
         names = []
+    modes_dir = os.path.join(sys_dir, *mode_paths.MODES_DIR.split("/")[1:])
+    try:
+        in_modes = os.listdir(modes_dir)
+    except OSError:
+        in_modes = []
+    old = mode_paths.unmigrated(lambda rel: os.path.exists(os.path.join(sys_dir, *rel.split("/")[1:])))
     return {
-        "mode_files": sorted(n for n in names if re.match(r"^mode.+\.g$", n, re.I)),
-        "auto_mode": "automodeselect.g" in names,
+        "modes_unmigrated": old,
+        "mode_files": sorted(n for n in in_modes if re.match(r"^mode.+\.g$", n, re.I)),
+        "auto_mode": "automodeselect.g" in in_modes,
         "config_g": "config.g" in names,
         "workshop_dir": os.path.isdir(os.path.join(sys_dir, "workshop")),
     }
@@ -88,13 +96,13 @@ def _profile():
 def read_sd_text(path):
     """Text of a file of the SD ("0:/sys/config.g") or None; a file bigger than 400 kB is not read (it is not a configuration file)."""
     import sd_paths
-    real = sd_paths.sd(path)
     try:
+        real = sd_paths.resolve(path)
         if os.path.getsize(real) > config_scan.MAX_BYTES:
             return None
         with open(real, encoding="utf-8", errors="replace") as f:
             return f.read()
-    except OSError:
+    except (OSError, sd_paths.SdPathError):
         return None
 
 

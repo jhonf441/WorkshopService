@@ -19,10 +19,22 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 MANIFEST = os.path.join(HERE, "bridge-manifest.json")
 VERSION_FILE = os.path.join(HERE, "VERSION")
 NAME = "workshop-gcode-bridge"
-# what install.sh puts on the Pi: the code (to /opt/workshop-bridge), the unit template and the installer itself
+# what install.sh puts on the Pi: the code (to /opt/workshop-bridge), the package of modules next to it (bridge_pkg/), the unit template and
+# the installer itself. The package is listed from the folder, so a new module cannot be forgotten here (install.sh has its own list and a
+# test compares the two: a module missing from install.sh would leave the bridge unable to start on the Pi).
 CODE = ("gcode_bridge.py", "live_resume.py", "live_stop.py")
+PKG_DIR = "bridge_pkg"
 OTHER = ("workshop-gcode-bridge.service", "install.sh")
-FILES = CODE + OTHER
+
+
+def package_files():
+    folder = os.path.join(HERE, PKG_DIR)
+    if not os.path.isdir(folder):
+        return ()
+    return tuple("%s/%s" % (PKG_DIR, n) for n in sorted(os.listdir(folder)) if n.endswith(".py"))
+
+
+FILES = CODE + package_files() + OTHER
 
 
 def sha256(path):
@@ -32,18 +44,19 @@ def sha256(path):
 
 
 def source_value(name):
-    with open(os.path.join(HERE, "gcode_bridge.py"), encoding="utf-8") as fh:
+    with open(os.path.join(HERE, PKG_DIR, "identity.py"), encoding="utf-8") as fh:
         m = re.search(r"^%s = ([0-9]+|\"[^\"]*\")" % name, fh.read(), re.M)
     if not m:
-        raise SystemExit("gcode_bridge.py has no %s constant" % name)
+        raise SystemExit("%s/identity.py has no %s constant" % (PKG_DIR, name))
     return json.loads(m.group(1))
 
 
 def build():
+    files = CODE + package_files() + OTHER
     with open(VERSION_FILE, encoding="utf-8") as fh:
         version = fh.read().strip()
     return {"name": NAME, "version": version, "contract": source_value("CONTRACT"), "schema": source_value("SCHEMA"),
-            "files": {f: {"sha256": sha256(os.path.join(HERE, f))} for f in FILES}}
+            "files": {f: {"sha256": sha256(os.path.join(HERE, f))} for f in files}}
 
 
 def problems():
@@ -54,7 +67,7 @@ def problems():
     except (OSError, SystemExit) as e:
         return ["cannot build the manifest: %s" % e]
     if built["version"] != source_value("VERSION"):
-        out.append("VERSION says %s, gcode_bridge.VERSION says %s" % (built["version"], source_value("VERSION")))
+        out.append("VERSION says %s, bridge_pkg/identity.py VERSION says %s" % (built["version"], source_value("VERSION")))
     try:
         with open(MANIFEST, encoding="utf-8") as fh:
             have = json.load(fh)

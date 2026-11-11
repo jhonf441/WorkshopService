@@ -325,9 +325,9 @@ def _merge_final(fb, o):
 def read_bytes(path):
     import sd_paths
     try:
-        with open(sd_paths.sd(path), "rb") as f:
+        with open(sd_paths.resolve(path), "rb") as f:
             return f.read()
-    except OSError:
+    except (OSError, sd_paths.SdPathError):
         return None
 
 
@@ -352,6 +352,9 @@ def _file_entry(path, before, after_text):
     return {"path": path, "rel": rel_of(path), "exists": before is not None, "sha_before": sha_of(before) if before is not None else None,
             "sha_after": sha_of(new), "new": new, "changed": new != (before or b"") or before is None, "diff": diff[:MAX_DIFF_LINES],
             "diff_cut": len(diff) > MAX_DIFF_LINES}
+
+
+file_entry = _file_entry  # public name for the planners of other modules (machine_heater_save.py)
 
 
 # ---- plans ----
@@ -457,9 +460,10 @@ def planners():
     import machine_plans
     import machine_plans_motion
     import machine_beds
-    import machine_bed_edit
+    import machine_bed_edit, machine_heater_save
     import machine_tool
-    return dict(PLANNERS, **machine_plans.PLANNERS, **machine_plans_motion.PLANNERS, **machine_tool.PLANNERS, **machine_beds.PLANNERS, **machine_bed_edit.PLANNERS)
+    return dict(PLANNERS, **machine_plans.PLANNERS, **machine_plans_motion.PLANNERS, **machine_tool.PLANNERS, **machine_beds.PLANNERS, **machine_bed_edit.PLANNERS,
+                **machine_heater_save.PLANNERS)
 
 
 def make_plan(kind, values, env, who=None, now=None):
@@ -581,7 +585,8 @@ def _msg_code(code):
     return code if code in ("no_config", "not_utf8", "bad_value", "no_points", "too_many_points", "too_few_points", "out_of_reach",
                             "duplicate_point", "no_limits", "patch_expression", "patch_unsupported_form", "patch_bad_axis",
                             "patch_missing_line", "current_over_limit", "bad_type", "no_frequency", "tool_exists", "pin_used", "pin_unknown", "pin_capability", "driver_unknown",
-                            "driver_used", "laser_mode", "tool_name", "bed_exists", "bed_missing", "heater_used", "sensor_used", "no_sensor_link") else "other"
+                            "driver_used", "laser_mode", "tool_name", "bed_exists", "bed_missing", "not_bed_heater", "no_heater_line", "heater_used", "sensor_used", "no_sensor_link",
+                            "pin_not_mosfet", "tc_type", "mains", "wires", "rtd_ref", "analog_range", "analog_filter", "therm_c") else "other"
 
 
 def _role_ok(ctx, kind):
@@ -675,7 +680,7 @@ def ops():
     a = Arg
     kinds = ("config.m671 (values {x: [..], y: [..], s, p, f}), config.bed (values {points: [{x, y}], k, s, passes, tol, rehome_z}), "
              "config.g31 ({k, p, x, y, z}), config.m208 (admin; {axes: {X: {min, max}}}), config.m92 (admin; {axes: {X: steps}}), "
-             "config.g10 ({tool, offsets: {X, Y, Z}}), config.tool (a new tool), config.bed_heaters ({beds: [{bed, sensor, output, max_temp}]}: the sensor, heater and M140 P H of each zone of a split bed), config.bed_edit ({spec: {bed, heater?, sensor?}}: another heater / sensor number for a bed the configuration already defines). The work offsets G54..G59.3 have no kind: they are the work zones of the Workbench")
+             "config.g10 ({tool, offsets: {X, Y, Z}}), config.tool (a new tool), config.bed_heaters ({beds: [{bed, sensor, output, max_temp}]}: the sensor, heater and M140 P H of each zone of a split bed), config.bed_edit ({spec: {bed, heater?, sensor?}}: another heater / sensor number for a bed the configuration already defines), config.heater_model ({heaters: [{heater, r, k, kf, d, s, v?, b?, e?}]}: the M307 of bed heaters), config.heater_cap ({heaters: [{heater, max}]}: the M143 cap of bed heaters). The work offsets G54..G59.3 have no kind: they are the work zones of the Workbench")
     return [
         Op("machine.config.plan", _plan_op, READ, {"kind": a(S, True, desc="Kind of change: " + kinds + "."),
                                                   "values": a(O, desc="The values of the kind.")},

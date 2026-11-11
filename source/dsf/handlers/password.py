@@ -16,26 +16,28 @@ The value is never saved in the command history (main._mask).
 """
 import paths
 import re
-import shutil
 import time
 
 import activity
+import board_reply
+import fs_atomic
 from messages import M, J, B
 
 CONFIG_G = paths.CONFIG_G
-# active M551 (not commented out), with or without spaces before it
-_RE_M551 = re.compile(r'^(\s*)M551\b.*$', re.M | re.I)
+# active M551 (not commented out), with or without spaces before it. Works on BYTES: the rest of config.g is never decoded, so a
+# byte that is not UTF-8 (an old Latin-1 comment) and the line endings (CRLF) go back exactly as they were.
+_RE_M551 = re.compile(rb'^([ \t]*)M551\b[^\r\n]*(?=\r?$)', re.M | re.I)
 _MARK = "; DWC password (System service page > Password)"
 
 
 def _read():
-    with open(CONFIG_G, encoding="utf-8", errors="replace") as f:
+    with open(CONFIG_G, "rb") as f:
         return f.read()
 
 
 def _has(raw_text):
     for m in _RE_M551.finditer(raw_text):
-        if not re.search(r'P"reprap"', m.group(0), re.I):
+        if not re.search(rb'P"reprap"', m.group(0), re.I):
             return True
     return False
 
@@ -45,19 +47,14 @@ def _back_up():
     otherwise pile up every old password in plain text, readable by anyone who can read the SD card. Restoring a copy therefore
     leaves DWC without a password (set it again)."""
     destination = f"{CONFIG_G}.bak-password-{time.strftime('%Y%m%d-%H%M%S')}"
-    shutil.copy2(CONFIG_G, destination)
-    with open(destination, "r", encoding="utf-8", errors="replace", newline="") as f:
-        raw_text = f.read()
-    hidden = _RE_M551.sub(lambda m: m.group(1) + "; M551 (the password is not kept in this copy)", raw_text)
-    if hidden != raw_text:
-        with open(destination, "w", encoding="utf-8", newline="") as f:
-            f.write(hidden)
+    raw_text = _read()
+    hidden = _RE_M551.sub(lambda m: m.group(1) + b"; M551 (the password is not kept in this copy)", raw_text)
+    fs_atomic.write_bytes(destination, hidden)
     return destination
 
 
 def _write(raw_text):
-    with open(CONFIG_G, "w", encoding="utf-8") as f:
-        f.write(raw_text)
+    fs_atomic.write_bytes(CONFIG_G, raw_text)
 
 
 def _valid(key):
@@ -86,7 +83,7 @@ def run(params, bridge, config):
         try:
             raw_text = _read()
             backup = _back_up()
-            line = f'M551 P"{key}" {_MARK}'
+            line = f'M551 P"{key}" {_MARK}'.encode("utf-8")
             if _RE_M551.search(raw_text):
                 # replaces the first active one and comments out the others
                 first = [True]
@@ -95,17 +92,17 @@ def run(params, bridge, config):
                     if first[0]:
                         first[0] = False
                         return m.group(1) + line
-                    return m.group(1) + "; M551 (disabled: there is another one above)"
+                    return m.group(1) + b"; M551 (disabled: there is another one above)"
 
                 raw_text = _RE_M551.sub(_rep, raw_text)
             else:
-                raw_text = raw_text.rstrip("\n") + "\n\n" + line + "\n"
+                raw_text = raw_text.rstrip(b"\n") + b"\n\n" + line + b"\n"
             _write(raw_text)
         except OSError as e:
             return M("password_password_could_not_write_config_g", e=e)
         r = str(bridge.send(f'M551 P"{key}"') or "")
         activity.log_event(bridge, "config", M("dwc_password_changed"))
-        notice = M("password_note_board_answered", strip=r.strip()) if "rror" in r else ""
+        notice = M("password_note_board_answered", strip=r.strip()) if board_reply.is_error(r) else ""
         return M("password_dwc_password_set_config_g_backup", rsplit=backup.rsplit('/', 1)[-1], notice=notice)
 
     if action in ("clear", "remove"):
@@ -114,7 +111,7 @@ def run(params, bridge, config):
             if not _RE_M551.search(raw_text):
                 return M("password_dwc_password_there_was_no_password")
             backup = _back_up()
-            raw_text = _RE_M551.sub(lambda m: m.group(1) + "; M551 (password removed from the page)", raw_text)
+            raw_text = _RE_M551.sub(lambda m: m.group(1) + b"; M551 (password removed from the page)", raw_text)
             _write(raw_text)
         except OSError as e:
             return M("password_password_could_not_write_config_g", e=e)

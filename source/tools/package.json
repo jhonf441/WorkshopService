@@ -1,0 +1,4 @@
+{
+  "private": true,
+  "description": "vue-cli (is-file-esm) looks for a package.json next to the config file it loads: tools/vue.config.fast.js"
+}

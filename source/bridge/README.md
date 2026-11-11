@@ -38,7 +38,7 @@ Do it with no live job running: restarting the bridge cuts its connections.
 | File (on the SD, `0:/sys/workshop/...`) | Purpose |
 |---|---|
 | `config/bridge.json` | Settings, reloaded when the file changes (port change reopens the socket without cutting clients). |
-| `data/bridge-state.json` | State, health and activity, written every 2 s (1 s while debug is on). |
+| `data/bridge-state.json` | State, health and activity, written when its content changes (checked twice a second) and at least every 5 s, so its age stays under 8 s. |
 | `data/bridge-action.json` | Actions from the page: `{"seq": n, "action": "...", ...}`. |
 | `data/bridge-viewer.json` | Heartbeat of the page's Debug view; only its modification time matters. |
 
@@ -49,7 +49,7 @@ The action file is created if missing; the state is regenerated.
 `port` (23), `exclusive` (true), `queries` (M114, M115, M105, M119, M122, M408, M503, M27, M20, M36),
 `names` ({ip: name}), `extended_greeting`, `debug`, `debug_timeout_min` (30),
 `allowed` ([] = local network only), `trusted`, `password_hash`/`password_salt`
-(`scrypt$<hex>` with the salt in `password_salt`; the older plain sha256(salt + password) is still accepted until the password is set again), `max_connections` (8), `password_attempts` (5),
+(`scrypt$<hex>` with the salt in `password_salt`; a hash in any other format, such as the old plain sha256(salt + password), counts as no password and is logged once: set the password again), `max_connections` (8), `password_attempts` (5),
 `block_seconds` (300), `blocked`, and the line-handling knobs:
 `order_timeout_s` (120), `query_timeout_s` (3), `query_cache_ms` ({code: ms}; defaults
 M114 500, M408 500, M105 1000, M119 1000, M27 1000, M36 2000, M20 5000, M122 5000, M503 30000,

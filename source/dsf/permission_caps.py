@@ -27,9 +27,9 @@ CLASSES = ("read", "write", "motion", "stop", "power", "admin")
 HARDWARE_PARAMS = "machine.hardware_params"
 
 # Operations that can NEVER be granted to a role that is not an administrator (the owner's list of 2026-11-06).
-NOT_DELEGABLE = ("users.*", "roles.*", "keys.*", "password.*", "auth.resolve", "package.apply", "profile.set", "config.restore",
+NOT_DELEGABLE = ("users.*", "roles.*", "access.*", "keys.*", "password.*", "auth.resolve", "package.apply", "profile.set", "config.restore",
                  "power.full_reset", "comms.set", "guard.set", "db.folder", "db.delete_previous", "activity.delete", "activity.clear",
-                 "history.delete", "lights.apply_m950")
+                 "history.delete", "audit.verify", "audit.export", "audit.settings", "lights.apply_m950", "machine.history.restore", "startup.integrity.restore*", "startup.apply")
 
 
 def _c(category, klass, risk, *ops):
@@ -40,11 +40,11 @@ def _c(category, klass, risk, *ops):
 CAPABILITIES = {
     # -- machine and movement --
     "machine.view": _c("machine", "read", 1, "state.get", "motion.state", "motion.ask", "frame.status", "view.heartbeat", "pid.status", "pid.trace",
-                       "motors.reread", "safety.status", "guard.status", "bedzones.get", "pelletlayers.list", "pelletlayers.get", "pelletlayers.status", "readiness.list", "workstate.get", "machine.overview",
+                       "motors.reread", "safety.status", "guard.status", "bedzones.get", "bedcal.status", "pelletlayers.list", "pelletlayers.get", "pelletlayers.status", "layerrecipes.list", "layerrecipes.get", "layerrecipes.preview", "layerrecipes.status", "bedestimates.get", "readiness.list", "workstate.get", "machine.overview",
                        "machine.state", "machine.runs", "machine.layout", "machine.limits.get", "machine.power.get", "machine.offsets.get",
                        "machine.tool.get", "machine.beds.get", "machine.motion.get", "machine.shaping.get", "machine.workarea.get",
                        "machine.workarea.positions", "machine.mesh.list", "machine.mesh.get", "machine.maintenance.get", "machine.height.get"),
-    "machine.stop": _c("machine", "stop", 1, "jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "pelletlayers.disarm", "machine.stop",
+    "machine.stop": _c("machine", "stop", 1, "jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "bedcal.stop", "pelletlayers.disarm", "layerrecipes.disarm", "machine.stop",
                        "livejob.stop_safe"),
     "machine.move": _c("machine", "motion", 2, "jog.xy", "jog.z", "jog.axis", "jog.free", "frame.start", "motion.reserve", "motion.renew",
                        "motion.release"),
@@ -54,16 +54,20 @@ CAPABILITIES = {
     "machine.workarea": _c("machine", "motion", 2, "machine.workarea.save", "machine.workarea.step", "machine.workarea.release"),
     "machine.procedures": _c("machine", "motion", 3, "machine.run", "machine.mark_cross", "machine.test_move", "machine.shaping.test", "pid.start",
                              "machine.power.resume"),
+    "system.bed_calibration": _c("system", "motion", 3, "bedcal.plan", "bedcal.preheat", "bedcal.tune"),
     "machine.meshes": _c("machine", "write", 2, "machine.mesh.load", "machine.mesh.clear", "machine.mesh.save", "machine.mesh.delete",
                          "machine.mesh.taper", "machine.calc", "machine.offsets.snapshot"),
     "machine.maintenance": _c("machine", "write", 1, "machine.maintenance.done", "machine.maintenance.plan.set"),
     "machine.config_view": _c("machine", "read", 2, "machine.config.plan", "machine.history.list", "machine.history.get", "machine.history.compare",
                               "machine.report", "machine.tool.pins", "machine.tool.preview", "machine.beds.preview"),
-    "machine.config_apply": _c("machine", "write", 3, "machine.config.apply", "machine.history.restore"),
+    "machine.config_apply": _c("machine", "write", 3, "machine.config.apply"),
+    # decision of the owner (2026-11-11): restoring a configuration record is for administrators only, never delegable (NOT_DELEGABLE)
+    "machine.config_restore": _c("machine", "admin", 4, "machine.history.restore"),
     "machine.try": _c("machine", "motion", 3, "machine.try", "machine.try.pending"),
     HARDWARE_PARAMS: _c("machine", "admin", 4),
     "system.bedzones": _c("system", "write", 2, "bedzones.setpoint", "bedzones.set"),
     "system.pelletlayers": _c("system", "write", 3, "pelletlayers.set", "pelletlayers.remove", "pelletlayers.arm"),
+    "system.layerrecipes": _c("system", "write", 3, "layerrecipes.set", "layerrecipes.remove", "layerrecipes.import_pellet", "layerrecipes.arm", "bedestimates.set"),
     "machine.workstate": _c("machine", "write", 1, "workstate.set", "readiness.report"),
     "machine.guard": _c("machine", "admin", 3, "guard.set"),
     # -- jobs and laser --
@@ -71,6 +75,8 @@ CAPABILITIES = {
     "jobs.run": _c("jobs", "motion", 2, "job.start", "job.end", "job.cancel", "job.close"),
     "jobs.manage": _c("jobs", "write", 2, "job.timeout", "livejob.interrupted.discard", "livejob.interrupted.hide", "livejob.resume.arm",
                       "livejob.resume.disarm"),
+    "jobs.library": _c("system", "read", 1, "gcodelib.list", "gcodelib.info", "gcodelib.thumbnail", "gcodelib.layers"),
+    "jobs.library_manage": _c("system", "write", 2, "gcodelib.refresh", "gcodelib.forget"),
     "jobs.air": _c("jobs", "write", 1, "air.set", "air.auto", "air.delay"),
     # -- lights and status --
     "lights.view": _c("lights", "read", 1, "lights.get"),
@@ -102,13 +108,15 @@ CAPABILITIES = {
     # -- users and security --
     "security.session": _c("security", "write", 1, "auth.login", "auth.logout", "auth.whoami", "auth.keepalive", "auth.change_pin"),
     "security.audit": _c("security", "admin", 3, "audit.list"),
+    "security.audit_tools": _c("security", "admin", 4, "audit.verify", "audit.export", "audit.settings"),
     "security.users": _c("security", "admin", 4, "users.*", "auth.resolve"),
     "security.roles": _c("security", "admin", 4, "roles.*"),
+    "security.access": _c("security", "admin", 4, "access.*"),
     "security.keys": _c("security", "admin", 4, "keys.*"),
     "security.passwords": _c("security", "admin", 4, "password.*"),
     # -- configuration --
     "config.view": _c("config", "read", 1, "config.guard", "config.list", "config.get", "comms.get", "profile.get", "capabilities.get", "settings.get",
-                      "modules.list", "examples.list", "package.export", "package.preview", "preflight.run", "plugins.stopped.get", "db.status"),
+                      "modules.list", "examples.list", "startup.integrity", "startup.files", "startup.file.view", "startup.plan", "startup.runs.*", "package.export", "package.preview", "preflight.run", "plugins.stopped.get", "db.status"),
     "config.api": _c("config", "read", 1, "api.describe", "api.ping"),
     "config.edit": _c("config", "write", 2, "config.snapshot", "config.commit", "config.lock", "config.unlock", "config.arm", "config.confirm",
                       "config.rollback", "settings.set", "settings.merge", "examples.create"),
@@ -118,7 +126,7 @@ CAPABILITIES = {
     "service.restart": _c("system", "admin", 3, "service.restart"),
     "system.plugins": _c("system", "write", 1, "plugins.stopped.set"),
     "config.bridge": _c("config", "write", 2, "bridge.test", "bridge.service", "bridge.service.set"),
-    "config.critical": _c("config", "admin", 4, "config.restore", "package.apply", "profile.set", "comms.set"),
+    "config.critical": _c("config", "admin", 4, "config.restore", "package.apply", "startup.integrity.restore.preview", "startup.integrity.restore", "startup.apply", "profile.set", "comms.set"),
     # -- system --
     "system.view": _c("system", "read", 1, "health.history"),
     "config.database": _c("config", "write", 2, "db.places", "db.backup", "db.keep", "db.settings"),
@@ -126,7 +134,7 @@ CAPABILITIES = {
 }
 
 # The operation an escalation lifts: permissions.ESCALATE_IN needs HARDWARE_PARAMS for these.
-HARDWARE_OPS = ("machine.config.apply", "machine.history.restore", "machine.try")
+HARDWARE_OPS = ("machine.config.apply", "machine.try")
 
 _memo = {}
 

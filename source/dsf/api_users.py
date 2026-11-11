@@ -1,18 +1,14 @@
 """
-api_users -- the operations auth.*, users.* and audit.list of the API (F1-A of the redesign, 2026-10-21).
+api_users -- the operations auth.* and users.* of the API (audit.* are in audit_ops.py) (F1-A of the redesign, 2026-10-21).
 
   auth.login(name, pin) -> token       the person identifies; the token goes in the header X-Workshop-Token
   auth.logout, auth.whoami, auth.keepalive, auth.change_pin
   users.list / add / set / remove / reset_pin / settings      administrator only (permissions.py)
-  audit.list                                                  administrator only, read only
 
 The rules (roles, PINs, locks) are in users.py and permissions.py; the application on every call is in identity.py. This file
 only maps the named arguments to them and the errors to answers. The PINs never reach the history of commands or the audit
 (api_ops._SECRET_ARGS, audit.SECRET_ARGS) and the answers of auth.* are not stored.
 """
-import time
-
-import db
 import identity
 import permission_caps
 import permissions
@@ -186,18 +182,6 @@ def make_ops(store_of):
             raise ApiError("failed", M("users_err_admin_only"))
         return {"enabled": bool(call(st.set_enabled, on, _actor(ctx), args.get("pin"), _client(ctx)).get("enabled", True))}
 
-    def audit_list(args, ctx):
-        since = str(args.get("from") or "").strip() or time.strftime("%Y-%m-%d")
-        until = str(args.get("to") or "").strip() or since
-        if len(since) == 10:
-            since += "T00:00:00"
-        if len(until) == 10:
-            until += "T23:59:59"
-        total, rows, who = db.audit_query(since, until, user=str(args.get("user") or "").strip() or None,
-                                          op=str(args.get("op") or "").strip() or None, only_errors=bool(args.get("errors")),
-                                          limit=args.get("limit") or 50, offset=args.get("offset") or 0)
-        return {"total": total, "rows": rows, "users": who}
-
     d_name = "Name of the person (1 to 32 letters, digits, spaces, dots or hyphens)."
     d_pin = "PIN: %d to %d digits." % (users.MIN_PIN, users.MAX_PIN)
     d_role = "viewer, operator, technician or admin, or the name of a custom role (roles.list)."
@@ -244,10 +228,4 @@ def make_ops(store_of):
            {"enabled": a(B, True, desc="False switches the roles off: nobody is asked to identify and everybody is an administrator again, the people stay saved. True switches them on."),
             "pin": a(S, desc="The PIN of the administrator who asks (needed to switch off).")},
            "Switches the roles and PINs on or off without deleting the people. Switching off ends every session and needs the administrator's PIN; it also opens the camera and Vision on the network."),
-        Op("audit.list", audit_list, ADMIN,
-           {"from": a(S, desc="Start (YYYY-MM-DD or full date and time); default today."), "to": a(S, desc="End, same format; default the same day."),
-            "user": a(S, desc="Only this person."), "op": a(S, desc="Only operations starting with this text."),
-            "errors": a(B, desc="Only refused or failed calls."), "limit": a(I, min=1, max=200, default=50, desc="Rows per page."),
-            "offset": a(I, min=0, default=0, desc="Rows to skip.")},
-           "Reads the audit: who did what, from which device. It cannot be changed or deleted from the API."),
     ]

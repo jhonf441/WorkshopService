@@ -5,7 +5,10 @@
     dist/release/WorkshopService-<ver>-dwc3.7.zip   dwcVersion "3.7", sbcDsfVersion "3.7": DWC 3.7.x / DSF 3.7.x install it, nothing else does
     dist/release/SHA256SUMS.txt
 
-    python tools/build_release.py                 3.6 build, 3.7 build, finalize, check, sums (about 10 minutes, mostly the 3.6 webpack build)
+    python tools/build_release.py                 3.6 build in FAST mode (tools/vue.config.fast.js), finalize, check, sums
+    python tools/build_release.py --completa      the 3.6 build with DWC's own config (about 10 minutes): the one to publish
+    python tools/build_release.py --reuse-bundle [--from <ver>]
+                                                  no webpack: js / css of an earlier release zip + current dsf/ and manifest; refuses if the page changed
     python tools/build_release.py --reuse         reuse dist/WorkshopService-<ver>-dwc3.6.zip and -dwc3.7.zip already built (finalize, check, sums)
     python tools/build_release.py --check         only check what is in dist/release
 
@@ -28,6 +31,7 @@ TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
 sys.path.insert(0, TOOLS)
 import build_37 as b37  # noqa: E402
+import release_json  # noqa: E402
 import release_zips  # noqa: E402
 
 RELEASE = os.path.join(ROOT, "dist", "release")
@@ -35,9 +39,20 @@ RELEASE = os.path.join(ROOT, "dist", "release")
 PAUSED = ("3.7",)
 
 
-def run(script):
+BUILD_FLAGS = ("--completa", "--reuse-bundle")
+
+
+def run(script, *extra):
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
-    subprocess.check_call([sys.executable, os.path.join(TOOLS, script)], cwd=ROOT, env=env)
+    subprocess.check_call([sys.executable, os.path.join(TOOLS, script), *extra], cwd=ROOT, env=env)
+
+
+def build_args(args):
+    """The flags build_36.py understands, taken from this script's own arguments (--from takes its value along)."""
+    out = [a for a in args if a in BUILD_FLAGS]
+    if "--from" in args:
+        out += ["--from", args[args.index("--from") + 1]]
+    return out
 
 
 def source_version():
@@ -79,7 +94,7 @@ def main():
     version = source_version()
     if "--check" not in args:
         if "--reuse" not in args:
-            run("build_36.py")
+            run("build_36.py", *build_args(args))
             if "3.7" in active_lines():
                 run("build_37.py")
         os.makedirs(RELEASE, exist_ok=True)
@@ -88,6 +103,7 @@ def main():
             if not os.path.isfile(src):
                 raise SystemExit("missing " + src)
             release_zips.finalize_zip(src, release_path(version, line), line)
+            release_json.add_to_zip(release_path(version, line))  # dsf/RELEASE.json: what tools/install_service.sh verifies
         release_zips.write_sums(RELEASE)
     problems = check(version)
     if problems:

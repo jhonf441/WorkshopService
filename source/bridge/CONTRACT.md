@@ -25,41 +25,38 @@ Words: MUST / MUST NOT bind both sides. "Reader" is the side that reads a file, 
 
 The bridge and the service MUST write their files atomically (temporary file in the same folder, then rename). The page writes C2, C3 and C7 with a plain PUT through DWC's file API, which is not under its control, so every reader of those files MUST tolerate a half-written or invalid file (the bridge does: a garbage action file is ignored and a bad `bridge.json` keeps the old settings, both tested). `0:/` is `/opt/dsf/sd` on the Pi.
 
-## 2. Versions and compatibility
+## 2. Versions and what happens when they differ
 
-* `schema` (state file, integer): the MAJOR version of C1. It changes only when a promised key changes meaning or disappears.
-  Today: schema 2. A reader supports a list of schemas (service: `bridge_contract.SCHEMAS`); a schema it does not know is
-  incompatible and NOTHING is read from that file.
-* `contract` (state file, integer, added in bridge 3.8.x; absent = 1): the version of THIS text the bridge was written for.
-  Inside one schema the bridge only ADDS keys. A reader MUST ignore keys it does not know and MUST treat a missing optional key as
-  "unknown", never as "false" or "zero". A `contract` higher than the reader's is read normally and shown as "newer".
-* `version` (string): the bridge program version, for people and logs; nobody MUST branch on it.
-* Compatibility matrix (what must still work):
+Stage of the project: development, one user (the owner), no other installation. There is no promise of compatibility with old or inherited
+versions: the honest rule is the one below. Where its code is not in master yet, section 13 says so.
 
-| Service | Bridge | Result |
-|---|---|---|
-| any | no state file / dead / garbage / older than 15 s | "down": the jog does not block, the live stop says the bridge is down, the page says so |
-| newer | older (no `contract`, or no `live_stop`) | reads what is there; features that need a missing key answer "this bridge is old, run install.sh again" (exists today for the safe stop) |
-| older | newer, same schema | extra keys ignored; actions the older service writes are the ones the newer bridge still has |
-| older or newer | schema it does not know | "incompatible": reads nothing, jog falls back to its own signals (M3/M4/M5 seen on the SBC channel), page shows a warning; the bridge itself keeps serving its clients |
-
-* Unknown schema (OPEN OWNER DECISION). A state of a schema the reader does not know is "incompatible". What the readers do with it:
-  the health poller, the origin tracker, the bridge probe and the page read nothing from it (the page shows a warning and does not guess its
-  fields); the safe stop refuses it like an old bridge ("the bridge is too old to have this"; `M112` never depends on it); the port is still
-  read from it (the client count of the jog depends on the right port). For the JOG there is one named policy,
-  `bridge_contract.UNKNOWN_SCHEMA_JOG`, with three values: `"legacy"` (the default and today's behavior: read it with the rules of schema 2,
-  best effort), `"free"` (read nothing: the jog is free, as with a dead bridge; the M3/M4/M5 mark seen on the SBC channel still protects)
-  and `"block"` (an order is pending right now while the file is fresh: the jog is refused; an old file never blocks, so a dead bridge
-  cannot hold the jog). The default changes nothing until the owner decides; flipping it is one line and `test_bridge_safety_readers_parity`
-  tests the three values. Recommendation: `"block"` with a clear message (the jog's refusal text today says an order arrived, which is not
-  exact for this case; the message is part of the decision).
-* `contract` stays 1 in this revision on purpose: every change since the first text (the vectors, the page reader, the manifest, the
-  installer, the policy, the rule that a `contract` below 1 or not an integer is read as "not declared") adds no key to the files and does
-  not change the meaning of a promised key or the answer of a rule for a bridge that follows the text. The number rises when a promised key
-  or a rule changes, and then `vectors.json` changes first.
-* A breaking change of C1 MUST raise `schema`, and MUST either keep the old file written in the old schema for at least two bridge
-  releases or ship the service adapter first (the strangler order of `ARCHITECTURE.md`). A new promised key needs a new `contract`
-  number and a line in this file.
+* `schema` (state file, integer): the MAJOR version of C1. It changes when a promised key changes meaning or disappears. Today: 2. A reader
+  supports the numbers in `bridge_contract.SCHEMAS` (and the page reader the same list in `dwc36/bridge-contract.js`).
+* Rule of this stage: a breaking change raises `schema`; the service and the bridge are updated TOGETHER; a reader REFUSES to act on a
+  format it does not know and says so; the installer refuses while a job runs (section 6 and `ARCHITECTURE.md` 8c). No overlap period, no
+  version matrix as an obligation.
+* What the readers do today with a state of a schema they do not know: the health poller, the origin tracker, the bridge probe and the
+  page read nothing from it (the page shows a warning and does not guess its fields); the safe stop refuses it like an old bridge ("the
+  bridge is too old to have this"; `M112` never depends on it); the port is still read from it (the client count of the jog depends on the
+  right port).
+* DECIDED by the owner (2026-11-06), CODE NOT IN MASTER YET: the JOG is BLOCKED while a state of an unknown schema is fresh (younger than
+  10 s, `FRESH_S`), with the message "the G-code bridge publishes its state in a format this service does not know; manual movement is
+  blocked until the service and the bridge are updated together" (es and en); an older state is a dead bridge and never blocks. The code
+  (`jog_move` and `health_poller.port_bridge` on the adapter, commits of branch `bridge-contract-2`) waits for a test with the owner and the
+  machine present. Until then the jog reads such a state with the rules of schema 2, best effort, as before.
+* `contract` (state file, integer): the version of THIS text the bridge was written for. Inside one schema the bridge only ADDS keys: a
+  reader ignores keys it does not know and treats a missing optional key as "unknown", never as "false" or "zero". A `contract` higher than
+  the reader's is read normally and shown as "newer". A value that is not an integer, or is below 1, counts as not declared. The bridge on
+  the Pi was reinstalled on 2026-11-07 and publishes `contract: 1` (3.8.0, schema 2, checked read-only).
+* TRANSITIONAL, still in master's code: the adapter and the page reader still accept a state with no `contract` key (read as contract 1;
+  the page chip says "old contract") and a state with no `schema` key. The installed bridge no longer needs either: they are to be removed
+  together with the strict schema check of the jog commits above. Not removed here because master's readers and tests still have them.
+* `contract` stays 1 in this revision on purpose: the vectors, the page reader, the manifest, the installer and the viewer add no key to the
+  files and do not change the meaning of a promised key. The number rises when a promised key or a rule changes, and then `vectors.json`
+  changes first.
+* `version` (string): the bridge program version, for people and logs; nobody branches on it.
+* A dead bridge (no state file, garbage, older than 15 s) is "down": the jog does not block, the live stop says the bridge is down, the page
+  says so.
 
 ## 3. C1, the state file
 
@@ -80,15 +77,15 @@ Staleness (the rule that keeps a dead bridge from blocking anything):
 * `pending_orders` proves "something is moving now" only if the file is younger than 10 s (`FRESH_S`). An older file says
   nothing about now.
 * The bridge is running only if the file is younger than 15 s (`ALIVE_S`, 7 writes missed).
-* Missing, unreadable, not JSON, not an object, unknown schema: the reader answers "unknown" (`None`). It MUST NOT raise, wait,
-  retry in a loop or block a motion command. Each caller decides what unknown means and today all of them fail open for motion
-  (jog free) and closed for the live stop ("bridge down").
+* Missing, unreadable, not JSON, not an object: the reader answers "unknown" (`None`). It MUST NOT raise, wait, retry in a loop or block a
+  motion command because of it. Each caller decides what unknown means: the jog is free, the live stop says "bridge down". The one
+  exception, decided but not in master yet (section 2), is a FRESH state of an unknown schema, which will block the jog.
 
 The rules above are written ONCE, as data, in `contract/vectors.json` (65 inputs with the answers: healthy, absent, garbage, the 10 s and
 15 s edges, unknown schema, newer or missing `contract`, missing keys, hostile types). `dsf/bridge_contract.py` (service) and
 `dwc36/bridge-contract.js` (page) are both tested against that file (`dsf/test_bridge_contract.py`, `tests/bridge-contract.test.js`): a rule
 changes in the vectors first and both readers must follow, so they cannot drift. Every reader of the service reads the file through the
-adapter; the jog keeps its own arithmetic (`jog_move.bridge_state_age_s`, parity-tested against the adapter) and applies the policy above.
+adapter; the jog and the client count keep their own readers for now (`jog_move`, `health_poller.port_bridge`; the adapter is parity-tested against them).
 
 ## 4. C2, the action file
 
@@ -187,6 +184,12 @@ seconds since `seq` last moved (the browser has no file mtime). It shows a small
 `newer`, `old` = declares nothing) and a warning for an unknown schema. It writes C2, C3 and C7 itself through DWC's file API, so those
 files MUST be read tolerantly (see section 1): the page writes them with a plain PUT, not a temporary file and a rename.
 
+The card has a read-only viewer of this contract (button "Contract" next to the contract chip): the channels of section 1, every key of
+`state.schema.json`, the key rules with their section, and the real state file compared with the schema (verdict, values, keys present,
+missing, extra or of the wrong type). Its data (`dwc36/bridge-contract-data.js`) is GENERATED from the schemas and `contract/viewer.json` by
+`tools/gen_bridge_contract_data.py`; `bridge/tests/test_viewer_data.py` fails when it is out of date, so the viewer cannot drift from the
+contract. A new key in the schema needs its description in es and en in `viewer.json`.
+
 ## 10. What each side MUST NOT do
 
 * The service MUST NOT write C1, MUST NOT edit `bridge.json` behind the page's back (the page and `install.sh` own it), MUST NOT
@@ -198,10 +201,10 @@ files MUST be read tolerantly (see section 1): the page writes them with a plain
 
 ## 11. Changing the contract
 
-1. Write the change here first and raise `Contract version` (and the schema number only if a promised key breaks).
-2. Update `contract/*.schema.json`, `dsf/bridge_contract.py` and the tests; the tests that quote this file fail otherwise.
-3. Release order: the reader side that learns the new thing goes first, the writer second, so every mixed pair in the matrix of
-   section 2 keeps working at every step.
+1. Write the change here first and raise `Contract version` (and `schema` only if a promised key breaks).
+2. Change `contract/vectors.json` and the schemas, then `dsf/bridge_contract.py`, `dwc36/bridge-contract.js` and the bridge; the tests that
+   quote this file, the vectors and the viewer data (`dwc36/bridge-contract-data.js`) fail otherwise.
+3. Release the service and the bridge together (the installer refuses while a job runs). There is no overlap with old versions at this stage.
 
 ## 12. Values both sides know
 
@@ -218,27 +221,29 @@ changing how the bridge is installed, but it is guarded: if one side changes and
 | State keys the readers use, action names, service operations the bridge calls | schemas, bridge source, `api_ops.py` | `tests/test_contract.py`, `contract/*.schema.json` |
 | Version and contract numbers of the bridge | `gcode_bridge.py`, `VERSION`, `bridge-manifest.json` | `tests/test_bridge_manifest.py` |
 | The files the installer copies | `install.sh`, `bridge_manifest.py` | `tests/test_bridge_manifest.py` |
+| What the viewer shows (channels, keys, rules, sections) | schemas, `viewer.json`, this text, `dwc36/bridge-contract-data.js` | `tests/test_viewer_data.py`, `tests/bridge-contract-view.test.js` |
 
 ## 13. What is enforced and what is only written
 
-Kept honest on 2026-11-06 (bridge 3.8.0, service 2.30.4 plus branch `bridge-contract-2`). "Branch" = in `bridge-contract-2`, not merged, and
-the readers marked there are NOT to be merged or installed before a test with the owner and the machine present.
+Kept honest on 2026-11-07 (master = service 2.30.5, bridge 3.8.0 reinstalled on the Pi and publishing `contract: 1`). "Branch" = in branch
+`bridge-contract-2`, not in master; its jog commits are NOT to be merged or installed before a test with the owner and the machine present.
 
 | Promise | Status |
 |---|---|
-| Shape and keys of the state file | ENFORCED: the real bridge's output is validated against `state.schema.json` (`tests/test_contract.py`) and read by both readers through the vectors |
-| Staleness 10 s / 15 s, unknown or garbage means "unknown" | ENFORCED in the adapter and the page reader (vectors). The service's own readers use it only in the branch |
-| Every service reader goes through the adapter | Master: none. Branch: health poller, origin tracker, safe stop, bridge probe, jog, client count. Not yet: `jog_move`'s arithmetic (kept, parity-tested) |
-| `contract` published by the bridge | Written in the code, NOT running: the bridge on the Pi (3.8.0, checked read-only on 2026-11-06) does not publish it until `install.sh` is run again |
-| Page shows contract and unknown schema | Branch only (needs a service build, not done here) |
-| Unknown schema for the jog | NOT DECIDED: the policy exists, default = today's behavior |
+| Shape and keys of the state file | ENFORCED: the real bridge's output is validated against `state.schema.json` (`tests/test_contract.py`) and read by both readers through the vectors; the viewer data is generated from the schema and guarded (`tests/bridge-contract-data.test.js`) |
+| Staleness 10 s / 15 s, unknown or garbage means "unknown" | ENFORCED in the adapter and the page reader (vectors) |
+| Service readers on the adapter | Master: health poller (programs, restart event), origin tracker, safe stop, bridge probe, and the page. NOT yet: `jog_move` and `health_poller.port_bridge` (they keep their own readers, parity-tested against the adapter). Branch: those two |
+| `contract` published by the bridge | RUNNING: the Pi's bridge was reinstalled on 2026-11-07 and publishes `contract: 1` (read-only check) |
+| Page shows the contract chip, the warning for an unknown format and the contract viewer | Master (page code, service 2.30.5 and the viewer commit) |
+| An unknown state format blocks the jog while the file is fresh | DECIDED by the owner (2026-11-06). CODE NOT IN MASTER: it is in the branch (`bridge-contract-2`) and waits for a test with the owner and the machine present. Today the jog reads such a state best effort with the rules of schema 2 |
+| A state with no `schema` or no `contract` key | Still tolerated by master's code (transitional, section 2); to be removed with the strict check of the branch |
 | Action file protocol (seq, answer, dedupe, unknown action) | ENFORCED by bridge tests; the service sender (`live_job_stop._send`) is tested; the page sender is not tested |
 | Client wire (framing, `ok`, no unsolicited output, cache TTLs, ordering, port change without cutting clients) | ENFORCED (`test_public_wire`, `test_characterization`, `test_telnet`, `test_ordering`, `test_coalescing`) on loopback and fake sockets; not on a real client |
-| Service never blocks the jog for an unknown or dead bridge | ENFORCED by parity tests of the readers (the rules of the jog itself are the old code) |
+| Service never blocks the jog for a dead or garbage bridge | ENFORCED by parity tests of the readers (the jog's rules are the old code) |
 | Calls to the service (ops, header, queue, never delays a line) | ENFORCED (`test_characterization.ServiceCallTests`, `test_contract`); the local key's permissions are only read, not tested |
-| Bridge version as an artifact (VERSION, manifest, hashes) | Branch: ENFORCED by `test_bridge_manifest` (a changed file without the manifest fails) |
-| Installer: backup, rollback, refusal while in use | Branch: tested on a scratch root with fake `systemctl`, `sudo` and `python3`. NEVER run for real by me. The unit file and the polkit rule content are not tested |
+| Bridge version as an artifact (VERSION, manifest, hashes) | ENFORCED by `test_bridge_manifest` (a changed file without the manifest fails) |
+| Installer: backup, rollback, refusal while in use | Tested on a scratch root with fake `systemctl`, `sudo` and `python3`. The unit file and the polkit rule content are not tested |
 | Start/stop through polkit, flag file, "refuse to turn off during a live job" | The handler refusal and the service side are tested (`test_bridge_service`); polkit and the flag as the unit sees them are not |
-| Section 10 "MUST NOT" rules (the service never writes C1, never edits `bridge.json`, the bridge imports nothing of the service) | ONLY WRITTEN. The bridge importing nothing of the service is true today by reading; no test |
+| Section 10 "MUST NOT" rules | ONLY WRITTEN. The bridge importing nothing of the service is true today by reading; no test |
 | Section 7 token permissions (640 `dsf:dsf`), user and group of the files on the SD | Verified once by read-only inspection of the Pi; no test |
 | Real machine, real Duet, systemd, polkit, AppArmor | Nothing automated; only the real machine |

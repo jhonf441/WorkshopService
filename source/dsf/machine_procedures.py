@@ -225,3 +225,8 @@ import machine_limits  # noqa: E402,F401
 import machine_tune  # noqa: E402,F401
 # phase 4: verification of the offsets with the camera (behind the Vision capability vision.measure)
 import machine_verify  # noqa: E402,F401
+# bed zones calibration (heats the zones, tunes them): behind the same machine.run, role and stop as everything above
+import machine_bedcal  # noqa: E402
+import risk_rules  # noqa: E402
+import sys  # noqa: E402
+machine_bedcal.register(sys.modules[__name__], risk_rules)

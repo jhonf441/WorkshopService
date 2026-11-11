@@ -259,7 +259,7 @@
 @keyframes wf-attention { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 25%, 75% { box-shadow: 0 0 0 4px var(--wf-n-session); } 50% { box-shadow: 0 0 0 0 transparent; } }
 .is-attention { animation: wf-attention 0.6s ease-in-out 3; }
 @media (prefers-reduced-motion: reduce) { .is-attention { animation: none; outline: 3px solid var(--wf-n-session); outline-offset: 2px; } }
-.wf-session-chip.is-role { border-color: var(--wf-n-role); background: var(--wf-n-role-bg); color: inherit; cursor: default; }
+.wf-session-chip.is-role { border-color: var(--wf-n-role); background: var(--wf-n-role-bg); color: inherit; }
 .wf-session-chip-icon { flex: none; width: 16px; height: 16px; font-size: 16px; color: var(--wf-n-session); }
 .wf-session-chip.is-role .wf-session-chip-icon { color: var(--wf-n-role); }
 .wf-session-chip-icon svg { width: 16px; height: 16px; fill: currentColor; }
@@ -310,6 +310,10 @@ button.help-tip.v-btn.v-btn, .help-tip { width: 24px; height: 24px; min-width: 2
 .help-tip-list dd { margin: 0; }
 .help-tip-row { display: flex; align-items: center; gap: 4px; justify-content: flex-start; }
 .help-tip-row > :first-child { flex: 0 1 auto; min-width: 0; }
+/* a switch or a checkbox next to its "?": Vuetify 2 gives .v-input--selection-controls a form margin (16 px on top + 4 px padding) that pushes its
+   text below the centre of the row and leaves the "?" looking raised (Model capture 3, 2026-11-06); the row centres, so the control carries none.
+   (Vuetify 3 has no such class: the rule is inert in the 3.7 line.) A plugin never adds mt-* to the control: the spacing goes on the row. */
+.help-tip-row > .v-input--selection-controls { margin-top: 0; padding-top: 0; }
 .wf-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .wf-field-label { display: flex; align-items: center; gap: 2px; min-height: 24px; font-size: 13px; font-weight: 500; line-height: 1.3; }
 .wf-field-label > label { min-width: 0; overflow-wrap: anywhere; }

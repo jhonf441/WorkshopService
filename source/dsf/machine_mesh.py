@@ -18,6 +18,7 @@ import machine_heightmap as hm
 import machine_probe as probe_mod
 import machine_parsers as parsers
 import machine_procedures as procs
+import sd_paths
 from messages import M
 from workshop_api import ApiError, Arg, MOTION, READ, WRITE, Op
 
@@ -106,10 +107,21 @@ def run_g32_first(ctx):
     return {"kind": (parsed["last"] or {}).get("kind"), "deviation": ((parsed["last"] or {}).get("before") or {}).get("deviation")}
 
 
+def _active_file(value, default):
+    """The map file the object model names when it is a plain "0:/..." path, else `default`."""
+    if not (isinstance(value, str) and value.startswith("0:/")):
+        return default
+    try:
+        sd_paths.clean_rel(value)
+    except sd_paths.SdPathError:
+        return default
+    return value
+
+
 def read_map(ctx):
     """The map G29 S0 wrote: the file the object model names, else sys/heightmap.csv. (text, path)"""
     comp = parsers.parse_compensation(ctx.send("compensation_om"))
-    path = comp["file"] if isinstance(comp["file"], str) and comp["file"].startswith("0:/") and ".." not in comp["file"] else hm.CURRENT
+    path = _active_file(comp["file"], hm.CURRENT)
     return ctx.read(path), path, comp
 
 
@@ -295,7 +307,7 @@ def _save(args, ctx):
     mo = _mo()
     om = mo.model()
     comp = (((om or {}).get("move") or {}).get("compensation")) or {}
-    path = comp.get("file") if isinstance(comp.get("file"), str) and comp["file"].startswith("0:/") and ".." not in comp["file"] else hm.CURRENT
+    path = _active_file(comp.get("file"), hm.CURRENT)
     text = mo.read_sd(path)
     if text is None:
         raise ApiError("not_found", M("machine_mesh_no_active"))

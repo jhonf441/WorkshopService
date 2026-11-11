@@ -4,7 +4,7 @@ machine.history.list     (technician) the records of the calibration store, newe
 machine.history.get      (technician) one record with what restoring it would do (restorable, role needed, how the files are now).
 machine.history.compare  (technician) two records of the SAME kind: table of the values that differ (results and inputs) and, for height
                          maps (mesh.probe), the difference grid and its statistics.
-machine.history.restore  (technician; ADMIN for the hardware-risk kinds, by the record's kind: permissions.ESCALATE_IN + the check below)
+machine.history.restore  (ADMINISTRATOR only, whatever the kind; not delegable: permission_caps.NOT_DELEGABLE)
                          builds a PLAN that puts the `before` (undo) or `after` (re-apply) values of a configuration record back. It
                          NEVER writes: the plan goes to machine.config.apply (config.commit: fresh snapshot, sha check of every file, journal),
                          so a restore can itself be undone. Only the lines the record touched are edited, so what was changed in
@@ -44,8 +44,8 @@ def brief(rec):
 
 
 def role_for(kind):
-    """The role a restore (and the apply of its plan) of a record of this kind needs."""
-    return permissions.needed_role("machine.config.apply", {"args": {"kind": kind}})
+    """The role a restore of a record of this kind needs: always an administrator (decision of the owner, 2026-11-11)."""
+    return permissions.ADMIN
 
 
 def restore_info(rec):

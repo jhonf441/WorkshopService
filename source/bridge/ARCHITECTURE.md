@@ -117,11 +117,13 @@ the bridge's page card moved out of the service zip into a page-only plugin, tha
 ## 6. The contract in short
 
 Full text: `CONTRACT.md`. Eight channels (state file, action file, settings file, unit control, calls to the service, live-stop records,
-debug heartbeat, client TCP). Versioned by `schema` (major, 2) and `contract` (1, new additive key, absent = 1). Inside a schema only
+debug heartbeat, client TCP). Versioned by `schema` (major, 2) and `contract` (1, additive key). Inside a schema only
 additions; readers ignore unknown keys and treat a missing key as unknown. Staleness is the age of the state FILE: under 10 s for
-"pending orders", under 15 s for "bridge running"; anything unreadable, garbage, old or of an unknown schema is "unknown" and every
-motion consumer fails open (jog free), the live stop fails closed. Service newer/older than bridge is a matrix in the contract; an
-incompatible bridge keeps serving clients and the service falls back to its own signals. Client protocol frozen. Machine-checkable:
+"pending orders", under 15 s for "bridge running"; anything unreadable, garbage or old is "unknown" and the jog is free, the live stop fails
+closed. Stage rule (development, one user): a breaking change raises `schema`, service and bridge are updated together, the service refuses
+to act on a format it does not know and says so, the installer refuses while a job runs. No overlap period and no version matrix. Decided
+by the owner but NOT in master's code yet: a FRESH state of an unknown schema blocks the jog (it waits for a test with the machine).
+Client protocol frozen. Machine-checkable:
 `contract/state.schema.json`, `contract/action.schema.json`, validated against the REAL bridge output in `tests/test_contract.py` and
 `dsf/test_bridge_contract.py`.
 
@@ -185,7 +187,7 @@ program reconnects and sends `BRIDGE JOB START` again), checks `status`, and the
 `do_guard` only edits `bridge.json` when asked). Rollback: `install.sh rollback`, or by hand copy `/opt/workshop-bridge.prev/*.py`
 back and `systemctl restart workshop-gcode-bridge`.
 
-## 8b. Step 1 status (branch bridge-migrate-1) and the recipe for the safety readers
+## 8b. Step 1 status (non-safety readers merged in 2.30.5) and the recipe for the safety readers
 
 Moved onto `dsf/bridge_contract.py`, one commit each, parity tests first (`dsf/test_bridge_readers_parity.py`, passing before the move):
 
@@ -215,8 +217,8 @@ Recipe for the safety readers (owner and machine present; one reader per release
    unknown schema. Cases that would change must be listed as `Changed*` tests with the reason, and for these readers the decision is the
    owner's.
 3. Move `jog_move._bridge_file_does_s` first (read through `bridge_contract.read_state` + `orders_age_s`; keep the 1 s cache, keep `None`
-   on any failure). Unknown schema: the adapter says `None`, i.e. "free", exactly as a dead bridge, and the SBC M3/M4/M5 mark still
-   protects; the owner decides whether that is acceptable or whether unknown must instead block (not decided here).
+   on any failure). Unknown schema: decided by the owner, a fresh state blocks the jog and an old one does not (the code is in
+   branch `bridge-contract-2`, not in master).
 4. Then `health_poller.port_bridge` with an explicit rule for unknown schema (read `port` anyway, i.e. extend the adapter with a lenient
    `port` that works on an incompatible file) so the client count cannot drop.
 5. Then `motion_owner` (no logic of its own: it calls `jog_move`), `laser_guard` (no change in `laser_guard.py`: it receives a number or
@@ -225,7 +227,7 @@ Recipe for the safety readers (owner and machine present; one reader per release
    when the bridge is quiet, bridge stopped mid-job (jog must not stay blocked, guard behavior as before), bridge restarted from the page.
 7. Revert plan: each step is one commit in one service release; reverting restores the old reader byte for byte (kept in git).
 
-## 8c. Steps 2 and 3 and the enforcement of the contract (branch bridge-contract-2)
+## 8c. Steps 2 and 3 and the enforcement of the contract (merged in 2.30.5)
 
 * Step 2, the bridge as an artifact: `bridge/VERSION`, `bridge/bridge-manifest.json` (version, contract, schema, sha256 per file of what the
   installer puts on the Pi) and `bridge_manifest.py check|write|show`. `tests/test_bridge_manifest.py` fails when a file of the bridge
@@ -236,13 +238,15 @@ Recipe for the safety readers (owner and machine present; one reader per release
   fake commands (`tests/test_install_sh.py`); never run on the Pi by me. The page already told the owner to run `install.sh rollback`:
   that command did not exist before this branch.
 * Enforcement: `contract/vectors.json` is the single source of the reading rules, run by the Python adapter and the new page reader
-  (`dwc36/bridge-contract.js`); every non-safety reader and the safety readers (jog, client count) go through the adapter in the branch;
-  the unknown-schema policy for the jog is named (`UNKNOWN_SCHEMA_JOG`) and left at today's behavior. The honest table of what is enforced and
-  what is only written is `CONTRACT.md` section 13; the values both sides copy and their guards are section 12.
-* Open owner decisions: the unknown-schema policy for the jog (and its message); when to install the bridge that publishes `contract`
-  (it needs an `install.sh` run with no job); whether the bridge README should state the contract number.
-* Not merged and not to be installed before a test with the owner and the machine present: the jog and client-count readers
-  (`jog_move`, `health_poller.port_bridge`), because they sit on the safety path.
+  (`dwc36/bridge-contract.js`); the non-safety readers go through the adapter, the safety readers (jog, client count) do not yet. The viewer
+  of the contract in the bridge card (dialog "Contract") is generated from `contract/*.schema.json` (`tools/gen_bridge_contract_data.py`)
+  and guarded by a test, so it cannot drift. The honest table of what is enforced and what is only written is `CONTRACT.md` section 13;
+  the values both sides copy and their guards are section 12.
+* Decided by the owner (2026-11-06): a fresh state of an unknown format blocks the jog with a clear message (es and en), an old one never
+  does; the project is in development mode, so compatibility with old or inherited formats is dropped. The bridge on the Pi was
+  reinstalled on 2026-11-07 and publishes `contract: 1`, so the transitional tolerance (no `contract`, no `schema`) can go.
+* NOT in master and not to be installed before a test with the owner and the machine present: the jog and client-count readers
+  (`jog_move`, `health_poller.port_bridge`) and the strict schema check, because they sit on the safety path (branch `bridge-contract-2`).
 
 ## 9. What Phase B changed (this branch)
 
@@ -256,7 +260,7 @@ Recipe for the safety readers (owner and machine present; one reader per release
 
 ## 10. Risks
 
-* A stale bridge under a new service is normal today (plugin installs do not update it). The contract and `health()` make it visible; it does not make it impossible.
+* A stale bridge under a new service is normal today (plugin installs do not update it). The page chip and `health()` make it visible; once the jog commits land, an unknown format blocks the jog until both are updated together.
 * Moving `jog_move` / `laser_guard` onto the adapter (step 1) touches safety logic: `None` means "quiet" for the laser guard and "free" for the jog, and the adapter keeps that, but only parity tests protect it. Do it last, with the machine.
 * The "rounded to 6 digits" note in `jog_move` / `live_job_stop` could not be reproduced from the file on the Pi (the file holds full-precision floats). It happens somewhere between the file and a consumer (probably the browser). UNCERTAIN where; the contract avoids absolute epochs on purpose.
 * `install.sh`, the unit and the polkit rule have no automated test (step 3). Anything about systemd, polkit and AppArmor here is verified by reading and by read-only inspection of the Pi, never by running the installer.

@@ -21,7 +21,6 @@ import paths
 import importlib.util
 import json
 import os
-import signal
 import sys
 import threading
 import time
@@ -31,13 +30,16 @@ from dsf.connections import InterceptionMode
 from dsf.commands.code_channel import CodeChannel
 from dsf.object_model.messages import MessageType
 
-import activity
+import access_usage  # last use of each capability by each person
+import bootstrap
 import db
 import live_job  # live job opened with job.start (closing and cut of the duration)
 import heartbeats
 import laser_guard  # a laser power left set (M3 / M4 without M5) is turned off
-import ipc_stats  # IPC calls to DCS per minute (servicesInternal.ipc, black box ipc=)
-import publisher  # set_plugin_data only on change and rate limited
+import process_registry
+import service_context
+import service_log
+import service_settings
 import messages
 from messages import M, J, B
 
@@ -65,7 +67,8 @@ def param_value(p):
         return p.string_value
 
 
-LOG_FILE = os.path.join(BASE_DIR, "workshop-service.log")
+LOG_FILE = paths.DATA_DIR + "/logs/workshop-service.log"  # rotated by service_log
+service_log.configure(LOG_FILE)
 
 
 def log(msg):
@@ -75,18 +78,14 @@ def log(msg):
     instead, so as not to flood the user with piling-up pop-ups (see log_file)."""
     if isinstance(msg, messages.Msg):  # also a message made at import time: in the machine's language (DWC's)
         msg = msg.text(messages.current_language())
-    print(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {msg}", flush=True)
+    print(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {msg}", flush=True)  # console/journal only (as before): not written to the file
 
 
 def log_file(msg):
     """Routine diagnostics (connections, retries, startup/shutdown housekeeping)
     -- only to the local file, never to DWC. Check with
     `ssh ... tail -f workshop-service.log` when debugging is needed."""
-    try:
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} {msg}\n")
-    except Exception:
-        pass
+    service_log.log(msg)
 
 
 # True if service.json exists but could not be read: it is not saved over (see load_config)
@@ -166,25 +165,34 @@ import communication
 
 
 class Bridge:
-    """Wraps the auxiliary CommandConnection (outgoing G-code + shared state)
-    with a lock, because the air-assist timer uses it from another thread."""
+    """Facade over the ServiceContext (service_context.py): the same methods and attributes the modules have always used.
+    The lock, the connection and the published payload live in the context."""
 
-    def __init__(self):
-        self.lock = threading.Lock()
-        self.conn = None
-        self.payload = {}
-        self.publicador = publisher.Publisher(publisher.instrument(self._send_datum), log=log_file)
+    def __init__(self, ctx):
+        self.ctx = ctx
+
+    @property
+    def lock(self):
+        return self.ctx.lock
+
+    @property
+    def conn(self):
+        return self.ctx.conn
+
+    @conn.setter
+    def conn(self, value):
+        self.ctx.conn = value
+
+    @property
+    def payload(self):
+        return self.ctx.payload
+
+    @property
+    def publicador(self):
+        return self.ctx.publisher
 
     def _ensure_connected(self):
-        while self.conn is None:
-            try:
-                conn = CommandConnection()
-                conn.connect()
-                self.conn = conn
-                log_file("auxiliary CommandConnection connected")
-            except Exception as e:
-                log_file(f"Could not connect CommandConnection ({e}), retrying in 5s")
-                time.sleep(5)
+        self.ctx.ensure_connected()
 
     def send(self, gcode):
         # who asked (module of the caller) for the IPC counter (ipc_stats.py)
@@ -192,49 +200,25 @@ class Bridge:
             who = sys._getframe(1).f_globals.get("__name__", "?")
         except Exception:
             who = "?"
-        with self.lock:
-            self._ensure_connected()
-            try:
-                return ipc_stats.call("code", who, self.conn.perform_simple_code, gcode, channel=communication.channel_plugin())
-            except Exception as e:
-                log(M("main_error_sending_code_reconnecting", code=_mask(gcode), e=e))
-                try:
-                    self.conn.close()
-                except Exception:
-                    pass
-                self.conn = None
-                raise
+        return self.ctx.send(gcode, who)
 
     def set_status(self, key, value, **options):
-        """Publish plugin data. The value is visible to the readers inside the
-        service at once (self.datos); the IPC call is made by the publisher
-        thread only when it changed and at most at the rate of its key
-        (publisher.py). opciones: min_interval, volatile, keepalive_s."""
-        self.payload[key] = value
-        # every message goes out as {"key", "params"}: each page shows it in the language of its own DWC
-        self.publicador.set(key, messages.data(value), **options)
+        """Publish plugin data (see ServiceContext.set_status). opciones: min_interval, volatile, keepalive_s."""
+        self.ctx.set_status(key, value, **options)
 
     def _send_datum(self, key, value):
-        with self.lock:
-            self._ensure_connected()
-            try:
-                self.conn.set_plugin_data(PLUGIN_ID, key, value)
-            except Exception as e:
-                log_file(f"Error updating state '{key}' ({e})")
-                try:
-                    self.conn.close()
-                except Exception:
-                    pass
-                self.conn = None
-                raise
+        self.ctx.send_datum(key, value)
 
     def save_config(self):
-        save_config(config)
+        self.ctx.save_config()
 
-
-bridge = Bridge()
 
 config = load_config()
+ctx = service_context.ServiceContext(
+    plugin_id=PLUGIN_ID, base_dir=BASE_DIR, config=config, settings=service_settings.ServiceSettings(config, save_config),
+    log=log, log_file=log_file, connect=CommandConnection, db=db)
+bridge = Bridge(ctx)
+
 import service_modules
 service_modules.set_settings(config.setdefault("modules", {}))  # which internal processes run (service_modules.py)
 # the G-code interceptor only has a job while the automatic air is on (or the user forced it on)
@@ -276,12 +260,6 @@ def air_assist_off_delayed():
     _air_assist_timer = threading.Timer(delay, air_assist_off_now)
     _air_assist_timer.daemon = True
     _air_assist_timer.start()
-
-
-def _mask(raw_text):
-    """Hides secrets of a G-code before logging it (DWC password of M551)."""
-    import re
-    return re.sub(r'\bM551(\s+)P"[^"]*"', r'M551\1P"***"', raw_text, flags=re.I)
 
 
 # Interception connection and code in progress, to release them on shutdown
@@ -477,6 +455,7 @@ def _clean_stop(why):
         pass
     # first release the interception: a hung code jams the RRF channel
     _release_interception()
+    access_usage.flush_all()  # the last uses of the capabilities reach the file (never raises)
     try:
         import bed_zones_intercept
         bed_zones_intercept.release(log_file)
@@ -535,265 +514,12 @@ def _watchdog_lock():
             log_file("\n".join(parts))
 
 
+# Internal processes shown on the "Workshop services" page: a view of the one table in process_registry.py
+PROCESSES = process_registry.heartbeat_rows(M)
+
+
 if __name__ == "__main__":
-
-    bridge.publicador.start("publisher", beat=lambda: heartbeats.ok("publisher"))  # the only thread that calls set_plugin_data
-    os.makedirs(HANDLERS_DIR, exist_ok=True)
-    threading.Thread(target=_watchdog_lock, name="watchdog_lock", daemon=True).start()
-    threading.Thread(target=_laser_guard_loop, name="guardian_laser", daemon=True).start()
-    threading.Thread(target=_intercept_wd.run, kwargs={"beat": lambda: heartbeats.ok("intercept_watchdog")}, name="intercept_watchdog", daemon=True).start()
-    log_file("WorkshopService starting...")
-    threading.excepthook = _excepthook_thread
-
-    db.init_db()
-    protect_data()
-    # daily database backups and maintenance (db_backup.py, API db.*)
-    import db_backup
-    db_backup.launch(config, bridge, log_file)
-    # the macro the zones read (macros/lasercorrection.g) follows the settings store "laser": written again at start (laser_correction.py)
-    try:
-        import laser_correction
-        if laser_correction.sync():
-            log_file("macros/lasercorrection.g written from the settings store laser")
-    except Exception as e:
-        log_file(f"could not write macros/lasercorrection.g: {e}")
-
-    # focus.g (the geometry focusrule.g loads) follows the store "focus": created when missing, never replaced behind the owner's back (focus_geometry.py)
-    try:
-        import focus_geometry
-        state = focus_geometry.sync_at_start()
-        if state == "written":
-            log_file("config/focus.g written from the settings store focus")
-        elif state == "differs":
-            log_file("config/focus.g differs from the settings store focus: left as it is (saving the store rewrites it)")
-    except Exception as e:
-        log_file(f"could not check config/focus.g: {e}")
-
-    # bedzones.g (the settings bedzones-set.g loads when the service is stopped) follows the store "bed-zones": written again at start (bed_zones_mirror.py)
-    try:
-        import bed_zones_mirror
-        if bed_zones_mirror.sync_at_start() == "written":
-            log_file("config/bedzones.g written from the settings store bed-zones")
-    except Exception as e:
-        log_file(f"could not check config/bedzones.g: {e}")
-
-    def _apply_laser_correction():
-        # the board's memory takes the stored correction (wpload.g) once it answers and is free; it never waits the start of the service
-        try:
-            import laser_correction
-            applied, why = laser_correction.apply_at_start()
-            log_file("laser correction applied to the board's zones" if applied else f"laser correction not applied at start: {why}")
-        except Exception as e:
-            log_file(f"could not apply the laser correction at start: {e}")
-    threading.Thread(target=_apply_laser_correction, name="laser-correction-apply", daemon=True).start()
-    # API of the service (workshop_api.py / api_ops.py): the registry first, the
-    # endpoint and the macro mailbox once the threads below are running
-    import api_ops
-    import workshop_api
-
-    _manifest_version = ""
-    # installed manifest (/opt/dsf/plugins/<Id>.json) or the repository one
-    for _mf in (os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), PLUGIN_ID + ".json"),
-                os.path.join(os.path.dirname(BASE_DIR), "plugin.json")):
-        try:
-            with open(_mf, encoding="utf-8") as _f:
-                _manifest_version = json.load(_f).get("version", "")
-            break
-        except Exception:
-            continue
-    api = api_ops.init(bridge, config, PLUGIN_ID, _manifest_version, log=log, log_file=log_file)
-    try:
-        api_ops.last.extend(db.commands_last(api_ops.LAST_MAX))  # survive a restart
-    except Exception as e:
-        log_file(f"could not load the command history: {e}")
-
-    signal.signal(signal.SIGTERM, _handle_shutdown)
-    import service_restart
-    service_restart.configure(cleanup=lambda: _clean_stop("service restart"), log=log_file)  # op service.restart; ends with os._exit(1) like the watchdog
-
-    # Internal processes: they start supervised (heartbeats.launch restarts them if
-    # they die) and show on the "Workshop services" page.
-    PROCESSES = [
-        ("interceptor", M("main_g_code_interceptor"), M("main_handles_m3_m4_m5_automatic_air"), 15),
-        ("status_light", M("main_status_lights"), M("main_paints_status_zone_led_strip_according"), 10),
-        ("consumption", M("main_consumption_meter"), M("main_reads_tuya_meter_saves_history"), 60),
-        ("jobs", M("main_jobs_and_zones"), M("main_detects_job_start_end_mode_zone_changes"), 30),
-        ("motors", M("main_motors"), M("main_reads_drivers_currents_speeds_motors_page"), 60),
-        ("jog", "Jog", M("main_moves_machine_while_jog_button_held"), 10),
-        ("bed_zones", M("main_bed_zones"), M("main_splits_m140_m190_into_one_heater_per_bed_zone"), 15),
-        ("pellet_layers", M("main_pellet_layers"), M("main_pellet_layers_detail"), 15),
-        ("pid_trace", M("main_pid_tuning_record"), M("main_records_temperature_power_while_heater_tuned_pid"), 30),
-        ("maintenance", M("main_maintenance_counters"), M("main_counts_hours_distance_axes_maintenance_plan"), 30),
-        ("events", M("main_rrf_events"), M("main_emergencies_pauses_firmware_errors_for_activity"), 30),
-        ("trace", M("main_job_path"), M("main_records_job_path_only_while_someone_watches"), 60),
-        ("health", M("main_system_health"), M("main_temperature_wifi_services_alerts_health_page"), 60),
-        ("camera", M("main_camera_relay"), M("main_shares_camera_video_all_screens_camera"), 30),
-        ("timer", M("main_scheduled_power_off"), M("main_counts_timer_power_off_control_bar"), 10),
-        ("risk", M("main_active_risk"), M("main_warns_screens_leds_while_something_leaves"), 10),
-        # 2026-10-11 (WorkshopConfig, T3.4): configuration rollback
-        ("config_guard", M("main_configuration_rollback"), M("main_after_saving_new_configuration_watches_board"), 15),
-        # 2026-10-13: single owner of the movement (motion_owner.py)
-        ("motion", M("main_movement_owner"), M("main_decides_whether_possible_move_change_geometry"), 10),
-        # F1-C: alarm when a safety process dies or a protection is left unwatched (protection_guard.py)
-        ("guard", M("main_protection_guard"), M("main_watches_that_safety_processes_beat_alarms_when"), 5),
-        # processes redesign (phase 1): threads that had no heartbeat (they tick from their own loop; late = 3x expected)
-        ("guardian_laser", M("main_laser_power_guard"), M("main_laser_power_guard_description"), 1),
-        ("intercept_watchdog", M("main_interception_watchdog"), M("main_interception_watchdog_description"), 1),
-        ("watchdog_lock", M("main_bridge_lock_watchdog"), M("main_bridge_lock_watchdog_description"), 5),
-        ("publisher", M("main_state_publisher"), M("main_state_publisher_description"), 30),
-        ("communication", M("main_code_channels"), M("main_code_channels_description"), 10),
-    ]
-    for _n, _t, _d, _e in PROCESSES:
-        heartbeats.register(_n, _t, _d, _e)
-    heartbeats.ok("interceptor")
-    heartbeats._info["interceptor"]["live"] = True
-
-    # Machine state: ONE subscription to DSF that all threads read
-    # (machine_state.get_status / read_in / on_change). First of all.
-    import machine_state
-    # The single subscription starts only when some process that reads it can run (service_modules.py): with no plugin that
-    # needs the machine state enabled it stays closed, and opens by itself when one is enabled.
-    def _subscription_low_demand():
-        while not service_modules.process("subscription"):
-            time.sleep(3)
-        machine_state.launch()
-        messages.follow_machine_language()  # texts made without a request use DWC's language (global.workshopLanguage)
-
-    threading.Thread(target=_subscription_low_demand, name="subscription-demand", daemon=True).start()
-
-    # channel of the own codes and of the jog BEFORE starting the threads that send G-code
-    try:
-        communication.update(config)
-    except Exception as e:
-        log_file(f"communication: could not check the channels ({e}); SBC is used")
-
-    def _communication_loop():
-        # it is checked again every 10 s (config.g can change: a new PanelDue;
-        # and SBC goes from free to shared when the bridge connects)
-        while True:
-            try:
-                communication.emit(bridge, config)
-            except Exception as e:
-                log_file(f"communication: {e}")
-            _beat("communication")
-            time.sleep(10)
-
-    threading.Thread(target=_communication_loop, name="communication", daemon=True).start()
-
-    # commands from other plugins (WorkshopRS485) to the "Received commands" history
-    import extra_commands
-    extra_commands.launch(log_file)
-
-    import status_light
-    heartbeats.launch("status_light", status_light.run_loop, bridge, config)
-
-    import consumption_poller
-    heartbeats.launch("consumption", consumption_poller.run_loop, bridge, config)
-
-    import job_poller
-    heartbeats.launch("jobs", job_poller.run_loop, bridge, config)
-
-    import motor_poller
-    heartbeats.launch("motors", motor_poller.run_loop, bridge, config)
-
-    import machine_maint_poller
-    heartbeats.launch("maintenance", machine_maint_poller.run_loop, bridge, config)
-
-    import pid_trace
-    heartbeats.launch("pid_trace", pid_trace.run_loop, bridge, config)
-    import bed_zones_intercept
-    heartbeats.launch("bed_zones", bed_zones_intercept.run_loop, bridge, log_file)
-    import pellet_layers_run
-    heartbeats.launch("pellet_layers", pellet_layers_run.run_loop, bridge, config)
-
-    import jog_move
-    jog_move.set_log_file(LOG_FILE)
-    heartbeats.launch("jog", jog_move.run_loop, bridge, config)
-
-    # Phone notifications of events (config on the Activity page).
-    import notifier
-    notifier.init(bridge, config)
-
-    # Black box (black_box.py): one line every 5 s on the SD; if the Pi was shut
-    # down without a close, report + notice. After notifier.init (it sends the notice).
-    import black_box
-    black_box.launch(bridge, config, log_file, {"bridge": bridge.lock, "api": api.lock})
-
-    # live job: if a job was left open from before the restart, it is closed at
-    # its last activity (it does not keep adding hours or kWh), unless the
-    # machine is still in that job (live_job.py, 2026-10-12).
-    import machine_state
-    try:
-        try:
-            _st0 = machine_state.get_status(timeout=3)
-        except Exception:
-            _st0 = None
-        _r = live_job.on_start(bridge, config, _st0)
-        if _r != "none":
-            log_file(f"job open from before the restart: {_r}")
-    except Exception as e:
-        live_job._mem["ready"] = True  # so that the monitoring works the same
-        log_file(f"job_live at startup: {e}")
-
-    # Emergencies, pauses and live RRF errors/warnings.
-    import event_watcher
-    heartbeats.launch("events", event_watcher.run_loop, bridge, config)
-
-    # Trajectory of the job in progress -> sys/workshop/data/trace.json (Zones > Job)
-    import job_trace
-    heartbeats.launch("trace", job_trace.run_loop, bridge, config)
-
-    # Health of the Pi and of the services ("Pi health" page, WorkshopPiHealth)
-    import health_poller
-    heartbeats.launch("health", health_poller.run_loop, bridge, config)
-
-    # Camera relay (formerly a separate systemd service managed with sudo).
-    import camera_relay
-    heartbeats.launch("camera", camera_relay.run_loop, bridge, config, log_file)
-
-    import shutdown_timer
-    heartbeats.launch("timer", shutdown_timer.run_loop, bridge, config)
-
-    import risk_rules
-    heartbeats.launch("risk", risk_rules.run_loop, bridge, config)
-
-    # 2026-10-11 (WorkshopConfig, T3.4): watches the startup after an armed save (config_guard.py)
-    import config_guard
-    heartbeats.launch("config_guard", config_guard.run_loop, bridge, config)
-
-    threading.Thread(target=heartbeats.publish_loop, args=(bridge,), daemon=True).start()
-
-    # single owner of the movement: publishes data.motion when it changes
-    import motion_owner
-    heartbeats.launch("motion", motion_owner.run_loop, bridge, config)
-
-    # protection guard: expected vs seen heartbeats of the safety processes (status_light, Vision, RS485...)
-    import protection_guard
-    heartbeats.launch("guard", protection_guard.run_loop, bridge, config)
-
-    # Machine v2: a volatile M208 trial left pending by a restart is put back first (machine_try.py)
-    import machine_try
-    threading.Thread(target=machine_try.recover_pending, name="machine-try-recover", daemon=True).start()
-
-    # API: POST/GET /machine/<Id>/api (pages, programs) and the global variable
-    # mailbox of the macros (service-call.g)
-    workshop_api.serve(api, PLUGIN_ID, "api", api_ops.http_info)
-    import api_macros
-    api_macros.start(api, bridge, log_file)
-
-    bridge.set_status("serviceStarted", time.strftime("%Y-%m-%d %H:%M:%S"))
-
-    # "system" = the Raspberry Pi really booted; a service restart
-    # (deploys, DCS relaunching it) goes as "service" so as not to clutter the
-    # activity (before, every restart was a "system" event: 87 in 2 days).
-    try:
-        with open("/proc/uptime") as f:
-            uptime_s = float(f.read().split()[0])
-    except Exception:
-        uptime_s = None
-    if uptime_s is not None and uptime_s < 300:
-        activity.log_event(bridge, "system", M("system_powered_on", seconds=int(uptime_s)))
-    else:
-        activity.log_event(bridge, "service", M("service_restarted"))
-
-    intercept_loop()
+    bootstrap.start(ctx, bootstrap.Wiring(
+        bridge=bridge, processes=PROCESSES, handlers_dir=HANDLERS_DIR, log_path=LOG_FILE, protect_data=protect_data,
+        watchdog_lock=_watchdog_lock, laser_guard_loop=_laser_guard_loop, intercept_wd=_intercept_wd,
+        excepthook=_excepthook_thread, handle_shutdown=_handle_shutdown, clean_stop=_clean_stop, intercept_loop=intercept_loop))

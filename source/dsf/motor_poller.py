@@ -57,6 +57,7 @@ import service_modules
 import motor_status
 import settings_store
 import viewers
+import service_log
 from messages import M
 
 POLL_INTERVAL_S = 1
@@ -184,15 +185,10 @@ def request_reread():
     viewers.heartbeat("motors")
 
 
-LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workshop-service.log")
 
 
 def log_file(msg):
-    try:
-        with open(LOG_FILE, "a") as f:
-            f.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')} [motor_poller] {msg}\n")
-    except Exception:
-        pass
+    service_log.log(msg, "motor_poller")
 
 
 def run_loop(bridge, config, stop=lambda: False, pause=None):

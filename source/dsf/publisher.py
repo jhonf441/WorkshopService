@@ -100,9 +100,17 @@ class Publisher:
                     self._pending[key] = now + RETRY_S
                 continue
             sent += 1
+            sent_sig = _signature(value, volatile)
             with self._lock:
-                self._last[key] = (_signature(value, volatile), now)
-                self._pending.pop(key, None)
+                self._last[key] = (sent_sig, now)
+                latest_value, latest_volatile, _ = self._latest[key]
+                if _signature(latest_value, latest_volatile) == sent_sig:
+                    self._pending.pop(key, None)
+                else:
+                    # the value changed while this one was on the wire: keep the newer one queued
+                    interval = self._min.get(key, DEFAULT_MIN_INTERVAL_S)
+                    self._pending[key] = now + interval
+                    self._wake.set()
         return sent
 
     def next_wait_s(self, now=None):

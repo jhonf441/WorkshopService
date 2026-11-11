@@ -11,7 +11,7 @@ conflict and the caller gets the current value to merge or retry.
     through DWC's file API does not break anything: its write simply changes the rev, so the next
     set() based on the old rev is refused. Such a client has no protection of its own, nothing else.
   - only the names of NAMES (no paths, no '..'), all under sys/workshop/config (one under data);
-  - atomic write: temporary file + fsync + os.replace; the previous healthy version stays as <file>.bak
+  - atomic write (fs_atomic.write_with_backup: one temporary per writer, fsync, rename, fsync of the folder); the previous healthy version stays as <file>.bak
     (one rolling copy; the pages read it when the file is damaged);
   - one lock per file serializes read-compare-write (and merge) inside the service.
 """
@@ -20,6 +20,8 @@ import json
 import os
 import threading
 
+import fs_atomic
+import service_log
 import sd_paths
 
 CONFIG_DIR = "sys/workshop/config"
@@ -37,7 +39,12 @@ NAMES["machine-maintenance"] = CONFIG_DIR
 NAMES["machine-pointsets"] = CONFIG_DIR   # named point sets of the Machine bed view (docs/MACHINE-POINTSETS-CONTRACT.md); an ordinary store: operator reads, technician writes
 # Pellet layer profiles (pellet_layers_ops.py): validated on every write and read by the thread that heats; settings.set must not bypass that.
 NAMES["pellet-layers"] = CONFIG_DIR
-SERVICE_ONLY = frozenset({"machine-calibrations", "machine-maintenance", "pellet-layers"})
+# Temperature-by-layer recipes and the optional data of the bed power estimate (layer_recipes_ops.py): validated on every write.
+NAMES["layer-recipes"] = CONFIG_DIR
+NAMES["bed-estimates"] = CONFIG_DIR
+# G-code library of the printing plugin (gcodelib_indexer.py): {enabled, cache_mb, auto_index}; an ordinary store, the technician writes it.
+NAMES["gcodelib"] = CONFIG_DIR
+SERVICE_ONLY = frozenset({"machine-calibrations", "machine-maintenance", "pellet-layers", "layer-recipes", "bed-estimates"})
 MAX_BYTES = 2 * 1024 * 1024  # a settings file is small; this stops a runaway client
 NO_FILE_REV = "0"  # rev of a file that does not exist yet
 
@@ -110,21 +117,7 @@ def get(name):
 
 
 def _write_atomic(path, raw):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp = path + ".tmp-" + str(os.getpid())
-    with open(tmp, "wb") as fh:
-        fh.write(raw)
-        fh.flush()
-        os.fsync(fh.fileno())  # to the card before the rename (power cut)
-    try:  # the previous healthy version stays as .bak
-        with open(path, "rb") as f0:
-            old = f0.read()
-        _parse(old)
-        with open(path + ".bak", "wb") as fb:
-            fb.write(old)
-    except (OSError, ValueError):
-        pass
-    os.replace(tmp, path)
+    fs_atomic.write_with_backup(path, raw, validate=_parse)  # _parse raises ValueError on a damaged old file: no .bak made from it
 
 
 def _encode(value):
@@ -152,7 +145,7 @@ def _mirror(name, value):
         import focus_geometry
         return bool(focus_geometry.sync(value))
     except Exception as e:  # noqa: BLE001
-        print("settings_store: could not write the macro mirror of %s: %s" % (name, e))
+        service_log.log("could not write the macro mirror of %s: %s" % (name, e), "settings_store", "error")
         return False
 
 
@@ -195,6 +188,8 @@ def merge(name, patch):
     with lock_of(name):
         current, rev = _read(path)
         if current is None:
+            if rev != NO_FILE_REV:  # the file exists but neither it nor its .bak can be read: merging would overwrite it with a fragment
+                raise Conflict(None, rev)
             current = {}
         if not isinstance(current, dict):
             raise SettingsError("the file is not an object: use set")

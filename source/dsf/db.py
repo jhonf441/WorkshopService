@@ -17,8 +17,14 @@ import json
 import os
 import re
 import sqlite3
-import threading
 import time
+
+import audit_chain
+import audit_store
+import db_conn
+import db_schema
+from db_dates import FMT_TS, ts_iso  # noqa: F401 -- tolerated dates (db_dates.py)
+from db_dates import ts_of as _ts_of, ts_for_save as _ts_for_save  # noqa: F401
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -32,7 +38,7 @@ BASE_OLD = os.path.join(BASE_DIR, "duet.db")
 # folder (2026-10-11).
 BASE_NEW = os.environ.get("WORKSHOP_DB") or paths.WORKSHOP + "/duet.db"
 FOLDER_DATA = paths.WORKSHOP
-VERSION_SCHEMA = 6  # current schema (PRAGMA user_version); a database is created at this version, never altered from another one
+VERSION_SCHEMA = 7  # current schema (PRAGMA user_version); a database is created at this version, never altered from another one
 AUDIT_DAYS = 90  # the audit is kept this long; only older rows may be deleted (a trigger refuses the rest)
 CONSUMPTION_DETAIL_DAYS = 90  # readings every 30 s; older ones are kept once per hour
 
@@ -53,84 +59,33 @@ def _place():
 
 DB_FILE = _place()
 
-_lock = threading.Lock()
+# Connections (db_conn.py): one write lock, every write confirmed before it returns; reads without it; every connection closed.
+_lock = db_conn.WRITE_LOCK  # the write lock (the tests of the table modules take it with _connect)
+DatabaseBusy = db_conn.DatabaseBusy
 
 
 def _connect():
-    conn = sqlite3.connect(DB_FILE, timeout=10)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA synchronous=NORMAL")  # with WAL: safe against power cuts and lighter on the SD
-    return conn
+    return db_conn.connect(DB_FILE)
 
 
-# ---- tolerated dates (2026-10-12, item 20: "1 row with a damaged date") ----
-# Dates are stored as ISO text. What turned up different: leading null bytes
-# (a consumption row, 2026-10-10), and the risk of an epoch time (number) or
-# its text ("1791690000.5", or "1.79169e+09" when it went through dsf's JSON,
-# which keeps 6 digits). Reading normalizes; writing too; and the old rows
-# used to be repaired (that repair is gone, see init_db) with a backup before,
-# without deleting.
-FMT_TS = "%Y-%m-%dT%H:%M:%S"
-_EPOCH_MIN, _EPOCH_MAX = 946684800, 4102444800  # 2000-01-01 .. 2100-01-01
-_RX_ISO = re.compile(r"^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}(?::\d{2})?)")
-_RX_NUM = re.compile(r"^[+]?(\d+)(?:\.(\d*))?(?:[eE][+]?(\d+))?$")
+def session():
+    """What the table modules (health_history, install_log) use to WRITE: a write transaction (lock, commit, rollback, closed)."""
+    return db_conn.write(DB_FILE)
 
 
-def _ts_of(v):
-    """(iso, margin_s) of a stored date, or (None, 0) if it is not understood.
-    margin_s > 0: it was a rounded epoch (e.g. 1.79169e+09: +-5000 s)."""
-    if v is None:
-        return None, 0
-    if isinstance(v, bytes):
-        v = v.decode("utf-8", "replace")
-    if isinstance(v, (int, float)) and not isinstance(v, bool):
-        num, approx = float(v), 0
-    else:
-        t = str(v).replace("\x00", "").strip()
-        m = _RX_ISO.match(t)
-        if m:
-            hour = m.group(2) if len(m.group(2)) == 8 else m.group(2) + ":00"
-            iso = m.group(1) + "T" + hour
-            try:
-                time.strptime(iso, FMT_TS)
-            except ValueError:
-                return None, 0
-            return iso, 0
-        m = _RX_NUM.match(t)
-        if not m:
-            return None, 0
-        try:
-            num = float(t)
-        except ValueError:
-            return None, 0
-        # with an exponent, the time may come rounded: 1.79169e+09 -> +-5000 s
-        approx = 0
-        if m.group(3):
-            step = 10 ** (int(m.group(3)) - len(m.group(2) or ""))
-            approx = step / 2 if step > 1 else 0
-    if num != num or num > _EPOCH_MAX * 1000:
-        return None, 0
-    if num > _EPOCH_MAX:
-        num /= 1000.0  # milisegundos
-    if not (_EPOCH_MIN <= num <= _EPOCH_MAX):
-        return None, 0
-    return time.strftime(FMT_TS, time.localtime(int(num))), approx
+def read_session():
+    """The same for reading: no write lock, read-only connection, one snapshot, closed always."""
+    return db_conn.read(DB_FILE)
 
 
-def ts_iso(v, default=None):
-    """ISO date of whatever is stored; if it is not understood, `default` (or the
-    text as is, without nulls: the row is still visible and nothing blows up)."""
-    iso, _ = _ts_of(v)
-    if iso:
-        return iso
-    if default is not None:
-        return default
-    return "" if v is None else str(v).replace("\x00", "")
+def _check_schema():
+    """Before the tables are created: a database of a newer schema or an unreadable one is set aside (db_schema.py) and the service
+    starts with a new one; DB_FILE may change only if the original could not be moved."""
+    global DB_FILE
+    DB_FILE = db_schema.check(DB_FILE, VERSION_SCHEMA)
 
 
-def _ts_for_save(v):
-    iso, _ = _ts_of(v)
-    return iso or time.strftime(FMT_TS)
+take_notices = db_schema.take_notices  # the notices of a database set aside, for db_backup.launch
 
 
 def _rows(rows):
@@ -150,8 +105,10 @@ _WELL = ("typeof(ts) = 'text' AND length(ts) = 19 AND "
 
 def init_db():
     """Creates the tables if they do not exist. It must be called only once when the
-    plugin starts, before using any other function of this module."""
-    with _lock, _connect() as conn:
+    plugin starts, before using any other function of this module. A database of a newer schema or an unreadable one is set aside
+    first (see _check_schema); an older one gets the idempotent creation below, as it always did."""
+    _check_schema()
+    with db_conn.write(DB_FILE) as conn:
         conn.executescript(
             """
             CREATE TABLE IF NOT EXISTS activity (
@@ -225,6 +182,9 @@ def init_db():
         )
         import health_history  # here: it imports this module
         health_history.ensure_table(conn)  # schema 6
+        import install_log
+        install_log.ensure_tables(conn)  # schema 7
+        audit_chain.ensure_tables(conn)  # new tables only (CREATE IF NOT EXISTS): the schema version and the tables above are not touched
         conn.execute(f"PRAGMA user_version = {VERSION_SCHEMA}")
     # WAL: reads and writes at the same time and consistent backups with the
     # backup API. journal_mode does not change inside a transaction: separate connection.
@@ -246,7 +206,7 @@ def insert_activity(ts, type_name, description, kind=None, duration_s=None, cons
     key = params = None
     if isinstance(description, messages.Msg):
         key, params = description.key, messages.dumps_params(description)
-    with _lock, _connect() as conn:
+    with db_conn.write(DB_FILE) as conn:
         conn.execute(
             "INSERT INTO activity (ts, kind, mode, description, duration_s, consumption_kwh, detail, message_key, message_params, user, role) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -256,7 +216,7 @@ def insert_activity(ts, type_name, description, kind=None, duration_s=None, cons
 
 
 def activity_since(ts_iso, limit=200):
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         rows = conn.execute(
             "SELECT ts, kind, mode, description, duration_s, consumption_kwh, message_key, message_params FROM activity "
             "WHERE ts >= ? ORDER BY ts DESC LIMIT ?",
@@ -278,7 +238,7 @@ def activity_query(since_iso, until_iso, type_name=None, limit=50, offset=0, exc
     panels of BtnCmd, this scales to any number of events because it only
     fetches one page at a time. Returns (total, rows)."""
     where, args = _activity_where(since_iso, until_iso, type_name, exclude, raw_text, user)
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         total = conn.execute(f"SELECT COUNT(*) FROM activity WHERE {where}", args).fetchone()[0]
         rows = conn.execute(
             f"SELECT id, ts, kind, mode, description, duration_s, consumption_kwh, detail, message_key, message_params, user, role FROM activity "
@@ -297,7 +257,7 @@ def activity_summary(since_iso, until_iso, exclude=None, user=None):
     themselves (newest first, up to 30), the last failures (error and emergency, up to 8) and the first
     and last event."""
     where, args = _activity_where(since_iso, until_iso, None, exclude, None, user)
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         by_kind = {r[0]: r[1] for r in conn.execute(f"SELECT kind, COUNT(*) FROM activity WHERE {where} GROUP BY kind", args).fetchall()}
         cancelled = conn.execute(
             f"SELECT COUNT(*) FROM activity WHERE {where} AND kind = 'job_end' AND (message_key IN ('job_cancelled', 'live_job_end_cancel', 'live_job_end_file_cancelled', 'live_job_end_interrumpido'))",
@@ -347,7 +307,7 @@ def activity_delete(ids):
     ids = [int(i) for i in ids]
     if not ids:
         return 0
-    with _lock, _connect() as conn:
+    with db_conn.write(DB_FILE) as conn:
         cur = conn.execute("DELETE FROM activity WHERE id IN (" + ",".join("?" * len(ids)) + ")", ids)
         return cur.rowcount
 
@@ -355,13 +315,13 @@ def activity_delete(ids):
 def activity_delete_where(since_iso, until_iso, type_name=None, exclude=None, raw_text=None):
     """Deletes EVERYTHING that matches the filter (Activity page: Delete what is filtered)."""
     where, args = _activity_where(since_iso, until_iso, type_name, exclude, raw_text)
-    with _lock, _connect() as conn:
+    with db_conn.write(DB_FILE) as conn:
         cur = conn.execute(f"DELETE FROM activity WHERE {where}", args)
         return cur.rowcount
 
 
 def activity_kinds():
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         rows = conn.execute("SELECT DISTINCT kind FROM activity ORDER BY kind").fetchall()
     return [r["kind"] for r in rows]
 
@@ -371,7 +331,7 @@ def activity_kinds():
 def consumption_by_summarize(day_count=CONSUMPTION_DETAIL_DAYS):
     """How many readings older than `days` would disappear when summarizing by hour."""
     limit = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - day_count * 86400))
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         total, hours = conn.execute(
             "SELECT COUNT(*), COUNT(DISTINCT meter || substr(ts, 1, 13)) FROM consumption WHERE ts < ?", (limit,)).fetchone()
     return total - hours
@@ -383,7 +343,7 @@ def prune_consumption(day_count=CONSUMPTION_DETAIL_DAYS, before_of=None):
     day, month and year do not change) with the average power, voltage and
     current of that hour. One reading every 30 s was ~1 million rows per year."""
     limit = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(before_of if before_of else time.time() - day_count * 86400))
-    with _lock, _connect() as conn:
+    with db_conn.write(DB_FILE) as conn:
         conn.execute("DROP TABLE IF EXISTS temp.horas")
         conn.execute(
             "CREATE TEMP TABLE horas AS SELECT MAX(id) AS id, AVG(power_w) AS p, AVG(voltage_v) AS v, AVG(current_a) AS a, COUNT(*) AS n "
@@ -401,13 +361,13 @@ def prune_consumption(day_count=CONSUMPTION_DETAIL_DAYS, before_of=None):
 
 def compact(min_mb=1.0):
     """VACUUM if there are more than min_mb of unused space inside. Returns MB freed."""
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         idle = conn.execute("PRAGMA freelist_count").fetchone()[0] * conn.execute("PRAGMA page_size").fetchone()[0] / 1048576
     if idle < min_mb:
         return 0.0
     before = os.path.getsize(DB_FILE)
-    with _lock:
-        conn = sqlite3.connect(DB_FILE, timeout=30)
+    with _lock:  # VACUUM is a write: it waits for the writers; the readers (WAL) go on
+        conn = sqlite3.connect(DB_FILE, timeout=30, isolation_level=None)
         try:
             conn.execute("VACUUM")
         finally:
@@ -416,7 +376,7 @@ def compact(min_mb=1.0):
 
 
 def insert_consumption(ts, voltage_v, current_a, power_w, energy_kwh, meter="general"):
-    with _lock, _connect() as conn:
+    with db_conn.write(DB_FILE) as conn:
         conn.execute(
             "INSERT INTO consumption (ts, voltage_v, current_a, power_w, energy_kwh, meter) VALUES (?, ?, ?, ?, ?, ?)",
             (_ts_for_save(ts), voltage_v, current_a, power_w, energy_kwh, meter or "general"),
@@ -424,7 +384,7 @@ def insert_consumption(ts, voltage_v, current_a, power_w, energy_kwh, meter="gen
 
 
 def consumption_since(ts_iso, meter="general"):
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         rows = conn.execute(
             "SELECT ts, voltage_v, current_a, power_w, energy_kwh FROM consumption "
             "WHERE meter = ? AND ts >= ? ORDER BY ts ASC",
@@ -434,7 +394,7 @@ def consumption_since(ts_iso, meter="general"):
 
 
 def consumption_last(meter="general"):
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         row = conn.execute(
             "SELECT ts, voltage_v, current_a, power_w, energy_kwh FROM consumption WHERE meter = ? ORDER BY ts DESC LIMIT 1",
             (meter,),
@@ -448,7 +408,7 @@ def consumption_query(since_iso, until_iso, limit=50, offset=0, meter="general")
     activity_query, but without a "type" filter (the consumption table has no
     such column). It replaces the sliding-window BtnCmdChart that restarted
     empty on every page load."""
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         total = conn.execute(
             "SELECT COUNT(*) FROM consumption WHERE meter = ? AND ts >= ? AND ts <= ?",
             (meter, since_iso, until_iso),
@@ -480,7 +440,7 @@ def consumption_serial(since_iso, until_iso, max_points=2000, meter="general"):
 def _serial(source_sql, params, max_points):
     """source_sql: SELECT of ts, power_w, voltage_v, current_a (one row per ts) with ? marks for params."""
     max_points = max(2, int(max_points))
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         n, first, last = conn.execute(
             "SELECT COUNT(*), MIN(ts), MAX(ts) FROM (" + source_sql + ")", params).fetchone()
         if n <= max_points:
@@ -553,7 +513,7 @@ def consumption_kwh_buckets(limits_iso, meter="general"):
     above). None in the buckets without any reading."""
     if len(limits_iso) < 2:
         return []
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         prev = conn.execute("SELECT MAX(ts) FROM consumption WHERE meter = ? AND ts < ?", (meter, limits_iso[0])).fetchone()[0]
         rows = conn.execute(
             "SELECT ts, energy_kwh FROM consumption WHERE meter = ? AND ts >= ? AND ts < ? ORDER BY ts ASC",
@@ -605,7 +565,7 @@ def consumption_period(boundaries_iso, meter="general"):
     of ISO timestamps, len = number of buckets + 1), for the Tuya-style bar
     chart of dwc-src/Consumption.vue. The consumption of bucket i is computed by
     consumo_periodo.py as snapshots[i+1] - snapshots[i]."""
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         return [_energy_at_or_before(conn, ts, meter) for ts in boundaries_iso]
 
 
@@ -614,7 +574,7 @@ def consumption_span_summary(since_iso, until_iso, meter="general"):
     visible page -- subtracting energy_kwh between the first and last row of the
     range (like consumption_period.py) plus MAX/AVG of power_w via SQL, without
     bringing all the rows of the range into the process."""
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         first = conn.execute(
             "SELECT energy_kwh FROM consumption WHERE meter = ? AND ts >= ? AND ts <= ? ORDER BY ts ASC LIMIT 1",
             (meter, since_iso, until_iso),
@@ -653,7 +613,7 @@ _commands_inserted = [0]
 def command_insert(ts, label, code, ok, ms, response, via="", reading=False, origin=None, user=None, role=None):
     """origin: dict from origen.describe_api (optional; saved in the same row)."""
     o = origin if isinstance(origin, dict) else {}
-    with _lock, _connect() as conn:
+    with db_conn.write(DB_FILE) as conn:
         conn.execute(
             "INSERT INTO commands (ts, name, code, ok, ms, response, via, reading, origin, channel, origin_kind, plugin, result, user, role) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -702,7 +662,7 @@ def commands_query(since_iso, until_iso, label=None, only_errors=False, raw_text
     if raw_text:
         where += " AND (code LIKE ? OR response LIKE ?)"
         args += [f"%{raw_text}%", f"%{raw_text}%"]
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         total = conn.execute(f"SELECT COUNT(*) FROM commands WHERE {where}", args).fetchone()[0]
         errors = conn.execute(f"SELECT COUNT(*) FROM commands WHERE {where} AND ok = 0", args).fetchone()[0]
         rows = conn.execute(
@@ -727,7 +687,7 @@ def commands_query(since_iso, until_iso, label=None, only_errors=False, raw_text
     summary = {"all": res[0] or 0, "readings": res[1] or 0, "errors": res[2] or 0, "ms_avg": res[3], "ms_max": res[4], "ways": ways}
     # values available for the origin filters (whole range, ignoring the other filters)
     for key, col in (("channels", "channel"), ("kinds", "origin_kind"), ("plugins", "plugin"), ("results", "result")):
-        with _lock, _connect() as conn:
+        with db_conn.read(DB_FILE) as conn:
             summary[key] = [r[0] for r in conn.execute(
                 f"SELECT {col} FROM commands WHERE ts >= ? AND ts <= ? AND COALESCE({col}, '') != '' "
                 f"GROUP BY {col} ORDER BY COUNT(*) DESC", (since_iso, until_iso)).fetchall()]
@@ -747,14 +707,14 @@ def _origin_dict(raw):
 
 
 def commands_delete(since_iso, until_iso):
-    with _lock, _connect() as conn:
+    with db_conn.write(DB_FILE) as conn:
         return conn.execute("DELETE FROM commands WHERE ts >= ? AND ts <= ?", (since_iso, until_iso)).rowcount
 
 
 def commands_last(n):
     """The n most recent, to fill in 'Last received commands' of Services at
     startup (they used to be lost on every restart)."""
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         rows = conn.execute(
             "SELECT ts, code, ok, ms, response, via, origin FROM commands ORDER BY id DESC LIMIT ?", (n,)
         ).fetchall()
@@ -766,47 +726,28 @@ def commands_last(n):
 # ---- audit (append-only, 2026-10-21) ----
 # Who did what: user, role, device (random id of the browser), address, operation, arguments without secrets and result.
 # There is no function to delete or change a row except audit_purge (by age, maintenance); the triggers of init_db back it up.
-AUDIT_MAX_PAGE = 200
+# Phase 4: every row gets its link of the verification chain in the same transaction (audit_chain.py); the queries are in audit_store.py.
+AUDIT_MAX_PAGE = audit_store.MAX_PAGE
+audit_store.path_of = lambda: DB_FILE
 _audit_inserted = [0]
 
 
-def audit_insert(ts, user, role, device, ip, via, op, args, ok, code, result):
-    with _lock, _connect() as conn:
-        conn.execute(
-            "INSERT INTO audit (ts, user, role, device, ip, via, op, args, ok, code, result) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (_ts_for_save(ts), user or "", role or "", device or "", ip or "", via or "", op, (args or "")[:600], 1 if ok else 0,
-             code or "", (result or "")[:300]))
+def audit_insert(ts, user, role, device, ip, via, op, args, ok, code, result, detail=None):
+    with db_conn.write(DB_FILE) as conn:
+        audit_chain.insert(conn, _ts_for_save(ts), user, role, device, ip, via, op, args, ok, code, result, detail)
         _audit_inserted[0] += 1
         if _audit_inserted[0] % 500 == 1:
-            conn.execute("DELETE FROM audit WHERE ts < ?", (time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - AUDIT_DAYS * 86400)),))
+            audit_chain.purge(conn, audit_chain.limit_ts(AUDIT_DAYS))
 
 
 def audit_purge():
-    """Maintenance: deletes the rows older than AUDIT_DAYS (the triggers refuse anything younger)."""
-    limit = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(time.time() - AUDIT_DAYS * 86400))
-    with _lock, _connect() as conn:
-        return conn.execute("DELETE FROM audit WHERE ts < ?", (limit,)).rowcount
+    """Maintenance: deletes the rows older than AUDIT_DAYS (the triggers refuse anything younger) and leaves the cut points of the chain."""
+    with db_conn.write(DB_FILE) as conn:
+        return audit_chain.purge(conn, audit_chain.limit_ts(AUDIT_DAYS))
 
 
-def audit_query(since_iso, until_iso, user=None, op=None, only_errors=False, limit=50, offset=0):
-    where, args = "ts >= ? AND ts <= ?", [since_iso, until_iso]
-    if user:
-        where += " AND user = ?"
-        args.append(user)
-    if op:
-        where += " AND op LIKE ?"
-        args.append(op.replace("%", "") + "%")
-    if only_errors:
-        where += " AND ok = 0"
-    limit = max(1, min(int(limit), AUDIT_MAX_PAGE))
-    with _lock, _connect() as conn:
-        total = conn.execute(f"SELECT COUNT(*) FROM audit WHERE {where}", args).fetchone()[0]
-        rows = conn.execute(
-            f"SELECT id, ts, user, role, device, ip, via, op, args, ok, code, result FROM audit WHERE {where} ORDER BY id DESC LIMIT ? OFFSET ?",
-            args + [limit, max(int(offset), 0)]).fetchall()
-        users = [r[0] for r in conn.execute("SELECT user FROM audit WHERE ts >= ? AND ts <= ? AND user != '' GROUP BY user ORDER BY COUNT(*) DESC",
-                                            (since_iso, until_iso)).fetchall()]
-    return total, _rows(rows), users
+def audit_query(since_iso, until_iso, user=None, op=None, only_errors=False, limit=50, offset=0, **filters):
+    return audit_store.query_rows(DB_FILE, since_iso, until_iso, user, op, only_errors, limit, offset, **filters)
 
 
 # ---- Database state (Pi Health page, 2026-10-10: "I want a state of the
@@ -833,7 +774,7 @@ def state_base():
         "version_schema": None,
         "consumption_detail_days": CONSUMPTION_DETAIL_DAYS,
     }
-    with _lock, _connect() as conn:
+    with db_conn.read(DB_FILE) as conn:
         for (label,) in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").fetchall():
             row = {"name": label, "rows": conn.execute(f'SELECT COUNT(*) FROM "{label}"').fetchone()[0]}
             col = _TS_OF.get(label)
