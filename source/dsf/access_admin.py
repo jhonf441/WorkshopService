@@ -22,7 +22,12 @@ from access_store import AccessError
 # every operation an administrator needs to repair the model: all of them must stay allowed (see `guard`)
 ADMIN_PROBES = ("access.profiles.list", "access.profiles.get", "access.profiles.set", "access.profiles.remove", "access.groups.list", "access.groups.get",
                 "access.groups.set", "access.groups.remove", "access.attach", "access.detach", "access.ceiling.set", "access.profile.versions",
-                "access.profile.rollback", "access.check", "access.person.get", "access.review", "access.report", "access.plugins.validate")
+                "access.profile.rollback", "access.check", "access.person.get", "access.review", "access.report", "access.plugins.validate",
+                "access.profiles.validate", "access.attach.validate", "access.detach.validate", "access.ceiling.validate",
+                "access.groups.validate")
+MAX_BATCH = 100  # operations in one batch call (access.check items, auth.can operations)
+CHECK_FIELDS = ("operation", "target", "args", "mode", "mode_now", "job_running", "machine_on", "via")
+VIAS = ("session", "key", "macro", "local")
 BRIEF = 250  # characters of what a change left before / after in the audit row (the row holds 600)
 
 
@@ -217,4 +222,43 @@ def check(env, args):
     deciding = next((r for r in rows if r["profile"] == dec.reason.get("profile") and r["id"] == dec.reason.get("id")), None) if dec.reason.get("profile") else None
     out.update(engine="access", allowed=dec.allowed, reason=dict(dec.reason), deciding=deciding, rules=rows, groups=list(pr.groups))
     return out
+
+
+def batch_items(items):
+    """The list of a batch call, or AccessError: not a list or empty (invalid_args), more than MAX_BATCH (too_many)."""
+    if not isinstance(items, list) or not items:
+        raise AccessError("invalid_args", "give a list with at least one operation", field="items")
+    if len(items) > MAX_BATCH:
+        raise AccessError("too_many", "at most %d operations in one call" % MAX_BATCH)
+    return items
+
+
+def _clean_item(it):
+    if not isinstance(it, dict):
+        raise AccessError("invalid_args", "every item is an object with an operation", field="items")
+    extra = sorted(str(k) for k in it if k not in CHECK_FIELDS)
+    if extra:
+        raise AccessError("invalid_args", "unknown field(s) in an item: " + ", ".join(extra), field=extra[0])
+    if not str(it.get("operation") or "").strip():
+        raise AccessError("invalid_args", "every item needs an operation", field="operation")
+    if it.get("via") is not None and it["via"] not in VIAS:
+        raise AccessError("invalid_args", "via is one of " + ", ".join(VIAS), field="via")
+    return it
+
+
+def check_many(env, user, items):
+    """`check` for a list of requests of ONE person: the answer of each item is exactly what `check` gives alone. An item that `check` would refuse
+    answers {"operation", "error": {"code", "detail"}} in its place (the others are answered). An unknown person or a list that is too long
+    refuses the whole call, as the single one does."""
+    items = batch_items(items)
+    name = env.user(user)
+    if name is None:
+        raise AccessError("unknown_user", "there is no person '%s'" % user, user=str(user))
+    out = []
+    for it in items:
+        try:
+            out.append(check(env, dict(_clean_item(it), user=name)))
+        except AccessError as x:
+            out.append({"operation": str(it.get("operation") or "") if isinstance(it, dict) else "", "error": {"code": x.code, "detail": str(x)}})
+    return {"user": name, "items": out}
 

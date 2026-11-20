@@ -22,6 +22,7 @@ import re
 import threading
 import time
 
+import access_rev
 import fs_atomic
 import paths
 import permission_caps as caps
@@ -218,6 +219,7 @@ class RoleStore:
             os.chmod(self.path, 0o600)
         except OSError:
             pass
+        access_rev.bump()
 
     # ---- reading ----
     def exists(self, name):

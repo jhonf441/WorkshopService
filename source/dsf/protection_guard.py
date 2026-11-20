@@ -59,6 +59,7 @@ WATCHES = tuple(
 )
 _BY_ID = {w["id"]: w for w in WATCHES}
 CRITICAL = ("fire", "servo")
+WHY_KEYS = {"no_devices": "protection_guard_why_no_devices"}  # why a protection rests when the service knows (written whole: published_texts.py reads literals)
 JOB_MODES = ("Laser", "CNC")
 
 
@@ -93,12 +94,13 @@ class Guard:
     pause_fn() -> None (raises if it cannot). `clock` is the monotonic reading used for every duration; `wall` only
     stamps the `since` that is published (an epoch to show; tests that inject only `clock` get it for both)."""
 
-    def __init__(self, settings_fn, expected_fn, beat_fn, job_fn, emit, pause_fn, clock=None, wall=None):
+    def __init__(self, settings_fn, expected_fn, beat_fn, job_fn, emit, pause_fn, clock=None, wall=None, rest_why_fn=None):
         clock_fn = clock or clock_mod.mono
         # wall clock: only stamps the published "since" epoch
         self.wall = wall or (clock if clock is not None else clock_mod.wall)
         self.settings_fn, self.expected_fn, self.beat_fn = settings_fn, expected_fn, beat_fn
         self.job_fn, self.emit, self.pause_fn, self.clock = job_fn, emit, pause_fn, clock_fn
+        self.rest_why_fn = rest_why_fn or (lambda w: None)  # why a protection is not expected, when it is known ("no_devices")
         self.st = {w["id"]: {"expected_since": None, "down_since": None, "announced": False, "alarmed": False,
                              "paused": False, "notified_at": None, "reminded_at": None, "down_wall": None} for w in WATCHES}
 
@@ -128,7 +130,11 @@ class Guard:
             if not cfg["enabled"] or not self.expected_fn(w):
                 if state["down_since"] is not None or state["expected_since"] is not None:
                     self._reset(state)  # stopped on purpose: no alarm, no event
-                out.append({"id": w["id"], "protects": w["protects"], "state": "rest", "since": None})
+                row = {"id": w["id"], "protects": w["protects"], "state": "rest", "since": None}
+                why = self.rest_why_fn(w) if cfg["enabled"] else None
+                if why:
+                    row["why"] = why
+                out.append(row)
                 continue
             if state["expected_since"] is None:
                 state["expected_since"] = now
@@ -205,8 +211,8 @@ class Guard:
         return {"enabled": cfg["enabled"], "degraded": bool(down), "action": cfg["action"],
                 "since": min((r["since"] for r in down), default=None),
                 "down": [r["id"] for r in down],
-                "watches": [{"id": r["id"], "title": titles[r["id"]], "protects": r["protects"], "state": r["state"],
-                             "since": r["since"]} for r in rows]}
+                "watches": [dict({"id": r["id"], "title": titles[r["id"]], "protects": r["protects"], "state": r["state"],
+                                  "since": r["since"]}, **({"why": M(WHY_KEYS[r["why"]])} if r.get("why") else {})) for r in rows]}
 
 
 class InterlockWatch:
@@ -311,6 +317,17 @@ def _expected(w):
     return service_modules.is_active(w["plugin"]) and installed(w["plugin"])
 
 
+def watch_expected(w, rs485_probe):
+    """Is the protection expected now? The servo (RS485) only when a RS485 device is configured: with none there is no servo alarm to
+    wait for. Any doubt keeps it watched (the probe says "no devices" only when the plugin published an empty list for a while)."""
+    return _expected(w) and not (w["id"] == "rs485" and rs485_probe.no_devices())
+
+
+def rest_why(w, rs485_probe):
+    """Why an unexpected protection rests, when it is known ("no_devices": the plugin runs but has no device); None otherwise."""
+    return "no_devices" if w["id"] == "rs485" and _expected(w) and rs485_probe.no_devices() else None
+
+
 def run_loop(bridge, config):
     import activity
     import guard_probes as probes
@@ -331,7 +348,8 @@ def run_loop(bridge, config):
     def pause():
         bridge.send("M25")
 
-    guard = Guard(lambda: settings(config), _expected, beat, probes.job_context, emit, pause)
+    guard = Guard(lambda: settings(config), lambda w: watch_expected(w, rs485), beat, probes.job_context, emit, pause,
+                  rest_why_fn=lambda w: rest_why(w, rs485))
     import interlocks
     watch = InterlockWatch(lambda: settings(config), lambda: interlocks.state(*interlocks.live()), probes.job_context, emit)
     published = None

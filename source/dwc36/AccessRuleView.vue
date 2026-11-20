@@ -3,12 +3,12 @@
 	<div class="access-rule" :class="'access-rule--' + rule.decision">
 		<div class="access-rule-head">
 			<span class="access-rule-n">{{ index }}</span>
-			<strong class="access-rule-id">{{ rule.id }}</strong>
+			<strong class="access-rule-id">{{ ruleText(rule.id, profile) }}</strong><code v-if="ruleCode(rule.id, profile)" class="access-id">{{ rule.id }}</code>
 			<v-chip small outlined label :color="rule.decision === 'allow' ? 'success' : 'error'">{{ $t('plugins.WorkshopService.access.builder_decision_' + rule.decision) }}</v-chip>
 		</div>
 		<div class="access-rule-line">
 			<span class="access-rule-label">{{ $t('plugins.WorkshopService.access.builder_loose_ops') }}</span>
-			<span v-for="o in shownOps" :key="o" class="access-op">{{ o }}</span>
+			<span v-for="o in shownOps" :key="o" class="access-op">{{ entryText(o) }}<code v-if="entryCode(o)" class="access-id">{{ o }}</code></span>
 			<v-btn v-if="hasMore" small text class="access-touch" @click="open = !open">{{ open ? $t('plugins.WorkshopService.access.builder_ops_less') : $t('plugins.WorkshopService.access.builder_ops_more', { n: hidden }) }}</v-btn>
 		</div>
 		<div class="access-rule-line">
@@ -27,12 +27,15 @@
 'use strict'
 
 import { whenItems } from './access-profile-view.js'
+import { displayNamesMixin } from './display-names-mixin.js'
 
 const SHOWN = 12
 
 export default {
+	mixins: [displayNamesMixin],
 	props: {
 		rule: { type: Object, required: true },
+		profile: { type: String, default: '' }, // the id of the profile the rule belongs to: only the rules of the base profiles have a readable name
 		index: { type: Number, default: 1 }
 	},
 	data() {

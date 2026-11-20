@@ -11,8 +11,8 @@ import re
 
 import config_scan
 import machine_config as mc
+import machine_file
 import machine_patch as pt
-import machine_plans as plans
 from workshop_api import READ, Arg, Op
 
 TYPES = ("spindle", "laser", "pellet_extruder", "fff_extruder", "contact_probe", "generic")
@@ -53,9 +53,53 @@ def sensor_text(preset, item, field):
 class ToolError(ValueError):
     """code = a short code of the contract (pin_used, tool_exists...), field = the field of the spec it is about."""
 
-    def __init__(self, code, field=""):
+    def __init__(self, code, field="", pin=None, tool=None):
         super().__init__(code)
-        self.code, self.field = code, field
+        self.code, self.field, self.pin, self.tool = code, field, pin, tool
+
+
+def where_used(texts, pin):
+    """{file, line, text} of the first live line of the configuration files that names `pin`, or None."""
+    for path, text in texts:
+        _, ls = pt.split_lines(text)
+        for n, code in pt.live_lines(ls):
+            if any(m.group(1) == pin for m in PIN_TOKEN_RE.finditer(code)):
+                return {"file": mc.rel_of(path), "line": n + 1, "text": code[:120]}
+    return None
+
+
+def where_tool(texts, number):
+    """{file, line, text} of the first live M563 of the configuration files that defines tool `number`, or None (a tool only the board has loaded)."""
+    for path, text in texts:
+        _, ls = pt.split_lines(text)
+        for n, code in pt.live_lines(ls):
+            if pt.command_word(code)[0] == "M563" and pt._p_of(code) == number:
+                return {"file": mc.rel_of(path), "line": n + 1, "text": code[:120]}
+    return None
+
+
+def _where(e, read):
+    if e.pin:
+        return where_used(_config_texts(read), e.pin)
+    if e.tool is not None:
+        return where_tool(_config_texts(read), e.tool)
+    return None
+
+
+def plan_error(e, read):
+    """The PlanError of a ToolError; a pin that is in use says where (file and line) it is used."""
+    err = mc.PlanError("tool_name" if e.code == "name" else e.code, e.field)
+    err.where = _where(e, read)
+    return err
+
+
+def error_of(e, read):
+    """The error of a preview: {code, field} and, for a pin in use, where."""
+    out = {"code": e.code, "field": e.field}
+    where = _where(e, read)
+    if where:
+        out["where"] = where
+    return out
 
 
 def _pin_of(raw):
@@ -93,7 +137,7 @@ def _pin(raw, need, used, taken, field):
     if need not in CAPS[pin]:
         raise ToolError("pin_capability", field)
     if pin in used or pin in taken:
-        raise ToolError("pin_used", field)
+        raise ToolError("pin_used", field, pin)
     taken.add(pin)
     return str(raw).strip()
 
@@ -117,7 +161,7 @@ def build_lines(spec, state):
         raise ToolError("values", "type")
     number = _number(spec.get("number"), 0, MAX_TOOLS - 1, "number", True)
     if number in state["tools"]:
-        raise ToolError("tool_exists", "number")
+        raise ToolError("tool_exists", "number", tool=number)
     name = str(spec.get("name") or "")
     if not NAME_RE.match(name):
         raise ToolError("name", "name")
@@ -268,32 +312,15 @@ def _state(read, om):
 
 # ---- the plan ----
 
-def _insert_block(text, lines):
-    eol, ls = pt.split_lines(text)
-    at = -1
-    for n, code in pt.live_lines(ls):
-        if pt.command_word(code)[0] in ("M563", "M950", "M308", "M143"):
-            at = n
-    notices = []
-    if at < 0:
-        notices.append("no_anchor")
-        at = len(ls) - 2 if ls and ls[-1] == "" else len(ls) - 1
-    for k, line in enumerate(lines):
-        ls.insert(at + 1 + k, line)
-    return pt._result(ls, eol, "inserted", at + 2, notices)
-
-
 def plan_tool(values, env):
     """Creates the lines of a tool in the configuration file that already defines tools (else config.g). The machine restarts to read them."""
     state, _ = _state(env["read"], env.get("om"))
     try:
         built = build_lines(values.get("spec", values), state)
     except ToolError as e:
-        raise mc.PlanError("tool_name" if e.code == "name" else e.code, e.field)
-    path, before, res, scan, hits = plans._edit(env, lambda t: "M563" in t, lambda t: _insert_block(t, built["lines"]))
-    body = plans._body(path, before, res, scan, hits, None, None, built["summary"])
-    body["warnings"].append("tool_restart")
-    return body
+        raise plan_error(e, env["read"])
+    spec = values.get("spec", values)
+    return machine_file.plan_body(mc, config_scan.scan(env["read"]), "tool", built["summary"]["number"], built, spec.get("modes") if isinstance(spec, dict) else None, "tool_restart")
 
 
 # ---- the operations ----
@@ -309,7 +336,21 @@ def _get(args, ctx):
                           "fans": t.get("fans") or [], "offsets": t.get("offsets") or []})
     taken = set(state["tools"])
     nxt = next((n for n in range(MAX_TOOLS) if n not in taken), None)
-    return {"tools": tools, "next_number": nxt, "family_hint": str(((om or {}).get("state") or {}).get("machineMode") or "")}
+    text = mo.read_sd(machine_file.ROOT)
+    try:
+        found = machine_file.parse(text.encode("utf-8") if text is not None else None)
+    except machine_file.MachineFileError:
+        found = {"blocks": [], "broken": True, "exists": True}
+    mine = {b["number"]: b for b in found["blocks"] if b["kind"] == "tool"}
+    for t in tools:
+        # modes: the modes the tool exists in according to machine.g (None = every mode, or it is not a tool of machine.g)
+        t["in_machine_file"] = t["number"] in mine
+        t["modes"] = list(mine[t["number"]]["modes"]) if t["number"] in mine and mine[t["number"]]["modes"] else None
+    return {"tools": tools, "next_number": nxt, "family_hint": str(((om or {}).get("state") or {}).get("machineMode") or ""),
+            "modes": list(machine_file.MODES),
+            "machine_file": {"exists": found["exists"], "broken": found["broken"],
+                             "blocks": [{"id": b["id"], "kind": b["kind"], "number": b["number"], "modes": list(b["modes"]) if b["modes"] else None, "edited": b["edited"]}
+                                        for b in found["blocks"]]}}
 
 
 def _pins(args, ctx):
@@ -320,14 +361,23 @@ def _pins(args, ctx):
     return {"free": free_pins(state["used"], kind if kind in ("pwm", "digital", "adc", "temp", "spi", "servo") else None), "used": used}
 
 
+def _modes(args):
+    """The modes of the spec as machine.g will keep them (None = every mode)."""
+    spec = args.get("spec")
+    return list(machine_file.clean_modes(spec.get("modes"))) if isinstance(spec, dict) and spec.get("modes") not in (None, "all", []) else None
+
+
 def _preview(args, ctx):
     import machine_ops as mo
     state, _ = _state(mo.read_sd, mo.model())
+    bad = machine_file.modes_problem(args.get("spec"))
+    if bad:
+        return {"lines": [], "files": [], "warnings": [], "errors": [bad]}
     try:
         built = build_lines(args.get("spec"), state)
     except ToolError as e:
-        return {"lines": [], "files": [], "warnings": [], "errors": [{"code": e.code, "field": e.field}]}
-    return {"lines": built["lines"], "files": [mc.rel_of(config_scan.ROOT)], "warnings": ["tool_restart"], "errors": []}
+        return {"lines": [], "files": [], "warnings": [], "errors": [error_of(e, mo.read_sd)]}
+    return {"lines": built["lines"], "files": machine_file.preview_files(mc), "warnings": ["tool_restart"], "errors": [], "modes": _modes(args)}
 
 
 def ops():

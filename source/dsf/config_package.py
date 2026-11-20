@@ -8,7 +8,7 @@ What goes in (category -> where it comes from, on the SD):
   config   sys/workshop/config/*.json     (any field named like a key / topic / password is taken out, config_store.KEYS)
   zones    sys/workshop/zones/*           (work zones, cut area)
   macros   macros/**                      (the person's own macros: lights, power, laser, jog, cnc...)
-  system   sys/workshop/data/modestate.g, sys/workshop/modes/*.g   (machine modes: hardware specific, reference only)
+  system   sys/workshop/data/modestate.g, sys/workshop/modes/*.g, sys/workshop/machine.g   (machine modes and what was created in this machine: hardware specific, reference only)
 
 What never goes in: users and PINs, the secrets file, the camera key, the Tuya key, the database, API keys, captures,
 plugin-owned macros (sys/workshop/macros come with their plugin) and config.g.
@@ -34,6 +34,7 @@ import zipfile
 import config_store
 import mode_paths
 import paths
+import sd_pending
 import sd_paths
 from workshop_api import ADMIN, READ, Arg, ApiError, Op
 
@@ -41,12 +42,13 @@ FORMAT = 1
 MANIFEST = "manifest.json"
 CATEGORIES = ("config", "zones", "macros", "system")
 IMPORTED = "sys/workshop/imported"
+MACHINE_FILE = "sys/workshop/machine.g"
 MAX_FILE = 256 * 1024          # bytes of one file
 MAX_FILES = 500
 MAX_TOTAL = 8 * 1024 * 1024    # uncompressed bytes of the whole package
 MAX_ZIP = 700 * 1024           # the API request is limited to 1 MB, and base64 adds a third
 MACRO_EXT = (".g", ".gcode", ".txt", ".json", ".md")
-SYSTEM_FILES = re.compile(r"^sys/workshop/(modes/(automodeselect|mode[a-z0-9_]*)|data/modestate)\.g$")   # mode_paths.py
+SYSTEM_FILES = re.compile(r"^sys/workshop/(modes/(automodeselect|mode[a-z0-9_]*)|data/modestate|machine)\.g$")   # mode_paths.py
 _lock = threading.Lock()
 
 
@@ -103,6 +105,8 @@ def _candidates(sd):
     out += [f for f in _walk(sd, mode_paths.MODES_DIR) if SYSTEM_FILES.match(f)]
     if os.path.isfile(os.path.join(sd, *mode_paths.STATE.split("/"))):
         out.append(mode_paths.STATE)
+    if os.path.isfile(os.path.join(sd, *MACHINE_FILE.split("/"))):
+        out.append(MACHINE_FILE)    # sys/workshop/machine.g: what was created in this machine (a reference when imported, like the modes)
     return [f.replace(os.sep, "/") for f in out]
 
 
@@ -293,7 +297,10 @@ def _preview(args, ctx):
 
 def _apply(args, ctx):
     manifest, files = _decode(args)
-    return apply(manifest, files, categories=args.get("categories") or None, replace=args.get("replace") or None)
+    try:
+        return apply(manifest, files, categories=args.get("categories") or None, replace=args.get("replace") or None)
+    finally:
+        sd_pending.forget()  # an import writes files: the plan of the wizard may be another one now
 
 
 def ops():

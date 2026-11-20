@@ -134,6 +134,8 @@ FILTERS = [
 # state.upTime changes every 1 s; with the board off nothing arrives and it
 # reconnects once a minute (cheap). A closed socket is seen right away.
 WITHOUT_DATA_S = 60
+RETRY_PAUSE_S = 0.5  # read_one_shot: wait before the second try when the first message came cut
+REFUSED_PAUSE_S = 2.0  # read_one_shot: wait before the second try when DSF answered UnauthorizedAccessException
 RECV_S = 1.0  # how often the thread comes back even if nothing arrives
 INITIAL_S = 15  # deadline for the initial model (DSF sends it right away)
 WAIT_MIN_S = 1
@@ -672,6 +674,24 @@ def read_one_shot(filters, timeout=5):
     state.upTime changes every second, so the dead subscription is released within a second."""
     if "state.upTime" not in filters and "state.**" not in filters:
         filters = list(filters) + ["state.upTime"]
+    try:
+        return _read_first_message(filters, timeout)
+    except json.JSONDecodeError as e:
+        # About 16 times a day on the Pi the 140 KB answer arrives cut. The subscription is closed already, so ask once more on a
+        # new one after a short pause; a second failure is a real one and goes up as it always did.
+        if "UnauthorizedAccessException" in e.doc:
+            # Not a cut message: DSF refused this subscription (a 50-byte error object). Say so and give it more time.
+            log_file("one-shot read: DSF refused the subscription (UnauthorizedAccessException); reading once more in %.1f s" % REFUSED_PAUSE_S)
+            time.sleep(REFUSED_PAUSE_S)
+            return _read_first_message(filters, timeout)
+        log_file("one-shot read: the message came cut (%d bytes, error at char %d, starts %r, ends %r); reading once more"
+                 % (len(e.doc), e.pos, e.doc[:40], e.doc[-40:]))
+        time.sleep(RETRY_PAUSE_S)
+        return _read_first_message(filters, timeout)
+
+
+def _read_first_message(filters, timeout):
+    """The first message of a new subscription (a complete JSON object), without `messages`; the subscription is always closed."""
     c = _connect_dsf(filters)
     try:
         r = c.receive(timeout)

@@ -10,6 +10,8 @@
 //   firstCause(list)               the cause of the list that comes first in CAUSES
 //   conditionPhrase(key, want)     the key and the parameters of the phrase that names a condition ("the machine is in fff mode")
 //   blockReason(entry, options)    the four-condition rule for ONE control or group of controls: { show, key, cause, params, unknown }
+//   conditionOfReason(reason, live) the phrase of the condition that failed (the service gives its key, not its value)
+//   entryOfAnswer / groupFromAnswers  an answer of auth.can -> the entry / the one sentence of a group of operations
 //   groupReason(items, options)    ONE sentence for a group of controls: the first cause that applies among the operations that are denied
 //
 // The sentence is drawn if and only if all four hold: (1) the person has the control in view, (2) it is disabled by PERMISSIONS (the machine state
@@ -54,6 +56,8 @@ const CAUSE_OF_CODE = Object.freeze({
 	mode: 'condition',
 	mode_unknown: 'condition',
 	signed_out: 'session',
+	session: 'session',
+	unknown_role: 'role',
 	login_required: 'session',
 	unavailable: 'down',
 	service_down: 'down',
@@ -95,12 +99,31 @@ export function conditionPhrase(key, want) {
 	return null
 }
 
+// The condition that did not hold, as the phrase that names it. The service says WHICH condition failed (failed_conditions), not what the rule asks for:
+// a yes/no condition is named exactly only when the page tells the live value (live: { job_running, machine_on }: the rule wants the opposite), else the
+// phrase says the condition without the value (cond_any_*). The legacy refusals by mode (code mode, mode_unknown) name the mode condition.
+const ANY_CONDITION = Object.freeze({ mode: 'cond_any_mode', job_running: 'cond_any_job', machine_on: 'cond_any_machine', via: 'cond_any_via', risk_max: 'cond_any_risk' })
+
+export function conditionOfReason(reason, live) {
+	const r = reason || {}
+	const failed = Array.isArray(r.failed_conditions) ? r.failed_conditions : []
+	const key = failed.length ? failed[0] : r.code === 'mode' || r.code === 'mode_unknown' ? 'mode' : ''
+	if (!ANY_CONDITION[key]) return null
+	const l = live || {}
+	if ((key === 'job_running' || key === 'machine_on') && typeof l[key] === 'boolean') return conditionPhrase(key, !l[key])
+	return { key: ANY_CONDITION[key], params: {} }
+}
+
+function ruleOf(r) {
+	return r.rule !== undefined && r.rule !== null ? r.rule : r.id !== undefined && r.id !== null ? r.id : ''
+}
+
 function paramsOf(cause, reason, extra) {
 	const r = reason || {}
 	const x = extra || {}
-	if (cause === 'profile') return { profile: r.profile || '', rule: r.id || '' }
+	if (cause === 'profile') return { profile: r.profile || '', rule: ruleOf(r) }
 	if (cause === 'ceiling') return { ceiling: r.ceiling || r.profile || '' }
-	if (cause === 'role') return { needed: x.needed || '', role: x.role || '' }
+	if (cause === 'role') return { needed: x.needed || r.needed_role || '', role: x.role || '' }
 	if (cause === 'condition') return { condition: x.condition || '' }
 	return {}
 }
@@ -109,7 +132,7 @@ function isStop(op, stopOps) {
 	return (stopOps || STOP_OPS).indexOf(op) >= 0
 }
 
-const NONE = Object.freeze({ show: false, key: '', cause: '', params: {}, unknown: false })
+const NONE = Object.freeze({ show: false, key: '', cause: '', params: {}, unknown: false, nested: null })
 
 // entry: { op, hasControl, disabledByPermission, allowed, cause | reason, ...params }
 //   hasControl            (1) the control, or group of controls, is on the screen
@@ -126,8 +149,63 @@ export function blockReason(entry, options) {
 	let cause = e.cause !== undefined && e.cause !== null ? e.cause : causeOfDecision(e.reason)
 	if (cause === '') return NONE
 	if (CAUSES.indexOf(cause) < 0) cause = 'unknown'
-	if (cause === 'unknown') return { show: true, key: UNKNOWN_KEY, cause, params: {}, unknown: true }
-	return { show: true, key: BLOCK_KEYS[cause], cause, params: paramsOf(cause, e.reason, e), unknown: false }
+	if (cause === 'unknown') return { show: true, key: UNKNOWN_KEY, cause, params: {}, unknown: true, nested: null }
+	const params = paramsOf(cause, e.reason, e)
+	let key = BLOCK_KEYS[cause]
+	let nested = null
+	if (cause === 'profile' && !params.profile) {
+		key = ROLE_DENIED_KEY // a custom role (not a profile) denies it: no profile to name
+		params.role = e.roleName || ''
+	} else if (cause === 'profile' && params.rule === '') key = PROFILE_ONLY_KEY
+	if (cause === 'condition') {
+		const c = e.conditionPhrase || conditionOfReason(e.reason, e.live)
+		nested = c ? { param: 'condition', key: c.key, params: c.params } : null
+		if (!nested) return { show: true, key: UNKNOWN_KEY, cause: 'unknown', params: {}, unknown: true, nested: null }
+	}
+	return { show: true, key, cause, params, unknown: false, nested }
+}
+
+// How the causes that only a profile-aware answer can give are drawn (the cause color of family.css: neutral gray, a condition is the orange of a wait)
+export const CAUSE_LOOK = Object.freeze({
+	profile: { css: 'role', icon: 'mdi-lock-outline' },
+	ceiling: { css: 'role', icon: 'mdi-lock-outline' },
+	no_rule: { css: 'role', icon: 'mdi-lock-outline' },
+	not_delegable: { css: 'role', icon: 'mdi-shield-lock-outline' },
+	surface: { css: 'role', icon: 'mdi-lock-outline' },
+	unknown: { css: 'role', icon: 'mdi-lock-outline' },
+	condition: { css: 'down', icon: 'mdi-timer-sand' }
+})
+
+// The sentence of a profile that denies without naming a rule, and of a custom role that denies (no profile): keys of the catalogs
+export const PROFILE_ONLY_KEY = 'block_profile_only'
+export const ROLE_DENIED_KEY = 'notice_role_denied'
+
+// The page of a plugin (ui:<plugin>:open) refused: the cause is the surface, whatever the base role says
+const SURFACE_OP = /^ui:[a-z0-9_]+:open$/
+
+// One answer of auth.can ({ allowed, reason }) for one operation of a screen -> the entry of blockReason.
+//   extra: { hasControl, roleName, live, target }; the entry is disabled by permissions exactly when the service said no.
+export function entryOfAnswer(op, answer, extra) {
+	const a = answer || {}
+	const e = Object.assign({ op, hasControl: true, allowed: a.allowed === true, disabledByPermission: a.allowed === false, reason: a.reason || null }, extra || {})
+	if (a.allowed === false && SURFACE_OP.test(op)) e.cause = 'surface'
+	return e
+}
+
+// Several operations of ONE group of buttons, each with its answer (answerOf(op) -> the answer or null when not asked yet):
+// { show, key, cause, params, unknown, nested, answered } ; answered = every operation of the group has an answer (so nothing else decides)
+export function groupFromAnswers(ops, answerOf, extra, options) {
+	const items = []
+	let answered = true
+	;(ops || []).forEach(op => {
+		const a = answerOf(op)
+		if (!a || typeof a.allowed !== 'boolean') {
+			answered = false
+			return
+		}
+		items.push(entryOfAnswer(op, a, extra))
+	})
+	return Object.assign({}, groupReason(items, options), { answered })
 }
 
 // items: the operations of ONE group of buttons, each one an entry of blockReason (hasControl and disabledByPermission may be set once in

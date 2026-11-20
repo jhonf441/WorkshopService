@@ -13,6 +13,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable
 
+import access_rev
 import activity
 import audit_alarms
 import heartbeats
@@ -215,6 +216,7 @@ def announce(ctx, w, load):
     """serviceStarted and the first activity event."""
     b = w.bridge
     b.set_status("serviceStarted", time.strftime("%Y-%m-%d %H:%M:%S"))
+    access_rev.listen(lambda n: b.set_status("accessRev", n))  # only the integer: a page that sees it change asks auth.whoami again
     # "system" = the Raspberry Pi really booted; a service restart goes as "service" so as not to clutter the activity
     try:
         with open("/proc/uptime") as f:

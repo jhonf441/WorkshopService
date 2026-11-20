@@ -108,3 +108,86 @@ export function absolute(from, to) {
 export function same(a, b) {
 	return JSON.stringify(a) === JSON.stringify(b)
 }
+
+// ---- the calendar of the absolute tab (pure: RangePicker.vue only draws it) ----
+// A day is its ISO text 'YYYY-MM-DD' (local); a month is { year, month } with month 0-11.
+
+export function isoOf(d) {
+	return d.getFullYear() + '-' + two(d.getMonth() + 1) + '-' + two(d.getDate())
+}
+
+// the Date (local midnight) of 'YYYY-MM-DD', or null when it is not a real day
+export function parseDay(iso) {
+	return parseLocal(String(iso || '').trim().slice(0, 10))
+}
+
+export function addDays(iso, n) {
+	const d = parseDay(iso)
+	if (!d) return ''
+	d.setDate(d.getDate() + n)
+	return isoOf(d)
+}
+
+export function addMonths(m, n) {
+	const d = new Date(m.year, m.month + n, 1)
+	return { year: d.getFullYear(), month: d.getMonth() }
+}
+
+// the first day of the week of a language: Monday in Spanish, Sunday in English
+export function weekStart(lang) {
+	return String(lang || '').slice(0, 2) === 'es' ? 1 : 0
+}
+
+// the cells of a month in weeks of seven: { iso, day, inMonth } with the days of the neighbour months only as filling (inMonth false); always 6 weeks, so the panel never jumps
+export function monthGrid(m, start) {
+	const first = new Date(m.year, m.month, 1)
+	const lead = (first.getDay() - start + 7) % 7
+	const out = []
+	for (let i = 0; i < 42; i++) {
+		const d = new Date(m.year, m.month, 1 - lead + i)
+		out.push({ iso: isoOf(d), day: d.getDate(), inMonth: d.getMonth() === m.month })
+	}
+	return out
+}
+
+// how a person writes a day: DD/MM/YYYY in Spanish, YYYY/MM/DD in English
+export function dayText(iso, lang) {
+	const d = parseDay(iso)
+	if (!d) return ''
+	return String(lang || '').slice(0, 2) === 'es' ? two(d.getDate()) + '/' + two(d.getMonth() + 1) + '/' + d.getFullYear() : d.getFullYear() + '/' + two(d.getMonth() + 1) + '/' + two(d.getDate())
+}
+
+// the ISO day of what a person wrote ("/", "-" or "." between the parts; the year of four digits), or null
+export function parseDayText(text, lang) {
+	const m = /^\s*(\d{1,4})[/.\-](\d{1,2})[/.\-](\d{1,4})\s*$/.exec(String(text || ''))
+	if (!m) return null
+	const es = String(lang || '').slice(0, 2) === 'es'
+	const parts = es && m[3].length === 4 ? [m[3], m[2], m[1]] : m[1].length === 4 ? [m[1], m[2], m[3]] : null
+	if (!parts) return null
+	const iso = parts[0] + '-' + two(parts[1]) + '-' + two(parts[2])
+	return parseDay(iso) ? iso : null
+}
+
+// 'HH:MM' of what a person wrote ("9:5" is not one; "9:05", "0905" and "09:05" are), or null
+export function parseTimeText(text) {
+	const m = /^\s*(\d{1,2}):?(\d{2})\s*$/.exec(String(text || ''))
+	if (!m) return null
+	const h = Number(m[1])
+	const min = Number(m[2])
+	return h > 23 || min > 59 ? null : two(h) + ':' + two(min)
+}
+
+// the next state of the range of days when a day is chosen: the first touch starts it (open), the second ends it (in order); `state` { from, to, open }
+export function pickDay(state, iso) {
+	if (!parseDay(iso)) return state
+	if (!state || !state.open) return { from: iso, to: iso, open: true }
+	const a = state.from
+	return a <= iso ? { from: a, to: iso, open: false } : { from: iso, to: a, open: false }
+}
+
+// 'edge' (the first or last day of the range), 'mid' (between them) or '' for a day
+export function dayKind(iso, from, to) {
+	if (!from || !to) return ''
+	if (iso === from || iso === to) return 'edge'
+	return iso > from && iso < to ? 'mid' : ''
+}

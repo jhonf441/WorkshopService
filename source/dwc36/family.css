@@ -88,6 +88,10 @@
 .wf-bar .page-health { cursor: pointer; }
 /* old pages that still draw the bar as a v-card: the same look, so a page being migrated does not jump */
 .workshop-theme .v-card.page-header { border: 1px solid var(--wf-line); border-radius: 12px; background: var(--wf-surface); background-image: none; box-shadow: none; }
+/* compact bar (PageHeader prop `compact`): the pages that sit under DWC's own panels and need the room; the height drops from about 76 px to about 48 px */
+.page-header--compact .wf-badge { border-radius: 8px; }
+.page-header--compact .wf-title { font-size: 16px !important; line-height: 1.2; }
+.page-header--compact .wf-lead { font-size: 12px; line-height: 1.25; }
 
 /* ================= section menu (side bar) ================= */
 :is(.sidetabs, .wf-nav) { border-right-color: var(--wf-line); }
@@ -256,9 +260,9 @@
 .wf-notice--error, .wf-reason--error, .wf-cover--error, .wf-toast--error { --wf-n-c: var(--wf-n-error); --wf-n-t: var(--wf-n-error-text); --wf-n-bg: var(--wf-n-error-bg); }
 /* N1 the session chip of the page bar */
 .wf-session-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 12px; border: 1px solid var(--wf-n-session); border-radius: 14px; background: var(--wf-n-session-bg); color: var(--wf-n-session-text); font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1; cursor: pointer; }
-@keyframes wf-attention { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 25%, 75% { box-shadow: 0 0 0 4px var(--wf-n-session); } 50% { box-shadow: 0 0 0 0 transparent; } }
-.is-attention { animation: wf-attention 0.6s ease-in-out 3; }
-@media (prefers-reduced-motion: reduce) { .is-attention { animation: none; outline: 3px solid var(--wf-n-session); outline-offset: 2px; } }
+@keyframes wf-attention { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 35% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--wf-n-session) 60%, transparent); } }
+.is-attention { animation: wf-attention 0.9s ease-out 1; }
+@media (prefers-reduced-motion: reduce) { .is-attention { animation: none; outline: 2px solid var(--wf-n-session); outline-offset: 2px; } }
 .wf-session-chip.is-role { border-color: var(--wf-n-role); background: var(--wf-n-role-bg); color: inherit; }
 .wf-session-chip-icon { flex: none; width: 16px; height: 16px; font-size: 16px; color: var(--wf-n-session); }
 .wf-session-chip.is-role .wf-session-chip-icon { color: var(--wf-n-role); }
@@ -271,11 +275,16 @@
 .wf-notice-body { flex: 1 1 auto; min-width: 0; }
 .wf-notice-text { color: var(--wf-n-t); overflow-wrap: anywhere; }
 .wf-notice-action { margin-left: auto; flex: none; }
+.wf-btn-icon { flex: none; width: 16px; height: 16px; font-size: 16px; line-height: 16px; margin-right: 6px; }
+.wf-notice .wf-btn, .wf-cover .wf-btn, .wf-reason .wf-btn { width: auto; flex: none; align-self: center; }
 /* N3 the reason next to a disabled control (or group): no box, one line of text */
-.wf-reason { display: flex; width: fit-content; max-width: 100%; align-items: center; gap: 6px; margin-top: 4px; padding: 1px 6px; border-radius: 6px; font-size: 13px; line-height: 1.4; color: var(--wf-n-t); }
+.wf-reason { display: flex; width: fit-content; max-width: 100%; align-items: center; gap: 6px; margin-top: 4px; padding: 1px 8px 1px 6px; border-left: 3px solid var(--wf-n-c); border-radius: 0 6px 6px 0; font-size: 13px; line-height: 1.4; color: var(--wf-n-t); }
 /* N4 a cover: the content of a zone is replaced by it */
 .wf-cover { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; min-height: 160px; padding: 24px 16px; text-align: center; border: 1px dashed color-mix(in srgb, var(--wf-n-c) 50%, transparent); border-radius: 10px; background: var(--wf-n-bg); }
 .wf-cover-icon { width: 32px; height: 32px; font-size: 32px; }
+/* a cover inside a card or a section is proportional to it: it never takes the whole screen (DESIGN 7d) */
+.v-card .wf-cover, .wf-section .wf-cover { min-height: 96px; padding: 12px; gap: 4px; }
+.v-card .wf-cover .wf-cover-icon, .wf-section .wf-cover .wf-cover-icon { width: 24px; height: 24px; font-size: 24px; }
 .wf-cover-title { font-size: 14px; font-weight: 600; }
 .wf-cover-text { max-width: 48ch; font-size: 13px; color: var(--wf-n-t); }
 .wf-cover--empty { --wf-n-c: var(--wf-line-strong); --wf-n-t: inherit; --wf-n-bg: var(--wf-soft); }

@@ -45,9 +45,13 @@ class VisionProbe:
         return True
 
 
+EMPTY_CONFIRM_S = 15  # "no device configured" must read so for this long before the protection rests (a start or a reload can show none for a moment)
+
+
 class Rs485Probe:
     def __init__(self, read=None, clock=time.time):
         self.last_ok = None
+        self._empty_since = None
         self._seq = None
         self._read = read or self._read_one_shot
         self._clock = clock
@@ -66,7 +70,9 @@ class Rs485Probe:
         try:
             data = (((self._read() or {}).get("plugins") or {}).get(service_modules.RS485) or {}).get("data") or {}
             seq = (data.get("rs485") or {}).get("seq")
+            self._note_devices((data.get("rs485") or {}).get("devices"), now)
         except Exception:
+            self._empty_since = None  # not readable: keep watching
             return False
         if seq is None:
             return False
@@ -75,6 +81,18 @@ class Rs485Probe:
         if changed:
             self.last_ok = now
         return changed
+
+    def no_devices(self):
+        """True only when the plugin published its list of devices, the list was empty and it has been empty for EMPTY_CONFIRM_S.
+        Anything else (never read, unreadable, not a list, a device back) is "there may be devices": the servo stays watched."""
+        return self._empty_since is not None and self._clock() - self._empty_since >= EMPTY_CONFIRM_S
+
+    def _note_devices(self, devices, now):
+        if isinstance(devices, list) and not devices:
+            if self._empty_since is None:
+                self._empty_since = now
+        else:
+            self._empty_since = None  # a device (or a list that is not one): watched again, with the normal grace
 
 
 def job_context():

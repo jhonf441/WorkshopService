@@ -9,9 +9,11 @@
 					<strong>v{{ v.n }}</strong>
 					<v-chip v-if="v.active" small outlined label color="success">{{ $t('plugins.WorkshopService.access.versions_active') }}</v-chip>
 					<span class="access-version-at">{{ date(v.at) }}</span>
-					<span class="access-version-by">{{ $t('plugins.WorkshopService.access.versions_by', { who: v.by || '-' }) }}</span>
+					<span v-if="v.by" class="access-version-by">{{ $t('plugins.WorkshopService.access.versions_by', { who: v.by }) }}</span>
 					<v-spacer />
 					<v-btn small outlined class="access-touch" :disabled="viewing === v.n" @click="$emit('view', v.n)">{{ $t('plugins.WorkshopService.access.common_view') }}</v-btn>
+					<v-btn v-if="editable && !v.active" small outlined class="access-touch" @click="$emit('compare', v.n)">{{ $t('plugins.WorkshopService.access.versions_compare') }}</v-btn>
+					<v-btn v-if="editable && !v.active" small outlined class="access-touch" :disabled="locked" @click="$emit('rollback', v.n)">{{ $t('plugins.WorkshopService.access.versions_rollback') }}</v-btn>
 				</li>
 			</ul>
 		</template>
@@ -29,7 +31,9 @@ export default {
 		base: { type: Boolean, default: false },
 		versions: { type: Array, default: () => [] },
 		max: { type: Number, default: 5 },
-		viewing: { type: Number, default: 0 }
+		viewing: { type: Number, default: 0 },
+		editable: { type: Boolean, default: false }, // the editor adds Compare with the active one and Go back to this one
+		locked: { type: Boolean, default: false } // going back is off (damaged file)
 	},
 	methods: {
 		date: shortDate

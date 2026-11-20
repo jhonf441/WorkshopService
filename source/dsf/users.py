@@ -29,6 +29,7 @@ import secrets
 import threading
 import time
 
+import access_rev
 import paths
 import permissions
 import role_store
@@ -186,6 +187,7 @@ class UserStore:
             except OSError:
                 pass
         os.replace(tmp, self.path)
+        access_rev.bump()
 
     # ---- state ----
     def configured(self):

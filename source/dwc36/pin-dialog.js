@@ -51,12 +51,35 @@ function field(label, type, mode) {
 	// On the kiosk (squeekboard) the keyboard only comes out for a touch on the field; a field that already has the focus from
 	// code gets no second chance, so each touch takes the focus away and gives it back.
 	input.addEventListener('pointerup', () => {
-		if (document.activeElement !== input) return
+		if (input.readOnly || document.activeElement !== input) return
 		input.blur()
 		input.focus()
 	})
 	wrap.appendChild(input)
 	return { wrap, input }
+}
+
+// Number pad of the dialog for the kiosk (the same as src/_shared/01-api-pin.js): 1-9, clear, 0, backspace. The buttons never take the focus.
+function keypad(input) {
+	const grid = el('div', 'display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;')
+	;['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '<'].forEach(c => {
+		const b = el('button', 'min-height:52px;font-size:20px;font-weight:600;font-family:inherit;color:#eceff1;background:#37474f;border:0;border-radius:8px;cursor:pointer;', c === '<' ? '⌫' : c)
+		b.type = 'button'
+		b.setAttribute('tabindex', '-1')
+		b.addEventListener('pointerdown', ev => {
+			ev.preventDefault()
+			const a = document.activeElement
+			if (a && a !== document.body && a.blur) a.blur() // the name field's keyboard goes away: only this pad is left
+		})
+		b.addEventListener('click', () => {
+			if (c === 'C') input.value = ''
+			else if (c === '<') input.value = input.value.slice(0, -1)
+			else input.value += c
+			input.dispatchEvent(new Event('input', { bubbles: true }))
+		})
+		grid.appendChild(b)
+	})
+	return grid
 }
 
 function paintError(fields, on) {
@@ -147,6 +170,16 @@ export function pinDialog(login, t) {
 		})
 		pn.wrap.style.position = 'relative'
 		pn.wrap.appendChild(eye)
+		// Kiosk (page on the Pi itself): the keyboard helper can only raise the FULL layout and a PIN is digits, so the dialog draws its own number pad;
+		// the PIN field is read only there (inputmode none was not enough) and the helper leaves it alone (data-wf-own-keypad, 02-kiosk-keyboard.js).
+		const host = window.location && window.location.hostname
+		let pad = null
+		if (host === 'localhost' || host === '127.0.0.1') {
+			pn.input.setAttribute('inputmode', 'none')
+			pn.input.setAttribute('data-wf-own-keypad', '1')
+			pn.input.readOnly = true
+			pad = keypad(pn.input)
+		}
 		const msg = el('div', 'min-height:20px;margin-top:10px;font-size:12px;color:#ef9a9a;')
 		const row = el('div', 'display:flex;gap:8px;justify-content:flex-end;margin-top:6px;')
 		const bc = el('button', 'background:transparent;color:#eceff1;border:0;border-radius:6px;padding:8px 16px;min-height:44px;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;font-family:inherit;', t('cancel'))
@@ -192,14 +225,22 @@ export function pinDialog(login, t) {
 			pn.input.value = ''
 			msg.textContent = err.message || t('pinWrong')
 			paintError(inputs, true)
-			pn.input.focus()
+			if (!pad) pn.input.focus()
 		}
 		const key = ev => {
 			if (ev.key === 'Escape') end(false)
-			else if (ev.key === 'Enter') {
+			else if (pad && ev.target !== nm.input && (/^\d$/.test(ev.key) || ev.key === 'Backspace')) {
+				// read-only PIN (kiosk): a physical keyboard types into it through here
+				pn.input.value = ev.key === 'Backspace' ? pn.input.value.slice(0, -1) : pn.input.value + ev.key
+				pn.input.dispatchEvent(new Event('input', { bubbles: true }))
+				ev.preventDefault()
+			} else if (ev.key === 'Enter') {
 				// From the name Enter goes on to the PIN; from the PIN it signs in
-				if (ev.target === nm.input && !pn.input.value) pn.input.focus()
-				else submit()
+				if (ev.target === nm.input && !pn.input.value) {
+					// with the number pad the PIN is typed there next, so the keyboard of the name goes away
+					if (pad) nm.input.blur()
+					else pn.input.focus()
+				} else submit()
 			}
 		}
 		pn.input.addEventListener('input', () => {
@@ -213,10 +254,12 @@ export function pinDialog(login, t) {
 		document.addEventListener('keydown', key, true)
 		row.appendChild(bc)
 		row.appendChild(bo)
-		;[nm.wrap, pn.wrap, msg, row].forEach(x => box.appendChild(x))
+		;[nm.wrap, pn.wrap, pad, msg, row].forEach(x => x && box.appendChild(x))
 		back.appendChild(box)
 		;(document.fullscreenElement || document.body).appendChild(back)
 		// The first empty field gets the focus; on the kiosk the keyboard comes out through the helper (02-kiosk-keyboard.js)
-		;(nm.input.value ? pn.input : nm.input).focus()
+		if (!nm.input.value) nm.input.focus()
+		// with the number pad the PIN is typed there: nothing to focus
+		else if (!pad) pn.input.focus()
 	})
 }

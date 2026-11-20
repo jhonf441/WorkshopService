@@ -151,6 +151,38 @@ SPECS = (
 
 BY_ID = {s.id: s for s in SPECS}
 
+# The title and description keys of the processes whose module registers its own heartbeat (the specs above carry no title for them). The
+# keys are written here so that published_texts.py hands their templates to the pages: before, the pages had no template for four of them
+# and showed the raw key ("db_backup_process_title") as the name of the process. test_process_registry checks this table against the
+# heartbeats.register calls and against both catalogs.
+REGISTERED_ELSEWHERE_TEXTS = {
+    "box_black": ("black_box_black_box", "black_box_one_line_load_cpu_ram_temperature"),
+    "base_backup": ("db_backup_process_title", "db_backup_process_description"),
+    "commands_extra": ("extra_commands_title", "extra_commands_description"),
+    "subscription": ("machine_state_machine_state_dsf", "machine_state_single_subscription_dsf_state_every_process"),
+    "api": ("workshop_api_process_title", "workshop_api_process_description"),
+    "api_macros": ("api_macros_process_title", "api_macros_process_description"),
+}
+
+
+# The name of each watched protection, as protection_guard._title builds it ("protection_guard_watch_" + id): written out here so that
+# published_texts.py hands the templates to the pages (the guard tile names the protection that fell; before, it showed the raw key).
+GUARD_WATCH_TEXTS = (
+    "protection_guard_watch_status_light", "protection_guard_watch_camera", "protection_guard_watch_events", "protection_guard_watch_motion",
+    "protection_guard_watch_risk", "protection_guard_watch_health", "protection_guard_watch_vision", "protection_guard_watch_rs485",
+    "protection_guard_watch_guardian_laser", "protection_guard_watch_intercept_watchdog",
+)
+
+
+def text_keys(process_id):
+    """(title key, description key) of any process of the page, or None when the title is plain text (Jog) or unknown."""
+    spec = BY_ID.get(process_id)
+    if spec is None:
+        return None
+    if spec.title is not None:
+        return None if spec.title_is_text else (spec.title, spec.detail)
+    return REGISTERED_ELSEWHERE_TEXTS.get(process_id)
+
 
 # ---- the old tables, as views ----
 

@@ -10,6 +10,7 @@ Typical use from a handler or from main.py:
 """
 import time
 
+import clock
 import db
 import notifier
 
@@ -74,7 +75,7 @@ def log_event(bridge, type_name, description, kind=None, duration_s=None, consum
     """detalle: dict with the data of the event (camera id, file, values...). The
     context (machine state, zone, job, load, temperature) and the origin are added
     automatically; the page shows it all when a row is expanded."""
-    ts = time.strftime("%Y-%m-%dT%H:%M:%S")
+    ts = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(clock.wall()))
     info = {}
     if isinstance(detail, dict) and detail:
         info["data"] = detail

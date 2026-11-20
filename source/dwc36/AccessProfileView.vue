@@ -4,7 +4,7 @@
 	<div class="access-profile-view">
 		<div class="access-view-head">
 			<v-btn small outlined class="access-touch" @click="$emit('back')"><v-icon left small>mdi-arrow-left</v-icon>{{ $t('plugins.WorkshopService.access.common_back') }}</v-btn>
-			<strong class="access-view-name">{{ name }}</strong>
+			<strong class="access-view-name"><profile-name :id="name" /></strong>
 			<v-chip small outlined label>{{ $t('plugins.WorkshopService.access.profiles_type_' + (base ? 'base' : 'own')) }}</v-chip>
 			<v-chip v-if="!base && got" small outlined label color="success">{{ $t('plugins.WorkshopService.access.profiles_version_of', { n: got.version, total: got.versions }) }}</v-chip>
 			<v-chip v-if="viewing" small outlined label color="info">{{ $t('plugins.WorkshopService.access.versions_viewing', { n: viewing }) }}</v-chip>
@@ -12,6 +12,7 @@
 		<access-state :state="state" :detail="detail" @retry="load()">
 			<template v-if="got">
 				<div v-if="base" class="wf-note mb-2" role="note"><v-icon class="wf-note-icon" aria-hidden="true">mdi-lock-outline</v-icon><span>{{ $t('plugins.WorkshopService.access.profiles_base_notice') }}</span></div>
+				<v-btn v-if="base && editable" small outlined class="access-touch mb-2" @click="$emit('duplicate', got.document)"><v-icon left small>mdi-content-copy</v-icon>{{ $t('plugins.WorkshopService.access.profiles_duplicate') }}</v-btn>
 				<div class="access-holders wf-help">
 					<span class="access-rule-label">{{ $t('plugins.WorkshopService.access.profiles_col_holders') }}</span>
 					<span v-if="!users.length && !groups.length">{{ $t('plugins.WorkshopService.access.profiles_holders_nobody') }}</span>
@@ -33,6 +34,7 @@
 'use strict'
 
 import AccessState from './AccessState.vue'
+import ProfileName from './ProfileName.vue'
 import AccessCapabilityBuilder from './AccessCapabilityBuilder.vue'
 import AccessJsonView from './AccessJsonView.vue'
 import AccessVersionList from './AccessVersionList.vue'
@@ -40,14 +42,15 @@ import { accessApi } from './access-api.js'
 import { stateOfError } from './access-profile-view.js'
 
 export default {
-	components: { AccessState, AccessCapabilityBuilder, AccessJsonView, AccessVersionList },
+	components: { ProfileName, AccessState, AccessCapabilityBuilder, AccessJsonView, AccessVersionList },
 	props: {
 		name: { type: String, required: true },
 		base: { type: Boolean, default: false },
 		capabilities: { type: Array, default: () => [] },
 		categories: { type: Array, default: () => [] },
 		maxRules: { type: Number, default: 50 },
-		maxVersions: { type: Number, default: 5 }
+		maxVersions: { type: Number, default: 5 },
+		editable: { type: Boolean, default: false } // the session may change profiles: a base profile can be duplicated as an own one
 	},
 	data() {
 		return { got: null, versions: [], state: 'loading', detail: '', viewing: 0, mode: 'builder', modes: ['builder', 'json', 'versions'] }

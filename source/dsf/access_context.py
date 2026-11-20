@@ -38,12 +38,12 @@ def live_conditions(model, age, limit=None):
     return {"job_running": status in job_states.ACTIVE, "machine_on": status != "off"}
 
 
-def decide(view, ident, operation, dctx, state_of=read_live):
+def decide(view, ident, operation, dctx, state_of=read_live, target=None):
     """access_eval.Decision of the person when the evaluator governs them, else None (permissions.decide decides). `dctx` is the context of
-    permissions.decide (args, modes, mode...); `state_of()` gives (model, age)."""
+    permissions.decide (args, modes, mode...); `state_of()` gives (model, age); `target` (a concrete one) replaces the one the call would declare."""
     pr = access_person.build(view, ident)
     if pr is None:
         return None
     model, age = state_of()
     ctx = access_person.request_context(ident, dict(dctx, **live_conditions(model, age)), "session")
-    return access_person.evaluate(pr, operation, ctx, access_targets.target_of(operation, dctx.get("args")))
+    return access_person.evaluate(pr, operation, ctx, target or access_targets.target_of(operation, dctx.get("args")))

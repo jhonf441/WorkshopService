@@ -15,10 +15,19 @@ import identity
 import sd_files
 import sd_integrity
 import sd_restore
+import sd_pending
 import sd_view
 import startup_plan
 import service_restart
 from workshop_api import ADMIN, ApiError, Arg, Op, READ
+
+
+def _written(fn, *args, **kw):
+    """Run something that writes the SD; whatever happens, the plan kept by sd_pending is forgotten (it is computed again at the next look)."""
+    try:
+        return fn(*args, **kw)
+    finally:
+        sd_pending.forget()
 
 
 def build(ctx):
@@ -72,7 +81,7 @@ def build(ctx):
         who = identity.actor(c)
         who["via"] = "api"
         try:
-            return sd_restore.restore(args["path"], args.get("expected_sha"), _getters(c), actor=who)
+            return _written(sd_restore.restore, args["path"], args.get("expected_sha"), _getters(c), actor=who)
         except sd_restore.RestoreRefused as e:
             raise ApiError("conflict", "; ".join(r["reason"] for r in e.reasons), reasons=e.reasons)
 
@@ -85,7 +94,7 @@ def build(ctx):
         who = identity.actor(c)
         who["via"] = "api"
         try:
-            return startup_plan.apply(args["items"], _getters(c), args.get("machine_off") is True, who)
+            return _written(startup_plan.apply, args["items"], _getters(c), args.get("machine_off") is True, who)
         except startup_plan.Refused as e:
             raise ApiError("conflict", "; ".join(r["reason"] for r in e.reasons), reasons=e.reasons)
 

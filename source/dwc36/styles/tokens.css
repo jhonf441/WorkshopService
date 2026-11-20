@@ -1,0 +1,32 @@
+/* Tokens of the service page (design guide of the redesign, section 2). Declared once here; a screen never writes a colour.
+   The --wf-* tokens are the family's (family.css): they are USED by the page, never declared again.
+   Dark is the base (as in family.css); the light values follow the theme of DWC with the same selectors the family uses. */
+:root {
+	--sv-text: rgba(255, 255, 255, 0.92);
+	--sv-text-2: rgba(255, 255, 255, 0.72);
+	--sv-control-line: #8c8c8c;      /* the border of everything that is touched: reaches 3:1 on the surface (--wf-line does not) */
+	--sv-focus: #90caf9;
+	--sv-on-accent: #fff;            /* text on --wf-accent, on the plugin badge and on a filled danger button */
+	--sv-on-armed: #000;             /* text on --wf-armed */
+	--sv-danger-fill: #c62828;       /* the confirm button of a dialog that destroys something */
+	--sv-veil: rgba(0, 0, 0, 0.6);   /* behind a sheet or a dialog */
+	--sv-arm-bar: rgba(0, 0, 0, 0.55);
+	--sv-skel-shine: rgba(128, 128, 128, 0.18);
+	--sv-s1: 4px; --sv-s2: 8px; --sv-s3: 12px; --sv-s4: 16px; --sv-s5: 24px; --sv-s6: 32px;
+	--sv-r-control: 6px; --sv-r-card: 10px; --sv-r-pill: 999px;
+	--sv-touch: 44px;                /* least height and width of anything that is touched */
+	--sv-row: 56px;                  /* least height of a row of a list */
+	--sv-f-cap: 12px; --sv-f-2: 13px; --sv-f-body: 14px; --sv-f-title: 16px; --sv-f-page: 18px; --sv-f-verdict: 22px;
+	--sv-cat-machine: #4fc3f7; --sv-cat-jobs: #ba68c8; --sv-cat-lights: #fff176; --sv-cat-energy: #ffb74d; --sv-cat-activity: #90a4ae; --sv-cat-camera: #f06292; --sv-cat-security: #81c784; --sv-cat-config: #4db6ac; --sv-cat-system: #a1887f;   /* a hue per category of the API reference: a stripe and a dot, never the only sign */
+	--sv-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.2);   /* the lift of a card */
+	--sv-fast: 120ms; --sv-slow: 200ms;
+	--sv-mono: var(--tp-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace);
+}
+.theme--light.v-application, .theme--light .workshop-theme, html:has(.theme--light) {
+	--sv-text: rgba(0, 0, 0, 0.87);
+	--sv-text-2: rgba(0, 0, 0, 0.68);
+	--sv-control-line: #757575;
+	--sv-focus: #0d47a1;
+	--sv-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+	--sv-cat-machine: #0277bd; --sv-cat-jobs: #7b1fa2; --sv-cat-lights: #f9a825; --sv-cat-energy: #ef6c00; --sv-cat-activity: #546e7a; --sv-cat-camera: #c2185b; --sv-cat-security: #2e7d32; --sv-cat-config: #00796b; --sv-cat-system: #6d4c41;
+}

@@ -20,14 +20,14 @@
 				</div>
 				<div class="access-change-summary"><slot name="summary" /></div>
 				<v-alert v-if="risk4" type="error" outlined dense class="mt-3">{{ $t('plugins.WorkshopService.access.diff_risk4_title') }}</v-alert>
-				<v-checkbox v-model="understood" dense hide-details :label="$t('plugins.WorkshopService.access.common_understood')" />
-				<div class="text-caption mt-1">{{ $t('plugins.WorkshopService.access.diff_audit_note') }}</div>
+				<v-checkbox v-if="!viewOnly" v-model="understood" dense hide-details :label="$t('plugins.WorkshopService.access.common_understood')" />
+				<div v-if="!viewOnly" class="text-caption mt-1">{{ $t('plugins.WorkshopService.access.diff_audit_note') }}</div>
 				<v-alert v-if="error" type="error" outlined dense class="mt-3">{{ error }}</v-alert>
 			</v-card-text>
 			<v-card-actions class="access-change-actions">
 				<v-spacer />
-				<v-btn small text :disabled="busy" @click="$emit('input', false)">{{ $t('plugins.WorkshopService.access.common_cancel') }}</v-btn>
-				<v-btn small color="primary" :loading="busy" :disabled="!understood" @click="$emit('confirm')">{{ confirmLabel }}</v-btn>
+				<v-btn small text class="access-touch" :disabled="busy" @click="$emit('input', false)">{{ $t('plugins.WorkshopService.access.' + (viewOnly ? 'common_close' : 'common_cancel')) }}</v-btn>
+				<v-btn v-if="!viewOnly" small color="primary" class="access-touch" :loading="busy" :disabled="!understood || busy" @click="$emit('confirm')">{{ confirmLabel }}</v-btn>
 			</v-card-actions>
 		</v-card>
 	</v-dialog>
@@ -42,6 +42,7 @@ export default {
 		title: { type: String, default: '' },
 		confirmLabel: { type: String, default: '' },
 		risk4: { type: Boolean, default: false },
+		viewOnly: { type: Boolean, default: false }, // a comparison: no checkbox and no verb, only Close
 		busy: { type: Boolean, default: false },
 		error: { type: String, default: '' }
 	},

@@ -11,10 +11,10 @@ import { registerRoute } from '../../routes'
 import './safe-saving.js' // corte de luz: guardar con respaldo y en un paso (copia de TallerPlugins/vue/_shared)
 
 import { registerBarTile } from './camera-relay.js'
-import WorkshopService from './WorkshopService.vue'
+import ServicePage from './app/ServicePage.vue' // the shell of the redesigned page; the sections not rebuilt yet are the old page inside it
 import './theme.css'
 
-registerRoute(WorkshopService, {
+registerRoute(ServicePage, {
 	Plugins: {
 		WorkshopService: {
 			icon: 'mdi-flash',

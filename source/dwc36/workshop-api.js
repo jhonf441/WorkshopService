@@ -192,6 +192,8 @@ export async function api(op, args, opts = {}) {
 	const byPerson = recentGesture() // started by a touch: if it is refused, the person is told (toast of the control bar)
 	const fail = err => {
 		const toast = window.__workshop && window.__workshop.toast
+		// a 403: the permission of the person changed under the page; the answers of auth.can are asked again (reason-mixin.js)
+		if (err.code === 'forbidden' && typeof window.dispatchEvent === 'function' && typeof Event === 'function') window.dispatchEvent(new Event('workshop:forbidden'))
 		// no session: the chip blinks (no card, no dialog); any other refusal is told by the card of the control bar
 		// a role that is too low: the role notes blink; a read made by the page itself says nothing; a card only for an action with no note on screen
 		if (byPerson && !opts.quiet && err.code === 'login_required') attentionSession()
@@ -240,6 +242,17 @@ export async function apiText(op, args, opts = {}) {
 // ---- single owner of the movement (WorkshopService motion_owner.py) ----
 
 // data.motion published by the service (from the DWC store, no request)
+// data.accessRev published by the service (the counter of changes of who may do what), or null when it is not there
+function accessRevRead() {
+	try {
+		const pl = document.getElementById('app').__vue__.$store.state.machine.model.plugins
+		const p = pl && (typeof pl.get === 'function' ? pl.get(idInstalled('service')) : pl[idInstalled('service')])
+		return p && p.data && typeof p.data.accessRev === 'number' ? p.data.accessRev : null
+	} catch (e) {
+		return null
+	}
+}
+
 export function motionState() {
 	try {
 		const pl = document.getElementById('app').__vue__.$store.state.machine.model.plugins;
@@ -398,6 +411,6 @@ export function changePin(oldPin, newPin) {
 
 if (typeof window !== 'undefined' && !(window.__workshopAuth && window.__workshopAuth.booted)) {
 	window.__workshopAuth = Object.assign(window.__workshopAuth || { identity: null, token: '', listeners: [], flight: null, quietUntil: 0, device: '', keepalive: 0 }, { booted: true })
-	startKeepalive(rawCall)
+	startKeepalive(rawCall, accessRevRead)
 	refreshIdentity(rawCall).catch(() => {}) // so workshopCan() knows the role from the start
 }

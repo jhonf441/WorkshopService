@@ -60,21 +60,23 @@ What the builders guarantee (learned from building the 3.6 zip by hand):
 ## Where fixes go
 
 * Backend, bridge, kiosk, tests, docs, `plugin.json`: once.
-* Page: in `dwc-src` (3.7) and, if the 3.6 page must have it too, in `dwc36` (code differs: Vue 3 `<script setup>` against Vue 2 options API).
-  Texts and operations must exist on both sides.
+* Page: in `dwc36` (3.6, the line that is installed and released). `dwc-src` (3.7) is paused and frozen: nothing is ported to it and nothing in it
+  changes, apart from what the tools regenerate (`family.css`, the area `svc` of its catalogs).
 * Version: `plugin.json` only (one number for both lines).
 
 ## Tests
 
-`node tests/lines-divergence.test.js` checks: both trees exist; same file names, same i18n keys, same API operations (first argument of `api`,
-`apiText`, `rawCall`, `askMotion`); the catalogs are byte-equal; and `dwc36` is byte-equal to master's `dwc-src` except the files listed in
-`dwc36_vs_master`. The intended differences are in `tools/lines-allowlist.json`, each with a reason; an entry that no longer matches also fails.
-The master check is skipped in a clone without the `master` ref. The render and template tests (`render`, `vue-templates-compile`,
-`vue-i18n-syntax`) are 3.7 tests and read `dwc-src` only.
+`node tests/lines-frozen.test.js` (decision P-8 of the page redesign; it replaced `tests/lines-divergence.test.js` and `tools/lines-allowlist.json`, which
+recorded every difference between the two trees and had to be edited for every new file or key of the 3.6 page) checks three things:
 
-Today's intended differences: four modules exist only on 3.7 (`dwc-host.js`, `plugin-id.js`, `role-view.js`, `use-role.js`), and the catalogs of
-`dwc36` are the branch's, not master's (the 3.6 page therefore shows the texts of the newer catalog; keys it does not use are harmless).
-The 3.6 page is otherwise master's and has not received the 3.7 fixes; porting them is an owner decision.
+* `dwc-src/` is frozen: the same files with the same content as `tests/golden/dwc-src-frozen.json`. Left out of the hash on purpose, because tools
+  still write them: `family.css` and the area `svc` of `i18n/es.json` / `en.json` (`python dsf/published_texts.py`);
+* every operation named in a call under `dwc36/` (sub-folders included) exists in `dsf/golden/api_contract.json`;
+* `dwc36/i18n/es.json` and `en.json` have the same keys.
+
+The 3.6 page no longer mirrors the files, keys or operations of the 3.7 tree. Work on the 3.7 line is an owner decision; when it happens the golden
+is refreshed on purpose (`LINES_FROZEN_WRITE=1 node tests/lines-frozen.test.js`) in the same commit. The render and template tests (`render`,
+`vue-templates-compile`, `vue-i18n-syntax`) are 3.7 tests and read `dwc-src` only.
 
 ## Installing
 

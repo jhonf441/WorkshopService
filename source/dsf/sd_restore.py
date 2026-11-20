@@ -33,6 +33,8 @@ import service_restart
 FACTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), "factory")
 LEGACY = "sys/workshop/legacy"
 GUARD_FOLDER = "sys/workshop/macros/guard/"
+HOOKS_FOLDER = "sys/workshop/hooks/"
+HOOK_MARKER = "WORKSHOP hook="
 MAX_BYTES = sd_integrity.MAX_BYTES
 ABSENT = "absent"
 
@@ -70,8 +72,11 @@ def protected(manifest=None):
     for e in data["files"]:
         if e["kind"] == "native-managed":
             for hook in e.get("hooks", []):
+                # a hook is the file name ("zbedref.g") or, in the real manifest, the marker of a managed block
+                # ("WORKSHOP hook=homez-tail"), whose target is sys/workshop/hooks/<name>.g
+                target = hook[len(HOOK_MARKER):] + ".g" if hook.startswith(HOOK_MARKER) else hook
                 for p in owned:
-                    if p.rsplit("/", 1)[-1] == hook:
+                    if p.rsplit("/", 1)[-1] == target and (target == hook or p.startswith(HOOKS_FOLDER)):
                         why.setdefault(p, "called from %s (runs at start-up, homing or in the daemon loop)" % e["path"])
     changed = True
     while changed:

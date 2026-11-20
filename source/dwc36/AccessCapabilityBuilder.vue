@@ -3,8 +3,8 @@
 	<div class="access-builder">
 		<div class="access-h">{{ $t('plugins.WorkshopService.access.builder_rules_count', { n: rules.length, max }) }}</div>
 		<div v-if="!rules.length" class="wf-help">{{ $t('plugins.WorkshopService.access.builder_no_rules') }}</div>
-		<access-rule-view v-for="(r, i) in rules" :key="r.id" :rule="r" :index="i + 1" />
-		<div class="wf-help access-summary">{{ $t('plugins.WorkshopService.access.builder_summary', { allow: summary.allow, deny: summary.deny }) }}</div>
+		<access-rule-view v-for="(r, i) in rules" :key="r.id" :rule="r" :index="i + 1" :profile="doc ? doc.name : ''" />
+		<div class="wf-help access-summary">{{ $t('plugins.WorkshopService.access.builder_summary', { allow: $tc('plugins.WorkshopService.access.operations_n', summary.allow, { n: summary.allow }), deny: summary.deny }) }}</div>
 		<div class="wf-help">{{ $t('plugins.WorkshopService.access.builder_order_note') }}</div>
 		<div class="wf-help">{{ $t('plugins.WorkshopService.access.builder_when_unknown') }}</div>
 		<access-capability-table v-if="capabilities.length" class="mt-3" :doc="doc" :capabilities="capabilities" :categories="categories" />

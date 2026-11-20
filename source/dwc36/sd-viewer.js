@@ -24,13 +24,16 @@ function params(item, t) {
 }
 
 // One sentence for one entry of the summary (view_sum_<key>); an unknown key says something plain instead of a code.
-export function sentence(item, t) {
+// `tc(key, count, params)` is the plural translator: the entries that print a number of lines read in singular for 1.
+const COUNTED = { loaded_ok: 'lines', lines_missing: 'n' }
+
+export function sentence(item, t, tc) {
 	const p = params(item, t)
 	if (item.key === 'edited_lines') {
-		const lost = p.removed > 0 ? t('view_sum_edited_removed', { removed: p.removed }) : ''
+		const lost = p.removed > 0 ? tc('view_sum_edited_removed', p.removed, { removed: p.removed }) : ''
 		return p.ranges ? [t('view_sum_edited_lines', p), lost].filter(Boolean).join(' ') : lost
 	}
-	return t('view_sum_' + item.key, p)
+	return COUNTED[item.key] ? tc('view_sum_' + item.key, p[COUNTED[item.key]], p) : t('view_sum_' + item.key, p)
 }
 
 export const APPLIED_KEYS = ['applied_pending', 'applied_by', 'applied_plugin', 'applied_skipped', 'applied_never']
@@ -44,14 +47,17 @@ export function appliedText(applied, t) {
 }
 
 // The sentence at the top of the reader: what is the file now (the first entry of the summary that is not the "applied" one).
-export function headline(view, t) {
+export function headline(view, t, tc) {
 	const first = ((view && view.summary) || []).find(s => APPLIED_KEYS.indexOf(s.key) === -1)
-	return first ? sentence(first, t) : t('view_sum_unreadable')
+	return first ? sentence(first, t, tc) : t('view_sum_unreadable')
 }
 
 // The other things worth saying under the headline (masked, cut, no factory copy...), without the applied one.
-export function notes(view, t) {
-	return ((view && view.summary) || []).filter((s, i) => i > 0 && APPLIED_KEYS.indexOf(s.key) === -1).map(s => sentence(s, t))
+// One line per fact: "edited, and there is no factory copy" already says the factory copy is missing, so that note is not said again.
+export function notes(view, t, tc) {
+	const all = (view && view.summary) || []
+	const said = all.length && all[0].key === 'edited_no_factory'
+	return all.filter((s, i) => i > 0 && APPLIED_KEYS.indexOf(s.key) === -1 && !(said && s.key === 'no_factory')).map(s => sentence(s, t, tc))
 }
 
 // Tone of the header: success, warning or error colour name of Vuetify.
@@ -68,6 +74,19 @@ export function hasComparison(view) {
 export function changedCount(view) {
 	if (!hasComparison(view)) return 0
 	return (view.diff_lines || []).filter(l => l.flag !== 'same').length + (view.factory.removed || []).reduce((n, r) => n + r.lines.length, 0)
+}
+
+// The lines of the card that differ from the factory copy as runs [from, to] (what the chips "You edited" jump to).
+export function changedRanges(view) {
+	if (!hasComparison(view)) return []
+	const out = []
+	for (const l of view.diff_lines || []) {
+		if (l.flag === 'same' || l.n === null || l.n === undefined) continue
+		const last = out[out.length - 1]
+		if (last && last[1] === l.n - 1) last[1] = l.n
+		else out.push([l.n, l.n])
+	}
+	return out
 }
 
 // Every row to draw: the lines of the card (with their flag) and, in place, the lines of the factory that the file lost (flag 'factory', no number).
@@ -112,8 +131,9 @@ export function copyText(view) {
 	return view && typeof view.content === 'string' ? view.content : ''
 }
 
-// A failed reading as a short sentence with what to do. Never empty. Keys: err_role, err_login, err_unavailable, err_refused, err_other.
+// A failed reading as a short sentence with what to do. Never empty. Keys: err_role, err_login, err_unavailable, err_timeout, err_refused, err_other.
 export function friendlyError(e, t) {
+	if (e && e.code === 'timeout') return t('err_timeout')
 	const kind = errorKind(e)
 	if (kind === 'role') return t('err_role')
 	if (kind === 'login') return t('err_login')
@@ -122,11 +142,19 @@ export function friendlyError(e, t) {
 	return t('err_other')
 }
 
-// Why the administrator's diff shows nothing: the first refusal of startup.integrity.restore.preview that explains it, or ''.
-// board_busy is not a reason here (the preview does not change anything).
-const WHY = ['already_ok', 'factory_missing', 'factory_mismatch', 'wrong_kind', 'not_in_manifest', 'not_a_file']
-export function diffWhy(preview) {
-	const codes = ((preview && preview.refusals) || []).map(r => r.code)
-	const hit = WHY.find(c => codes.indexOf(c) !== -1)
-	return hit ? 'diff_why_' + hit : ''
+// The blocks the workshop manages inside a file of the person (native_merge.py):  "; >>> WORKSHOP hook=<id> v=1 sha=... (managed block...)"  up to
+// "; <<< WORKSHOP hook=<id>". Every row gets `block` (the id while it is inside, markers included, else ''), `blockStart` (the first row of the block)
+// and `comment` (a G-code comment line). A block that is never closed runs to the end of the file; rows without text (the factory ones) never belong to one.
+export function markBlocks(rows) {
+	let cur = ''
+	return (rows || []).map(r => {
+		const text = String(r && r.text !== undefined ? r.text : '')
+		const open = /^\s*;\s*>>>\s*WORKSHOP hook=(\S+)/.exec(text)
+		const close = /^\s*;\s*<<<\s*WORKSHOP hook=(\S+)/.exec(text)
+		if (open) cur = open[1]
+		const inside = r && r.n !== null ? cur : ''
+		const out = Object.assign({}, r, { block: inside, blockStart: !!open && inside !== '', comment: /^\s*;/.test(text) })
+		if (close) cur = ''
+		return out
+	})
 }

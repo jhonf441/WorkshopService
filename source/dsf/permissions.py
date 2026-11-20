@@ -41,7 +41,7 @@ RANK = {r: i for i, r in enumerate(ROLES)}
 MODES = ("laser", "cnc", "fff")
 
 # operations that need no identity at all: logging in and asking who one is
-PUBLIC_OPS = frozenset({"auth.login", "auth.whoami", "api.ping"})
+PUBLIC_OPS = frozenset({"auth.login", "auth.whoami", "auth.can", "api.ping"})
 # stopping is never blocked: any caller may stop (no login needed), like the emergency stop of DWC
 STOP_OPS = frozenset({"jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "pelletlayers.disarm", "layerrecipes.disarm", "bedcal.stop", "machine.stop", "livejob.stop_safe", "power.off"})  # power.off: whoever is at the machine can switch it off (owner decision 2026-11-06: anyone could pull the plug anyway)
 # an operator may run these only in a mode it is allowed (the others need the camera / mode rules below)
@@ -70,7 +70,7 @@ ESCALATE_IN = {
 
 OP_ROLES = {
     # -- the session itself (any logged in user; the unlogged ones are refused by identity) --
-    "auth.login": VIEWER, "auth.logout": VIEWER, "auth.whoami": VIEWER, "auth.keepalive": VIEWER, "auth.change_pin": VIEWER,
+    "auth.login": VIEWER, "auth.logout": VIEWER, "auth.whoami": VIEWER, "auth.can": VIEWER, "auth.keepalive": VIEWER, "auth.change_pin": VIEWER,
     "api.describe": VIEWER, "api.ping": VIEWER,
     "auth.resolve": ADMIN,  # for local programs (Vision :8095) with the local key; a session needs admin so nobody probes tokens
     # -- users, audit --
@@ -193,7 +193,8 @@ OP_ROLES = {
     "access.profiles.list": ADMIN, "access.profiles.get": ADMIN, "access.profiles.set": ADMIN, "access.profiles.remove": ADMIN, "access.profile.versions": ADMIN,
     "access.profile.rollback": ADMIN, "access.groups.list": ADMIN, "access.groups.get": ADMIN, "access.groups.set": ADMIN, "access.groups.remove": ADMIN,
     "access.attach": ADMIN, "access.detach": ADMIN, "access.ceiling.set": ADMIN, "access.person.get": ADMIN, "access.check": ADMIN,
-    "access.review": ADMIN, "access.report": ADMIN, "access.plugins.validate": ADMIN,
+    "access.review": ADMIN, "access.report": ADMIN, "access.plugins.validate": ADMIN, "access.profiles.validate": ADMIN, "access.attach.validate": ADMIN,
+    "access.detach.validate": ADMIN, "access.ceiling.validate": ADMIN, "access.groups.validate": ADMIN,
 }
 
 

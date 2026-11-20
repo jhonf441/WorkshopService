@@ -31,3 +31,15 @@ export function blinkLocked(root, signedOut) {
 	})
 	return true
 }
+
+// Reaching a row inside a folded level of the Processes section (a group, a line of fine rows: data-collapsed="true"): opens every folded level around the
+// element and says if it opened any. The toggle of each folded ancestor is the first one inside it (the header of a group, the button of the fine rows).
+export function unfoldAround(el) {
+	const toggles = []
+	for (let n = el && el.parentElement; n; n = n.parentElement) {
+		const t = n.getAttribute && n.getAttribute('data-collapsed') === 'true' ? n.querySelector('[data-group-toggle]') : null
+		if (t) toggles.push(t)
+	}
+	toggles.forEach(t => t.click())
+	return toggles.length > 0
+}

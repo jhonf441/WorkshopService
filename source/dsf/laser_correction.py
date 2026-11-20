@@ -122,6 +122,9 @@ def in_step(value=_UNSET):
 
 
 START_TRIES = 24        # the board may still be starting when the service is: ask for its state this many times ...
+# While the board runs its start-up files (config.g, then hooks/boot.g, which runs workplaces.g) it already answers, with these states: running wpload.g
+# then makes both declare the same globals at the same time and the board refuses one ("variable already exists", seen 2026-11-12 20:51)
+BOOTING = ("starting", "updating")
 START_WAIT_S = 5        # ... this many seconds apart (two minutes in all), then leave it to the next laser job
 
 
@@ -138,7 +141,8 @@ def apply_at_start(model=None, sleep=time.sleep, tries=START_TRIES, wait_s=START
     om = {}
     for n in range(max(1, tries)):
         om = model() or {}
-        if (om.get("state") or {}).get("status"):
+        status = str((om.get("state") or {}).get("status") or "")
+        if status and status not in BOOTING:
             return apply_now(om)
         if n + 1 < tries:
             sleep(wait_s)

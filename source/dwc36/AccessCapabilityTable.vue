@@ -3,7 +3,16 @@
 	     sentence; one that holds a stop is always allowed and can never be denied. Read only: no boxes. The service decides what is grantable. -->
 	<div class="access-caps">
 		<div class="access-h">{{ $t('plugins.WorkshopService.access.builder_caps_title') }}</div>
-		<details v-for="g in groups" :key="g.id" class="access-cat" open>
+		<!-- many capabilities: a search and a filter by risk; the groups are closed except the first (all open while searching) -->
+		<div class="access-caps-tools">
+			<sv-text-field v-model="q" icon="mdi-magnify" type="search" class="access-search" :placeholder="$t('plugins.WorkshopService.access.builder_caps_search')" :aria-label="$t('plugins.WorkshopService.access.builder_caps_search')" />
+			<div class="access-kinds" role="group" :aria-label="$t('plugins.WorkshopService.access.builder_caps_risk_label')">
+				<button type="button" class="access-kind access-touch" :class="{ 'is-on': risk === 0 }" :aria-pressed="risk === 0 ? 'true' : 'false'" @click="risk = 0">{{ $t('plugins.WorkshopService.access.builder_caps_risk_all') }}</button>
+				<button v-for="n in risks" :key="n" type="button" class="access-kind access-touch" :class="{ 'is-on': risk === n }" :aria-pressed="risk === n ? 'true' : 'false'" @click="risk = n">{{ $t('plugins.WorkshopService.access.builder_risk', { n }) }}</button>
+			</div>
+		</div>
+		<p v-if="!shown.length" class="wf-help" role="status">{{ $t('plugins.WorkshopService.access.builder_caps_none') }}</p>
+		<details v-for="(g, i) in shown" :key="g.id + (filtering ? 'f' : '')" class="access-cat" :open="filtering || i === 0">
 			<summary class="access-cat-title">{{ catTitle(g) }} ({{ g.items.length }})</summary>
 			<ul class="access-cap-rows">
 				<li v-for="c in g.items" :key="c.id" class="access-cap-row" :class="{ 'is-locked': c.locked }">
@@ -26,17 +35,38 @@
 <script>
 'use strict'
 
+import SvTextField from './ui/SvTextField.vue'
 import { capabilityGroups, RISK_COLORS } from './access-profile-view.js'
 
 export default {
+	components: { SvTextField },
 	props: {
 		doc: { type: Object, default: null },
 		capabilities: { type: Array, default: () => [] },
 		categories: { type: Array, default: () => [] }
 	},
+	data() {
+		return { q: '', risk: 0 }
+	},
 	computed: {
 		groups() {
 			return capabilityGroups(this.capabilities, this.categories, this.doc)
+		},
+		risks() {
+			const set = new Set()
+			this.groups.forEach(g => g.items.forEach(c => set.add(c.risk)))
+			return Array.from(set).filter(n => n > 0).sort()
+		},
+		filtering() {
+			return !!(this.q && this.q.trim()) || this.risk > 0
+		},
+		// the groups with only the capabilities that match the search (title or id) and the risk; a group left empty is not drawn
+		shown() {
+			const q = String(this.q || '').trim().toLowerCase()
+			if (!q && !this.risk) return this.groups
+			return this.groups
+				.map(g => Object.assign({}, g, { items: g.items.filter(c => (!this.risk || c.risk === this.risk) && (!q || String(c.title).toLowerCase().indexOf(q) >= 0 || String(c.id).toLowerCase().indexOf(q) >= 0)) }))
+				.filter(g => g.items.length)
 		}
 	},
 	methods: {
@@ -52,6 +82,8 @@ export default {
 </script>
 
 <style>
+.access-caps-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+.access-caps-tools .access-search { max-width: 320px; }
 .access-h { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
 .access-cat { margin-bottom: 8px; border: 1px solid var(--wf-line); border-radius: 8px; }
 .access-cat-title { min-height: 40px; display: flex; align-items: center; padding: 0 12px; font-weight: 600; cursor: pointer; }

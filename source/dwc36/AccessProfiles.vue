@@ -4,16 +4,19 @@
 	<div class="access-profiles">
 		<v-card class="mb-3">
 			<v-card-title class="text-subtitle-1">
-				{{ $t('plugins.WorkshopService.access.profiles_title') }}
+				{{ $t('plugins.WorkshopService.access.profiles_title') }}<access-term-help term="profile" />
 				<v-spacer />
+				<v-btn v-if="canEdit && list && !selected && !draft" small color="primary" class="access-touch mr-2" :disabled="!!list.damaged" @click="start(null)"><v-icon left small>mdi-plus</v-icon>{{ $t('plugins.WorkshopService.access.profiles_new') }}</v-btn>
 				<v-btn small outlined class="access-touch" :loading="loading" @click="load()"><v-icon left small>mdi-refresh</v-icon>{{ $t('plugins.WorkshopService.access.common_refresh') }}</v-btn>
 			</v-card-title>
 			<v-card-text>
 				<div class="wf-note mb-2" role="note"><v-icon class="wf-note-icon" aria-hidden="true">mdi-information-outline</v-icon><span>{{ $t('plugins.WorkshopService.access.profiles_gcode_note') }}</span></div>
 				<access-state :state="state" :detail="detail" @retry="load()">
 					<template v-if="list">
-						<access-profile-view v-if="selected" :key="selected.name" :name="selected.name" :base="selected.base" :capabilities="capabilities" :categories="categories" :max-rules="limits.rules" :max-versions="limits.versions" @back="selected = null" />
-						<access-profile-list v-else :list="list" @open="selected = $event" />
+						<access-profile-editor v-if="draft" :key="'e:' + draft.name + draft.n" :name="draft.name" :seed="draft.seed" :caps="capsAnswer" :limits="limits" :damaged="!!list.damaged" @back="stop()" @saved="saved" />
+						<access-profile-editor v-else-if="selected && !selected.base && canEdit" :key="'o:' + selected.name" :name="selected.name" :caps="capsAnswer" :limits="limits" :damaged="!!list.damaged" @back="stop()" @saved="saved" />
+						<access-profile-view v-else-if="selected" :key="selected.name" :name="selected.name" :base="selected.base" :editable="canEdit && !list.damaged" :capabilities="capabilities" :categories="categories" :max-rules="limits.rules" :max-versions="limits.versions" @back="selected = null" @duplicate="doc => start(duplicateDoc(doc, context))" />
+						<access-profile-list v-else :list="list" :editable="canEdit" @open="selected = $event" @removed="load()" />
 					</template>
 				</access-state>
 			</v-card-text>
@@ -25,23 +28,36 @@
 'use strict'
 
 import AccessState from './AccessState.vue'
+import AccessTermHelp from './AccessTermHelp.vue'
 import AccessProfileList from './AccessProfileList.vue'
 import AccessProfileView from './AccessProfileView.vue'
+import AccessProfileEditor from './AccessProfileEditor.vue'
 import { roleMixin } from './role-mixin.js'
 import { accessApi } from './access-api.js'
 import { stateOfError } from './access-profile-view.js'
+import { contextOf, duplicateDoc } from './access-profile-edit.js'
+import { profileFocus } from './access-go.js'
 
 const SLOW_MS = 15000
 
 export default {
-	components: { AccessState, AccessProfileList, AccessProfileView },
+	components: { AccessTermHelp, AccessState, AccessProfileList, AccessProfileView, AccessProfileEditor },
 	mixins: [roleMixin],
+	props: { focus: { type: Object, default: null } }, // { name, n }: open this profile (asked from Security); n changes with every request
 	data() {
-		return { list: null, capabilities: [], categories: [], loading: false, failed: '', failure: null, slow: false, selected: null }
+		return { focused: 0, list: null, capabilities: [], categories: [], capsAnswer: {}, loading: false, failed: '', failure: null, slow: false, selected: null, draft: null, drafts: 0 }
 	},
 	computed: {
 		limits() {
 			return Object.assign({ rules: 50, versions: 5 }, (this.list && this.list.limits) || {})
+		},
+		// the session may change profiles (the table of the service decides; an administrator always may) and the service gave the lists the builder is made
+		// of (capabilities, stops, what cannot be granted): without them nothing is offered to edit, the profiles stay readable
+		canEdit() {
+			return this.canDo('access.profiles.set') && this.capabilities.length > 0
+		},
+		context() {
+			return contextOf(this.capsAnswer)
 		},
 		empty() {
 			return !!this.list && !(this.list.profiles || []).length && !(this.list.base || []).length
@@ -57,7 +73,17 @@ export default {
 		},
 		detail() {
 			return this.failure ? this.failure.message || '' : ''
+		},
+		damaged() {
+			return this.list ? !!this.list.damaged : null
 		}
+	},
+	watch: {
+		'focus.n'() {
+			this.applyFocus()
+		},
+		// the list tells by itself that the access file is damaged: the page shows it in its header
+		damaged(v) { if (v !== null) this.$emit('damaged', v) }
 	},
 	created() {
 		this.load()
@@ -66,6 +92,31 @@ export default {
 		clearTimeout(this.timer)
 	},
 	methods: {
+		duplicateDoc,
+		// the profile a button of Security named: shown once per request, when the list is there
+		applyFocus() {
+			if (!this.list || !this.focus || !this.focus.n || this.focused === this.focus.n) return
+			this.focused = this.focus.n
+			const hit = profileFocus(this.list, this.focus.name)
+			if (!hit) return
+			this.draft = null
+			this.selected = hit
+		},
+		// a new profile (empty, or the copy of a base one): the editor opens on it
+		start(seed) {
+			this.drafts++
+			this.selected = null
+			this.draft = { name: '', seed, n: this.drafts }
+		},
+		stop() {
+			this.draft = null
+			this.selected = null
+			this.load()
+		},
+		// a save: the list is read again in the background so that the next time it is shown it is right
+		saved() {
+			accessApi.profilesList().then(l => { this.list = l }, () => {})
+		},
 		async load() {
 			this.loading = true
 			this.slow = false
@@ -77,8 +128,10 @@ export default {
 				this.list = await accessApi.profilesList()
 				// the capabilities (category, class, risk, lock) are the service's: a failure here leaves the rules readable without the table
 				const caps = await accessApi.capabilities().catch(() => null)
+				this.capsAnswer = caps || {}
 				this.capabilities = (caps && caps.capabilities) || []
 				this.categories = (caps && caps.categories) || []
+				this.applyFocus()
 			} catch (e) {
 				this.list = null
 				this.failure = e

@@ -15,14 +15,14 @@ import os
 import threading
 import time
 
-import api_keys
-import api_users
+import api_admin_reading, api_docs, api_keys, api_users
 import startup_ops
 import access_ops, audit_ops, roles_ops
 import role_store
 import camera_access
 import audit
 import guard_api
+import handler_refusal
 import health_history
 import identity
 import config_package
@@ -125,8 +125,7 @@ def run_handler(name, params):
     path = os.path.join(HANDLERS_DIR, f"{name}.py")
     if not os.path.isfile(path):
         raise ApiError("internal", f"handler {name} is missing in this installation")
-    module = _load_handler(name, path)
-    return module.run(params, _ctx["bridge"], _ctx["config"])
+    return handler_refusal.run(_load_handler(name, path), params, _ctx["bridge"], _ctx["config"])  # a refusal of a handler becomes an error
 
 
 def _actor_params(ctx):
@@ -618,7 +617,7 @@ def _ops():
            "Sends a phone notification now to the configured ntfy topic (for macros and jobs); it does not look at the type switches, quiet hours or mute.",
            macro=True),
         # DWC password
-        Op("password.status", H("password", {"S": "status"}), READ, {}, "Says whether DWC has a password (an active M551 in sys/config.g); it is never shown."),
+        Op("password.status", H("password", {"S": "status"}), READ, {}, "Says whether DWC has a password (an active M551 in sys/config.g), as {\"set\": true | false | null (config.g not readable)}; it is never shown."),
         Op("password.set", H("password", {"S": "set"}, {"password": "V"}), ADMIN,
            {"password": a(S, True, desc="New password: 4 to 60 characters, without double quotes, semicolons or line breaks, not \"reprap\". Never kept in the history.")},
            "Sets or changes the DWC password: writes M551 in sys/config.g (with a backup copy) and applies it at once. Logged in Activity; needs a confirmation.",
@@ -857,7 +856,7 @@ def record(op, args, ctx, ok, result, message, code, dur_ms, wait_ms):
     raw_text = call_text(op, args)
     reg = _ctx["registry"]
     o = reg.ops.get(op) if reg else None
-    reading = bool(o and o.kind == READ)
+    reading = api_admin_reading.reads(o)
     if message is None and result is not None:
         try:
             response = json.dumps(result, ensure_ascii=False)[:300]
@@ -924,6 +923,7 @@ def init(bridge, config, plugin_id, version="", log=print, log_file=print, token
     else:
         _ctx["roles"] = None
     camera_access.bind(lambda: _ctx.get("users"))  # the camera relay (:8090) applies the same roles
+    reg.ops["api.describe"] = api_docs.make_op(reg, Op, Arg, READ, api_admin_reading.reads)  # texts in the language of the argument `lang`; workshop_api.py stays equal to the RS485 copy
     reg.mode_of = current_mode
     reg.on_denied = record_denied
     reg.confirm_texts = CONFIRM_TEXTS

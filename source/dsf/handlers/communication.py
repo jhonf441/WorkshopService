@@ -31,6 +31,15 @@ import jog_move
 from messages import M, J, B
 
 
+class Refused(Exception):
+    """The operation did not do what was asked: handler_refusal.run answers it as an error (code, message, extra fields of the error)
+    instead of a sentence with ok true, so the caller can tell a refusal from a success."""
+
+    def __init__(self, code, message, **extra):
+        super().__init__(str(message))
+        self.api_error = (code, message, extra)
+
+
 def _choose(value, options):
     v = str(value or "").strip()
     for o in options:
@@ -62,27 +71,27 @@ def run(params, bridge, config):
     change = []
     if params.get("C") is not None or params.get("J") is not None:
         if not _advanced(params):
-            return M("communication_changing_channel_blocked", notice=communication.BLOCKED_NOTICE)
+            raise Refused("refused", M("communication_changing_channel_blocked", notice=communication.BLOCKED_NOTICE), reason="locked")
         reason = jog_move.reason_cannot_change_channel(bridge)
         if reason:
-            return M("communication_cannot_change_channel_now", reason=reason)
+            raise Refused("conflict", M("communication_cannot_change_channel_now", reason=reason), reason="busy_now")
     jog_before = jog_move._name_channel(communication.channel_jog())
     if params.get("C") is not None:
         chan = _choose(params.get("C"), communication.CHANNELS)
         if not chan:
-            return M("communication_communication_use_c_auto_c_aux2")
+            raise Refused("invalid_args", M("communication_communication_use_c_auto_c_aux2"), field="plugin_channel", reason="unknown_channel")
         reason = _not_eligible(chan)
         if reason:
-            return M("communication_communication_cannot_used", chan=chan, reason=reason)
+            raise Refused("refused", M("communication_communication_cannot_used", chan=chan, reason=reason), field="plugin_channel", reason="not_eligible")
         c["channel"] = chan
         change.append(M("comm_plugin_codes", channel=chan))
     if params.get("J") is not None:
         jog = _choose(params.get("J"), communication.CHANNELS_JOG)
         if not jog:
-            return M("communication_communication_use_j_sbc_j_aux2")
+            raise Refused("invalid_args", M("communication_communication_use_j_sbc_j_aux2"), field="jog_channel", reason="unknown_channel")
         reason = _not_eligible(jog)
         if reason:
-            return M("communication_communication_cannot_used_jog", jog=jog, reason=reason)
+            raise Refused("refused", M("communication_communication_cannot_used_jog", jog=jog, reason=reason), field="jog_channel", reason="not_eligible")
         c["channel_jog"] = jog
         change.append(M("comm_jog", channel=jog))
     if change:

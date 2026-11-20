@@ -112,9 +112,20 @@ export function currentIdentity() {
 	return shared().identity
 }
 
-export function setIdentity(w) {
+// What makes two answers of auth.whoami the same for the pages: who it is, the role and every switch of the access (users off, damaged, open network...).
+function identitySig(w) {
+	if (!w) return 'null'
+	const u = w.user || {}
+	return JSON.stringify([w.configured, w.damaged, w.compat, w.login_required, w.users_disabled, w.network_open, w.role, w.role_name, w.allow, w.deny, [u.name, u.role, u.modes, u.camera], w.table])
+}
+
+export function setIdentity(w, force) {
 	const s = shared()
+	const sig = identitySig(w)
+	const same = !force && s.identity && sig === s.identitySig
 	s.identity = w || null
+	s.identitySig = sig
+	if (same) return // the same answer again (the page asks every few seconds): nobody has to redraw
 	s.listeners.slice().forEach(fn => {
 		try {
 			fn(s.identity)
@@ -211,8 +222,10 @@ export async function refreshIdentity(call) {
 		j = null
 	}
 	// the service did not answer: the session stays unknown, but it is not "resolving" any more (no view waits for an answer that is not coming)
+	const wasFailed = !!shared().whoamiFailed
 	shared().whoamiFailed = !(j && j.ok)
-	if (j && j.ok) setIdentity(j.result)
+	shared().whoamiAt = Date.now()
+	if (j && j.ok) setIdentity(j.result, wasFailed)
 	return j && j.ok ? j.result : null
 }
 
@@ -338,9 +351,7 @@ export async function adoptToken(call, token) {
 	return refreshIdentity(call)
 }
 
-// The page was in the background (another tab or window) while the person signed in or out there: the storage event can be missed (a throttled or frozen
-// tab, a page restored from the back/forward cache), and the page kept saying "no session". When it comes back to the front the token of the browser
-// is compared with the one this page knows, and who the service says the person is is asked again when that disagrees with the token.
+// The storage event of a sign-in or out made in another tab can be missed (throttled or frozen tab, back/forward cache) and the page kept saying "no session": when it comes back to the front the browser's token is compared with this page's, and who the person is is asked again if they disagree.
 function reconcileSession(call) {
 	const s = shared()
 	let stored = ''
@@ -350,17 +361,42 @@ function reconcileSession(call) {
 		stored = s.token || ''
 	}
 	const staleAnswer = !!(s.token && s.identity && s.identity.login_required)
-	if (stored !== (s.token || '') || staleAnswer) {
+	const unanswered = !s.identity && !s.whoamiPending // the first whoami never got an answer (the service was starting)
+	// the service is also asked every few seconds while the page is in view: the access itself can change with no token involved (users or roles
+	// switched off or on, a role changed) and a page that never asks again keeps showing the old role (2026-11-18)
+	const due = !s.whoamiPending && !s.flight && Date.now() - (s.whoamiAt || 0) > RECHECK_MS
+	if (stored !== (s.token || '') || staleAnswer || unanswered || due) {
 		s.token = stored
-		refreshIdentity(call).catch(() => {})
+		s.whoamiPending = true
+		refreshIdentity(call).catch(() => {}).finally(() => { s.whoamiPending = false })
 	}
 }
 
+// How often a visible page compares its session with the browser's (a local read; the service is asked only when they disagree)
+export const RECONCILE_MS = 15000
+const RECHECK_MS = 10000
 // Tells the service the person is still there (real use only), at most once a minute.
-export function startKeepalive(call) {
+// A different value of the counter the service publishes (data.accessRev: raised with every change of who may do what; it starts again at 0 when the service
+// starts, so a lower value counts too) = the access changed: ask whoami now. `readRev` reads it from the DWC store (no request); null when it is not there.
+const REV_MS = 2000
+function watchRev(call, readRev) {
 	const s = shared()
-	if (s.keepalive || typeof document === 'undefined') return
-	s.keepalive = 1
+	const rev = readRev()
+	if (rev === null) return
+	if (s.accessRev === undefined) {
+		s.accessRev = rev
+		return
+	}
+	if (rev !== s.accessRev) {
+		s.accessRev = rev
+		if (!s.flight) refreshIdentity(call).catch(() => {})
+	}
+}
+export function startKeepalive(call, readRev) {
+	const s = shared()
+	// its own flag: the JS client (01-api-auth.js) uses another one, so neither leaves the other without its events
+	if (s.keepaliveVue || typeof document === 'undefined') return
+	s.keepaliveVue = 1
 	// a sign-in or a logout made in another tab arrives here: this tab follows it without asking again
 	if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
 		window.addEventListener('storage', e => {
@@ -377,6 +413,21 @@ export function startKeepalive(call) {
 		document.addEventListener('visibilitychange', () => {
 			if (document.visibilityState === 'visible') reconcileSession(call)
 		})
+	}
+	// events can be missed (a late plugin, a frozen tab, a failed first whoami): a light check keeps every plugin on the same session
+	if (typeof setInterval === 'function') {
+		const timer = setInterval(() => {
+			if (typeof document === 'undefined' || document.visibilityState === 'hidden') return
+			reconcileSession(call)
+		}, RECONCILE_MS)
+		if (timer && typeof timer.unref === 'function') timer.unref()
+		if (typeof readRev === 'function') {
+			const revTimer = setInterval(() => {
+				if (typeof document === 'undefined' || document.visibilityState === 'hidden') return
+				watchRev(call, readRev)
+			}, REV_MS)
+			if (revTimer && typeof revTimer.unref === 'function') revTimer.unref()
+		}
 	}
 	let last = 0
 	const ping = () => {

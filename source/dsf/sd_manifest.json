@@ -480,6 +480,16 @@
    ]
   },
   {
+   "generator": "machine_file",
+   "kind": "generated",
+   "mark": "WORKSHOP hook=machine.",
+   "path": "sys/workshop/machine.g",
+   "plugin": "WorkshopService",
+   "used_by": [
+    "WorkshopMachine"
+   ]
+  },
+  {
    "kind": "workshop-owned",
    "overwrite": "always",
    "path": "sys/workshop/macros/axis/axis-limits.g",

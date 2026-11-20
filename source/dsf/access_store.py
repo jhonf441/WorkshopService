@@ -32,6 +32,7 @@ import threading
 import time
 
 import fs_atomic
+import access_rev
 import access_base
 import access_profile
 import paths
@@ -586,14 +587,16 @@ class AccessStore:
             os.chmod(self.path, 0o600)
         except OSError:
             pass
+        access_rev.bump()
 
     def _writable(self):
         if self.damaged:
             raise AccessError("damaged", "the access file is damaged")
 
-    def transact(self, change, check=None):
+    def transact(self, change, check=None, dry=False):
         """Builds the new state on a copy with `change(state)` (its result is returned), checks it (integrity, then `check(AccessView)` of the
-        caller, which raises to refuse) and only then saves and publishes it. Anything raised leaves memory and file as they were."""
+        caller, which raises to refuse) and only then saves and publishes it. Anything raised leaves memory and file as they were. With `dry`
+        everything is done and answered but the file is not written and the state is not published (a dry run of a change)."""
         with self.lock:
             self._writable()
             st = copy.deepcopy(self.state)
@@ -601,6 +604,8 @@ class AccessStore:
             check_integrity(st)
             if check is not None:
                 check(AccessView(st))
+            if dry:
+                return out
             try:
                 self._save(st)
             except OSError as e:

@@ -229,7 +229,7 @@ def _policies(p, errors, out):
             continue
         enabled, role = pol.get("enabled", True), pol.get("min_role")
         if not isinstance(enabled, bool) or (role is not None and role not in ROLES):
-            errors.append(_err(f, "profile_err_policy", allowed=", ".join(ROLES)))
+            errors.append(_err(f, "profile_err_rule", allowed=", ".join(ROLES)))
             continue
         out["mode_policies"][mode] = {"enabled": enabled, "min_role": role}
 

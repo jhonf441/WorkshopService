@@ -127,8 +127,9 @@ def _extras(sd, known):
     return out
 
 
-def check(sd=None, manifest=None):
-    """The report. `sd` is the root of the SD (0:/), `manifest` a path of a manifest (tests). Read only."""
+def check(sd=None, manifest=None, only=None):
+    """The report. `sd` is the root of the SD (0:/), `manifest` a path of a manifest (tests). Read only.
+    `only` = a set of paths: just those rows are read (the reader of ONE file must not hash every file of the card nor walk the folders)."""
     sd = sd or paths.SD
     data = sd_manifest.load(manifest)
     reg = _registry(sd)
@@ -137,6 +138,8 @@ def check(sd=None, manifest=None):
         known.add(e["path"])
         if e.get("stage"):
             known.add(e["stage"])
+        if only is not None and e["path"] not in only:
+            continue
         body, problem = _read(os.path.join(sd, e["path"]))
         kind = e["kind"]
         if kind == "workshop-owned":
@@ -157,7 +160,7 @@ def check(sd=None, manifest=None):
             row["breaks_if_missing"] = e["breaks_if_missing"]
         row.update(extra)
         rows.append(row)
-    for rel in _extras(sd, known):
+    for rel in (_extras(sd, known) if only is None else []):
         rows.append({"path": rel, "kind": "unknown", "plugin": None, "state": "unknown-extra", "used_by": [], "safety": False})
     return {"read_only": True, "manifest_schema": data["schema"], "plugins": data.get("plugins", {}),
             "summary": summarize(rows), "files": rows}

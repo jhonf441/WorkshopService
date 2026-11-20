@@ -1,9 +1,9 @@
 <template>
 	<!-- The table of profiles (read only): filter by name and by kind, base profiles first. Under 900 px the rows become cards (access.css rules below).
-	       <access-profile-list :list="answer of access.profiles.list" @open="row => ..." /> -->
+	       <access-profile-list :list="answer of access.profiles.list" :editable="true" @open="row => ..." @removed="name => ..." /> -->
 	<div class="access-profile-list">
 		<div class="access-filters">
-			<v-text-field v-model="text" dense outlined hide-details clearable prepend-inner-icon="mdi-magnify" class="access-search" :placeholder="$t('plugins.WorkshopService.access.common_search')" :aria-label="$t('plugins.WorkshopService.access.common_search')" />
+			<sv-text-field v-model="text" icon="mdi-magnify" type="search" class="access-search" :placeholder="$t('plugins.WorkshopService.access.common_search')" :aria-label="$t('plugins.WorkshopService.access.common_search')" />
 			<div class="access-kinds" role="group">
 				<button v-for="k in kinds" :key="k" type="button" class="access-kind access-touch" :class="{ 'is-on': kind === k }" :aria-pressed="kind === k ? 'true' : 'false'" @click="kind = k">{{ $t('plugins.WorkshopService.access.profiles_filter_' + k) }}</button>
 			</div>
@@ -23,16 +23,19 @@
 				</thead>
 				<tbody>
 					<tr v-for="r in rows" :key="(r.base ? 'b:' : 'o:') + r.name" class="access-row">
-						<td class="access-cell-name"><strong>{{ r.name }}</strong></td>
+						<td class="access-cell-name"><strong><profile-name :id="r.name" /></strong></td>
 						<td><v-chip small outlined label>{{ $t('plugins.WorkshopService.access.profiles_type_' + (r.base ? 'base' : 'own')) }}</v-chip></td>
 						<td>{{ r.rules }}</td>
 						<td>{{ r.base ? '-' : $t('plugins.WorkshopService.access.profiles_version_short', { n: r.version }) }}</td>
 						<td>
 							<span v-if="r.neverAttached">{{ $t('plugins.WorkshopService.access.profiles_never_attached') }}</span>
 							<span v-else-if="!r.users.length && !r.groups.length">{{ $t('plugins.WorkshopService.access.profiles_holders_nobody') }}</span>
-							<span v-else>{{ $t('plugins.WorkshopService.access.profiles_holders_count', { people: r.users.length, groups: r.groups.length }) }}</span>
+							<span v-else>{{ $t('plugins.WorkshopService.access.profiles_holders_count', { people: $tc('plugins.WorkshopService.access.people_n', r.users.length, { n: r.users.length }), groups: $tc('plugins.WorkshopService.access.groups_n', r.groups.length, { n: r.groups.length }) }) }}</span>
 						</td>
-						<td class="access-cell-act"><v-btn small outlined class="access-touch" @click="$emit('open', { name: r.name, base: r.base })">{{ $t('plugins.WorkshopService.access.common_' + (r.base ? 'view' : 'open')) }}</v-btn></td>
+						<td class="access-cell-act">
+							<v-btn small outlined class="access-touch" @click="$emit('open', { name: r.name, base: r.base })">{{ $t('plugins.WorkshopService.access.common_' + (r.base ? 'view' : 'open')) }}</v-btn>
+							<access-profile-remove v-if="editable && !r.base" :row="r" :damaged="!!list.damaged" @removed="$emit('removed', $event)" />
+						</td>
 					</tr>
 				</tbody>
 			</table>
@@ -44,10 +47,14 @@
 <script>
 'use strict'
 
+import SvTextField from './ui/SvTextField.vue'
+import AccessProfileRemove from './AccessProfileRemove.vue'
+import ProfileName from './ProfileName.vue'
 import { KINDS, profileRows } from './access-profile-view.js'
 
 export default {
-	props: { list: { type: Object, default: () => ({}) } },
+	components: { SvTextField, AccessProfileRemove, ProfileName },
+	props: { list: { type: Object, default: () => ({}) }, editable: { type: Boolean, default: false } }, // editable: the session may change profiles (Remove is drawn)
 	data() {
 		return { kind: 'all', text: '', kinds: KINDS }
 	},

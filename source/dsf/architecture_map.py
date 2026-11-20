@@ -22,7 +22,7 @@ FEATURE_OF names the feature of each L4 module (rule 2 of 2.1: features do not i
 _LAYERS = {
     "L0": (
         "paths", "sd_paths", "fs_atomic", "service_log", "messages", "job_states", "ports", "dsf_compat", "mode_paths", "boards_table",
-        "camera_proto", "gcodelib_geo", "net_guard", "architecture_map", "clock", "gcode_classes", "os_gateway", "board_reply",
+        "camera_proto", "gcodelib_geo", "net_guard", "architecture_map", "api_docs", "api_admin_reading", "access_rev", "clock", "gcode_classes", "os_gateway", "board_reply",
     ),
     "L1": (
         "publisher", "machine_state", "listener_channel", "communication", "db", "db_dates", "db_schema", "db_conn", "audit_chain", "audit_store", "audit_settings", "config_store", "settings_store", "service_settings", "users", "role_store", "api_keys",
@@ -57,7 +57,7 @@ _LAYERS = {
         "tmc_decode", "m122_parse", "driver_reads", "motor_report",
         # machine (v2)
         "machine_bedcal", "machine_bedcal_plan", "machine_heater_save",
-        "machine_bed_edit", "machine_beds", "machine_calc", "machine_config", "machine_cross", "machine_diff", "machine_gcode",
+        "machine_bed_edit", "machine_beds", "machine_file", "machine_calc", "machine_config", "machine_cross", "machine_diff", "machine_gcode",
         "machine_geometry", "machine_height", "machine_heightmap", "machine_history", "machine_layout", "machine_level",
         "machine_limits", "machine_maint_poller", "machine_maintenance", "machine_measure", "machine_mesh", "machine_motion",
         "machine_odometer", "machine_offsets", "machine_ops", "machine_overview", "machine_parsers", "machine_patch",
@@ -77,13 +77,13 @@ _LAYERS = {
         "health_poller", "bridge_service", "bridge_watchdog", "handlers/bridge_probe", "handlers/bridge_service",
         "handlers/communication", "handlers/processes", "module_modes", "handlers/password",
         # startup, SD, configuration package
-        "startup_plan", "startup_summary", "sd_files", "sd_integrity", "sd_restore", "sd_view", "examples", "config_package",
+        "startup_plan", "startup_summary", "sd_files", "sd_integrity", "sd_restore", "sd_view", "sd_pending", "examples", "config_package",
         "config_scan", "preflight", "preflight_cli", "handlers/examples",
         # live job and jobs
         "live_job", "live_job_stop", "job_poller", "job_trace", "trace_since", "handlers/job", "jobs_preview",
     ),
     "L5": (
-        "workshop_api", "identity", "permissions", "permission_caps", "access_profile", "access_base", "access_eval", "access_store", "access_person", "access_targets", "access_context", "access_admin", "access_ops", "access_plugin_files", "access_plugin_manifest", "access_report", "access_review", "access_usage", "audit", "audit_alarms", "audit_reads", "audit_ops", "api_macros", "api_ops", "api_users",
+        "workshop_api", "identity", "permissions", "permission_caps", "access_profile", "access_base", "access_eval", "access_store", "access_person", "access_targets", "access_context", "access_admin", "access_ops", "access_plugin_files", "access_plugin_manifest", "access_report", "access_review", "access_usage", "audit", "audit_alarms", "audit_reads", "audit_ops", "api_macros", "api_ops", "api_users", "handler_refusal",
         "roles_ops", "settings_ops", "profile_ops", "startup_ops", "bed_zones_ops", "bed_calibration_ops", "layer_recipes_ops", "gcodelib_ops",
         "pellet_layers_ops", "guard_api", "activity_ops", "energy_ops", "notifications_ops", "service_ops", "jobs_ops", "lights_ops", "power_ops",
     ),
@@ -102,7 +102,7 @@ _FEATURES = {
                "handlers/consumption_period", "consumption_history", "consumption_tariff",
                "power_config", "power_off", "power_reset"),
     "motors": ("motor_poller", "motor_status", "motors_enable", "handlers/motors", "tmc_decode", "m122_parse", "driver_reads", "motor_report"),
-    "machine": ("machine_bedcal", "machine_bedcal_plan", "machine_heater_save", "machine_bed_edit", "machine_beds", "machine_calc", "machine_config", "machine_cross", "machine_diff",
+    "machine": ("machine_bedcal", "machine_bedcal_plan", "machine_heater_save", "machine_bed_edit", "machine_beds", "machine_file", "machine_calc", "machine_config", "machine_cross", "machine_diff",
                 "machine_gcode", "machine_geometry", "machine_height", "machine_heightmap", "machine_history", "machine_layout",
                 "machine_level", "machine_limits", "machine_maint_poller", "machine_maintenance", "machine_measure",
                 "machine_mesh", "machine_motion", "machine_odometer", "machine_offsets", "machine_ops", "machine_overview",
@@ -119,7 +119,7 @@ _FEATURES = {
                  "handlers/risk", "handlers/beep"),
     "health": ("health_poller", "bridge_service", "bridge_watchdog", "handlers/bridge_probe", "handlers/bridge_service",
                "handlers/communication", "handlers/processes", "module_modes", "handlers/password"),
-    "startup": ("startup_plan", "startup_summary", "sd_files", "sd_integrity", "sd_restore", "sd_view", "examples",
+    "startup": ("startup_plan", "startup_summary", "sd_files", "sd_integrity", "sd_restore", "sd_view", "sd_pending", "examples",
                 "config_package", "config_scan", "preflight", "preflight_cli", "handlers/examples"),
     "live_job": ("live_job", "live_job_stop", "job_poller", "job_trace", "trace_since", "handlers/job"),
 }

@@ -45,7 +45,7 @@ export function profileRows(list, kind, text) {
 }
 
 // an entry of `operations` against one operation pattern of a capability: equal, or the entry is a pattern that covers it ("lights.*", "*", "<ns>:*")
-function entryCovers(entry, pattern) {
+export function entryCovers(entry, pattern) {
 	if (entry === pattern || entry === '*') return true
 	if (entry.startsWith(CAP_PREFIX) || entry.startsWith('tier:')) return false
 	const ns = /^([a-z][a-z0-9_]*):\*$/.exec(entry)

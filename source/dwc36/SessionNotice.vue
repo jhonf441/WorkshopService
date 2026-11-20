@@ -18,7 +18,7 @@
 	<button v-else-if="variant === 'chip' && chip === 'viewer'" type="button" class="wf-session-chip is-role" :aria-label="ts('header_read_only_help')" :title="ts('header_read_only_help')" @click="run">
 		<v-icon :size="16" class="wf-session-chip-icon">mdi-eye-outline</v-icon><span>{{ ts('header_read_only') }} · {{ ts('notice_change_role') }}</span>
 	</button>
-	<div v-else-if="variant === 'reason' && shown" class="wf-reason" :class="'wf-reason--' + cssKind" role="note">
+	<div v-else-if="variant === 'reason' && shown" class="wf-reason" :class="'wf-reason--' + cssKind" :data-cause="verdictCause" role="note">
 		<v-icon :size="16" class="wf-reason-icon" aria-hidden="true">{{ icon }}</v-icon>
 		<span class="wf-reason-text">{{ message }}</span>
 	</div>
@@ -29,11 +29,11 @@
 			<div v-if="message" class="wf-cover-text">{{ message }}</div>
 			<!-- the button follows `step` (the decided action), not the raw prop: a down cover retries by default and a session cover offers "Sign in"
 				     when the page gives act="sign-in" (a surface without the bar chip, e.g. a card of the Service page) -->
-				<button v-if="step" type="button" class="wf-btn wf-main" @click="run">{{ actLabel }}</button>
+				<button v-if="step" type="button" class="wf-btn wf-main" @click="run"><v-icon :size="16" class="wf-btn-icon">{{ actIcon }}</v-icon>{{ actLabel }}</button>
 		</template>
 		<template v-else>
 			<div class="wf-notice-body"><div class="wf-notice-text">{{ message }}</div></div>
-			<button v-if="step" type="button" class="wf-btn wf-notice-action" @click="run">{{ actLabel }}</button>
+			<button v-if="step" type="button" class="wf-btn wf-notice-action" @click="run"><v-icon :size="16" class="wf-btn-icon">{{ actIcon }}</v-icon>{{ actLabel }}</button>
 		</template>
 	</div>
 </template>
@@ -42,9 +42,10 @@
 'use strict'
 
 import { ts } from './shared-t.js'
-import { roleMixin } from './role-mixin.js'
+import { accessCanMixin, canStore } from './reason-mixin.js'
 import { askLogin } from './workshop-api.js'
-import { sessionState, signedOut, workshopRole } from './workshop-auth.js'
+import { sessionState, signedOut, workshopRole, workshopRoleName } from './workshop-auth.js'
+import { CAUSE_LOOK, groupFromAnswers } from './access-reason.js'
 import { NOTICE_ICONS, noticeText, noticeActionOf } from './notice-kind.js'
 import { lockKind, lockKindOp, lockReason, lockReasonOp } from './lock-reason.js'
 
@@ -54,7 +55,7 @@ import { lockKind, lockKindOp, lockReason, lockReasonOp } from './lock-reason.js
 // sign-in, cover+down => retry, section => none: the page already has its sign-in chip; 'sign-in' on a role cause is drawn as "Change role", the same
 // dialog); min / op / need / ctx: the cause of a locked control (variant "reason"). Emits `retry`.
 export default {
-	mixins: [roleMixin],
+	mixins: [accessCanMixin],
 	props: {
 		kind: { type: String, default: '' },
 		variant: { type: String, default: 'section' },
@@ -66,13 +67,49 @@ export default {
 		min: { type: String, default: '' },
 		op: { type: String, default: '' },
 		need: { type: String, default: '' },
-		ctx: { type: Object, default: null }
+		ctx: { type: Object, default: null },
+		target: { type: String, default: '' }, // workshop:<plugin>:<type>/<id> of the thing the control acts on (op only)
+		ops: { type: Array, default: () => [] }, // a GROUP of operations: ONE sentence, the one of the first that is denied
+		live: { type: Object, default: null }, // { job_running, machine_on }: the live value names the condition that failed exactly
+		subject: { type: String, default: '' } // WHAT is locked ("Phone alerts"): a reason sits under a group of controls, so its sentence starts with the name of that group
+	},
+	created() {
+		this.askCan()
+	},
+	watch: {
+		op() { this.askCan() },
+		target() { this.askCan() },
+		ops() { this.askCan() }
 	},
 	computed: {
 		// the cause: given, or (a locked control) the one of its role / operation
+		// what is asked of the service for this reason: the operations of the group, or the one operation with its target
+		askItems() {
+			if (this.kind || this.variant !== 'reason') return []
+			if (this.ops.length) return this.ops.map(o => (typeof o === 'string' ? { operation: o } : o))
+			return this.op ? [this.target ? { operation: this.op, target: this.target } : { operation: this.op }] : []
+		},
+		// the answer of the service (auth.can) for them: { show, key, cause, params, nested, unknown, answered } or null when there is nothing to ask
+		verdict() {
+			void this.identityTick
+			void this.canTick
+			const items = this.askItems
+			if (!items.length) return null
+			const targets = {}
+			items.forEach(i => { targets[i.operation] = i.target })
+			const store = canStore()
+			return groupFromAnswers(items.map(i => i.operation), op => store.get(op, targets[op]), { roleName: workshopRoleName(), live: this.live || undefined })
+		},
+		// the cause the service answered when it says no ('' = it says yes, or nothing is known yet and the table of the role decides)
+		verdictCause() {
+			return this.verdict && this.verdict.show ? this.verdict.cause : ''
+		},
 		k() {
 			void this.identityTick
 			if (this.kind) return this.kind
+			const v = this.verdict
+			if (v && v.show) return v.cause
+			if (v && v.answered) return ''
 			if (this.op) return lockKindOp(this.op, this.need, this.ctx || undefined)
 			return this.min ? lockKind(this.min) : ''
 		},
@@ -87,9 +124,11 @@ export default {
 		},
 		// a note of the kind "empty" has no cause color: it is drawn as the quiet one
 		cssKind() {
+			if (CAUSE_LOOK[this.k]) return CAUSE_LOOK[this.k].css
 			return this.k === 'empty' && this.variant !== 'cover' ? 'role' : this.k
 		},
 		icon() {
+			if (CAUSE_LOOK[this.k]) return CAUSE_LOOK[this.k].icon
 			return NOTICE_ICONS[this.k] || NOTICE_ICONS.error
 		},
 		heading() {
@@ -101,9 +140,16 @@ export default {
 			if (this.k === 'resolving') return ts('notice_resolving')
 			return ''
 		},
+		// the sentence, led by WHAT is locked when the page names it (subject): "Phone alerts: sign-in required." (one line under a group of controls)
 		message() {
+			const text = this.baseMessage
+			return this.subject && (this.variant === 'reason' || this.variant === 'section') && text ? ts('notice_subject', { subject: this.subject, text }) : text
+		},
+		baseMessage() {
 			void this.identityTick
 			if (this.text) return this.text
+			if (CAUSE_LOOK[this.k] && this.verdict && this.verdict.show) return this.causeText(this.verdict)
+			if (this.k === 'role' && this.verdict && this.verdict.show && !this.kind && !this.action) return this.roleText(this.verdict)
 			if (this.k === 'session' && this.variant === 'cover' && sessionState() === 'signed-out') return ts('notice_session_cover')
 			const needed = this.kind ? this.needed || this.need || this.min : this.need || this.min || this.needed
 			if (!this.kind && !this.action) return this.op ? lockReasonOp(this.op, this.need, this.ctx || undefined) : lockReason(this.min)
@@ -112,6 +158,11 @@ export default {
 		step() {
 			return noticeActionOf(this.k, this.variant, this.act)
 		},
+		// the button carries the icon of its action (2026-11-18), the same ones the bar chip and the notice use
+		actIcon() {
+			if (this.step === 'retry') return 'mdi-refresh'
+			return this.step === 'change-role' ? 'mdi-account-switch-outline' : 'mdi-account-lock-outline'
+		},
 		actLabel() {
 			if (this.step === 'retry') return ts('notice_retry')
 			return this.step === 'change-role' ? ts('notice_change_role') : ts('notice_sign_in')
@@ -119,6 +170,18 @@ export default {
 	},
 	methods: {
 		ts,
+		askCan() {
+			if (this.askItems.length) this.wantCan(this.askItems)
+		},
+		// the sentence of a cause only a profile-aware answer gives; the name of a condition is a phrase of its own
+		causeText(v) {
+			const p = Object.assign({}, v.params)
+			if (v.nested) p[v.nested.param] = ts(v.nested.key, v.nested.params)
+			return ts(v.key, p)
+		},
+		roleText(v) {
+			return noticeText('role', { needed: v.params.needed || this.need || this.min || this.needed, role: workshopRole(), state: sessionState() }, ts)
+		},
 		// "Sign in" and "Change role" are the one dialog (askLogin): the session of this browser, if any, stays until the new one is accepted
 		async run() {
 			if (this.step === 'retry') return this.$emit('retry')

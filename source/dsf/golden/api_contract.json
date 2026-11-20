@@ -122,6 +122,32 @@
    "log": true,
    "role": "admin"
   },
+  "access.attach.validate": {
+   "args": {
+    "group": {
+     "desc": "A group (not a custom role: those are read-only).",
+     "type": "str"
+    },
+    "member_of": {
+     "desc": "Instead of a profile: the group.",
+     "type": "str"
+    },
+    "profile": {
+     "desc": "The profile to attach.",
+     "type": "str"
+    },
+    "user": {
+     "desc": "A person of the workshop.",
+     "type": "str"
+    }
+   },
+   "capability": "security.access",
+   "desc": "Dry run of access.attach: the same checks (own access, base.administrator, unknown names, already attached, an administrator left without access, limits) on a copy; answers the same errors. Writes nothing and leaves no audit row.",
+   "exclusive": true,
+   "kind": "admin",
+   "log": false,
+   "role": "admin"
+  },
   "access.ceiling.set": {
    "args": {
     "group": {
@@ -158,11 +184,37 @@
    "log": true,
    "role": "admin"
   },
+  "access.ceiling.validate": {
+   "args": {
+    "group": {
+     "desc": "A group (not a custom role: those are read-only).",
+     "type": "str"
+    },
+    "profile": {
+     "desc": "The profile that would be the ceiling. Empty: remove the ceiling.",
+     "type": "str"
+    },
+    "user": {
+     "desc": "A person of the workshop.",
+     "type": "str"
+    }
+   },
+   "capability": "security.access",
+   "desc": "Dry run of access.ceiling.set: the same checks and errors (needs an allow rule, not a plugin profile, an administrator left without access) on a copy. Writes nothing and leaves no audit row.",
+   "exclusive": true,
+   "kind": "admin",
+   "log": false,
+   "role": "admin"
+  },
   "access.check": {
    "args": {
     "args": {
      "desc": "The arguments of the call (they can escalate it: settings, hardware parameters).",
      "type": "obj"
+    },
+    "items": {
+     "desc": "Instead of operation: up to 100 requests of the same person, each an object with operation and optionally target, args, mode, mode_now, job_running, machine_on, via. The answer has one entry per request, equal to the single answer.",
+     "type": "any"
     },
     "job_running": {
      "desc": "Context: a job is running.",
@@ -181,8 +233,7 @@
      "type": "bool"
     },
     "operation": {
-     "desc": "An operation name (or <ns>:<name>).",
-     "required": true,
+     "desc": "An operation name (or <ns>:<name>). Or give items.",
      "type": "str"
     },
     "target": {
@@ -206,7 +257,7 @@
     }
    },
    "capability": "security.access",
-   "desc": "What the access model would answer for a person, an operation, a target and a context: allowed or not, the rule that decided and why each other rule did not match. Changes nothing.",
+   "desc": "What the access model would answer for a person, an operation, a target and a context: allowed or not, the rule that decided and why each other rule did not match. Changes nothing. With items it answers a list of requests (up to 100) in one call.",
    "exclusive": true,
    "kind": "admin",
    "log": false,
@@ -250,6 +301,32 @@
    "exclusive": true,
    "kind": "admin",
    "log": true,
+   "role": "admin"
+  },
+  "access.detach.validate": {
+   "args": {
+    "group": {
+     "desc": "A group (not a custom role: those are read-only).",
+     "type": "str"
+    },
+    "member_of": {
+     "desc": "Instead of a profile: the group.",
+     "type": "str"
+    },
+    "profile": {
+     "desc": "The profile to detach.",
+     "type": "str"
+    },
+    "user": {
+     "desc": "A person of the workshop.",
+     "type": "str"
+    }
+   },
+   "capability": "security.access",
+   "desc": "Dry run of access.detach: the same checks and errors on a copy. Writes nothing and leaves no audit row.",
+   "exclusive": true,
+   "kind": "admin",
+   "log": false,
    "role": "admin"
   },
   "access.groups.get": {
@@ -344,6 +421,37 @@
    "exclusive": true,
    "kind": "admin",
    "log": true,
+   "role": "admin"
+  },
+  "access.groups.validate": {
+   "args": {
+    "description": {
+     "desc": "As in access.groups.set.",
+     "type": "str"
+    },
+    "members": {
+     "desc": "As in access.groups.set.",
+     "type": "list"
+    },
+    "name": {
+     "desc": "A group.",
+     "required": true,
+     "type": "str"
+    },
+    "profiles": {
+     "desc": "As in access.groups.set.",
+     "type": "list"
+    },
+    "remove": {
+     "desc": "true: dry run of access.groups.remove instead.",
+     "type": "bool"
+    }
+   },
+   "capability": "security.access",
+   "desc": "Dry run of access.groups.set (or, with remove, of access.groups.remove): the same checks and errors on a copy (a group with members cannot be removed, nobody changes their own membership, limits). Writes nothing and leaves no audit row.",
+   "exclusive": true,
+   "kind": "admin",
+   "log": false,
    "role": "admin"
   },
   "access.person.get": {
@@ -499,6 +607,21 @@
    "exclusive": true,
    "kind": "admin",
    "log": true,
+   "role": "admin"
+  },
+  "access.profiles.validate": {
+   "args": {
+    "document": {
+     "desc": "The profile, as in access.profiles.set.",
+     "required": true,
+     "type": "obj"
+    }
+   },
+   "capability": "security.access",
+   "desc": "Dry run of access.profiles.set: runs the same checks (profile, reserved names, limits, a deny of a stop, an administrator left without access) on the state the save would produce and answers the same errors, plus warnings. Writes nothing, makes no version and leaves no audit row.",
+   "exclusive": true,
+   "kind": "admin",
+   "log": false,
    "role": "admin"
   },
   "access.report": {
@@ -732,7 +855,12 @@
    "role": "operator"
   },
   "api.describe": {
-   "args": {},
+   "args": {
+    "lang": {
+     "desc": "Language of the texts (es or en); without it the English of the code.",
+     "type": "str"
+    }
+   },
    "capability": "config.api",
    "desc": "All operations with their arguments",
    "exclusive": false,
@@ -884,6 +1012,32 @@
    "kind": "admin",
    "log": true,
    "role": "admin"
+  },
+  "auth.can": {
+   "args": {
+    "args": {
+     "desc": "The arguments the call would carry (they can escalate it).",
+     "type": "obj"
+    },
+    "operation": {
+     "desc": "An operation name (or <ns>:<name>). Or give operations.",
+     "type": "str"
+    },
+    "operations": {
+     "desc": "Instead of operation: up to 100 items, each an operation name or an object with operation, target and args.",
+     "type": "any"
+    },
+    "target": {
+     "desc": "workshop:<plugin>:<type>/<id> (no wildcard). Left out: the target the call would declare.",
+     "type": "str"
+    }
+   },
+   "capability": "security.session",
+   "desc": "Would the CALLER be allowed this operation (and target) now: allowed, and the cause (code, and the profile, rule and ceiling by name, never their contents). Only about the person making the call: it takes no person. A stop is always allowed. Any role, any session.",
+   "exclusive": false,
+   "kind": "read",
+   "log": false,
+   "role": "viewer"
   },
   "auth.change_pin": {
    "args": {
@@ -5189,7 +5343,7 @@
   "password.status": {
    "args": {},
    "capability": "security.passwords",
-   "desc": "Says whether DWC has a password (an active M551 in sys/config.g); it is never shown.",
+   "desc": "Says whether DWC has a password (an active M551 in sys/config.g), as {\"set\": true | false | null (config.g not readable)}; it is never shown.",
    "exclusive": false,
    "kind": "read",
    "log": true,
@@ -6353,6 +6507,7 @@
   }
  },
  "plugin_data": {
+  "accessRev": 0,
   "airAssist": false,
   "airAssistAuto": true,
   "airAssistDelay": 2,

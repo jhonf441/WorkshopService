@@ -358,6 +358,10 @@ def _fixed_eol(block, eol):
     return [l + eol for l in block]
 
 
+# public names for the modules that edit managed blocks in their own files (machine_file.py)
+split_bytes, join_bytes, find_blocks, with_eol = _split, _join, _blocks, _fixed_eol
+
+
 def _insert_at(lines, hook, blocks):
     """Index where a new block goes: after the last block of a smaller id / before the first of a greater one when others exist, else the end."""
     others = sorted((b for b in blocks if b[1] is not None and b[2] is not None and b[0] != hook.id), key=lambda b: b[0])

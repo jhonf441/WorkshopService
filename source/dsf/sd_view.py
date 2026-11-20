@@ -21,6 +21,7 @@ import paths
 import sd_files
 import sd_integrity
 import sd_manifest
+import sd_pending
 import sd_restore
 import startup_plan
 
@@ -145,13 +146,20 @@ _APPLIED = ("created", "updated", "moved", "hook_inserted", "hook_updated", "res
 _SKIPPED = ("skipped_exists", "skipped_created_before", "skipped_user_content")
 
 
-def pending_paths(sd=None, manifest=None):
-    """Paths the wizard proposes to change now (the plan writes nothing). None when the plan cannot be computed: then nobody is told "pending"."""
-    try:
-        items = startup_plan.plan(sd, manifest)["items"]
-    except Exception:  # noqa: BLE001 -- a reader never fails because of the plan
-        return None
-    return {p for i in items for p in (i["path"], i.get("new_path")) if p}
+PENDING_TTL_S = sd_pending.PENDING_TTL_S
+forget_pending = sd_pending.forget
+
+
+def pending_paths(sd=None, manifest=None, now=None):
+    """Paths the wizard proposes to change now (the plan writes nothing). None when the plan cannot be computed: then nobody is told "pending".
+    Kept a few seconds (sd_pending); a write forgets it."""
+    def compute():
+        try:
+            items = startup_plan.plan(sd, manifest)["items"]
+        except Exception:  # noqa: BLE001 -- a reader never fails because of the plan
+            return None
+        return {p for i in items for p in (i["path"], i.get("new_path")) if p}
+    return sd_pending.get((str(sd), str(manifest)), compute, now)
 
 
 def applied_of(path, kind, state, last, pending):
@@ -220,7 +228,7 @@ def view(path, sd=None, manifest=None, factory=None, last=None, pending=None):
     factory = factory or sd_restore.FACTORY
     entry, is_stage = _check_path(path, sd, manifest)
     path = str(path)
-    row = next((r for r in sd_integrity.check(sd, manifest)["files"] if r["path"] == path), None)
+    row = next((r for r in sd_integrity.check(sd, manifest, only={path} if entry is not None else None)["files"] if r["path"] == path), None)
     if row is None:   # the stage copy of a template: it is the file itself, listed through its template
         owner = {"path": path, "kind": "template", "plugin": entry.get("plugin") if entry else None, "state": "ok", "used_by": entry.get("used_by", []) if entry else []}
         row = dict(owner)

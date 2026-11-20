@@ -269,12 +269,23 @@ def status(config):
             "in_schedule": in_schedule(cfg)}
 
 
+def published(config):
+    """What goes to the plugin data (every DWC session reads it, with or without a PIN): the status WITHOUT the ntfy topic, which is the secret of
+    the destination (whoever knows it can read and send notices). `topic_set` says whether one exists. The API (notifications.get, destination,
+    new_topic: technician) still answers the real topic through status()."""
+    out = status(config)
+    cfg = dict(out["config"])
+    cfg["topic_set"] = bool(cfg.pop("topic", ""))
+    out["config"] = cfg
+    return out
+
+
 def publish():
     b, c = _state["bridge"], _state["config"]
     if b is None or c is None:
         return
     try:
-        b.set_status("notifications", status(c))
+        b.set_status("notifications", published(c))
     except Exception:
         pass
 

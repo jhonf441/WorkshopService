@@ -7,7 +7,7 @@ In SBC mode DWC's password is the board's: M551 P"..." in sys/config.g.
 With a password, DWC asks for it on connecting and the pages' HTTP endpoint
 rejects requests without a session (http_api.py).
 
-Usage: <params>                  says whether there is a password (never shows it)
+Usage: <params>                  says whether there is a password, as {"set": true | false | null} (never shows it)
      <params> S"set" V"<new>"    sets or changes it: config.g + instantly
      <params> S"clear"           removes it (the factory one "reprap" = no password comes back)
 config.g is backed up before every change (sys/config.g.bak-password-<date>).
@@ -28,6 +28,15 @@ CONFIG_G = paths.CONFIG_G
 # byte that is not UTF-8 (an old Latin-1 comment) and the line endings (CRLF) go back exactly as they were.
 _RE_M551 = re.compile(rb'^([ \t]*)M551\b[^\r\n]*(?=\r?$)', re.M | re.I)
 _MARK = "; DWC password (System service page > Password)"
+
+
+class Refused(Exception):
+    """The operation did not do what was asked: handler_refusal.run answers it as an error (code, message, extra fields of the error)
+    instead of a sentence with ok true, so the caller can tell a refusal from a success."""
+
+    def __init__(self, code, message, **extra):
+        super().__init__(str(message))
+        self.api_error = (code, message, extra)
 
 
 def _read():
@@ -70,16 +79,17 @@ def _valid(key):
 def run(params, bridge, config):
     action = str(params.get("S", "status")).strip().lower()
     if action in ("status", "state"):
+        # an object, not a sentence: the page reads `set` (true | false) and treats null as "not known" (config.g could not be read)
         try:
-            return M("password_dwc_password_is_set") if _has(_read()) else M("password_dwc_password_none")
-        except OSError as e:
-            return M("password_dwc_password_could_not_read_config", e=e)
+            return {"set": _has(_read())}
+        except OSError:
+            return {"set": None}
 
     if action in ("set", "put"):
         key = str(params.get("V") or "")
         reason = _valid(key)
         if reason:
-            return M("password_password", reason=reason)
+            raise Refused("invalid_args", M("password_password", reason=reason), field="password")
         try:
             raw_text = _read()
             backup = _back_up()
@@ -99,7 +109,7 @@ def run(params, bridge, config):
                 raw_text = raw_text.rstrip(b"\n") + b"\n\n" + line + b"\n"
             _write(raw_text)
         except OSError as e:
-            return M("password_password_could_not_write_config_g", e=e)
+            raise Refused("failed", M("password_password_could_not_write_config_g", e=e))
         r = str(bridge.send(f'M551 P"{key}"') or "")
         activity.log_event(bridge, "config", M("dwc_password_changed"))
         notice = M("password_note_board_answered", strip=r.strip()) if board_reply.is_error(r) else ""
@@ -114,7 +124,7 @@ def run(params, bridge, config):
             raw_text = _RE_M551.sub(lambda m: m.group(1) + b"; M551 (password removed from the page)", raw_text)
             _write(raw_text)
         except OSError as e:
-            return M("password_password_could_not_write_config_g", e=e)
+            raise Refused("failed", M("password_password_could_not_write_config_g", e=e))
         bridge.send('M551 P"reprap"')
         activity.log_event(bridge, "config", M("dwc_password_removed"))
         return M("password_dwc_password_removed_config_g_backup", rsplit=backup.rsplit('/', 1)[-1])

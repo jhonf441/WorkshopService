@@ -13,7 +13,7 @@
 
 import { workshopCan } from './workshop-auth.js'
 
-export const RANK_OPS = { viewer: '', operator: 'light.set', technician: 'settings.set', admin: 'power.off' }
+export const RANK_OPS = { viewer: '', operator: 'light.set', technician: 'settings.set', admin: 'power.full_reset' }
 
 // without a browser (tests, no session yet) workshopCan cannot read the identity: nothing is hidden
 function currentCan(op) {

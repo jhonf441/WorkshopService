@@ -185,6 +185,33 @@ class AuthRegistry(wa.Registry):
             raise self._forbidden(name, ident, dctx, why)
         self._note_use(ident, name)
 
+    def own_answer(self, ident, name, args=None, target=None):
+        """What `_check_role` would decide for `ident` calling `name` now, as {"allowed", "reason": {...}} (auth.can). Only about the identity it is
+        given: the caller's own. The reason names the cause, and the profile, the rule (its id) and the ceiling that decided, never their contents.
+        The same decision as a real call: same context (mode of the machine, live conditions), same evaluator, same base roles."""
+        name = str(name)
+        if name in permissions.STOP_OPS:
+            return {"allowed": True, "reason": {"code": "stop"}}
+        dctx = {"args": args if isinstance(args, dict) else {}, "modes": ident.get("modes"), "camera": ident.get("camera"), "mode": self.mode_of(),
+                "role_def": ident.get("role_def")}
+        view = self._access_view()
+        dec = access_context.decide(view, ident, name, dctx, self.state_of, target) if view is not None else None
+        if dec is None:
+            ok, why = permissions.decide(role_name(ident), name, dctx)
+            reason = {"code": "allow" if ok else why or "role"}
+            if not ok:
+                reason["needed_role"] = permissions.needed_role(name, dctx)
+            return {"allowed": ok, "reason": reason}
+        reason = {k: dec.reason[k] for k in ("code", "profile", "ceiling", "needed_tier") if dec.reason.get(k) is not None}
+        if dec.reason.get("id") is not None:
+            reason["rule"] = dec.reason["id"]
+        if dec.reason.get("failed_conditions"):
+            reason["failed_conditions"] = list(dec.reason["failed_conditions"])
+        if not dec.allowed:
+            reason["why"] = access_person.legacy_why(dec, name, ident, dctx)
+            reason["needed_role"] = permissions.needed_role(name, dctx)
+        return {"allowed": dec.allowed, "reason": reason}
+
     def _note_use(self, ident, name):
         """The last use of the capability of an ALLOWED call (access_usage: memory first, a pair at most once a minute). Never raises, never refuses."""
         try:

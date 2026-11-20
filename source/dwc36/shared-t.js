@@ -8,3 +8,8 @@ import { PLUGIN_ID } from './plugin-id.js'
 export function ts(key, params) {
 	return i18n.t('plugins.' + PLUGIN_ID + '.shared.' + key, params)
 }
+
+// a text with a singular and a plural form: `count` decides which one
+export function tsc(key, count, params) {
+	return i18n.tc('plugins.' + PLUGIN_ID + '.shared.' + key, count, params)
+}

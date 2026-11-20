@@ -106,7 +106,7 @@ CAPABILITIES = {
     "camera.settings": _c("camera", "write", 2, "camera.image.get", "camera.image.set"),
     "camera.relay": _c("camera", "write", 3, "camera.start", "camera.stop"),
     # -- users and security --
-    "security.session": _c("security", "write", 1, "auth.login", "auth.logout", "auth.whoami", "auth.keepalive", "auth.change_pin"),
+    "security.session": _c("security", "write", 1, "auth.login", "auth.logout", "auth.whoami", "auth.can", "auth.keepalive", "auth.change_pin"),
     "security.audit": _c("security", "admin", 3, "audit.list"),
     "security.audit_tools": _c("security", "admin", 4, "audit.verify", "audit.export", "audit.settings"),
     "security.users": _c("security", "admin", 4, "users.*", "auth.resolve"),

@@ -1,0 +1,35 @@
+/* The shell of the service page (app/ServicePage.vue): what is not a piece of the kit. */
+.sv-page .sv-body { min-width: 0; }
+
+/* While a section is still drawn by the old page (embedded in the shell): the shell draws the navigation and the tabs, so the old
+   layout box is a plain block and the tab rows the old Access and Security sections draw for themselves are not shown twice.
+   Each of these lines leaves with the old screen it tames. */
+.sv-page .access-section > .stb,
+.sv-page .security-section > .v-tabs { display: none; }
+.sv-page .sv-home-note { margin-top: var(--sv-s2); }
+
+/* My session (a sheet) */
+.sv-page .sv-session { display: grid; gap: var(--sv-s3); }
+.sv-page .sv-session-acts { display: flex; flex-wrap: wrap; gap: var(--sv-s2); }
+.sv-page .sv-session-note { display: flex; align-items: center; gap: 6px; color: var(--wf-c-success-text); font-size: var(--sv-f-2); }
+
+/* Diagnostics */
+.sv-page .sv-item[data-marked] > summary { outline: 2px solid var(--sv-focus); outline-offset: -2px; border-radius: 6px; }
+.sv-page .sv-health-pre { max-height: 320px; overflow: auto; margin-top: var(--sv-s2); padding: 8px 12px; border-radius: 8px; background: var(--wf-soft); font-family: var(--sv-mono); font-size: var(--sv-f-cap); white-space: pre; }
+.sv-page .sv-health-steps { margin: 0 0 var(--sv-s3); padding-left: 20px; font-size: var(--sv-f-2); }
+.sv-page .sv-effects { margin: 6px 0 0; padding-left: 20px; font-size: var(--sv-f-2); }
+
+/* Administration (Access, Security): the screens they host were drawn for a mouse; here every target is at least 44 px (touch, kiosk) */
+.sv-access button, .sv-security button, .sv-access .v-btn, .sv-security .v-btn, .sv-access summary, .sv-security summary,
+.sv-access .v-tab, .sv-security .v-tab, .sv-access .access-chip-remove, .sv-security .access-chip-remove { min-height: 44px !important; min-width: 44px !important; }
+.sv-access .v-btn.v-size--small:not(.v-btn--icon), .sv-security .v-btn.v-size--small:not(.v-btn--icon),
+.sv-access .v-btn.v-size--x-small:not(.v-btn--icon), .sv-security .v-btn.v-size--x-small:not(.v-btn--icon) { height: auto !important; padding-top: 4px !important; padding-bottom: 4px !important; }
+.sv-access .v-btn--icon.v-size--small, .sv-security .v-btn--icon.v-size--small,
+.sv-access .v-btn--icon.v-size--x-small, .sv-security .v-btn--icon.v-size--x-small { width: 44px !important; height: 44px !important; }
+.sv-access .v-input--selection-controls .v-input__slot, .sv-security .v-input--selection-controls .v-input__slot,
+.sv-access .v-input--selection-controls .v-label, .sv-security .v-input--selection-controls .v-label { min-height: 44px !important; }
+.sv-access .v-input--selection-controls .v-input--selection-controls__input, .sv-security .v-input--selection-controls .v-input--selection-controls__input { width: 44px !important; height: 44px !important; margin-right: 0 !important; }
+.sv-access .v-text-field input, .sv-security .v-text-field input, .sv-access .v-select__selections, .sv-security .v-select__selections { min-height: 44px !important; }
+.sv-access .v-text-field--outlined.v-input--dense .v-input__control > .v-input__slot, .sv-security .v-text-field--outlined.v-input--dense .v-input__control > .v-input__slot { min-height: 44px !important; }
+.sv-access .access-row, .sv-security .access-row { min-height: 44px !important; }
+.sv-access .v-input--selection-controls input, .sv-security .v-input--selection-controls input { min-height: 44px !important; height: 44px !important; }

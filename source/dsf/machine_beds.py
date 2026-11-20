@@ -13,8 +13,8 @@ import re
 
 import config_scan
 import machine_config as mc
+import machine_file
 import machine_patch as pt
-import machine_plans as plans
 import machine_sensors as ms
 import machine_tool as mt
 from workshop_api import READ, Arg, Op
@@ -161,44 +161,16 @@ def build_lines(spec, state):
 # ---- the plan ----
 
 
-def _defines_heaters(text):
-    return HEATER_DEFINITION.search(text) is not None
-
-
-def _insert_block(text, lines):
-    """Adds the block after the last TOP-LEVEL line that defines a sensor, a heater, a limit, a bed or a tool (a line inside an `if` block is indented and is
-    never the anchor: the block would end that block and could separate it from its `else`); without one, at the end of the file."""
-    eol, ls = pt.split_lines(text)
-    at = -1
-    for n, code in pt.live_lines(ls):
-        if code[:1] not in (" ", "\t") and pt.command_word(code)[0] in ANCHORS:
-            at = n
-    notices = []
-    if at < 0:
-        notices.append("no_anchor")
-        at = len(ls) - 2 if ls and ls[-1] == "" else len(ls) - 1
-    for k, line in enumerate(lines):
-        ls.insert(at + 1 + k, line)
-    return pt._result(ls, eol, "inserted", at + 2, notices)
-
-def _target(read):
-    """The file the block goes into: the LAST file of the configuration that already defines heaters, else config.g (what plans._edit picks)."""
-    scan = config_scan.scan(read)
-    hits = [p for p in scan["files"] if _defines_heaters(read(p) or "")]
-    return hits[-1] if hits else config_scan.ROOT
-
-
 def plan_bed_heaters(values, env):
     """Adds the lines of the beds to the configuration file that defines heaters (else config.g). The machine restarts to read them."""
     state = _state(env["read"], env.get("om"))
     try:
         built = build_lines(values.get("spec", values), state)
     except mt.ToolError as e:
-        raise mc.PlanError("tool_name" if e.code == "name" else e.code, e.field)
-    path, before, res, scan, hits = plans._edit(env, _defines_heaters, lambda t: _insert_block(t, built["lines"]))
-    body = plans._body(path, before, res, scan, hits, None, None, built["summary"])
-    body["warnings"].append("beds_restart")
-    return body
+        raise mt.plan_error(e, env["read"])
+    spec = values.get("spec", values)
+    first = min(b["bed"] for b in built["summary"]["beds"])
+    return machine_file.plan_body(mc, config_scan.scan(env["read"]), "bed", first, built, spec.get("modes") if isinstance(spec, dict) else None, "beds_restart")
 
 
 # ---- the operations ----
@@ -225,14 +197,23 @@ def _get(args, ctx):
             "max_beds": state["max_beds"]}
 
 
+def _modes(args):
+    """The modes of the spec as machine.g will keep them (None = every mode); a bad value is answered as an error by the preview."""
+    spec = args.get("spec")
+    return list(machine_file.clean_modes(spec.get("modes"))) if isinstance(spec, dict) and spec.get("modes") not in (None, "all", []) else None
+
+
 def _preview(args, ctx):
     import machine_ops as mo
     state = _state(mo.read_sd, mo.model())
+    bad = machine_file.modes_problem(args.get("spec"))
+    if bad:
+        return {"lines": [], "files": [], "warnings": [], "errors": [bad], "beds": []}
     try:
         built = build_lines(args.get("spec"), state)
     except mt.ToolError as e:
-        return {"lines": [], "files": [], "warnings": [], "errors": [{"code": e.code, "field": e.field}], "beds": []}
-    return {"lines": built["lines"], "files": [mc.rel_of(_target(mo.read_sd))], "warnings": ["beds_restart"], "errors": [], "beds": built["summary"]["beds"]}
+        return {"lines": [], "files": [], "warnings": [], "errors": [mt.error_of(e, mo.read_sd)], "beds": []}
+    return {"lines": built["lines"], "files": machine_file.preview_files(mc), "warnings": ["beds_restart"], "errors": [], "beds": built["summary"]["beds"], "modes": _modes(args)}
 
 
 def ops():
