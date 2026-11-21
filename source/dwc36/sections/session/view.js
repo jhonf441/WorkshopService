@@ -6,8 +6,12 @@
 //                         roles are switched off: everybody is an administrator, there is nothing to sign in to) | 'out'
 //   roleText(session, baseRoles)   { base, custom }: a base role is said by its name of the catalogs; a role of the workshop's own
 //                         by the name they gave it, with the base role it starts from when the service tells it
-//   pinProblems(form)     { old, fresh, again }: what is wrong in the change-PIN form before anything is sent ('' = fine).
-//                         Only what the page can know: the length and the rest of the policy are the service's to judge.
+//   pinProblems(form)     { old, fresh, again }: what is wrong in the change-PIN form before anything is sent ('' = fine). The NEW PIN follows the policy of
+//                         password-policy.js (6 to 12 digits, no run, no repeat, no probable date, not a common one): fresh is then 'rule_<reason>'.
+//                         The service judges it again; the PINs already saved are never checked here.
+//   pinRequirements(newPin, again)  [{ id, ok }] the list drawn while typing (check or cross)
+
+import { checkPin, pinRequirements as requirements } from '../../password-policy.js'
 
 const OUT = ['signed-out', 'signing-in', 'expired', 'pin-locked']
 
@@ -33,7 +37,11 @@ export function pinProblems(form) {
 	const fresh = String(f.newPin || '')
 	return {
 		old: String(f.oldPin || '') ? '' : 'missing',
-		fresh: !fresh ? 'need_new' : !/^\d+$/.test(fresh) ? 'digits' : fresh === String(f.oldPin || '') ? 'same' : '',
+		fresh: !fresh ? 'need_new' : !/^\d+$/.test(fresh) ? 'digits' : fresh === String(f.oldPin || '') ? 'same' : checkPin(fresh) ? 'rule_' + checkPin(fresh) : '',
 		again: fresh && String(f.again || '') !== fresh ? 'mismatch' : ''
 	}
+}
+
+export function pinRequirements(newPin, again) {
+	return requirements(String(newPin || ''), String(again || ''))
 }

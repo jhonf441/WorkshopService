@@ -113,8 +113,14 @@ export default {
 			if (this.op) return lockKindOp(this.op, this.need, this.ctx || undefined)
 			return this.min ? lockKind(this.min) : ''
 		},
+		// ONE session notice per page (2026-11-20): the chip of the header already says "Sign in" and blinks on a refusal, so a section note of the
+		// session cause that names no resource (no subject) and has no button of its own (act) would only repeat it: it draws nothing. A note that names
+		// what is locked (subject) or a surface without the chip (act="sign-in") still draws.
+		redundantBand() {
+			return this.variant === 'section' && this.k === 'session' && !this.subject && !this.act
+		},
 		shown() {
-			return !!this.k
+			return !!this.k && !this.redundantBand
 		},
 		// the chip of the bar: 'session' (nobody signed in, a button), 'viewer' (read only) or '' (nothing)
 		chip() {

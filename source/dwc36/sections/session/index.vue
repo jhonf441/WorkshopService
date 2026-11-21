@@ -28,6 +28,9 @@
 						<span class="sv-field"><input :id="ids.fresh" v-model="newPin" :type="shown ? 'text' : 'password'" inputmode="numeric" autocomplete="new-password" :aria-invalid="newError ? 'true' : null" :aria-describedby="newError ? ids.fresh + '-e' : null" :disabled="busy"></span>
 						<span v-if="newError" :id="ids.fresh + '-e'" class="sv-field-error" role="alert"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ newError }}</span>
 					</div>
+					<ul v-if="newPin" class="sv-pwm-reqs sv-session-reqs" :aria-label="t('session.pin_reqs')">
+						<li v-for="r in reqs" :key="r.id" :class="r.ok ? 'sv-pwm-ok' : 'sv-pwm-no'"><span class="mdi" :class="r.ok ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline'" aria-hidden="true" /><span class="sv-pwm-sr">{{ t(r.ok ? 'session.pin_req_met' : 'session.pin_req_not_met') }}: </span>{{ t('session.pin_req_' + r.id) }}</li>
+					</ul>
 					<div>
 						<label class="sv-label" :for="ids.again">{{ t('session.pin_repeat') }}</label>
 						<span class="sv-field"><input :id="ids.again" v-model="again" :type="shown ? 'text' : 'password'" inputmode="numeric" autocomplete="new-password" :aria-invalid="againError ? 'true' : null" :aria-describedby="againError ? ids.again + '-e' : null" :disabled="busy"></span>
@@ -80,7 +83,7 @@ import { createAction } from '../../core/store/action.js'
 import { durationText } from '../../core/format/duration.js'
 import { svTextMixin } from '../../ui/sv-text.js'
 import SvSheet from '../../ui/SvSheet.vue'
-import { modeOf, pinProblems, roleText } from './view.js'
+import { modeOf, pinProblems, pinRequirements, roleText } from './view.js'
 
 const changePin = createAction({ op: 'auth.change_pin' })
 const BASE_ROLES = ['viewer', 'operator', 'technician', 'admin']
@@ -115,6 +118,9 @@ export default {
 		},
 		problems() {
 			return pinProblems({ oldPin: this.oldPin, newPin: this.newPin, again: this.again })
+		},
+		reqs() {
+			return pinRequirements(this.newPin, this.again)
 		},
 		failure() {
 			return this.changePin.state === 'error' ? this.changePin.error : null

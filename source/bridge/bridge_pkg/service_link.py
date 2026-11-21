@@ -8,7 +8,7 @@ import time
 
 
 # live job end reason -> operation of the WorkshopService API
-JOB_END_OPS = {"end": "job.end", "cancel": "job.cancel", "close": "job.close", "disconnect": "job.close", "order_failed": "job.cancel", "stopped": "job.close"}
+JOB_END_OPS = {"end": "job.end", "cancel": "job.cancel", "close": "job.close", "disconnect": "job.close", "order_failed": "job.cancel", "focus_failed": "job.cancel", "stopped": "job.close"}
 
 
 class ServiceNotifier:

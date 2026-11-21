@@ -6,7 +6,7 @@ import collections
 import socket
 import threading
 
-from bridge_pkg.lines import (GATED_CODES, MATERIAL_MACRO_RE, MAX_LINE, NEEDS_HOMING_OK, NOOP_WITHOUT_PARAMS, STOP_ENDS_JOB, STOPS_PASS, TAINT_S,
+from bridge_pkg.lines import (AIR_OFF_RE, FAIL_REFUSE_S, FOCUS_LOCK_REFUSED, FOCUS_MACRO_RE, FOCUS_RECOVERY_CODES, FOCUS_UNLOCK_HINT, GATED_CODES, MATERIAL_MACRO_RE, MAX_LINE, NEEDS_HOMING_OK, NOOP_WITHOUT_PARAMS, STOP_ENDS_JOB, STOPS_PASS, TAINT_S,
                               is_query_line, m118_job_line)
 from bridge_pkg.orders import OrderWorker
 from bridge_pkg.telnet import TelnetFilter
@@ -51,6 +51,7 @@ class Client:
         self.taint_until = 0.0           # mono time until which the orders of this job are refused (see TAINT_S)
         self.failed_until = 0.0          # mono time until which every order but the stops is refused (a macro or probing order failed, see FAIL_WATCH)
         self.failed_why = ""
+        self.focus_run0 = ((bridge.gate.focus or {}).get("run") or 0)   # the focus attempt counter when this connection (or its job) started
         self.stopped_until = 0.0         # mono time until which the rest of a job stopped safely is refused (see live_stop.py)
         self.stopped_note = None
         self.cut_after_flush = False
@@ -239,7 +240,8 @@ class Client:
         return (self._refuse_without_password()
                 or self._refuse_without_control()
                 or self._refuse_while_held(line, tok)
-                or self._refuse_after_failed_order(tok)
+                or self._refuse_by_focus_lock(line, tok)
+                or self._refuse_after_failed_order(line, tok)
                 or self._refuse_by_machine(line, tok))
 
     def _refuse_without_password(self):
@@ -307,10 +309,41 @@ class Client:
             self.reply_local("Error: " + why + ". Your order was not executed.")
         return True
 
-    def _refuse_after_failed_order(self, tok):
+    def _refuse_by_focus_lock(self, line, tok):
+        """The focus was not set and nobody has set it well since (or unlocked it by hand): the work, the laser, the air and the power of ANY job are refused. The stops, the
+        air off, the macros that set the focus (and the homing and probing they need) pass."""
+        b = self.bridge
+        if b.focus_lock is None or tok in STOPS_PASS:
+            return False
+        if tok == "M98":
+            if AIR_OFF_RE.match(line) or FOCUS_MACRO_RE.match(line):
+                return False
+        elif tok not in FOCUS_LOCK_REFUSED:
+            return False
+        b.gate.recheck_focus()
+        if b.focus_lock is None:
+            return False
+        with b.lock:
+            b.totals["rejects"] += 1
+            b.totals["rejects_focus_lock"] = b.totals.get("rejects_focus_lock", 0) + 1
+            self.rejects += 1
+            b.count("rejects")
+            n = self.rejects
+        if n in (1, 10, 100):
+            b.event("info", "order_rejected_focus_lock", f"Order from '{self.name}' rejected: the focus is not set", client=self.name)
+        self.reply_local("Error: the focus was not set, so the movement of the work, the laser, the air and the power are refused. " + FOCUS_UNLOCK_HINT)
+        return True
+
+    def _refuse_after_failed_order(self, line, tok):
         b = self.bridge
         if tok in STOPS_PASS or not self.failed_until > b.clock.mono():
             return False
+        if tok == "M98" and AIR_OFF_RE.match(line):
+            return False          # turning the air OFF is a stop: it always passes
+        if b.focus_lock is not None and (FOCUS_MACRO_RE.match(line) if tok == "M98" else tok in FOCUS_RECOVERY_CODES):
+            return False          # the focus failed: what sets it again (the macros, the homing and the probing they need) is how the block is lifted
+        if self.failed_until - b.clock.mono() < FAIL_REFUSE_S:
+            self.failed_until = b.clock.mono() + FAIL_REFUSE_S   # the program keeps streaming: the refusal lasts until it stops, not 120 s after the failure
         left = int(self.failed_until - b.clock.mono()) + 1
         with b.lock:
             b.totals["rejects"] += 1

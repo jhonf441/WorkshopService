@@ -1042,7 +1042,7 @@
   "auth.change_pin": {
    "args": {
     "new_pin": {
-     "desc": "PIN: 4 to 12 digits.",
+     "desc": "New PIN: 6 to 12 digits, not a run (345678), a repetition (454545), a probable date or a common PIN; PINs already saved keep working.",
      "required": true,
      "type": "str"
     },
@@ -3020,6 +3020,14 @@
      "min": 10,
      "type": "int"
     },
+    "noise": {
+     "choices": [
+      "hide",
+      "show"
+     ],
+     "desc": "hide (default) leaves out a few known harmless lines (Wi-Fi driver frames, a .NET Wi-Fi 7 warning, AppArmor profiles loaded at boot); show keeps them, flagged noise.",
+     "type": "str"
+    },
     "search": {
      "desc": "Text the line (or its program name) must contain, any case; it is data, never passed to a program.",
      "type": "str"
@@ -3043,14 +3051,16 @@
       "workshop-gcode-bridge",
       "NetworkManager",
       "ssh",
-      "kernel"
+      "kernel",
+      "workshop-service",
+      "install"
      ],
-     "desc": "Which log: a Duet or workshop unit, NetworkManager, ssh or the kernel (default duetcontrolserver).",
+     "desc": "Which log: a Duet or workshop unit, NetworkManager, ssh, the kernel, or the workshop's own files: workshop-service (the service log) and install (the start-up runs). Default duetcontrolserver.",
      "type": "str"
     }
    },
    "capability": "system.journal",
-   "desc": "Reads the system journal of one unit of a closed list (or the kernel), read-only. Returns {readable, lines: [{t: epoch ms, p: 0-7, who, text}], truncated}; when the service cannot read the journal, {readable: false, reason: no_permission | failed | no_journalctl}.",
+   "desc": "Reads the system journal of one unit of a closed list (or the kernel), or one of the workshop's own logs, read-only. Returns {readable, lines: [{t: epoch ms, p: 0-7, who, text, noise?}], truncated, noise_hidden}; when the service cannot read the journal, {readable: false, reason: no_permission | failed | no_journalctl | no_file}.",
    "exclusive": false,
    "kind": "read",
    "log": false,
@@ -6394,7 +6404,7 @@
      "type": "str"
     },
     "pin": {
-     "desc": "PIN: 4 to 12 digits.",
+     "desc": "New PIN: 6 to 12 digits, not a run (345678), a repetition (454545), a probable date or a common PIN; PINs already saved keep working.",
      "required": true,
      "type": "str"
     },
@@ -6471,7 +6481,7 @@
      "type": "str"
     },
     "pin": {
-     "desc": "PIN: 4 to 12 digits.",
+     "desc": "New PIN: 6 to 12 digits, not a run (345678), a repetition (454545), a probable date or a common PIN; PINs already saved keep working.",
      "required": true,
      "type": "str"
     }
@@ -6639,6 +6649,7 @@
   "consumptionCurrent": null,
   "guardStatus": null,
   "healthPi": null,
+  "jobLayerRules": null,
   "jogBlock": null,
   "jogFree": null,
   "lastCode": null,

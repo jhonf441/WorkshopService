@@ -18,6 +18,7 @@
 	--wf-icon: rgba(128, 128, 128, 0.95);
 	--wf-soft: rgba(128, 128, 128, 0.07);
 	--wf-surface: #1e1e1e;
+	--wf-text: #eceff1; /* the text that goes on --wf-surface (a card hung from <body> inherits nothing from DWC: it says its own) */
 	--wf-accent: #1976d2;
 	--wf-badge: #1976d2;
 	--wf-ok: #43a047;
@@ -48,9 +49,11 @@
 	--wf-n-down: var(--wf-c-warning); --wf-n-down-text: var(--wf-c-warning-text); --wf-n-down-bg: var(--wf-c-warning-bg);
 	--wf-n-error: var(--wf-c-error); --wf-n-error-text: var(--wf-c-error-text); --wf-n-error-bg: var(--wf-c-error-bg);
 }
-.theme--light.v-application, .theme--light .workshop-theme, .theme--light .wf-bar { --wf-surface: #fff; }
-.v-theme--light.v-application { --wf-surface: rgb(var(--v-theme-surface, 255, 255, 255)); }
-.v-theme--dark.v-application { --wf-surface: rgb(var(--v-theme-surface, 30, 30, 30)); }
+.theme--light.v-application, .theme--light .workshop-theme, .theme--light .wf-bar { --wf-surface: #fff; --wf-text: #212121; }
+html:has(.theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; }
+.v-theme--light.v-application { --wf-surface: rgb(var(--v-theme-surface, 255, 255, 255)); --wf-text: rgb(var(--v-theme-on-surface, 33, 33, 33)); }
+html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; }
+.v-theme--dark.v-application { --wf-surface: rgb(var(--v-theme-surface, 30, 30, 30)); --wf-text: rgb(var(--v-theme-on-surface, 236, 239, 241)); }
 /* tokens of the light theme; html:has() reaches what hangs from <body> (toast, PIN dialog) */
 .theme--light.v-application, .theme--light .workshop-theme, .theme--light .wf-bar, .v-theme--light.v-application, html:has(.theme--light), html:has(.v-theme--light) {
 	--wf-c-info: #1565c0; --wf-c-info-text: #0d47a1; --wf-c-info-bg: rgba(21, 101, 192, 0.08);
@@ -315,8 +318,10 @@ button.help-tip.v-btn.v-btn, .help-tip { width: 24px; height: 24px; min-width: 2
 .help-tip :is(.v-icon, .mdi), .help-tip svg { color: var(--wf-icon); font-size: 18px; line-height: 1; opacity: 1; }
 .help-tip svg { width: 18px; height: 18px; fill: currentColor; }
 .wf-section-head .help-tip { margin: 0; }
-.help-tip-card, .wf-popover { max-width: 380px; }
-.wf-popover { position: fixed; z-index: 9999; box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--wf-line); border-radius: 8px; background: var(--wf-surface); color: inherit; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); }
+.help-tip-card, .wf-popover { max-width: min(380px, calc(100vw - 16px)); }
+/* ONE session reason or note per block (owner 2026-11-21: the same "your session ended" three times in one card): inside a parent only the first one that is shown draws */
+.wf-reason--session:not([hidden]) ~ .wf-reason--session, .wf-notice--session:not([hidden]) ~ .wf-notice--session { display: none !important; }
+.wf-popover { position: fixed; z-index: 9999; box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--wf-line); border-radius: 8px; background: var(--wf-surface); color: var(--wf-text); font: 13px/1.4 Roboto, Helvetica, Arial, sans-serif; overflow-wrap: anywhere; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); }
 .help-tip-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
 .help-tip-list { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 6px 0 0; font-size: 13px; }
 .help-tip-list dt { font-weight: 600; }

@@ -31,11 +31,13 @@ from dsf.commands.code_channel import CodeChannel
 from dsf.object_model.messages import MessageType
 
 import access_usage  # last use of each capability by each person
+import activity
 import bootstrap
 import db
 import live_job  # live job opened with job.start (closing and cut of the duration)
 import heartbeats
 import laser_guard  # a laser power left set (M3 / M4 without M5) is turned off
+import focus_guard  # the laser focus was not set: laser and air off, file job cancelled, warning
 import process_registry
 import service_context
 import service_log
@@ -404,6 +406,14 @@ def _beat(label):
         pass
 
 
+_focus = focus_guard.FocusGuard()
+
+
+def _focus_guard_step():
+    if focus_guard.act(_focus, bridge, log_file) == "failed":
+        activity.log_event(bridge, "error", M("focus_guard_failed"))   # the history and the phone notice (type "error")
+
+
 def _laser_guard_loop():
     """Every second: if a laser power was left set and nothing is working, sends the M5 (laser_guard.py explains when)."""
     import machine_state
@@ -411,6 +421,10 @@ def _laser_guard_loop():
     while True:
         time.sleep(1.0)
         _beat("guardian_laser")  # every pass, also outside Laser mode; never raises (the guard must not die for this)
+        try:
+            _focus_guard_step()
+        except Exception as e:
+            log_file(f"focus guard: {type(e).__name__}: {e}")
         try:
             if machine_state.read_in("state.machineMode") != "Laser":
                 continue

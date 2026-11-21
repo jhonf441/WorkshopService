@@ -68,6 +68,7 @@ class StateMixin:
                        if until > wall and ip not in s.get("blocked")],
                     "rejected": list(self.rejected)[:10],
                 },
+                "focus_lock": ({**self.focus_lock, "since_s": round(wall - self.focus_lock["since"])} if self.focus_lock else None),
                 "action": self.action_seen["result"],
                 "live_stop": self.live.public_state() if self.live is not None else {"enabled": False},
                 "debug": debug,

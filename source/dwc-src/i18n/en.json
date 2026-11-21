@@ -1445,6 +1445,7 @@
 		"eventlog_reactivated": "The RRF event log (eventlog.txt) was off: it was turned on again",
 		"extra_commands_description": "Moves what other plugins write (for example RS485) to the received commands history, every few seconds.",
 		"extra_commands_title": "Commands of other plugins",
+		"focus_guard_failed": "Focus not set: the job was stopped and the laser and the air were turned off. Check there is material under the probe and measure again.",
 		"guard_armed": "Rollback armed for {sec} s (backup {snapshot})",
 		"guard_board_halted": "The board stayed halted after restarting",
 		"guard_board_not_back": "The board did not reconnect after restarting",

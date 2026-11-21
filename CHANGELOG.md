@@ -4,6 +4,26 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.59.2 -- 2026-11-21 (fix: the programs reading no longer fills the kernel log)
+
+- Programs in System health: the first version read `stat` of the Duet servers, and on the Pi that made AppArmor write one `DENIED ptrace` line per reading (about 50 every 10 minutes), hiding the real denials the owner looks for. The CPU now comes from systemd's own counter per unit, the memory from `statm`, and the G-code bridge is measured too. A test fails if `stat` of any other process is read again. The AppArmor profile is not changed.
+
+## 2.59.1 -- 2026-11-21 (new PIN rules, access glossary aligned, safety bridge, quieter start-up log)
+
+- Access > People and My session: a NEW or changed PIN must have 6 to 12 digits, no run (123456), no repeated digit, no probable date and not a common one; the requirements show live with a check or a cross (`dsf/password_policy.py` `check_pin`, `dwc36/PinRules.vue`). PINs already saved keep working and the login still accepts 4 to 12 digits. The API texts say it in two sentences (login PIN and new PIN); the golden `min_pin` is 6.
+- Access glossary ("How the access works"): the five steps, the band of rules, the example and the result share one left edge with 16 px between blocks and 12/16 px of padding in the band; the example is labelled "Example" and each chip sits under its step.
+- Safety bridge 3.9.1 (service side): after a declared focus failure the bridge refuses motion, laser, air and power of every job and connection until a good focus or a technician's double-tap "Unlock without focus" (permission `bridge.service.set`, logged); the bridge card says "Focus not set: locked". The bridge itself is installed by the owner with sudo (`bridge/install.sh`).
+- Job material: `jobLayerRules` (read-only plugin data, next to `pelletLayers`) publishes the name of the armed material profile and the number of layer rules for the job file.
+- Start-up of the service: `shutdown_method.emit` declares or sets `global.shutdownDesc` / `shutdownDescEn` by what the object model says, so the Duet control server no longer logs an unknown-variable error with a trace at every start.
+- Family twins: help card with its own text color and font, one session note per block, lock inside the blocked control (`family.css`, `SessionNotice.vue`). Tests: journal group name (es/en), 66 capabilities and 65 requests per person in the access grid, no literal `/opt/dsf` in a test sample.
+
+## 2.59.0 -- 2026-11-21 (programs, own logs and quieter system log in System health)
+
+- CPU and memory of the Duet control, web and plugin servers, the G-code bridge and this service: new `dsf/process_meter.py`. The CPU of a unit is the counter systemd keeps for it (`CPUUsageNSec`, from one `systemctl show` that also gives the main process number, read block by block because systemctl prints `MainPID` before `Id`), the memory is read from `statm` only, and only this service's own `stat` is read: reading `stat` of another process makes the kernel ask AppArmor for a ptrace permission the service's profile does not grant. `health_poller` publishes the result in the existing `healthPi` data as `processes` (CPU in percent of one core, resident memory in MB); no new operation and no new permission. The plugin service's CPU includes the plugins it runs.
+- `journal.read` also reads the workshop's own logs (`dsf/log_sources.py`): the service log with its rotated copies (`workshop-service`) and the runs of the start-up (`install`), with the same window, level and search as the journal. A service log that is off answers `reason: no_file`. The runs come from `startup_ops.install_runs`, handed over by `api_ops`, so the reader does not import the database.
+- `journal.read` leaves out a short closed list of known harmless lines (argument `noise`, `hide` by default, `show` keeps them flagged `noise`): the Wi-Fi chip driver's `brcmf ... Unknown Frame`, the .NET warning about wireless extensions and Wi-Fi 7, and the AppArmor `STATUS profile_load/replace/remove` records written at boot. They no longer fill the list in red, and they do not take the place of real lines. AppArmor `DENIED` lines and every other error are untouched. The answer carries `noise_hidden`, the number left out.
+- Security > Access: the system log capability has its group name in Spanish and English, and the capability and request counts of the access tests follow the new capability (66 capabilities, 65 requests per person).
+
 ## 2.57.1 -- 2026-11-21 (no machine name in the source)
 
 - DWC password policy: the machine's own name is no longer written in the code or in the lists of common passwords (the publication scan refused it). The name and the addresses of the machine are read when the password is checked, as before, so a password equal to the machine name is still refused on any machine.

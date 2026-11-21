@@ -14,11 +14,25 @@ dsf/i18n/es.json and en.json). The first reason that applies is returned, in thi
   names       it is the name of a person, the hostname or the IP of the machine (names=...)
   one_class   only letters or only digits (symbols and spaces count as a third kind)
   pattern     one repeated character, a block repeated (12341234), or mostly a sequence (abcd1234, 98765432, qwertyuiop)
+
+The PIN of a person has its own check in this same module (check_pin, 2026-11-21), applied by the API (api_users.py) ONLY to a NEW or CHANGED PIN:
+the PINs already saved keep working (nothing here is looked at when somebody signs in). The first reason that applies:
+  digits      anything that is not a digit
+  length      fewer than PIN_MIN_LEN (6) or more than PIN_MAX_LEN (12) digits
+  mismatch    the second entry (when it is given) differs from the first
+  common      it is in PIN_COMMON (000000, 123123, 112233, 696969, ...)
+  repeated    one or two digits only (111111, 121212 ...) or a block repeated (123123, 12341234)
+  sequence    ascending or descending run of consecutive digits that covers the PIN (123456, 654321, 345678, 7890123): 9 -> 0 counts as consecutive
+  date        a probable date between 1930 and 2030: DDMMAAAA, AAAAMMDD or DDMMAA
+The message of a reason is `users_err_pin_<reason>` in dsf/i18n/es.json and en.json. Nothing here logs: a PIN never goes through a log from this module.
 """
+import datetime
 import re
 
 MIN_LEN = 10
 MAX_LEN = 60
+PIN_MIN_LEN = 6
+PIN_MAX_LEN = 12
 BAD_CHARS = set("\"';{}\\")
 
 # lower case, no tail: a small list of what people choose first (and of what is typed in a workshop with a Duet)
@@ -146,3 +160,74 @@ def strength(password):
     elif len(p) >= 12 and kinds(p) >= 3:
         score = 3
     return score
+
+
+# ---- the PIN of a person (new or changed PINs only) ----
+
+# what is tried first on a keypad; dwc36/password-policy.js has the same list (tests keep them equal)
+PIN_COMMON = frozenset("""
+000000 0000000 00000000 000111 001122 002200 007007 010101 010203 012345 0123456 01234567 012345678 0123456789 100200 101010 102030 111000 111111 111222
+112211 112233 121212 121314 123000 123123 123321 123456 1234567 12345678 123456789 1234567890 123654 123789 123123123 131313 142536 147258 147258369
+159159 159357 159753 192837 200000 202020 223344 232323 246810 252525 292929 321321 333333 369369 445566 456123 456456 456789 520520 555555 654123
+654321 666666 696969 741852 753159 777777 778899 789456 789789 888888 898989 987456 987654 987654321 9876543210 999999
+""".split())
+
+
+def _pin_valid_date(day, month, year):
+    if not 1930 <= year <= 2030:
+        return False
+    try:
+        datetime.date(year, month, day)
+    except ValueError:
+        return False
+    return True
+
+
+def pin_is_date(p):
+    """DDMMAAAA, AAAAMMDD (8 digits) or DDMMAA (6 digits, year 30-99 is 19xx and 00-30 is 20xx) that is a real date between 1930 and 2030."""
+    n = len(p)
+    if n == 8:
+        return _pin_valid_date(int(p[0:2]), int(p[2:4]), int(p[4:8])) or _pin_valid_date(int(p[6:8]), int(p[4:6]), int(p[0:4]))
+    if n == 6:
+        yy = int(p[4:6])
+        return _pin_valid_date(int(p[0:2]), int(p[2:4]), 1900 + yy if yy >= 30 else 2000 + yy)
+    return False
+
+
+def pin_longest_run(p):
+    """The longest run of consecutive digits, ascending (1234, 7890) or descending (4321, 3210), as a number of digits."""
+    best = 1
+    for want in (1, 9):  # +1 and -1 modulo 10
+        run = 1
+        for a, b in zip(p, p[1:]):
+            run = run + 1 if (int(b) - int(a)) % 10 == want else 1
+            best = max(best, run)
+    return best
+
+
+def pin_is_sequence(p):
+    return pin_longest_run(p) >= max(5, len(p) - 1)
+
+
+def pin_is_repeated(p):
+    return len(set(p)) <= 2 or _repeated_block(p)
+
+
+def check_pin(pin, repeat=None):
+    """"" when the PIN may be set, else the reason (see the top of this file). Only for a new or changed PIN."""
+    p = pin if isinstance(pin, str) else ""
+    if not p.isascii() or not p.isdigit():
+        return "digits"
+    if not PIN_MIN_LEN <= len(p) <= PIN_MAX_LEN:
+        return "length"
+    if repeat is not None and repeat != p:
+        return "mismatch"
+    if p in PIN_COMMON:
+        return "common"
+    if pin_is_repeated(p):
+        return "repeated"
+    if pin_is_sequence(p):
+        return "sequence"
+    if pin_is_date(p):
+        return "date"
+    return ""

@@ -11,11 +11,14 @@ only maps the named arguments to them and the errors to answers. The PINs never 
 """
 import identity
 import permission_caps
+import password_policy
 import permissions
 import users
 from messages import M
 from workshop_api import ADMIN, READ, WRITE, ApiError, Arg, Op
 
+_D_PIN = "PIN: %d to %d digits." % (users.MIN_PIN, users.MAX_PIN)  # to sign in: a PIN saved before the policy of 2026-11-21 may have 4
+_D_NEW_PIN = "New PIN: %d to %d digits, not a run (345678), a repetition (454545), a probable date or a common PIN; PINs already saved keep working." % (password_policy.PIN_MIN_LEN, password_policy.PIN_MAX_LEN)
 _STATUS = {"bad_credentials": 401, "locked": 429, "damaged": 403, "invalid_name": 422, "pin_policy": 422, "invalid_args": 422}
 
 
@@ -23,7 +26,13 @@ def _error(e):
     """users.UserError -> ApiError with a text that is translated (key users_err_<code>)."""
     extra = {"reason": e.code}
     if e.code == "pin_policy":
-        text = M("users_err_pin_policy", min=users.MIN_PIN, max=users.MAX_PIN)
+        rule = e.extra.get("rule")
+        if rule:  # the PIN policy of a NEW or CHANGED PIN: the page says the rule under the field (like the DWC password: 422 with the rule)
+            extra["rule"] = rule
+            extra["field"] = e.extra.get("field") or "pin"
+            text = M("users_err_pin_" + rule, min=password_policy.PIN_MIN_LEN, max=password_policy.PIN_MAX_LEN)
+        else:
+            text = M("users_err_pin_policy", min=users.MIN_PIN, max=users.MAX_PIN)
     elif e.code == "locked":
         extra["wait_s"] = e.extra.get("wait_s", 0)
         text = M("users_err_locked", wait_s=extra["wait_s"])
@@ -32,6 +41,15 @@ def _error(e):
     else:
         text = M("users_err_" + e.code)
     return identity.StatusError("failed" if e.code not in _STATUS else e.code, text, _STATUS.get(e.code, 409), **extra)
+
+
+def _new_pin(pin, field="pin"):
+    """(Asked BEFORE the old PIN is compared: a weak new PIN is not a wrong attempt.) A NEW or CHANGED PIN has to pass password_policy.check_pin (6 to 12 digits, no sequence, no repetition, no probable date, not a common one).
+    The PINs already saved are never looked at here: signing in only compares the hash (users.verify_pin). The message never carries the PIN."""
+    rule = password_policy.check_pin(pin if isinstance(pin, str) else (str(pin) if pin is not None else ""))
+    if rule:
+        raise _error(users.UserError("pin_policy", "the PIN does not meet the policy: " + rule, rule=rule, field=field))
+    return pin
 
 
 def _client(ctx):
@@ -134,21 +152,21 @@ def make_ops(store_of):
         name = _actor(ctx)
         if not name:
             raise ApiError("failed", M("users_err_not_logged_in"))
-        call(store().change_pin, name, args.get("old_pin"), args.get("new_pin"), _client(ctx))
+        call(store().change_pin, name, args.get("old_pin"), _new_pin(args.get("new_pin"), "new_pin"), _client(ctx))
         return {"changed": True}
 
     def users_list(args, ctx):
         st = store()
         return {"configured": st.configured(), "enabled": bool(st.get_settings().get("enabled", True)), "damaged": st.damaged,
                 "users": st.list(), "settings": st.get_settings(),
-                "roles": list(permissions.ROLES), "custom_roles": [r["name"] for r in st.role_source.list()] if st.role_source else [], "modes": list(permissions.MODES), "min_pin": users.MIN_PIN, "max_pin": users.MAX_PIN}
+                "roles": list(permissions.ROLES), "custom_roles": [r["name"] for r in st.role_source.list()] if st.role_source else [], "modes": list(permissions.MODES), "min_pin": password_policy.PIN_MIN_LEN, "max_pin": password_policy.PIN_MAX_LEN}
 
     def users_add(args, ctx):
         st = store()
         first = not st.configured() and not st.users  # roles switched off with people saved: nobody is "the first"
         if first and args.get("role") != permissions.ADMIN:
             raise ApiError("invalid_args", M("users_err_first_admin"), field="role")
-        rec = call(st.add, args.get("name"), args.get("pin"), args.get("role"), args.get("modes"), bool(args.get("camera_for_viewer")))
+        rec = call(st.add, args.get("name"), _new_pin(args.get("pin")), args.get("role"), args.get("modes"), bool(args.get("camera_for_viewer")))
         out = {"user": rec}
         if first:  # whoever creates the first administrator is that administrator from now on
             token, _ = call(st.login, rec["name"], args.get("pin"), _client(ctx), (ctx.get("http") or {}).get("device", ""))
@@ -163,7 +181,7 @@ def make_ops(store_of):
         return {"removed": call(store().remove, args.get("name"), _actor(ctx))}
 
     def users_reset_pin(args, ctx):
-        return {"user": call(store().reset_pin, args.get("name"), args.get("pin"))}
+        return {"user": call(store().reset_pin, args.get("name"), _new_pin(args.get("pin")))}
 
     def users_close_sessions(args, ctx):
         """Ends every session but the caller's own (so the administrator who asks stays in)."""
@@ -183,11 +201,10 @@ def make_ops(store_of):
         return {"enabled": bool(call(st.set_enabled, on, _actor(ctx), args.get("pin"), _client(ctx)).get("enabled", True))}
 
     d_name = "Name of the person (1 to 32 letters, digits, spaces, dots or hyphens)."
-    d_pin = "PIN: %d to %d digits." % (users.MIN_PIN, users.MAX_PIN)
     d_role = "viewer, operator, technician or admin, or the name of a custom role (roles.list)."
     d_modes = "Modes an operator may run: a list of laser, cnc, fff (default: only laser). Technicians and administrators have all."
     return [
-        Op("auth.login", login, WRITE, {"name": a(S, True, desc=d_name), "pin": a(S, True, desc=d_pin)},
+        Op("auth.login", login, WRITE, {"name": a(S, True, desc=d_name), "pin": a(S, True, desc=_D_PIN)},
            "Identifies a person. Answers a token to send in the header X-Workshop-Token (with an id of the browser in X-Workshop-Device). "
            "Too many wrong PINs lock the user for a while.", exclusive=False),
         Op("auth.logout", logout, WRITE, {}, "Ends the session of the token sent.", exclusive=False),
@@ -199,11 +216,11 @@ def make_ops(store_of):
            "Needs the local key; for a DWC session it is an administrator's operation.", log=False, exclusive=False),
         Op("auth.keepalive", keepalive, READ, {}, "The person is still there: postpones the expiry of the session (send on real use, at most once a minute).",
            log=False),
-        Op("auth.change_pin", change_pin, WRITE, {"old_pin": a(S, True, desc="Current PIN."), "new_pin": a(S, True, desc=d_pin)},
+        Op("auth.change_pin", change_pin, WRITE, {"old_pin": a(S, True, desc="Current PIN."), "new_pin": a(S, True, desc=_D_NEW_PIN)},
            "The logged in person changes their own PIN.", exclusive=False),
         Op("users.list", users_list, ADMIN, {}, "Lists the people with their role, modes and last activity, and the session settings."),
         Op("users.add", users_add, ADMIN,
-           {"name": a(S, True, desc=d_name), "pin": a(S, True, desc=d_pin), "role": a(S, True, desc=d_role),
+           {"name": a(S, True, desc=d_name), "pin": a(S, True, desc=_D_NEW_PIN), "role": a(S, True, desc=d_role),
             "modes": a(L, desc=d_modes), "camera_for_viewer": a(B, default=False, desc="A viewer sees the camera.")},
            "Adds a person. The first one created turns the identity on and has to be an administrator."),
         Op("users.set", users_set, ADMIN,
@@ -212,7 +229,7 @@ def make_ops(store_of):
            "Changes role, modes or camera of a person. Nobody changes their own role and the last administrator stays."),
         Op("users.remove", users_remove, ADMIN, {"name": a(S, True, desc="Person.")},
            "Removes a person and ends their sessions. Not yourself, not the last administrator."),
-        Op("users.reset_pin", users_reset_pin, ADMIN, {"name": a(S, True, desc="Person."), "pin": a(S, True, desc=d_pin)},
+        Op("users.reset_pin", users_reset_pin, ADMIN, {"name": a(S, True, desc="Person."), "pin": a(S, True, desc=_D_NEW_PIN)},
            "Sets a new PIN for a person and ends their sessions."),
         Op("users.close_sessions", users_close_sessions, ADMIN, {},
            "Ends the session of every person except the administrator who asks (sessions now survive a restart of the service, so this is how everybody "

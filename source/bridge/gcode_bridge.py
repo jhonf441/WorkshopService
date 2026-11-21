@@ -61,6 +61,7 @@ from bridge_pkg.clock import Clock, Timing  # noqa: F401
 from bridge_pkg.fsutil import Paths, SD_DIR, _remove_quiet, _sync_dir, ensure_action_file, read_json, write_json_atomic  # noqa: F401
 from bridge_pkg.textutil import first_token, format_response, mask, query_key, str_list  # noqa: F401
 from bridge_pkg.lines import (  # noqa: F401
+    AIR_MACRO_RE, AIR_OFF_LINE, AIR_OFF_RE, FOCUS_LOCK_REFUSED, FOCUS_MACRO_RE, FOCUS_RECOVERY_CODES, FOCUS_STOP_TEXT, FOCUS_UNLOCK_HINT, reply_failed,
     FAIL_REFUSE_S, FAIL_WATCH, GATED_CODES, M118_JOB_RE, MATERIAL_MACRO_RE, MAX_LINE, MOTION_CODES, NEEDS_HOMING_OK, NOOP_WITHOUT_PARAMS,
     QUERIES_DEFAULT, QUERY_GRAMMAR, QUERY_GRAMMAR_RE, STOPS_PASS, STOP_ENDS_JOB, TAINT_S, _PATH, is_query_line, m118_job_line,
     parse_job_command)

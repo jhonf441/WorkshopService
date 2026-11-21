@@ -829,6 +829,13 @@
  "auth_mode_fff": "FFF",
  "users_err_invalid_name": "El nombre debe tener de 1 a 32 letras, números, espacios, puntos o guiones",
  "users_err_pin_policy": "El PIN debe tener de {min} a {max} dígitos y no puede ser un solo dígito repetido",
+ "users_err_pin_digits": "El PIN solo lleva números (sin espacios ni letras).",
+ "users_err_pin_length": "El PIN debe tener de {min} a {max} dígitos.",
+ "users_err_pin_mismatch": "Los dos PIN no son iguales.",
+ "users_err_pin_common": "Es un PIN muy común: elige otro.",
+ "users_err_pin_repeated": "Repite un dígito o un bloque (111111, 121212, 123123): elige otro.",
+ "users_err_pin_sequence": "Es una secuencia de números seguidos (123456, 654321): elige otro.",
+ "users_err_pin_date": "Parece una fecha (por ejemplo un cumpleaños): elige otro.",
  "users_err_exists": "Ya existe una persona con ese nombre",
  "users_err_unknown_user": "No existe esa persona",
  "users_err_last_admin": "La máquina no puede quedar sin administrador",
@@ -1541,6 +1548,8 @@
  "machine_config_plan_machine_hook_edited": "El bloque de config.g que llama a machine.g fue editado: restáuralo o quítalo antes de crear algo nuevo",
  "machine_config_plan_machine_hook_broken": "El bloque de config.g que llama a machine.g tiene marcas sin pareja: arréglalo a mano antes de crear algo nuevo",
  "machine_config_plan_tool_exists_at": "Ya existe una herramienta con ese número ({field}): {file}, línea {line}",
+ "focus_guard_failed": "Foco no fijado: el trabajo se detuvo y se apagaron el láser y el aire. Revisa que haya material bajo la sonda y vuelve a medir.",
+ "focus_guard_risk": "Atención: foco no fijado. El láser y el aire se apagaron. Mide Z de nuevo o usa Foco aquí; hasta entonces el puente rechaza el movimiento, el láser y el aire de cualquier trabajo.",
  "machine_config_plan_led_exists": "Ya hay una tira con ese número ({field})",
  "machine_config_plan_led_exists_at": "Ya hay una tira con ese número ({field}): {file}, línea {line}"
 }

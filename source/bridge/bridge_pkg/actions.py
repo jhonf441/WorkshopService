@@ -86,6 +86,8 @@ class ActionsMixin:
             return self._action_restart()
         if kind in ("stop_safe", "resume_arm", "resume_disarm", "interrupted_discard"):
             return self._run_live_action(kind, a, seq)
+        if kind == "focus_unlock":
+            return self.unlock_focus_by_hand()
         if kind == "debug":
             return self._action_debug(a)
         if kind == "debug_extend":

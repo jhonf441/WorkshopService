@@ -10,6 +10,7 @@ import time
 
 import audit
 import heartbeats
+import job_layer_rules
 import pellet_layers as pl
 import settings_store
 from messages import M
@@ -59,6 +60,15 @@ def armed_profile():
     with _lock:
         run = _state["run"]
         return run.name if run is not None and not run.ended else None
+
+
+def armed_info():
+    """What is armed now, for job_layer_rules.build: {name, file, rules, at}, or None."""
+    with _lock:
+        run = _state["run"]
+        if run is None or run.ended:
+            return None
+        return {"name": run.name, "file": run.file, "rules": len(run.profile.get("points") or []), "at": run.armed_at}
 
 
 def disarm(who=None, record=None):
@@ -192,6 +202,7 @@ def run_loop(bridge, config):
             try:
                 import messages
                 bridge.set_status(KEY_STATE, messages.data(status()))
+                bridge.set_status(job_layer_rules.KEY, job_layer_rules.build(armed_info(), layer_recipes_run.armed_info()))  # the page "Job in progress" reads this one
             except Exception:  # noqa: BLE001 - the page can also ask pelletlayers.status
                 pass
             heartbeats.ok(LABEL)

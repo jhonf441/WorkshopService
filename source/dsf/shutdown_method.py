@@ -30,11 +30,13 @@ from messages import M
 METHODS = ("auto", "meter", "relay", "pson")
 
 
-def _state():
-    """state of the object model (None if it could not be read)."""
+def _state(whole=False):
+    """state of the object model (None if it could not be read). whole=True: the last whole model received, without waiting (None if there is none yet)."""
     try:
         import machine_state  # single subscription to DSF (no HTTP)
 
+        if whole:
+            return machine_state.last_state()
         return machine_state.get_status(timeout=5).get("state") or {}
     except Exception:
         return None
@@ -117,6 +119,22 @@ def info(config, status=None):
 _published = [None]
 
 
+def _declared(label):
+    """True / False: the object model says global.<label> exists / does not exist; None: the model is not known yet."""
+    try:
+        g = (_state(whole=True) or {}).get("global")
+    except Exception:
+        return None
+    return None if not isinstance(g, dict) else label in g
+
+
+def _send_quietly(bridge, line):
+    try:
+        bridge.send(line)
+    except Exception:
+        pass
+
+
 def emit(bridge, config, force=False):
     """Publishes the method (if it changed) in plugin data and in global.shutdownDesc /
     global.shutdownDescEn (English, for macros/power/shutdown-all.g)."""
@@ -131,15 +149,17 @@ def emit(bridge, config, force=False):
     # only desc (short: a long text in M291 may not fit); the notice goes in the bar
     for label, lang in (("shutdownDesc", "es"), ("shutdownDescEn", "en")):
         raw_text = i["desc"].text(lang).replace('"', '""')
-        # set fails (returns "Error: ... unknown variable") if the global does not exist
+        # set on a global that does not exist makes DCS write an ERROR with a trace in its log, so when the object model is known the right line goes first: set if the
+        # global is there, declare it if it is not. Without the model (the board has not answered yet) the old order stays: try set, declare when it fails.
+        known = _declared(label)
+        if known is False:
+            _send_quietly(bridge, f'global {label} = "{raw_text}"')
+            continue
         try:
             r = bridge.send(f'set global.{label} = "{raw_text}"')
             missing = board_reply.is_error(r)
         except Exception:
             missing = True  # depending on the version, the error arrives as an exception
-        if missing:
-            try:
-                bridge.send(f'global {label} = "{raw_text}"')
-            except Exception:
-                pass
+        if missing and known is None:
+            _send_quietly(bridge, f'global {label} = "{raw_text}"')
     return i

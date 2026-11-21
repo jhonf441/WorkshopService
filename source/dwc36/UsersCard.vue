@@ -28,7 +28,7 @@
 					<sv-text-field v-model="first.repeat" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin_repeat')" autocomplete="new-password" />
 					<template #act><v-btn color="primary" :loading="busy" :disabled="!firstValid" @click="createFirst">{{ $t('plugins.WorkshopService.users.create_admin') }}</v-btn></template>
 				</sv-form-row>
-				<div v-if="first.pin && first.repeat && first.pin !== first.repeat" class="text-caption warning--text mt-1">{{ $t('plugins.WorkshopService.users.pins_differ') }}</div>
+				<pin-rules :pin="first.pin" :repeat="first.repeat" />
 				<v-alert v-if="error" dense text type="error" class="mt-3 mb-0">{{ error }}</v-alert>
 			</v-card-text>
 		</v-card>
@@ -103,7 +103,8 @@
 							</sv-text-field>
 							<sv-text-field v-model="form.repeat" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin_repeat')" autocomplete="new-password" />
 						</sv-form-row>
-						<div class="text-caption grey--text mt-1 mb-3">{{ $t('plugins.WorkshopService.users.pin_help', { min: state.min_pin, max: state.max_pin }) }}</div>
+						<div class="text-caption grey--text mt-1">{{ $t('plugins.WorkshopService.users.pin_help', { min: state.min_pin, max: state.max_pin }) }}</div>
+						<pin-rules :pin="form.pin" :repeat="form.repeat" class="mb-3" />
 					</template>
 					<sv-select v-model="form.role" :items="roleItems" :label="$t('plugins.WorkshopService.users.role')" :disabled="form.edit && isMe({ name: form.name })" />
 					<div v-if="form.role === 'operator'">
@@ -132,6 +133,7 @@
 						<template #append><button type="button" class="sv-field-btn" :aria-label="showPins ? $t('plugins.WorkshopService.users.hide_pin') : $t('plugins.WorkshopService.users.show_pin')" @click="showPins = !showPins"><span class="mdi" :class="showPins ? 'mdi-eye-off' : 'mdi-eye'" aria-hidden="true" /></button></template>
 					</sv-text-field>
 					<sv-text-field v-model="pinForm.repeat" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin_repeat')" autocomplete="new-password" />
+					<pin-rules :pin="pinForm.pin" :repeat="pinForm.repeat" />
 					<div class="text-caption grey--text mt-2">{{ $t('plugins.WorkshopService.users.reset_help') }}</div>
 					<v-alert v-if="formError" dense text type="error" class="mt-3 mb-0">{{ formError }}</v-alert>
 				</v-card-text>
@@ -161,8 +163,8 @@ import SessionNotice from './SessionNotice.vue'
 import RoleChip from './RoleChip.vue'
 import UsersSessions from './UsersSessions.vue'
 import SvToggle from './ui/SvToggle.vue'
-
-const PIN_RE = /^[0-9]{4,12}$/;
+import PinRules from './PinRules.vue'
+import { pinBlocker } from './password-policy.js'
 
 function emptyForm() {
 	return { edit: false, name: '', pin: '', repeat: '', role: 'operator', modes: ['laser'], camera: false };
@@ -170,13 +172,13 @@ function emptyForm() {
 
 export default {
 	name: 'UsersCard',
-	components: { SvTextField, SvFormRow, SvSelect, SessionNotice, RoleChip, UsersSessions, SvToggle, SvUnsavedMark },
+	components: { SvTextField, SvFormRow, SvSelect, SessionNotice, RoleChip, UsersSessions, SvToggle, SvUnsavedMark, PinRules },
 	mixins: [roleMixin, unsavedMixin],
 	// the people, the sessions and every open form or dialog came from the session that left (ESTANDAR 3.3): emptied on sign-out / change of role
 	sessionData: ['state', 'showPins', 'first', 'form', 'dlg', 'pinForm', 'dlgPin', 'armed', 'busy', 'error', 'formError'],
 	data() {
 		return {
-			state: { configured: null, users: [], settings: {}, roles: [], custom_roles: [], modes: [], min_pin: 4, max_pin: 12 },
+			state: { configured: null, users: [], settings: {}, roles: [], custom_roles: [], modes: [], min_pin: 6, max_pin: 12 },
 			identity: currentIdentity(),
 			showPins: false, first: { name: '', pin: '', repeat: '' },
 			form: emptyForm(), dlg: false, formBase: null,
@@ -190,15 +192,15 @@ export default {
 		// one source of truth: the operation table of the service (users.list), as the rest of the page
 		isAdmin() { return !!this.identity && this.canDo('users.list'); },
 		roleItems() { return (this.state.roles || []).map(r => ({ value: r, text: this.roleName(r) })).concat((this.state.custom_roles || []).map(r => ({ value: r, text: r }))); },
-		firstValid() { return !!this.first.name.trim() && PIN_RE.test(this.first.pin) && this.first.pin === this.first.repeat; },
+		firstValid() { return !!this.first.name.trim() && !pinBlocker(this.first.pin, this.first.repeat); },
 		formValid() {
 			const f = this.form;
 			if (f.edit) return true;
-			return !!f.name.trim() && PIN_RE.test(f.pin) && f.pin === f.repeat;
+			return !!f.name.trim() && !pinBlocker(f.pin, f.repeat);
 		},
 		pinValid() {
 			const p = this.pinForm;
-			return PIN_RE.test(p.pin) && p.pin === p.repeat;
+			return !pinBlocker(p.pin, p.repeat);
 		}
 	},
 	created() { this._gen = 0; },

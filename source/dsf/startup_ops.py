@@ -61,6 +61,11 @@ def review_op():
        "again only when it changes again. Nothing on the SD is written; it only stores the decision in the service settings.", log=False)
 
 
+def install_runs(limit):
+    """The runs of the start-up for the System log card (journal_ops gets this function from api_ops, so it does not import the database itself)."""
+    return install_log.list_runs(limit)
+
+
 def build(ctx):
     a, S, I, B = Arg, "str", "int", "bool"
 

@@ -14,9 +14,15 @@
 			</li>
 		</ol>
 		<ul class="sv-how-rules" data-part="rules">
-			<li v-for="r in RULES" :key="r"><span class="mdi mdi-check-bold sv-ico sv-ico-s" aria-hidden="true" />{{ t('access_help.rule_' + r) }}</li>
+			<li v-for="r in RULES" :key="r"><span class="mdi mdi-check-bold sv-ico sv-ico-s" aria-hidden="true" /><span>{{ t('access_help.rule_' + r) }}</span></li>
 		</ul>
-		<p class="sv-chips sv-how-example" data-part="example"><span class="sv-chip-sm">{{ t('access_help.ex_person') }}</span> + <span class="sv-chip-sm">{{ t('access_help.ex_role') }}</span> + <span class="sv-chip-sm">{{ t('access_help.ex_profile') }}</span> + <span class="sv-chip-sm" data-kind="ceiling">{{ t('access_help.ex_ceiling') }}</span> = <b>{{ t('access_help.ex_result') }}</b></p>
+		<div class="sv-how-example" data-part="example">
+			<p><span class="sv-chip-sm" data-kind="label">{{ t('access_help.ex_label') }}</span> <span class="sv-quiet">{{ t('access_help.ex_intro') }}</span></p>
+			<ol class="sv-how-flow sv-how-ex" data-part="example-chips">
+				<li v-for="s in STEPS" :key="s" :data-step="s"><span class="sv-chip-sm" :data-kind="s === 'ceiling' ? 'ceiling' : null">{{ t('access_help.ex_' + (s === 'profiles' ? 'profile' : s)) }}</span></li>
+			</ol>
+			<p data-part="example-result"><b>{{ t('access_help.step_result') }}:</b> {{ t('access_help.ex_result_full') }}</p>
+		</div>
 		<div class="sv-how-terms" role="group" :aria-label="t('access_help.terms_label')" data-part="terms">
 			<button v-for="id in TERMS" :id="'sv-how-' + id" :key="id" type="button" class="sv-btn sv-how-term" :aria-expanded="open === id ? 'true' : 'false'" :aria-controls="'sv-how-d-' + id" @click="open = open === id ? '' : id"><span class="mdi sv-ico" :class="TERM_ICONS[id]" aria-hidden="true" />{{ t('access_help.term_' + id + '_name') }}</button>
 		</div>

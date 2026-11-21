@@ -341,7 +341,7 @@ def _ops():
         Op("state.get", _state_get, READ, {"keys": a(L, desc="Names of the data keys to return (for example motion, liveJob); empty returns every key.")},
            "Returns the data the service publishes in the object model (plugins.WorkshopService.data) from its memory; nothing is asked to the board.",
            log=False),
-        *health_history.ops(), *journal_ops.ops(),  # health.history, journal.read
+        *health_history.ops(), *journal_ops.ops(startup_ops.install_runs),  # health.history, journal.read
         *guard_api.ops(),  # protection guard (guard.status, guard.set)
         # activity
         Op("activity.log", H("log", {}, {"type": "T", "text": "N", "zone": "Z", "points": "P"}), WRITE,

@@ -40,12 +40,19 @@
 					<p v-else-if="e.owner" class="sv-value" data-part="control"><span class="mdi mdi-steering sv-ico" aria-hidden="true" />{{ e.owner }} · {{ ipOf(e.owner_id) }} · {{ tr('has_had_it_for_t_others_only_query', { t: dur(e.owner_since_s) }) }}</p>
 					<p v-else class="sv-value" data-part="control"><span class="mdi mdi-steering-off sv-ico" aria-hidden="true" />{{ tr('free') }} · {{ tr('the_first_connection_that_sends_a') }}</p>
 					<div v-if="e.exclusive && e.owner" class="sv-row-ctl"><button type="button" class="sv-btn" data-act="release" :disabled="!mayOrder || busy('release')" @click="order({ action: 'release' }, 'release')">{{ tr('release_control') }}</button></div>
+					<div v-if="e.focus_lock" class="sv-note" data-level="warn" role="alert" data-part="focus-lock">
+						<span class="mdi mdi-alert-outline sv-ico" aria-hidden="true" />
+						<span><b>{{ tr('focus_locked_title') }}</b> · {{ tr('focus_locked_text') }} <span class="sv-quiet">{{ tr('focus_locked_since', { t: dur(e.focus_lock.since_s) }) }}</span></span>
+						<button type="button" class="sv-btn sv-danger" :class="{ 'sv-armed': armed === 'focus_unlock' }" data-act="focus-unlock" :title="tr('focus_unlock_help')" :disabled="!mayOrder || busy('focus_unlock')" @click="unlockFocus">{{ tr(armed === 'focus_unlock' ? 'focus_unlock_confirm' : 'focus_unlock') }}</button>
+					</div>
 					<div class="sv-stats" data-part="figures">
 						<div class="sv-stat" data-stat="connected"><b>{{ e.clients.length }}<small v-if="sec"> / {{ sec.max_connections }}</small></b><span>{{ tr('connected_title') }} · {{ tr('n_since_it_started', { n: e.totals.connections }) }}</span></div>
 						<div class="sv-stat" data-stat="orders"><b>{{ num(e.totals.orders) }}</b><span>{{ tr('commands_title') }} · {{ tr('n_queries', { n: num(e.totals.queries) }, e.totals.queries) }}</span></div>
 						<div class="sv-stat" data-stat="rejected" :data-level="e.totals.rejects ? 'warn' : null"><b>{{ num(e.totals.rejects) }}</b><span>{{ tr('rejected_title') }}</span></div>
 						<div class="sv-stat" data-stat="response" :data-level="(e.duet_ms_max || 0) > 2000 ? 'warn' : null"><b>{{ e.duet_ms_avg != null ? Math.round(e.duet_ms_avg) + ' ms' : '–' }}</b><span>{{ tr('machine_response') }} · {{ tr('max_n_ms_5_min', { n: Math.round(e.duet_ms_max || 0) }) }}</span></div>
 						<div class="sv-stat" data-stat="traffic"><b>{{ bytes(e.totals.bytes_rx) }} ↓ {{ bytes(e.totals.bytes_tx) }} ↑</b><span>{{ tr('traffic') }}</span></div>
+						<div class="sv-stat" data-stat="skipped"><b>{{ num(e.totals.skipped_material || 0) }}</b><span>{{ tr('skipped_material_lines') }}</span></div>
+						<div v-if="e.totals.focus_failed" class="sv-stat" data-stat="focus-failed" data-level="warn"><b>{{ num(e.totals.focus_failed) }}</b><span>{{ tr('focus_failed_jobs') }}</span></div>
 						<div class="sv-stat" data-stat="errors" :data-level="e.totals.duet_errors ? 'warn' : null"><b>{{ e.totals.duet_errors }}</b><span>{{ tr('errors_title') }} · {{ tr('n_kicked', { n: e.totals.kicked || 0 }, e.totals.kicked || 0) }}</span></div>
 					</div>
 					<div v-if="e.history" class="sv-chart" data-part="chart">
@@ -233,6 +240,9 @@ export default {
 		toggleUnit() {
 			if (!this.unit) return
 			this.unitSwitch.run({ on: !this.unit.active })
+		},
+		unlockFocus() {
+			if (this.touch('focus_unlock')) this.order({ action: 'focus_unlock' }, 'focus_unlock')
 		},
 		restart() {
 			if (this.inUse) return

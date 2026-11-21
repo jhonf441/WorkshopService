@@ -23,7 +23,9 @@ export const RESULT_KEYS = {
 	ip_unblocked: 'unblocked_f',
 	restarting: 'restarting',
 	debug_on: 'debug_on',
-	debug_off: 'debug_off_2'
+	debug_off: 'debug_off_2',
+	focus_unlocked: 'focus_unlocked',
+	focus_not_locked: 'focus_not_locked'
 }
 
 const simple = (key) => (a, t) => t(key, a)

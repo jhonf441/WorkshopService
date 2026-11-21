@@ -829,6 +829,13 @@
  "auth_mode_fff": "FFF",
  "users_err_invalid_name": "The name must have 1 to 32 letters, digits, spaces, dots or hyphens",
  "users_err_pin_policy": "The PIN must have {min} to {max} digits and cannot be one repeated digit",
+ "users_err_pin_digits": "The PIN has digits only (no spaces or letters).",
+ "users_err_pin_length": "The PIN must have {min} to {max} digits.",
+ "users_err_pin_mismatch": "The two PINs are not the same.",
+ "users_err_pin_common": "This PIN is very common: choose another.",
+ "users_err_pin_repeated": "It repeats one digit or a block (111111, 121212, 123123): choose another.",
+ "users_err_pin_sequence": "It is a run of consecutive numbers (123456, 654321): choose another.",
+ "users_err_pin_date": "It looks like a date (a birthday, for example): choose another.",
  "users_err_exists": "There is already a person with that name",
  "users_err_unknown_user": "There is no such person",
  "users_err_last_admin": "The machine cannot be left without an administrator",
@@ -1541,6 +1548,8 @@
  "machine_config_plan_machine_hook_edited": "The block of config.g that calls machine.g was edited: restore it or remove it before creating anything new",
  "machine_config_plan_machine_hook_broken": "The block of config.g that calls machine.g has markers without a pair: fix it by hand before creating anything new",
  "machine_config_plan_tool_exists_at": "A tool with that number already exists ({field}): {file}, line {line}",
+ "focus_guard_failed": "Focus not set: the job was stopped and the laser and the air were turned off. Check there is material under the probe and measure again.",
+ "focus_guard_risk": "Attention: focus not set. The laser and the air were turned off. Measure Z again or use Focus here; until then the bridge refuses the movement, the laser and the air of any job.",
  "machine_config_plan_led_exists": "A strip with that number already exists ({field})",
  "machine_config_plan_led_exists_at": "A strip with that number already exists ({field}): {file}, line {line}"
 }

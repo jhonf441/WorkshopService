@@ -27,7 +27,7 @@ _LAYERS = {
     "L1": (
         "publisher", "machine_state", "listener_channel", "communication", "db", "db_dates", "db_schema", "db_conn", "audit_chain", "audit_store", "audit_settings", "config_store", "settings_store", "service_settings", "users", "role_store", "api_keys",
         "bridge_contract", "real_mode", "cpu_meter", "capabilities", "capabilities_io", "machine_profile", "work_state",
-        "sd_manifest", "native_merge", "health_history", "journal_view", "install_log", "published_texts", "gcode_temps", "tuya_meter",
+        "sd_manifest", "native_merge", "health_history", "journal_view", "log_sources", "process_meter", "install_log", "published_texts", "gcode_temps", "tuya_meter",
         "bed_zones_mirror", "laser_correction", "focus_geometry", "lights_config", "gcodelib_files", "gcodelib_kind", "gcodelib_thumb",
     ),
     "L2": (
@@ -35,7 +35,7 @@ _LAYERS = {
         "stopped_plugins", "origin_track", "lights_counters", "service_context", "process_registry",
     ),
     "L3": (
-        "motion_owner", "laser_guard", "interlocks", "protection_guard", "guard_probes", "risk_rules", "config_guard",
+        "motion_owner", "laser_guard", "focus_guard", "interlocks", "protection_guard", "guard_probes", "risk_rules", "config_guard",
         "intercept_watchdog",
     ),
     "L4": (
@@ -67,7 +67,7 @@ _LAYERS = {
         "pid_trace", "handlers/pid_zones", "handlers/config",
         # printing (zones, pellet, recipes, G-code library)
         "bed_estimates", "bed_zones", "bed_zones_config", "bed_zones_geometry", "bed_zones_intercept", "layer_recipes",
-        "layer_recipes_file", "layer_recipes_plan", "layer_recipes_preview", "layer_recipes_run", "layer_recipes_state",
+        "layer_recipes_file", "layer_recipes_plan", "layer_recipes_preview", "layer_recipes_run", "layer_recipes_state", "job_layer_rules",
         "pellet_layers", "pellet_layers_run", "gcode_plan", "gcodelib_cache", "gcodelib_indexer", "gcodelib_parse",
         "gcodelib_samples", "zones_history",
         # activity and notices
@@ -112,7 +112,7 @@ _FEATURES = {
                 "machine_verify", "machine_workarea", "pid_trace", "handlers/pid_zones", "handlers/config"),
     "printing": ("bed_estimates", "bed_zones", "bed_zones_config", "bed_zones_geometry", "bed_zones_intercept", "layer_recipes",
                  "layer_recipes_file", "layer_recipes_plan", "layer_recipes_preview", "layer_recipes_run",
-                 "layer_recipes_state", "pellet_layers", "pellet_layers_run", "gcode_plan", "jobs_preview", "gcodelib_cache",
+                 "layer_recipes_state", "job_layer_rules", "pellet_layers", "pellet_layers_run", "gcode_plan", "jobs_preview", "gcodelib_cache",
                  "gcodelib_indexer", "gcodelib_parse", "gcodelib_samples", "zones_history"),
     "activity": ("activity", "event_watcher", "notifier", "extra_commands", "db_backup", "activity_history",
                  "db_admin", "black_box_view", "commands_history", "handlers/log", "notifications_config",

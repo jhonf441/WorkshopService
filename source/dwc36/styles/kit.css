@@ -5,8 +5,8 @@
 .sv-page { color: var(--sv-text); font-size: var(--sv-f-body); line-height: 1.4; }
 .sv-page *, .sv-page *::before, .sv-page *::after { box-sizing: border-box; }
 .sv-page button, .sv-page input, .sv-page select { font: inherit; color: inherit; }
-.sv-page :is(h1, h2, h3, p, ul, dl, dd) { margin: 0; padding: 0; }
-.sv-page ul { list-style: none; }
+.sv-page :is(h1, h2, h3, p, ul, ol, dl, dd) { margin: 0; padding: 0; }
+.sv-page :is(ul, ol) { list-style: none; }
 .sv-page :focus-visible { outline: 2px solid var(--sv-focus); outline-offset: 2px; border-radius: 4px; }
 /* the same ring on everything that is touched, whatever DWC or the browser say for links and buttons */
 .v-application .sv-page a:focus-visible, .v-application .sv-page button:focus-visible, .v-application .sv-page [tabindex]:focus-visible { outline: 2px solid var(--sv-focus) !important; outline-offset: 2px !important; }
@@ -660,16 +660,23 @@ span.sv-chip:hover { background: transparent; }
 
 /* How access works (card at the top of Access) */
 .sv-how > summary { display: flex; align-items: center; gap: 8px; min-height: var(--sv-touch); font-weight: 600; cursor: pointer; }
-.sv-how-flow { display: flex; gap: 24px; margin: 8px 0; }
+.sv-page .sv-how > * + * { margin-top: var(--sv-s4); }
+.sv-page .sv-how > summary + p { margin-top: var(--sv-s2); }
+.sv-page .sv-how-example > * + * { margin-top: var(--sv-s3); }
+.sv-how-flow { display: flex; gap: 24px; }
+.sv-how-ex > li { flex: 1 1 0; min-width: 0; padding-left: var(--sv-s4); }
 .sv-how-node { position: relative; flex: 1 1 0; display: flex; flex-direction: column; padding: 12px 36px 12px 12px; border: 1px solid var(--wf-line); border-left: 4px solid var(--wf-accent); border-radius: 8px; }
 .sv-how-node + .sv-how-node::before { content: '\2192'; position: absolute; left: -22px; top: 50%; }
 .sv-how-node[data-step='ceiling'] { border-left-color: var(--wf-c-warning); }
 .sv-how-node[data-step='result'] { border-left-color: var(--wf-c-success); }
 .sv-how-n { position: absolute; top: 8px; right: 10px; font-weight: 600; }
 .sv-page[data-w='s'] .sv-how-flow { flex-direction: column; }
+.sv-page[data-w='s'] .sv-how-ex { gap: var(--sv-s2); }
 .sv-page[data-w='s'] .sv-how-node + .sv-how-node::before { content: '\2193'; left: 50%; top: -20px; }
-.sv-how-rules { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 12px 0; padding: 8px 12px; border-radius: 8px; background: var(--wf-c-info-bg); }
-.sv-how-terms { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.sv-page .sv-how-rules { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sv-s3) var(--sv-s4); padding: var(--sv-s3) var(--sv-s4); border-radius: 8px; background: var(--wf-c-info-bg); }
+.sv-how-rules li { display: flex; align-items: baseline; gap: var(--sv-s2); }
+.sv-page[data-w='s'] .sv-how-rules { grid-template-columns: 1fr; }
+.sv-how-terms { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sv-s3); }
 .sv-how-term[aria-expanded='true'] { border-color: var(--wf-accent); }
 .sv-purpose { margin: 8px 0; }
 .sv-term-help { min-width: var(--sv-touch); min-height: var(--sv-touch); }

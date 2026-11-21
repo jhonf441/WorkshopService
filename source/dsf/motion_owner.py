@@ -467,6 +467,23 @@ def homing_needed():
         return False
 
 
+def focus_state(model):
+    """{ok, run, fail} of the focus macros of the machine (global.workshopFocusOk: true only when the laser focus was set and verified; global.workshopFocusRun: how many
+    attempts there were since the board started; global.workshopFocusFail: how many of them the macro itself declared failed just before aborting), or None when no
+    macro declared them (a machine that never ran one). The bridge reads it after each macro of a live job; focus_guard.py watches `fail`."""
+    try:
+        g = (model or {}).get("global") or {}
+        ok, run, fail = g.get("workshopFocusOk"), g.get("workshopFocusRun"), g.get("workshopFocusFail")
+        if ok is None and run is None and fail is None:
+            return None
+
+        def count(v):
+            return int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+        return {"ok": ok if isinstance(ok, bool) else None, "run": count(run), "fail": count(fail)}
+    except Exception:
+        return None
+
+
 def snapshot(bridge):
     """What is published (no ages that change every second)."""
     st = base_state(bridge)
@@ -476,9 +493,15 @@ def snapshot(bridge):
         owners = [{"origin": r["origin"], "action": r["action"], "text": r["text"], "name": r.get("user", ""),
                    "device": r.get("device", "")[:8], "since": int(r.get("since") or 0),
                    "until_s": int(r["until"] - time.monotonic())} for r in res]
+    model = None
+    jog_move = None
     try:
-        import jog_move
-        if jog_move.gesture_active():
+        import machine_state, jog_move    # one statement: the model is read here too (the focus flag, below); machine_state is bound even where jog_move cannot load (a PC without the DSF library)
+    except Exception:
+        pass
+    try:
+        model = machine_state.last_state()
+        if jog_move is not None and jog_move.gesture_active():
             owners.append({"origin": "jog", "action": "move", "text": "", "until_s": 1})
     except Exception:
         pass
@@ -492,7 +515,7 @@ def snapshot(bridge):
             "owner": owners[0] if owners else None, "notice": _notice_now(),
             "job": {"kind": j.get("kind"), "name": j.get("name")},
             "bridge": {"clients": _bridge_clients(), "active": st["state"] == "bridge_active"},
-            "status": st.get("status"), "needs_homing": homing_needed(), "v": 1,
+            "status": st.get("status"), "needs_homing": homing_needed(), "focus": focus_state(model), "v": 1,
             "settings": {"mode": settings()[0], "release_s": settings()[1], "idle_s": _idle_s()}}
 
 

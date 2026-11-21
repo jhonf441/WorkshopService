@@ -36,8 +36,15 @@ def is_query_line(line, allowed):
 MAX_LINE = 1024
 # G0/G1 without parameters is an automatic "ping" of some programs: answered ok locally.
 NOOP_WITHOUT_PARAMS = {"G0", "G1"}
-# The M98 lines a program carries to prepare the material (focus, origin, live-job mark): the zone macros in macros/laser and the two helpers they call.
-MATERIAL_MACRO_RE = re.compile(r'^\s*M98\s+P\s*"?(?:[^"\s]*/macros/laser/|[^"\s]*/(?:laserfocus|livemark)\.g)', re.IGNORECASE)
+# The M98 lines a program carries to prepare the material (focus, origin, live-job mark): the zone macros in macros/laser and the two helpers they call. The Duet reads
+# `M98P"x"` like `M98 P"x"`, in any case and with or without `0:/`; air on / air off live in macros/laser too but are NEVER material macros (see AIR_MACRO_RE): skipping
+# them would leave the pump on or off behind the program's back.
+_PATH_HEAD = r'^\s*M98\s*P\s*"?'
+_DIR = r'(?:[^"\s]*[/\\])?'    # an optional folder (with or without 0:/ or a drive), slash or backslash
+AIR_MACRO_RE = re.compile(_PATH_HEAD + _DIR + r'air[_-]?(?:on|off)[A-Za-z0-9_-]*\.g', re.IGNORECASE)
+AIR_OFF_RE = re.compile(_PATH_HEAD + _DIR + r'air[_-]?off[A-Za-z0-9_-]*\.g', re.IGNORECASE)
+MATERIAL_MACRO_RE = re.compile(_PATH_HEAD + r'(?!' + _DIR + r'air[_-]?(?:on|off)[A-Za-z0-9_-]*\.g)(?:' + _DIR + r'macros[/\\]laser[/\\]|' + _DIR + r'(?:laserfocus|livemark)\.g)', re.IGNORECASE)
+AIR_OFF_LINE = 'M98 P"0:/macros/laser/airoff.g"'    # what the bridge sends itself when the focus is not set (the machine of this workshop; another one answers an error, harmless)
 # Codes that mean "the machine may be moving or about to move".
 MOTION_CODES = {"G0", "G1", "G2", "G3", "G5", "G28", "G29", "G30", "G32", "G38",
                 "M3", "M4", "M5", "M24", "M32", "M98"}
@@ -61,6 +68,26 @@ TAINT_S = 30.0
 FAIL_WATCH = {"M98", "G30", "M280", "M401", "M402"}
 STOPS_PASS = {"M5", "M0", "M25", "M112", "M999"}
 FAIL_REFUSE_S = 120.0
+# The focus of the laser was not set (the macro that sets it failed or was aborted, see global.workshopFocusOk in the machine): from then on the bridge refuses the
+# movement of the work, the laser, the air and the power of ANY job until a focus is set well (the flag is true again: Measure Z or Focus here) or the person
+# unlocks it on purpose (BRIDGE action focus_unlock). The stops, the air off and the macros that set the focus still pass.
+FOCUS_LOCK_REFUSED = {"G0", "G1", "G2", "G3", "G5", "M3", "M4", "M7", "M8", "M42", "M106"}
+FOCUS_RECOVERY_CODES = {"G28", "G29", "G30", "G38", "M280", "M401", "M402"}
+FOCUS_MACRO_RE = re.compile(_PATH_HEAD + _DIR + r'(?:laserfocus|focushere|zmeasure)[A-Za-z0-9_-]*\.g', re.IGNORECASE)
+FOCUS_UNLOCK_HINT = ("Measure Z again or use Focus here; until then the flow stays stopped. / Mide Z de nuevo o usa Foco aqui; hasta entonces el flujo queda detenido.")
+FOCUS_STOP_TEXT = ("Error: the flow was stopped: the focus was not set (the Z probe touched nothing or the focus macro was aborted). The laser and the air were turned off. "
+                   + FOCUS_UNLOCK_HINT + " / Se detuvo el flujo: no se fijo el foco. Se apagaron el laser y el aire. Deten el trabajo en tu software.")
+
+
+def reply_failed(text):
+    """The first line of a reply that says an order failed, or None. It does not depend on the reply starting with "Error": what the machine prints for a macro that
+    aborts or a probe that does not trigger can come as `[error] M280: Probe was not triggered during probing move`, `Aborted macro file ...`, or after other lines."""
+    for line in str(text or "").splitlines():
+        low = line.strip().lower()
+        if (low.startswith(("error", "[error]", "abort")) or "error:" in low or "aborted macro" in low or "was not triggered" in low
+                or "probe was not" in low or "macro aborted" in low):
+            return line.strip()
+    return None
 
 
 M118_JOB_RE = re.compile(r'^M118\s+(?:.*?\s)?S\s*"\s*(BRIDGE\s+JOB(?:\s[^"]*)?)"', re.IGNORECASE)

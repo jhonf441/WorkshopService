@@ -10,7 +10,8 @@
 			<p v-else-if="hint" class="sv-hint" role="note" data-part="port-hint">{{ hint }}</p>
 			<label class="sv-check"><input v-model="config.exclusive" type="checkbox" :disabled="!mayEdit"><span>{{ tr('a_single_connection_with_control') }}</span></label>
 			<label class="sv-check"><input v-model="config.extended_greeting" type="checkbox" :disabled="!mayEdit"><span>{{ tr('greeting_with_help_on_connect') }}</span></label>
-			<label class="sv-check"><input v-model="config.skip_material_macro" type="checkbox" :disabled="!mayEdit"><span>{{ tr('skip_material_gcode') }}</span></label>
+			<label class="sv-check"><input v-model="config.skip_material_macro" type="checkbox" :disabled="!mayEdit"><span>{{ tr('skip_material_gcode') }}: <b data-part="skip-state">{{ tr(config.skip_material_macro ? 'skip_material_yes' : 'skip_material_no') }}</b></span></label>
+			<p class="sv-hint" data-part="skip-help">{{ tr('skip_material_what') }} {{ tr(config.skip_material_macro ? 'skip_material_on' : 'skip_material_off') }}</p>
 			<p class="sv-hint">{{ tr('changing_the_port_does_not_cut') }} {{ tr('ports_below_1024_need') }} <code class="sv-code">install.sh</code>.</p>
 
 			<span class="sv-label">{{ tr('names_by_ip') }}</span>

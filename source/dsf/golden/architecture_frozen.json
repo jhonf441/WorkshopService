@@ -127,7 +127,7 @@
  },
  "function_lines": {
   "api_ops::_ops": 446,
-  "api_users::make_ops": 165,
+  "api_users::make_ops": 164,
   "camera_assembly::tl_arm": 117,
   "gcode_plan::arm": 201,
   "health_poller::run_loop": 192,

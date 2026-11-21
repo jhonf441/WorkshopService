@@ -73,6 +73,16 @@ def armed_recipe():
         return run.name if run is not None and not run.ended else None
 
 
+def armed_info():
+    """What is armed now, for job_layer_rules.build: {name, file, rules (the layer points of all its tracks), at}, or None."""
+    with _lock:
+        run = _state["run"]
+        if run is None or run.ended:
+            return None
+        points = sum(len(t.get("points") or []) for t in run.recipe["tracks"].values() if t)
+        return {"name": run.name, "file": run.file, "rules": points, "at": run.armed_at}
+
+
 def armed_extruder():
     """True while an armed recipe has an extruder track (pelletlayers.arm refuses then)."""
     with _lock:

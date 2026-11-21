@@ -43,6 +43,7 @@ import activity
 import cpu_meter
 import health_history
 import machine_state
+import process_meter
 import service_log
 from messages import M, J, B, Msg
 
@@ -261,6 +262,41 @@ def read_dcs():
         return {"pid": pid, "fds": len(os.listdir(f"/proc/{pid}/fd"))}
     except Exception:
         return None
+
+
+# Programs whose CPU and memory the page shows: id of the row -> systemd unit. CPU is the unit's own systemd counter (also for the bridge, which runs as
+# another user) and the memory is read from `statm` only: nothing here makes the AppArmor profile of the service deny a ptrace (see process_meter.py).
+# The plugin service's CPU includes the plugins it runs (this service among them).
+MEASURED_UNITS = (("dcs", "duetcontrolserver"), ("dws", "duetwebserver"), ("dps", "duetpluginservice"), ("bridge", "workshop-gcode-bridge"))
+_process_meter = process_meter.ProcessMeter()
+_unit_cpu = process_meter.UnitCpuMeter()
+
+
+def unit_stats(units):
+    """{unit: {"pid": MainPID, "cpu_ns": CPUUsageNSec or None}} from ONE `systemctl show`; a unit that is not running (MainPID 0) is left out; {} when systemd
+    does not answer. The output is read block by block: systemctl prints the properties in ITS order (MainPID before Id), not the order asked for."""
+    out = _sh(["systemctl", "show", "-p", "Id", "-p", "MainPID", "-p", "CPUUsageNSec", *units]) or ""
+    stats = {}
+    for block in out.replace("\r", "").split("\n\n"):
+        props = dict(line.partition("=")[::2] for line in block.splitlines() if "=" in line)
+        unit, pid, ns = props.get("Id", ""), props.get("MainPID", ""), props.get("CPUUsageNSec", "")
+        unit = unit[:-8] if unit.endswith(".service") else unit
+        if unit and pid.isdigit() and int(pid) > 0:
+            stats[unit] = {"pid": int(pid), "cpu_ns": int(ns) if ns.isdigit() else None}
+    return stats
+
+
+def read_processes():
+    """[{"id", "pid", "cpu_pct", "rss_mb", "threads"?}]: this service itself (its own files) and each running unit of MEASURED_UNITS. rss_mb is None when it cannot be read."""
+    stats = unit_stats([u for _, u in MEASURED_UNITS])
+    rows = [dict(_process_meter.read(os.getpid()), id="service")]
+    for name, unit in MEASURED_UNITS:
+        st = stats.get(unit)
+        if st:
+            rows.append({"id": name, "pid": st["pid"], "cpu_pct": _unit_cpu.sample(unit, st["cpu_ns"]), "rss_mb": _process_meter.rss_mb(st["pid"])})
+        else:
+            _unit_cpu.sample(unit, None)  # a unit that is not running forgets its last reading
+    return rows
 
 
 def read_services():
@@ -667,7 +703,7 @@ def run_loop(bridge, config):
                 # service database (only if it exists; measured every 5 min)
                 "base": base_state,
                 "disk": disk,
-                "dcs": dcs,
+                "dcs": dcs, "processes": read_processes(),
                 "thresholds": cfg,
             }
             # DCS load: the cycle (local reads, alerts) keeps its pace, but the plugin data

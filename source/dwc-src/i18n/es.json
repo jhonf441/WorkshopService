@@ -1445,6 +1445,7 @@
 		"eventlog_reactivated": "El registro de eventos de RRF (eventlog.txt) estaba apagado: se reactivó",
 		"extra_commands_description": "Pasa al historial de comandos recibidos lo que anotan otros plugins (por ejemplo RS485), cada pocos segundos.",
 		"extra_commands_title": "Comandos de otros plugins",
+		"focus_guard_failed": "Foco no fijado: el trabajo se detuvo y se apagaron el láser y el aire. Revisa que haya material bajo la sonda y vuelve a medir.",
 		"guard_armed": "Vuelta atrás armada por {sec} s (respaldo {snapshot})",
 		"guard_board_halted": "La placa quedó detenida (halted) después de reiniciar",
 		"guard_board_not_back": "La placa no volvió a conectarse después de reiniciar",

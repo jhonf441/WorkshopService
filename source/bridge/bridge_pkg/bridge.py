@@ -70,6 +70,8 @@ class Bridge(SecurityMixin, LiveJobMixin, CommandsMixin, DebugMixin, ActionsMixi
         self.pending_orders = 0
         self.last_order_wall = None
         self.last_motion_wall = None
+        self.focus_lock = None             # {"since", "why"} while a declared focus failure is not solved (see focus_watch); only a good focus or the person lifts it
+        self.focus_fail_seen = None        # the failure counter of the machine at the last look
         self.live_job = {"active": False, "name": None, "since": None, "client": None,
                          "last_event_at": None, "ended_at": None, "end_reason": None}
         self.queries = QueryService(self)

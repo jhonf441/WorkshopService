@@ -102,7 +102,7 @@ Writer: the page (browser, through the DSF file API) or the service (`live_job_s
 * Actions, by owner. The service only sends the first four; the page sends all of them:
   `stop_safe`, `resume_arm`, `resume_disarm`, `interrupted_discard` (live stop and resume, `live_stop.py`);
   `debug`, `debug_extend`, `restart` (refused while a live job runs or an order arrived in the last 30 s),
-  `kick`, `rename`, `give_control`, `release`, `trust`, `block`, `unblock`, `set_password`, `clear_password`.
+  `focus_unlock` (lifts the focus block by hand, logged as a security event), `kick`, `rename`, `give_control`, `release`, `trust`, `block`, `unblock`, `set_password`, `clear_password`.
   The old Spanish action names of an old page still work (pinned by `test_old_spanish_actions_from_an_old_page_still_work`).
 * `stop_safe`: if the laser-off order fails the stop is NOT done and the job keeps running (answer `ok: false` with the reason).
 
