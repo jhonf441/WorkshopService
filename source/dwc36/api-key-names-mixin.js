@@ -15,6 +15,18 @@ export function normPatterns(v) {
 	return Array.isArray(v) ? [...new Set(v.map(x => String(x).trim().toLowerCase()).filter(Boolean))] : list(v)
 }
 
+// "Valid for (days)" of the key dialog: '' = no change / does not expire; a whole number of days from 1 to 3650 (0 only when editing: it removes the expiry,
+// as keys.update says). Returns '' when fine, else 'range'. The service checks it again (dsf/api_keys.py).
+export const MAX_DAYS = 3650
+export function daysProblem(v, editing) {
+	if (v === '' || v === null || v === undefined) return ''
+	const s = String(v).trim()
+	if (s === '') return ''
+	if (!/^\d+$/.test(s)) return 'range'
+	const n = Number(s)
+	return n > MAX_DAYS || n < (editing ? 0 : 1) ? 'range' : ''
+}
+
 export const keyNamesMixin = {
 	methods: {
 		nameClass(c) { return this.$t('plugins.WorkshopService.' + classKey(c)) },

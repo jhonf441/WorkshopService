@@ -41,24 +41,18 @@
 						<v-card v-if="draft" outlined class="roles-draft mb-3">
 							<v-card-text>
 								<h3 class="roles-h">{{ draft.isNew ? r('form_new_title') : r('form_edit_title', { name: draft.name }) }}</h3>
-								<v-row dense align="start" class="roles-form-row">
-									<v-col cols="12" sm="4">
-										<wf-field id="roles-name" :label="r('field_name')">
-											<sv-text-field id="roles-name" v-model="draft.name" :disabled="!draft.isNew" maxlength="32" autocomplete="off" :aria-label="r('field_name')" />
-										</wf-field>
-									</v-col>
-									<v-col cols="12" sm="4">
-										<wf-field id="roles-base" :label="r('field_base')">
-											<template #help><help-tip :title="r('field_base')" :what="r('help_base_what')" :why="r('help_base_why')" :how="r('help_base_how')" /></template>
-											<sv-select id="roles-base" v-model="draft.base" :items="baseItems" :aria-label="r('field_base')" />
-										</wf-field>
-									</v-col>
-									<v-col cols="12" sm="4">
-										<wf-field id="roles-desc" :label="r('field_description')">
-											<sv-text-field id="roles-desc" v-model="draft.description" :maxlength="list.limits.description" autocomplete="off" :aria-label="r('field_description')" />
-										</wf-field>
-									</v-col>
-								</v-row>
+								<sv-form-row>
+									<wf-field id="roles-name" :label="r('field_name')">
+										<sv-text-field id="roles-name" v-model="draft.name" :disabled="!draft.isNew" maxlength="32" autocomplete="off" :aria-label="r('field_name')" />
+									</wf-field>
+									<wf-field id="roles-base" :label="r('field_base')">
+										<template #help><help-tip :title="r('field_base')" :what="r('help_base_what')" :why="r('help_base_why')" :how="r('help_base_how')" /></template>
+										<sv-select id="roles-base" v-model="draft.base" :items="baseItems" :aria-label="r('field_base')" />
+									</wf-field>
+									<wf-field id="roles-desc" :label="r('field_description')">
+										<sv-text-field id="roles-desc" v-model="draft.description" :maxlength="list.limits.description" autocomplete="off" :aria-label="r('field_description')" />
+									</wf-field>
+								</sv-form-row>
 								<div v-if="foreign.length" class="wf-help mt-2">{{ r('foreign_kept', { n: foreign.length }, foreign.length) }}</div>
 
 								<h3 class="roles-h mt-3">{{ r('diff_title') }}</h3>
@@ -78,10 +72,11 @@
 								</div>
 
 								<div class="wf-actions">
-									<v-btn small :color="armedApply ? 'amber darken-3' : 'primary'" :loading="busy" :disabled="!canApply" @click="apply">
+									<sv-unsaved-mark :show="hasUnsaved" />
+									<v-btn small :color="armedApply ? 'amber darken-3' : 'primary'" :class="{ 'sv-save-hot': hasUnsaved }" :loading="busy" :disabled="!canApply" @click="apply">
 										<v-icon left small>mdi-content-save-outline</v-icon>{{ armedApply ? r('apply_armed') : r('apply') }}
 									</v-btn>
-									<v-btn small text :disabled="busy" @click="discard">{{ $t('plugins.WorkshopService.common.cancel') }}</v-btn>
+									<v-btn small text :disabled="busy" @click="leaveWith(discard)">{{ $t('plugins.WorkshopService.common.cancel') }}</v-btn>
 									<span v-if="!canApply && !busy" class="wf-help">{{ applyBlock }}</span>
 								</div>
 							</v-card-text>
@@ -102,9 +97,13 @@
 'use strict'
 
 import SvTextField from './ui/SvTextField.vue'
+import SvFormRow from './ui/SvFormRow.vue'
 import SvSelect from './ui/SvSelect.vue'
 import { api, currentIdentity, onIdentity, whoami } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js'
+import SvUnsavedMark from './ui/SvUnsavedMark.vue'
+import { unsavedMixin } from './ui/unsaved-mixin.js'
+import { snapshot } from './ui/unsaved-guard.js'
 import HelpGuide from './HelpGuide.vue'
 import HelpTip from './HelpTip.vue'
 import LockReason from './LockReason.vue'
@@ -119,8 +118,8 @@ const NAME_RE = /^[\w .\-]{1,32}$/
 
 export default {
 	name: 'RolesCard',
-	components: { SvTextField, SvSelect, AccessTermHelp, HelpGuide, HelpTip, LockReason, WfField, RolesMatrix },
-	mixins: [roleMixin],
+	components: { SvTextField, SvFormRow, SvSelect, AccessTermHelp, HelpGuide, HelpTip, LockReason, WfField, RolesMatrix, SvUnsavedMark },
+	mixins: [roleMixin, unsavedMixin],
 	// everything here came from the administrator who was signed in: emptied on sign-out and on a change of role (ESTANDAR 3.3)
 	sessionData: ['list', 'tallies', 'draft', 'error', 'formError', 'msg', 'armedApply', 'armedDelete'],
 	data() {
@@ -238,6 +237,21 @@ export default {
 			const next = toggle(cap, this.draft, this.tallies)
 			this.draft = Object.assign({}, this.draft, { grant: next.grant, deny: next.deny })
 		},
+		// unsaved changes (unsaved-mixin.js): the role being edited has its own comparison with what is saved (dirty)
+		unsavedPair() {
+			return [this.dirty, false]
+		},
+		// "Save and leave": the two touches of Apply happen here (the dialog of unsaved changes is the confirmation)
+		async saveBeforeLeaving() {
+			if (!this.canApply) return false
+			this.armedApply = true
+			await this.apply()
+			return !this.dirty
+		},
+		discardUnsaved() {
+			this.draft = null
+			this.armedApply = false
+		},
 		async apply() {
 			if (!this.canApply) return
 			if (!this.armedApply) {
@@ -286,9 +300,6 @@ export default {
 /* The own roles card: only what is its own (prefix roles-); the matrix has its own file */
 .roles-concepts { display: flex; flex-wrap: wrap; gap: 8px; }
 .roles-concept { display: inline-flex; align-items: center; gap: 2px; padding: 0 2px 0 12px; border: 1px solid var(--wf-line-strong); border-radius: 999px; font-size: 13px; font-weight: 500; }
-.roles-form-row .wf-field-label, .roles-form-row label { min-height: 28px; display: flex; align-items: center; }
-.roles-form-row .v-input__control { min-height: 44px; }
-.roles-form-row .v-input__slot { min-height: 44px !important; align-items: center; }
 .roles-h { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
 .roles-diff { margin: 0; padding-left: 18px; font-size: 13px; }
 .roles-diff li { margin-bottom: 4px; }

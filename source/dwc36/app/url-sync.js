@@ -20,11 +20,13 @@ function apply(place) {
 	pageState.section = place.s
 	pageState.tab = place.t
 	pageState.anchor = place.a
+	pageState.filter = place.f || ''
 	return place
 }
 
 export function currentPlace() {
-	return { s: pageState.section, t: pageState.tab, a: pageState.anchor }
+	const here = { s: pageState.section, t: pageState.tab, a: pageState.anchor }
+	return pageState.filter ? Object.assign(here, { f: pageState.filter }) : here
 }
 
 export function readPlace() {

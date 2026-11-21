@@ -5,7 +5,7 @@
 //
 //   active    the page is the visible route of DWC (keep-alive: the page is not destroyed when the person leaves it)
 //   visible   the browser tab is visible
-//   section / tab / anchor   the place, mirrored in the address (?s=&t=&a=)
+//   section / tab / anchor   the place, mirrored in the address (?s=&t=&a=); filter = the filters of a screen (?f=), '' when none
 //   width     's' | 'm' | 'l': the room the page really has (measured on its container, never the window)
 //   retry     { n, total } while the transport retries a call (the service is restarting), else null
 //   restarting   the page asked the service to restart and it has not come back yet (the verdict says so)
@@ -15,7 +15,7 @@
 
 import Vue from 'vue'
 
-export const pageState = Vue.observable({ active: false, visible: true, section: '', tab: '', anchor: '', width: 'l', retry: null, restarting: false, chainBroken: false })
+export const pageState = Vue.observable({ active: false, visible: true, section: '', tab: '', anchor: '', filter: '', width: 'l', retry: null, restarting: false, chainBroken: false })
 
 export function awake() {
 	return pageState.active && pageState.visible

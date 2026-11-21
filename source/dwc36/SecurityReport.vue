@@ -1,7 +1,7 @@
 <template>
 	<!-- Security > Report, read only (step 6 of DISENO-PANTALLAS): people and keys of access.report. One search for both tables, sorting on each, a panel with the
 	     last use of each capability of a person and "Copy report" (on every screen). Events for the page that holds the
-	     section:  @open-person="name"  @open-can="name"  @open-activity="name"  @open-key="{ id, name }"  (this screen never changes anything). -->
+	     section:  @open-person="name"  @open-can="name"  @open-activity="name"  @open-key="{ id, name }"  @open-keys  (this screen never changes anything). -->
 	<div ref="root" class="security-report">
 		<v-card class="mb-3">
 			<v-card-title class="text-subtitle-1">
@@ -16,12 +16,14 @@
 						<div v-if="answer.damaged" class="wf-note is-warn mb-2" role="note"><v-icon class="wf-note-icon" aria-hidden="true">mdi-alert-outline</v-icon><span>{{ $t('plugins.WorkshopService.access.report_damaged') }}</span></div>
 						<security-person-drawer v-if="person" :key="person.name" :person="person" :now="now" @back="selected = ''" @see-access="$emit('open-person', $event)" @see-can="$emit('open-can', $event)" @see-activity="$emit('open-activity', $event)" />
 						<template v-else>
-							<div class="wf-help mb-2">{{ $t('plugins.WorkshopService.access.report_summary', { locked: summary.locked, never: summary.never, keys: summary.unusedKeys }) }}</div>
-							<sv-text-field v-model="text" icon="mdi-magnify" type="search" class="access-search mb-3" :placeholder="$t('plugins.WorkshopService.access.common_search')" :aria-label="$t('plugins.WorkshopService.access.common_search')" />
-							<h3 class="security-title">{{ $t('plugins.WorkshopService.access.report_people_title') }}</h3>
-							<security-people-table :rows="people" :now="now" :sort="peopleSort" @sort="peopleSort = $event" @open="selected = $event" />
-							<h3 class="security-title mt-4">{{ $t('plugins.WorkshopService.access.report_keys_title') }}</h3>
-							<security-keys-table :rows="keys" :now="now" :sort="keySort" @sort="keySort = $event" @open="$emit('open-key', $event)" />
+							<div class="wf-help mb-3">{{ $t('plugins.WorkshopService.access.report_summary', { locked: summary.locked, never: summary.never, keys: summary.unusedKeys, expired: summary.expiredKeys }) }}</div>
+							<sv-text-field v-model="text" icon="mdi-magnify" type="search" class="access-search mb-4" :placeholder="$t('plugins.WorkshopService.access.common_search')" :aria-label="$t('plugins.WorkshopService.access.common_search')" />
+							<sv-table-block :title="$t('plugins.WorkshopService.access.report_people_title')">
+								<security-people-table :rows="people" :now="now" :sort="peopleSort" @sort="peopleSort = $event" @open="selected = $event" />
+							</sv-table-block>
+							<sv-table-block :title="$t('plugins.WorkshopService.access.report_keys_title')">
+								<security-keys-summary :overview="keysView" @open="$emit('open-key', $event)" @open-all="$emit('open-keys')" />
+							</sv-table-block>
 							<div class="wf-help mt-2">{{ $t('plugins.WorkshopService.access.report_delay') }}</div>
 						</template>
 					</template>
@@ -35,21 +37,22 @@
 'use strict'
 
 import SvTextField from './ui/SvTextField.vue'
+import SvTableBlock from './ui/SvTableBlock.vue'
 import AccessState from './AccessState.vue'
 import SecurityPeopleTable from './SecurityPeopleTable.vue'
-import SecurityKeysTable from './SecurityKeysTable.vue'
+import SecurityKeysSummary from './SecurityKeysSummary.vue'
 import SecurityPersonDrawer from './SecurityPersonDrawer.vue'
 import { securityApi } from './access-security-api.js'
-import { keyRows, peopleRows, reportText, summaryOf } from './access-report-view.js'
+import { keysOverview, peopleRows, reportText, summaryOf } from './access-report-view.js'
 import { stateOfError } from './access-profile-view.js'
 import { copyText } from './copy.js'
 
 const SLOW_MS = 15000
 
 export default {
-	components: { SvTextField, AccessState, SecurityPeopleTable, SecurityKeysTable, SecurityPersonDrawer },
+	components: { SvTextField, SvTableBlock, AccessState, SecurityPeopleTable, SecurityKeysSummary, SecurityPersonDrawer },
 	data() {
-		return { answer: null, text: '', selected: '', peopleSort: { field: 'name', dir: 'asc' }, keySort: { field: 'name', dir: 'asc' }, copied: false, loading: false, failed: '', failure: null, slow: false }
+		return { answer: null, text: '', selected: '', peopleSort: { field: 'name', dir: 'asc' }, copied: false, loading: false, failed: '', failure: null, slow: false }
 	},
 	computed: {
 		now() {
@@ -58,8 +61,9 @@ export default {
 		people() {
 			return peopleRows(this.answer, this.text, this.peopleSort)
 		},
-		keys() {
-			return keyRows(this.answer, this.text, this.keySort)
+		// counts and exceptions of the keys (the whole list is in Access > Keys); the search filters the people, not the counts
+		keysView() {
+			return keysOverview(this.answer)
 		},
 		summary() {
 			return summaryOf(this.answer)
@@ -123,5 +127,4 @@ export default {
 </script>
 
 <style>
-.security-title { margin: 0 0 6px; font-size: 14px; font-weight: 600; }
 </style>

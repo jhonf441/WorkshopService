@@ -4,6 +4,37 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.57.1 -- 2026-11-21 (no machine name in the source)
+
+- DWC password policy: the machine's own name is no longer written in the code or in the lists of common passwords (the publication scan refused it). The name and the addresses of the machine are read when the password is checked, as before, so a password equal to the machine name is still refused on any machine.
+
+## 2.57.0 -- 2026-11-21 (system log reader)
+
+- New read-only operation `journal.read` (`dsf/journal_view.py`, registered by `dsf/journal_ops.py`): the system journal of one unit of a closed list (Duet control, web and plugin servers, the G-code bridge, NetworkManager, ssh) or the kernel, over a fixed window (15 min to 7 days) and level; the search text is applied in Python and never passed to a program. It answers `readable: false` with a reason when the journal cannot be read.
+- Access: new capability `system.journal` (administrator only, not delegable: a log shows internals of the machine), listed in the Service area and with its text in both languages.
+- `tools/proc_probe.py`: read-only probe of which /proc entries the service can read under its AppArmor profile (to decide whether CPU and memory per process can be measured).
+
+## 2.56.0 -- 2026-11-21 (rules editor, safer DWC password, wide forms)
+
+- Access rules: adding a rule scrolls to it, highlights it and focuses its name; the add buttons switch off with a visible reason while a rule has no operations; Allow / Deny is a big two-option control with icon and text; the up/down buttons are gone (a rule that denies always wins, the order does not change the result); destinations of a rule are picked from lists of the real things (pellet profiles, layer recipes, scenes, states), shown as a list of their own with a readable phrase and a Remove button with Undo.
+- Every editor with a Save button warns "Changes not saved" and asks before leaving by Back, Cancel, Escape, a touch outside, a change of section or tab, the browser Back button or closing the tab. A result that appears far from its button (copy a template, give to a person, new group) is brought into view, highlighted and announced.
+- Security > Activity: the filters Operation and Destination are lists with search (free patterns still accepted); the active filters are chips with Remove; filters travel in the address (`?f=`).
+- DWC password: the service refuses weak ones (`dsf/password_policy.py`: 10 or more characters, not only letters or digits, not a common one, not a sequence or repetition, not the user name or host); the page shows a strength bar, the requirements as they are met and a Show / Hide button.
+- Forms: one form row piece (fields together at 320 px, the action aligned to the base of the fields, columns on a narrow page) and one table bar piece (title, Sort by, 44 px, aligned) used in the Security report.
+
+## 2.55.0 -- 2026-11-21 (one card of keys, one file viewer)
+
+- Keys: ONE card "Llaves de acceso" in Access > Keys (list, search, ficha, new, edit, switch, delete); one state word (Active / Off / Ended) and one phrase of what a key can do; Security > Report shows counts and exceptions with a link instead of repeating the table; the key shown once stays in a single component and is forgotten on every change of person. The form field "Valid for (days)" is readable and takes 1 to 3650 days.
+- Setup > Files: one viewer ("Ver") with the same colours and direction everywhere: your file against the factory copy; a legend with the real colour of each kind of line, comments in italics clearly apart from the code, edited lines marked in the margin and tinted; Restore is a step inside the viewer that says what you would lose; "Leave it as is" remembers the fingerprint of the file you accepted (`startup.file.review`, setting `file-review`) and asks again only if the file changes. The inverted inline diff is gone.
+
+## 2.54.0 -- 2026-11-21 (LED strips from the config plan, not-in-use setup items, bridge chart legend, fixes)
+
+- Config: new strips of status LEDs are created from the Lights page: plan `config.led_strip` (`machine.led.get`, `machine.led.preview`, `machine.config.plan` / `apply`) writes `M950 E<n> C"<pin>" T<t> U<leds>` as a marked block of `sys/workshop/machine.g` (all modes); only the dedicated LED connector and `io0.out` to `io8.out` are offered, never the 24 V outputs; a pin used by any line of any file is refused naming file and line. Lights also reads `M950 E` lines from `machine.g`.
+- Fix: `e_declared` of the status-light painter had a backspace character instead of `` in its regular expression, so it never recognised any `M950 E` line: the extra strips were never painted by the board. Guards (dsf and JS) now fail on control characters in sources, and `test_machine_gcode` checks every G0/G1 template.
+- Setup: the readiness of each plugin has three states (ready, pending, not in use). Optional items that are off and the ones the person marks "Do not use" do not count as pending; `readiness.list` recalculates the counts with the current decisions (the page of the service no longer shows stale numbers); the decisions live in the `startup` setting.
+- Activity: operations of the administrator class that only read are shown as reading (`api.describe` adds `reads`; one reviewed list in `dsf/api_admin_reading.py`); the state names "Power supply off" and "Crash" are in sentence case.
+- Page: the chart of the last hour of the bridge card has a legend (queries grey, orders hatched blue, rejections red triangle), an axis with the maximum and a readout by keyboard and touch.
+
 ## 2.53.0 -- 2026-11-20 (what the workshop creates goes to machine.g)
 
 - Config: new tools and bed heaters made by the assistants are written to `sys/workshop/machine.g`, one marked block per thing, and `config.g` gets ONE managed call to it (three lines with a `fileexists` guard) just before the last `M501` (or before a final `M99`/`M2`/`M0`, or at the end). It is made with the first thing created, never at startup; what is already in `config.g` is not moved. Each block can be limited to some modes (`if exists(global.selectedMode)`), none means every mode; `machine.tool.get` answers the modes. The change and the backup of both files are one transaction, going back deletes a new `machine.g`, and a pin or tool already defined is refused naming the file and line.

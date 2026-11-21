@@ -59,7 +59,7 @@
 			<p class="sv-hint">{{ t('links.panel_limits_desc') }}</p>
 			<label v-for="f in LIMITS" :key="f.id" class="sv-field-line"><span>{{ tr(f.label) }}</span><span class="sv-field"><input v-model.number="form[f.id]" type="number" :min="f.min" :max="f.max" :aria-label="tr(f.label)" :disabled="!mayOrder"></span></label>
 			<label class="sv-check"><input v-model="form.queries_in_job" type="checkbox" :disabled="!mayOrder"><span>{{ tr('position_queries_in_job') }}</span></label>
-			<div class="sv-fbar"><button type="submit" class="sv-btn sv-main" data-act="save-safety" :disabled="!mayOrder || saving">{{ tr('save') }}</button><span class="sv-quiet">{{ t('data.settings_nothing') }}</span></div>
+			<div class="sv-fbar"><button type="submit" class="sv-btn sv-main" :class="{ 'sv-save-hot': hasUnsaved }" data-act="save-safety" :disabled="!mayOrder || saving">{{ tr('save') }}</button><sv-unsaved-mark :show="hasUnsaved" /><span class="sv-quiet">{{ t('data.settings_nothing') }}</span></div>
 			<div v-if="note" class="sv-row-out" :data-kind="note.ok ? 'done' : 'error'" :role="note.ok ? 'status' : 'alert'" data-part="note"><span class="mdi sv-ico sv-ico-s" :class="note.ok ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline'" aria-hidden="true" />{{ note.text }}</div>
 		</form>
 		<sv-reason :lock="lockOf(['bridge.service.set'])" @sign-in="signIn" />
@@ -69,6 +69,9 @@
 <script>
 import { bridge, loadConfig, saveConfig } from '../../core/store/bridge.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
+import SvUnsavedMark from '../../ui/SvUnsavedMark.vue'
+import { unsavedMixin } from '../../ui/unsaved-mixin.js'
+import { snapshot } from '../../ui/unsaved-guard.js'
 import { clientsToTrust, isTrustValid } from '../../bridge-view.js'
 import * as forms from '../../bridge-forms.js'
 import SvReason from '../../ui/SvReason.vue'
@@ -81,10 +84,10 @@ const LIMITS = Object.freeze([
 
 export default {
 	name: 'BridgeSafety',
-	components: { SvReason },
-	mixins: [rowsMixin, bridgeOrders],
+	components: { SvReason, SvUnsavedMark },
+	mixins: [rowsMixin, bridgeOrders, unsavedMixin],
 	data() {
-		return { LIMITS, form: forms.secFormFrom({}), allowedText: '', keyNew: '', viewKey: false, trustNew: '', saving: false, note: null }
+		return { LIMITS, form: forms.secFormFrom({}), allowedText: '', keyNew: '', viewKey: false, trustNew: '', saving: false, note: null, base: null }
 	},
 	computed: {
 		e() {
@@ -110,9 +113,22 @@ export default {
 		this.loadForm()
 	},
 	methods: {
+		// unsaved changes (unsaved-mixin.js): the limits and the allowed networks against what was read from the bridge file
+		unsavedPair() {
+			return this.base ? [this.form, this.base] : [null, null]
+		},
+		async saveBeforeLeaving() {
+			if (forms.checkSecurity(this.form).error) return false
+			await this.save()
+			return !!this.note && this.note.ok === true
+		},
+		discardUnsaved() {
+			if (this.base) { this.form = snapshot(this.base); this.allowedText = this.form.allowed.join(', ') }
+		},
 		async loadForm() {
 			this.form = forms.secFormFrom(await loadConfig())
 			this.allowedText = this.form.allowed.join(', ')
+			this.base = snapshot(this.form)
 		},
 		nameOf(ip) {
 			const cl = this.e.clients.find(x => x.ip === ip)
@@ -139,6 +155,7 @@ export default {
 			this.saving = true
 			try {
 				await saveConfig(current => forms.applySecurity(current, this.form, check.allowed))
+				this.base = snapshot(this.form)
 				this.note = { ok: true, text: tr('saved_the_bridge_applies_it_within') + (owner && check.allowed.length ? tr('check_that_ip_stays_allowed', { ip: owner.ip, name: owner.name }) : '') }
 			} catch (e) {
 				this.note = { ok: false, text: this.t('common.could_not_save_x', { x: e.message }) }

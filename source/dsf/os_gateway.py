@@ -19,7 +19,7 @@ ALLOWED = {
     "ffmpeg": "camera_assembly, camera_notice, camera_timelapse",
     "nice": "camera_assembly, camera_notice, camera_timelapse (wrapper of ffmpeg)",
     "systemctl": "bridge_service, health_poller",
-    "journalctl": "health_poller, preflight",
+    "journalctl": "health_poller, preflight, journal_view",
     "vcgencmd": "health_poller",
     "nmcli": "health_poller",
     "ip": "health_poller",

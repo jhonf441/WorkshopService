@@ -30,6 +30,7 @@
 		<v-card-actions class="access-template-actions sv-card-actions">
 			<v-btn small outlined class="access-touch" :disabled="lockedCopy" @click="$emit('copy', template)"><v-icon left small>mdi-content-copy</v-icon>{{ $t('plugins.WorkshopService.access.templates_copy') }}</v-btn>
 			<v-btn small color="primary" class="access-touch" :disabled="lockedGive" @click="$emit('give', template)"><v-icon left small>mdi-account-plus-outline</v-icon>{{ $t('plugins.WorkshopService.access.templates_give') }}</v-btn>
+			<span v-if="farNote" class="sv-chip-sm" role="status" data-part="far-note">{{ farNote }}</span>
 		</v-card-actions>
 	</v-card>
 </template>
@@ -45,7 +46,8 @@ export default {
 		template: { type: Object, required: true },
 		titles: { type: Object, default: () => ({}) },
 		lockedCopy: { type: Boolean, default: false },
-		lockedGive: { type: Boolean, default: false }
+		lockedGive: { type: Boolean, default: false },
+		farNote: { type: String, default: '' } // what happened, when its result could not be brought into view (reveal-mixin.js)
 	},
 	data() {
 		return { open: false }

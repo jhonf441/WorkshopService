@@ -11,10 +11,20 @@ together in the list of what a person has), P-19 (the templates are reviewed by 
 | `profiles` | Perfiles | `AccessProfiles` and, under it, `RolesCard` (own roles: the matrix) | `access.profiles.*`, `roles.list`, `roles.effective` (the four base roles), `roles.set`, `roles.remove` |
 | `templates` | Plantillas | five ready-made profile templates (a proposal, never given by itself: `access-templates.js`), the card of the Administrator (a role, not a profile) and the read-only plugin profiles | reads only: `access.profiles.list`, `roles.list`, `users.list`; copy opens the profile editor on a draft (`access.profiles.validate` / `set` are the editor's), give runs `access.attach.validate` and the dialog confirms `access.attach` |
 | `can` | Qué puede hacer quién | the grid of people by areas and the detail of one person | `users.list`, `roles.list`, `access.person.get`, `access.groups.list`, `access.check` (batch) |
-| `keys` | Llaves de acceso | `ApiKeys` (create, change, revoke) and `AccessKeys` (what each key reaches, last use) | `keys.*`, `access.report`, `access.review` |
+| `keys` | Llaves de acceso | ONE card, `AccessKeys`: the list (state, what it can do, last use, expires, created), the actions (new, open, edit, switch, delete) and the ficha of a key. `ApiKeyEditor` (no list) owns the dialogs and the key shown once | `keys.*`, `access.report`, `access.review` |
 
 The section is still for administrators only (`needs: 'admin'`, `docs/PAGE-NAV-LOCKS.md`). The People section of the page keeps one tab: My session (`UsersMySession`:
 own PIN, sign out; any signed-in person) and the DWC password card, with a quiet pointer to Access for an administrator.
+
+## The keys card (one place for keys)
+
+Before 2026-11-20 the tab stacked two cards with the same title (`ApiKeys`: create, edit, switch, delete; `AccessKeys`: read-only list with last use) and Security > Report drew a third table. Now:
+
+- One list, one vocabulary. Columns: Name, State, What it can do, Last use (times), Expires, Created. State is ONE word, `keys_state_<status>`: `expired` (past its expiry, whatever the switch says), `off`, `active` (`statusOf` in `access-keys-view.js`). What it can do is ONE phrase (`canText` in `AccessKeyList.vue`): "Read, Move: 112 operations, 2 capabilities" (classes in words, then the operations the service lets it call, `allowed_ops`). There is no "Access profile" column while keys have no profile.
+- `ApiKeyEditor.vue` is the ONE owner of the key in the clear (shown once, forgotten in every change of person: `sessionData`, `onSessionChange`) and of the calls that change a key (`keys.create`, `keys.update`, `keys.revoke`, `keys.preview`). It draws no list; the card asks it (`openNew`, `openEdit`, `toggle`, `remove`) and reads the list again on its `changed` event. A failure of a call goes to the card as `failed`.
+- Degradation: `access.report` and `access.review` are extras; if either cannot be read the list still shows (from `keys.list`) and the card says it marked nothing (`keys_partial`).
+- Security > Report keeps people (PIN locked, never signed in, ...) and, for keys, only COUNTS by state and the EXCEPTIONS (expired, never used) with "Open" (opens the ficha here: `go-access { tab: 'keys', id }`) and a link "See all keys" (`open-keys`). It repeats no table.
+- Where a result is shown after an action (a key created, a switch refused) the call point is `ApiKeys`' successor `AccessKeys.vue`, `@failed` of the editor; when `revealResult` (service rules editor) exists in master it goes there.
 
 ## Old places
 
@@ -55,7 +65,7 @@ Areas and the capabilities each one uses:
 | energy | energy.view, energy.timers, energy.meter, energy.shutdown, energy.reset |
 | camera | camera.view, camera.capture, camera.vision, camera.manage, camera.settings, camera.relay |
 | activity | activity.view, activity.write, activity.settings, activity.delete |
-| service | config.view, config.api, config.edit, config.bridge, config.critical, processes.control, service.restart, system.plugins, system.view |
+| service | config.view, config.api, config.edit, config.bridge, config.critical, processes.control, service.restart, system.plugins, system.view, system.journal |
 | security | security.session, security.audit, security.audit_tools, security.users, security.roles, security.access, security.keys, security.passwords |
 
 "Try as this person" only calls `access.check` for one action; it does not sign in as the person, uses no PIN and writes nothing.

@@ -5,14 +5,15 @@
 	       <access-profile-editor :name="'Lights'" :caps="rolesList" :names="[...]" :limits="{ rules: 50, versions: 5 }" :damaged="false" @back @saved="name => ..." /> -->
 	<div class="access-profile-view access-profile-editor">
 		<div class="access-view-head">
-			<v-btn small outlined class="access-touch" @click="$emit('back')"><v-icon left small>mdi-arrow-left</v-icon>{{ $t('plugins.WorkshopService.access.common_back') }}</v-btn>
+			<v-btn small outlined class="access-touch" @click="leave()"><v-icon left small>mdi-arrow-left</v-icon>{{ $t('plugins.WorkshopService.access.common_back') }}</v-btn>
 			<strong class="access-view-name">{{ draft.name || $t('plugins.WorkshopService.access.edit_new_title') }}</strong>
+			<sv-unsaved-mark :show="hasUnsaved" />
 			<v-chip small outlined label>{{ $t('plugins.WorkshopService.access.profiles_type_own') }}</v-chip>
 			<v-chip v-if="got" small outlined label color="success">{{ $t('plugins.WorkshopService.access.profiles_version_of', { n: got.version, total: got.versions }) }}</v-chip>
 			<v-chip v-if="viewing" small outlined label color="info">{{ $t('plugins.WorkshopService.access.versions_viewing', { n: viewing }) }}</v-chip>
 			<v-spacer />
-			<v-btn small outlined class="access-touch" @click="$emit('back')">{{ $t('plugins.WorkshopService.access.common_cancel') }}</v-btn>
-			<v-btn small color="primary" class="access-touch" :disabled="!reviewable" @click="openDialog('save')">{{ $t('plugins.WorkshopService.access.edit_review') }}</v-btn>
+			<v-btn small outlined class="access-touch" @click="leave()">{{ $t('plugins.WorkshopService.access.common_cancel') }}</v-btn>
+			<v-btn small color="primary" class="access-touch" :class="{ 'sv-save-hot': hasUnsaved }" :disabled="!reviewable" @click="openDialog('save')">{{ $t('plugins.WorkshopService.access.edit_review') }}</v-btn>
 		</div>
 		<access-state :state="state" :detail="detail" @retry="load()">
 			<template v-if="draft">
@@ -51,6 +52,9 @@
 'use strict'
 
 import SvTextField from './ui/SvTextField.vue'
+import SvUnsavedMark from './ui/SvUnsavedMark.vue'
+import { unsavedMixin } from './ui/unsaved-mixin.js'
+import { dropLeave, resumeLeave } from './ui/unsaved-guard.js'
 import HelpTip from './HelpTip.vue'
 import AccessState from './AccessState.vue'
 import AccessRulesEditor from './AccessRulesEditor.vue'
@@ -67,7 +71,8 @@ import { isNarrowScreen } from './access-report-view.js'
 const VALIDATE_MS = 350
 
 export default {
-	components: { SvTextField, HelpTip, AccessState, AccessRulesEditor, AccessJsonEditor, AccessVersionList, AccessCapabilityBuilder, AccessProfileChange },
+	components: { SvTextField, SvUnsavedMark, HelpTip, AccessState, AccessRulesEditor, AccessJsonEditor, AccessVersionList, AccessCapabilityBuilder, AccessProfileChange },
+	mixins: [unsavedMixin],
 	props: {
 		name: { type: String, default: '' }, // a saved custom profile; empty for a new one
 		seed: { type: Object, default: null }, // the document a new one starts from (a copy of a base profile)
@@ -82,7 +87,7 @@ export default {
 			got: null, versions: [], draft: emptyDoc(this.name), fresh: !this.name, openedVersion: 0, state: this.name ? 'loading' : '', detail: '',
 			mode: 'builder', nameTaken: false, jsonDraft: '', jsonLine: 0, jsonBad: false, viewing: 0,
 			validation: null, refusal: '', validating: false, dialog: null, busy: false, dialogError: '', savedNote: '', seedNote: !!this.seed,
-			narrow: false
+			narrow: false, initial: null, leaveAfterSave: false
 		}
 	},
 	computed: {
@@ -177,12 +182,35 @@ export default {
 		else {
 			this.draft = this.seed ? cloneDoc(this.seed) : emptyDoc('')
 			this.jsonDraft = jsonText(this.draft)
+			this.initial = cloneDoc(this.draft) // what a new profile starts as: a profile nobody touched has no unsaved changes
 		}
 	},
 	beforeDestroy() {
 		clearTimeout(this.timer)
 	},
 	methods: {
+		// unsaved changes (unsaved-mixin.js): the draft against what is saved (a new profile: against how it started); text of the JSON tab that does not read counts too
+		unsavedPair() {
+			const base = this.fresh ? this.initial : this.got && this.got.document
+			if (!base) return [null, null]
+			return [{ doc: this.draft, bad: this.jsonBad }, { doc: base, bad: false }]
+		},
+		// "Save and leave": the review dialog (before / after) is the one way to save; it asks, and tells the guard when it is done
+		saveBeforeLeaving() {
+			if (!this.reviewable) return false
+			this.leaveAfterSave = true
+			this.openDialog('save')
+			return 'later'
+		},
+		discardUnsaved() {
+			const base = this.fresh ? this.initial : this.got && this.got.document
+			if (base) this.draft = cloneDoc(base)
+			this.jsonBad = false
+		},
+		// Back and Cancel: out at once when nothing changed, else the dialog of unsaved changes asks first
+		leave() {
+			this.leaveWith(() => this.$emit('back'))
+		},
 		async load() {
 			this.state = 'loading'
 			this.detail = ''
@@ -281,7 +309,12 @@ export default {
 			this.dialog = { kind, n: n || 0 }
 		},
 		closeDialog() {
-			if (!this.busy) this.dialog = null
+			if (this.busy) return
+			this.dialog = null
+			if (this.leaveAfterSave) {
+				this.leaveAfterSave = false
+				dropLeave() // the review was cancelled: the person stays in the editor
+			}
 		},
 		// Another administrator may have changed the profile (or taken the name) since it was opened: read it again before the call; if the version moved the
 		// document is reloaded, the draft is kept and the person is told. The service has no check of its own for this, so a very small window remains.
@@ -312,6 +345,10 @@ export default {
 			try {
 				if (!(await this.stillTheSame())) {
 					this.dialog = null
+					if (this.leaveAfterSave) {
+						this.leaveAfterSave = false
+						dropLeave()
+					}
 					return
 				}
 				this.state = ''
@@ -328,6 +365,10 @@ export default {
 				this.savedNote = this.$t('plugins.WorkshopService.access.' + (d.kind === 'save' ? 'diff_saved' : 'versions_rolled'), { n: this.got.version })
 				this.dialog = null
 				this.$emit('saved', { name: this.got.name, created: wasNew })
+				if (this.leaveAfterSave) {
+					this.leaveAfterSave = false
+					resumeLeave() // "Save and leave": now it is saved, the way out the person asked for goes on
+				}
 			} catch (e) {
 				this.dialogError = (e && e.message) || String(e)
 			} finally {

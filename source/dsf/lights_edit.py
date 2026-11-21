@@ -159,7 +159,7 @@ def import_profile(config, data, hardware):
 
 @lp.needs_lights
 def apply_m950(bridge, config, total, strip):
-    """Changes the U (number of LEDs) of the M950 line of a strip in sys/config.g, keeping a copy of config.g; the board must be restarted
+    """Changes the U (number of LEDs) of the M950 line of a strip in sys/config.g (or sys/workshop/machine.g when the Machine page created it), keeping a copy of that file; the board must be restarted
     for it to apply. `strip` is the E number (empty: the main strip)."""
     c = lp.clean(config)
     try:
@@ -169,19 +169,20 @@ def apply_m950(bridge, config, total, strip):
     if not 1 <= total <= 400:
         return lp.answer({"ok": False, "error": M("lights_count_out_of_range")})
     en, _ = lp.strip_of(c, strip)
-    with open(lp.CONFIG_G, encoding="utf-8", newline="") as f:
+    target = lp.strip_file(en) or lp.CONFIG_G   # config.g, or machine.g where the Machine page created the strip
+    with open(target, encoding="utf-8", newline="") as f:
         raw_text = f.read()
     pattern = re.compile(rf"^(\s*M950\s+E{en}\b[^;\n]*?\bU)(\d+)", re.MULTILINE)
     if not pattern.search(raw_text):
         return lp.answer({"ok": False, "error": M("lights_i_did_not_find_line_m950", en=en)})
-    copy = lp.CONFIG_G + time.strftime(".bak-luces-%Y%m%d-%H%M%S")
-    shutil.copy2(lp.CONFIG_G, copy)
+    copy = target + time.strftime(".bak-luces-%Y%m%d-%H%M%S")
+    shutil.copy2(target, copy)
     raw_text = pattern.sub(lambda m: m.group(1) + str(total), raw_text, count=1)
-    tmp = lp.CONFIG_G + ".tmp"
+    tmp = target + ".tmp"
     with open(tmp, "w", encoding="utf-8", newline="") as f:
         f.write(raw_text)
         f.flush()
         os.fsync(f.fileno())  # to the card before the rename (power cut)
-    os.replace(tmp, lp.CONFIG_G)
+    os.replace(tmp, target)
     activity.log_event(bridge, "config", M("lights_config_g", strip=en, leds=total, copy=os.path.basename(copy)))
     return lp.answer({"ok": True, "m950": lp.m950(en), "copy": os.path.basename(copy), "restart": True})

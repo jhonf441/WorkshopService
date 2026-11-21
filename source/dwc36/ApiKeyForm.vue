@@ -80,8 +80,8 @@
 			</div>
 			<div v-if="capPick && !capGrantable(capPick)" class="text-caption warning--text mt-1">{{ $t('plugins.WorkshopService.keys.cap_not_for_keys') }}</div>
 		</wf-field>
-		<wf-field id="ws-key-days" :label="$t('plugins.WorkshopService.keys.valid_days')" :message="$t('plugins.WorkshopService.keys.valid_days_help')" class="mt-2" style="max-width:280px">
-			<sv-text-field id="ws-key-days" v-model="form.days" type="number" min="0" :aria-label="$t('plugins.WorkshopService.keys.valid_days')" />
+		<wf-field id="ws-key-days" :label="$t('plugins.WorkshopService.keys.valid_days')" :message="$t('plugins.WorkshopService.keys.' + (form.id ? 'valid_days_help_edit' : 'valid_days_help'))" class="mt-2" style="max-width:280px">
+			<sv-text-field id="ws-key-days" v-model="form.days" type="number" :min="form.id ? 0 : 1" max="3650" step="1" inputmode="numeric" :invalid="!!daysError" :error="daysError" :aria-label="$t('plugins.WorkshopService.keys.valid_days')" />
 		</wf-field>
 		<v-alert v-if="form.id && form.strict === false" dense text type="warning" class="mt-3 mb-0">{{ $t('plugins.WorkshopService.keys.cap_legacy_hint') }}</v-alert>
 		<v-alert v-if="previewError" dense text type="error" class="mt-3 mb-0">{{ previewError }}</v-alert>
@@ -99,7 +99,7 @@
 
 import SvTextField from './ui/SvTextField.vue'
 import { CAP_PREFIX } from './key-names.js'
-import { keyNamesMixin, normPatterns } from './api-key-names-mixin.js'
+import { keyNamesMixin, normPatterns, daysProblem } from './api-key-names-mixin.js'
 import HelpTip from './HelpTip.vue'
 import WfField from './WfField.vue'
 
@@ -134,6 +134,7 @@ export default {
 			return PRESETS.map(p => ({ value: p, text: this.$t('plugins.WorkshopService.keys.preset_' + p) }))
 		},
 		viewPreview() { return this.preview },
+		daysError() { return daysProblem(this.form.days, !!this.form.id) ? this.$t('plugins.WorkshopService.keys.days_invalid') : '' },
 		// the capabilities of roles.list (title, category, class, risk, delegable) grouped by category, to pick from
 		capItems() {
 			const out = []

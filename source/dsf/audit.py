@@ -23,7 +23,7 @@ import audit_reads
 import clock
 import db
 
-SECRET_ARGS = frozenset({"pin", "new_pin", "old_pin", "password", "key", "local_key", "token", "secret", "topic", "ntfy_topic", "api_key"})
+SECRET_ARGS = frozenset({"pin", "new_pin", "old_pin", "password", "repeat", "key", "local_key", "token", "secret", "topic", "ntfy_topic", "api_key"})
 ALWAYS_PREFIX = ("auth.", "users.", "keys.", "password.", "roles.", "access.")
 ALWAYS_OPS = ("audit.verify", "audit.export", "audit.settings")  # audit.list is a read like the others (audit_reads: optional, off by default)
 DENIED = ("forbidden", "login_required")

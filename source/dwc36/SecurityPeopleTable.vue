@@ -4,10 +4,10 @@
 	     under 900 px the rows become cards (rules in AccessProfileList.vue).
 	       <security-people-table :rows="peopleRows(...)" :now="answer.generated" :sort="{ field, dir }" @sort="s => ..." @open="name => ..." /> -->
 	<div class="security-people-table">
-		<div class="access-filters">
+		<sv-table-bar>
 			<sv-select :value="sort.field" :items="fields" class="security-sort" :label="rt('report_sort')" :aria-label="rt('report_sort')" @input="$emit('sort', { field: $event, dir: sort.dir })" />
 			<v-btn small outlined class="access-touch" :aria-label="rt('report_sort_' + sort.dir)" @click="$emit('sort', { field: sort.field, dir: sort.dir === 'asc' ? 'desc' : 'asc' })"><v-icon left small>{{ sort.dir === 'asc' ? 'mdi-sort-ascending' : 'mdi-sort-descending' }}</v-icon>{{ rt('report_sort_' + sort.dir) }}</v-btn>
-		</div>
+		</sv-table-bar>
 		<div v-if="!rows.length" class="wf-help access-own-empty">{{ rt('report_empty') }}</div>
 		<div v-else class="access-table-wrap">
 			<table class="access-table security-table">
@@ -55,10 +55,11 @@
 'use strict'
 
 import SvSelect from './ui/SvSelect.vue'
+import SvTableBar from './ui/SvTableBar.vue'
 import { PEOPLE_SORTS, agoText, durationText, translatorMixin } from './access-report-view.js'
 
 export default {
-	components: { SvSelect },
+	components: { SvSelect, SvTableBar },
 	mixins: [translatorMixin],
 	props: {
 		rows: { type: Array, default: () => [] },

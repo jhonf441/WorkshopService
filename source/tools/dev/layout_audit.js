@@ -19,6 +19,11 @@
 //   buttons     buttons of one block with another letter, another height on the same line, or another left edge when stacked
 //   escape      an element that goes beyond the box of its card / row / note (more than 1.5 px)
 //   hscroll     a block that scrolls sideways without being a table declared with its own scroll, or the page itself
+//   label       a line of text less than 8 px from the button beside it on the same line
+//   rim         a box with a background or a border (card, fold, note, diff, row body, actions) with less than 8 px of padding on any side
+//   formgap     sibling fields of ONE form row on the same line more than 48 px apart (the fields of a form go together, SvFormRow)
+//   titlegap    the title of a block (h3 / .sv-tblock-title) closer than 8 px to the bar or the table that follows it (SvTableBlock gives 12)
+//   formbase    the action button of a form row that does not sit on the base of the input of its row (more than 4 px of difference)
 (function () {
 	return function audit(options) {
 		const opts = Object.assign({ contrast: true, edge: true }, options || {})
@@ -201,6 +206,63 @@
 			if ((cs.overflowX === 'auto' || cs.overflowX === 'scroll') && e.scrollWidth > e.clientWidth + 1) add('hscroll', e, { scroll: e.scrollWidth, client: e.clientWidth })
 		})
 		if (document.documentElement.scrollWidth > window.innerWidth + 1) add('hscroll', document.documentElement, { scroll: document.documentElement.scrollWidth, client: window.innerWidth, why: 'the page scrolls sideways' })
+
+		// 12. a text label (a line of text that is not a button) closer than 8 px to the button next to it on the same line, as "You edited it, go to lines:" glued to its first chip
+		document.querySelectorAll('.sv-page *, .sv-sheet *').forEach(l => {
+			if (l.matches('.sv-btn, .v-btn, button, input, label, select') || !shown(l) || !(l.textContent || '').trim()) return
+			;[l.previousElementSibling, l.nextElementSibling].forEach(b => {
+				if (!b || !b.matches('.sv-btn, .v-btn, button') || !shown(b)) return
+				const p = box(l), q = box(b)
+				if (Math.abs(p.top - q.top) > Math.max(p.height, q.height) / 2 + 6 && !(p.top < q.bottom && q.top < p.bottom)) return
+				const gap = b === l.nextElementSibling ? q.left - p.right : p.left - q.right
+				if (gap < 8 && gap > -1) add('label', l, { gap: Math.round(gap), button: sel(b), text: l.textContent.trim().slice(0, 30) })
+			})
+		})
+
+		// 13. the rim: a box with a background or a border (a card, a fold, a note, a diff, the actions of a row) whose content is closer than 8 px to its edge on any side
+		document.querySelectorAll('.sv-diff, .sv-note, .sv-card, .sv-fold-body, .sv-row-body, .sv-card-actions, .sv-panel').forEach(c => {
+			if (!shown(c) || !c.children.length && !(c.textContent || '').trim()) return
+			const cs = getComputedStyle(c)
+			const framed = (parse(cs.backgroundColor) || [0, 0, 0, 0])[3] > 0 || ['Top', 'Right', 'Bottom', 'Left'].some(x => parseFloat(cs['border' + x + 'Width']) > 0 && cs['border' + x + 'Style'] !== 'none')
+			if (!framed) return
+			const pad = ['Top', 'Right', 'Bottom', 'Left'].map(x => parseFloat(cs['padding' + x]) || 0)
+			if (Math.min.apply(null, pad) < 8) add('rim', c, { padding: pad.map(Math.round).join(' '), why: 'content closer than 8 px to the edge of its box' })
+		})
+
+		// 14. forms: the fields of a row stay together (siblings on one line, at most 48 px apart) and the action sits on the base of the inputs (4 px)
+		const inputOf = f => f.querySelector('.sv-field, .v-input__slot, input:not([type=checkbox]):not([type=radio]), select, textarea') || f
+		const isField = f => !f.matches('button, .v-btn, .sv-btn') && !!f.querySelector('input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea') && shown(f)
+		const isAct = f => (f.matches('button, .v-btn, .sv-btn') ? f : f.querySelector(':scope > button, :scope > .v-btn, :scope > .sv-btn')) && !f.querySelector('input, select, textarea') && shown(f)
+		document.querySelectorAll('.sv-page *').forEach(h => {
+			if (h.closest('.sv-tv, .v-data-table, table, .sv-sheet-body .sv-select-list')) return
+			const kids = Array.from(h.children)
+			const fields = kids.filter(isField)
+			if (!fields.length) return
+			const sameLine = (a, b) => Math.abs(box(a).top - box(b).top) < Math.max(24, Math.min(box(a).height, box(b).height) / 2)
+			for (let i = 0; i < fields.length; i++) for (let j = i + 1; j < fields.length; j++) {
+				const a = box(fields[i]), b = box(fields[j])
+				if (!sameLine(fields[i], fields[j])) continue
+				const gap = b.left >= a.right ? b.left - a.right : a.left - b.right
+				if (gap > 48) add('formgap', h, { a: sel(fields[i]), b: sel(fields[j]), gap: Math.round(gap) })
+			}
+			kids.filter(isAct).forEach(act => {
+				const btn = act.matches('button, .v-btn, .sv-btn') ? act : act.querySelector('button, .v-btn, .sv-btn')
+				const near = fields.filter(f => sameLine(f, act))
+				if (!near.length) return
+				const diff = Math.abs(box(btn).bottom - box(inputOf(near[near.length - 1])).bottom)
+				if (diff > 4) add('formbase', h, { button: sel(btn), field: sel(near[near.length - 1]), diff: Math.round(diff) })
+			})
+		})
+
+		// 15. the title of a block is never glued to what follows it (the bar of its table, the table): at least 8 px
+		document.querySelectorAll('.sv-page h3, .sv-page h4, .sv-page .sv-tblock-title').forEach(h => {
+			if (!shown(h)) return
+			let n = h.nextElementSibling
+			while (n && !shown(n)) n = n.nextElementSibling
+			if (!n) return
+			const gap = box(n).top - box(h).bottom
+			if (gap < 8 && gap > -1) add('titlegap', h, { next: sel(n), gap: Math.round(gap) })
+		})
 
 		// 8. a button that waits keeps its text
 		document.querySelectorAll('[aria-busy="true"].sv-btn, [aria-busy="true"].v-btn').forEach(b => {

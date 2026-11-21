@@ -14,7 +14,7 @@
 		<div class="access-rule-line">
 			<span class="access-rule-label">{{ $t('plugins.WorkshopService.access.builder_target_some') }}</span>
 			<span v-if="!targets.length">{{ $t('plugins.WorkshopService.access.builder_target_all') }}</span>
-			<span v-for="t in targets" :key="t" class="access-op">{{ t }}</span>
+			<span v-for="t in targets" :key="t" class="access-op" :title="t">{{ say(t) }} <code class="access-target-code">{{ t }}</code></span>
 		</div>
 		<div v-if="conditions.length" class="access-rule-line">
 			<span class="access-rule-label">{{ $t('plugins.WorkshopService.access.builder_when') }}</span>
@@ -28,6 +28,7 @@
 
 import { whenItems } from './access-profile-view.js'
 import { displayNamesMixin } from './display-names-mixin.js'
+import { describeTarget } from './access-target-lists.js'
 
 const SHOWN = 12
 
@@ -62,6 +63,10 @@ export default {
 		}
 	},
 	methods: {
+		// the target in words, with the technical pattern next to it (small, grey)
+		say(t) {
+			return describeTarget(t, (k, p) => this.$t('plugins.WorkshopService.access.' + k, p), {}).text
+		},
 		valueOf(c) {
 			if (c.valueKey) return this.$t('plugins.WorkshopService.access.' + c.valueKey)
 			if (c.value !== undefined) return c.value

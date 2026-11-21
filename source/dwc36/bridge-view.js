@@ -31,9 +31,13 @@ export function inUseReason(state, machineStatus) {
 }
 
 // the bars of the last hour: history is [[orders, queries, rejections, connections], ...], one per minute
+export function chartMax(history) {
+	return Math.max(1, ...(history || []).map((x) => x[0] + x[1]))
+}
+
 export function chartBars(history, height) {
 	const h = history || []
-	const max = Math.max(1, ...h.map((x) => x[0] + x[1]))
+	const max = chartMax(h)
 	return h.map((x, i) => {
 		const tot = x[0] + x[1]
 		const bar = tot ? Math.max(2, (tot / max) * (height - 4)) : 0

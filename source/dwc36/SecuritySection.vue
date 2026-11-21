@@ -7,7 +7,7 @@
 		<!-- ONE reason for the buttons of the activity tab that change settings or export (nothing is drawn for a person who may) -->
 		<access-lock-reason v-if="current === 'activity'" :ops="ACTIVITY_OPS" class="mb-3" @see-profiles="$emit('go-access', { tab: 'profiles' })" />
 		<security-review v-if="current === 'review'" @open-profile="name => $emit('go-access', { tab: 'profiles', name })" @open-person="name => $emit('go-access', { tab: 'people', name })" @open-key="k => $emit('go-access', { tab: 'keys', id: k && k.id, name: k && k.name })" @damaged="v => $emit('damaged', v)" />
-		<security-report v-else-if="current === 'report'" @open-person="name => $emit('go-access', { tab: 'people', name })" @open-can="name => $emit('go-access', { tab: 'can', name })" @open-activity="$emit('tab', 'activity')" @open-key="k => $emit('go-access', { tab: 'keys', id: k && k.id, name: k && k.name })" @damaged="v => $emit('damaged', v)" />
+		<security-report v-else-if="current === 'report'" @open-person="name => $emit('go-access', { tab: 'people', name })" @open-can="name => $emit('go-access', { tab: 'can', name })" @open-activity="$emit('tab', 'activity')" @open-key="k => $emit('go-access', { tab: 'keys', id: k && k.id, name: k && k.name })" @open-keys="$emit('go-access', { tab: 'keys' })" @damaged="v => $emit('damaged', v)" />
 		<audit-card v-else :operations="operations" @chain="v => $emit('chain', v)" />
 	</div>
 </template>

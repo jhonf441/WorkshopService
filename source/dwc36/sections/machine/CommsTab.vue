@@ -30,7 +30,7 @@
 									<span class="sv-seg" role="group" :aria-label="t('machine.comms_service')"><button v-for="id in choices" :key="id" type="button" :aria-pressed="pickService === id ? 'true' : 'false'" :disabled="c.disabled" :data-pick-service="id" @click="pickService = id">{{ choiceText(id) }}</button></span></div>
 								<div v-if="hasJog" class="sv-pick-line"><span class="sv-label" data-part="label-jog">{{ t('machine.comms_jog') }}</span>
 									<span class="sv-seg" role="group" :aria-label="t('machine.comms_jog')"><button v-for="id in choices" :key="id" type="button" :aria-pressed="pickJog === id ? 'true' : 'false'" :disabled="c.disabled" :data-pick-jog="id" @click="pickJog = id">{{ choiceText(id) }}</button></span></div>
-								<button type="button" class="sv-btn sv-main" :disabled="c.disabled || !changed" data-act="save" @click="save">{{ t('machine.comms_save') }}</button>
+								<button type="button" class="sv-btn sv-main" :class="{ 'sv-save-hot': hasUnsaved }" :disabled="c.disabled || !changed" data-act="save" @click="save">{{ t('machine.comms_save') }}</button><sv-unsaved-mark :show="hasUnsaved" />
 							</div>
 						</template>
 						<p class="sv-note" data-level="warn" role="note" data-part="advanced-warning"><span class="mdi mdi-alert-outline sv-ico" aria-hidden="true" /><span>{{ warning }} {{ t('machine.advanced_warning') }}</span></p>
@@ -76,14 +76,17 @@ import SvReason from '../../ui/SvReason.vue'
 import SvSwitch from '../../ui/SvSwitch.vue'
 import { channelChoices, channelCounts, channelRows } from './view.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
+import SvUnsavedMark from '../../ui/SvUnsavedMark.vue'
+import { unsavedMixin } from '../../ui/unsaved-mixin.js'
+import { saveWithAction } from '../../ui/unsaved-guard.js'
 
 const LEVEL = { free: 'ok', shared: 'warn', busy: 'warn', reserved: 'rest' }
 const textOf = v => (v && typeof v === 'object' ? serviceText(v) : String(v || ''))
 
 export default {
 	name: 'CommsTab',
-	components: { SvActionRow, SvConfirmDialog, SvHelp, SvReason, SvSwitch },
-	mixins: [rowsMixin],
+	components: { SvActionRow, SvConfirmDialog, SvHelp, SvReason, SvSwitch, SvUnsavedMark },
+	mixins: [rowsMixin, unsavedMixin],
 	props: { active: { type: Boolean, default: false } },
 	data() {
 		return { commsSet, LEVEL, pickService: '', pickJog: '', advanced: false }
@@ -130,6 +133,17 @@ export default {
 		'comm.channel_jog_cfg': { immediate: true, handler(v) { if (v) this.pickJog = v } }
 	},
 	methods: {
+		// unsaved changes (unsaved-mixin.js): the channels picked against the ones the service has
+		unsavedPair() {
+			const c = this.comm
+			return c ? [{ s: this.pickService, j: this.hasJog ? this.pickJog : null }, { s: c.channel_cfg, j: this.hasJog ? c.channel_jog_cfg : null }] : [null, null]
+		},
+		saveBeforeLeaving() {
+			return saveWithAction(this.commsSet, () => this.save())
+		},
+		discardUnsaved() {
+			if (this.comm) { this.pickService = this.comm.channel_cfg; this.pickJog = this.comm.channel_jog_cfg }
+		},
 		fact(cfg, inUse) {
 			return cfg === 'auto' ? this.t('machine.comms_fact_auto', { channel: inUse }) : this.t('machine.comms_fact_fixed', { channel: inUse })
 		},

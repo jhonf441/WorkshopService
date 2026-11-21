@@ -11,13 +11,14 @@
 			</v-card-title>
 			<v-card-text>
 				<div class="wf-note mb-2" role="note"><v-icon class="wf-note-icon" aria-hidden="true">mdi-information-outline</v-icon><span>{{ $t('plugins.WorkshopService.access.profiles_gcode_note') }}</span></div>
+				<span class="sv-vh" role="status" aria-live="polite" data-part="said">{{ said }}</span>
 				<access-state :state="state" :detail="detail" @retry="load()">
-					<template v-if="list">
+					<div v-if="list" ref="work">
 						<access-profile-editor v-if="draft" :key="'e:' + draft.name + draft.n" :name="draft.name" :seed="draft.seed" :caps="capsAnswer" :limits="limits" :damaged="!!list.damaged" @back="stop()" @saved="saved" />
 						<access-profile-editor v-else-if="selected && !selected.base && canEdit" :key="'o:' + selected.name" :name="selected.name" :caps="capsAnswer" :limits="limits" :damaged="!!list.damaged" @back="stop()" @saved="saved" />
 						<access-profile-view v-else-if="selected" :key="selected.name" :name="selected.name" :base="selected.base" :editable="canEdit && !list.damaged" :capabilities="capabilities" :categories="categories" :max-rules="limits.rules" :max-versions="limits.versions" @back="selected = null" @duplicate="doc => start(duplicateDoc(doc, context))" />
 						<access-profile-list v-else :list="list" :editable="canEdit" @open="selected = $event" @removed="load()" />
-					</template>
+					</div>
 				</access-state>
 			</v-card-text>
 		</v-card>
@@ -33,6 +34,8 @@ import AccessProfileList from './AccessProfileList.vue'
 import AccessProfileView from './AccessProfileView.vue'
 import AccessProfileEditor from './AccessProfileEditor.vue'
 import { roleMixin } from './role-mixin.js'
+import { revealMixin } from './reveal-mixin.js'
+import { confirmLeave } from './ui/unsaved-guard.js'
 import { accessApi } from './access-api.js'
 import { stateOfError } from './access-profile-view.js'
 import { contextOf, duplicateDoc } from './access-profile-edit.js'
@@ -42,7 +45,7 @@ const SLOW_MS = 15000
 
 export default {
 	components: { AccessTermHelp, AccessState, AccessProfileList, AccessProfileView, AccessProfileEditor },
-	mixins: [roleMixin],
+	mixins: [roleMixin, revealMixin],
 	props: { focus: { type: Object, default: null } }, // { name, n }: open this profile (asked from Security); n changes with every request
 	data() {
 		return { focused: 0, list: null, capabilities: [], categories: [], capsAnswer: {}, loading: false, failed: '', failure: null, slow: false, selected: null, draft: null, drafts: 0 }
@@ -82,6 +85,9 @@ export default {
 		'focus.n'() {
 			this.applyFocus()
 		},
+		// the editor or the profile opens in the place of the list, which may be far from the button that asked: bring it into view (reveal.js)
+		draft(v) { if (v) this.shown(this.$t('plugins.WorkshopService.access.profiles_opened_new')) },
+		selected(v) { if (v) this.shown(this.$t('plugins.WorkshopService.access.profiles_opened', { name: v.name })) },
 		// the list tells by itself that the access file is damaged: the page shows it in its header
 		damaged(v) { if (v !== null) this.$emit('damaged', v) }
 	},
@@ -99,8 +105,14 @@ export default {
 			this.focused = this.focus.n
 			const hit = profileFocus(this.list, this.focus.name)
 			if (!hit) return
-			this.draft = null
-			this.selected = hit
+			// a request from Security replaces the editor that is open: unsaved changes ask first (unsaved-guard.js)
+			confirmLeave(() => {
+				this.draft = null
+				this.selected = hit
+			})
+		},
+		shown(said) {
+			this.$nextTick(() => this.showResult(this.$refs.work, { focus: true, said }))
 		},
 		// a new profile (empty, or the copy of a base one): the editor opens on it
 		start(seed) {

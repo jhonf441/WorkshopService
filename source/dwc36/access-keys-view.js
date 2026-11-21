@@ -13,10 +13,15 @@
 //   unusedFinding(review, id)                the finding of a wide key that is not used, or null
 //   dateOf(epoch)                            'YYYY-MM-DD HH:MM' in local time ('' without a value)
 //   lastUseOf(row)                           { never, today, days } for the cell of the last use
-//   expiryOf(row, now)                       { none, expired, at } the expiry as the key stores it (shown, never edited here)
+//   expiryOf(row, now)                       { none, expired, soon, at } the expiry as the key stores it
+//   statusOf(row, now)                       'ended' | 'off' | 'active': THE state of a key, one word for every screen (Access > Keys, Security > Report). A key past
+//                                            its expiry is 'ended' (shown as Expired) whatever its switch says (the service refuses it); then a switched-off key is 'off'
+//   canOf(row)                               { classes, ops, caps, wide } the parts of the ONE phrase of what a key can do ("Read, Move: 112 operations")
 
+export const STATUS = Object.freeze({ active: 'active', off: 'off', ended: 'ended' })
 export const UNUSED_FINDING = 'key_wide_unused'
 export const SHOWN_OPS = 12
+export const SOON_S = 7 * 86400   // an expiry within a week is flagged "expires soon"
 
 const list = x => (Array.isArray(x) ? x : [])
 
@@ -47,7 +52,7 @@ export function keyCard(row) {
 	}
 }
 
-export function keyRows(keysAnswer, report, review, text) {
+export function keyRows(keysAnswer, report, review, text, now) {
 	const answer = keysAnswer || {}
 	const capPrefix = String(answer.cap_prefix || 'cap:')
 	const byId = {}
@@ -76,6 +81,8 @@ export function keyRows(keysAnswer, report, review, text) {
 			expires: k.expires || null
 		}
 		row.wide = wide > 0 && row.breadth >= wide
+		row.status = statusOf(row, now)
+		row.raw = k
 		const f = unusedFinding(review, k.id)
 		row.unused = f ? { days: Number(f.params.days) || 0, never: !!f.params.never } : null
 		return row
@@ -91,6 +98,20 @@ export function lastUseOf(row) {
 }
 
 export function expiryOf(row, now) {
-	if (!row.expires) return { none: true, expired: false, at: '' }
-	return { none: false, expired: Number(row.expires) < Number(now), at: dateOf(row.expires) }
+	if (!row.expires) return { none: true, expired: false, soon: false, at: '' }
+	const expired = Number(row.expires) < Number(now)
+	return { none: false, expired, soon: !expired && Number(row.expires) - Number(now) < SOON_S, at: dateOf(row.expires) }
+}
+
+// the state of a key, always the same word: an expired key is expired even if its switch is on; without a clock (`now` missing) nothing is called expired
+export function statusOf(row, now) {
+	const ends = row && row.expires ? Number(row.expires) : 0
+	if (ends && now && ends < Number(now)) return STATUS.ended
+	return row && row.enabled === false ? STATUS.off : STATUS.active
+}
+
+// what a key can do, in parts: the classes in the order of the service, how many operations it may call (allowed_ops: what the service really lets it do,
+// api_keys.why_not), how many capabilities it names and whether it is wide (the threshold of the review). The words are put together by the screen.
+export function canOf(row) {
+	return { classes: row.kinds.slice(), ops: row.allowed.length, caps: row.capCount, wide: !!row.wide }
 }

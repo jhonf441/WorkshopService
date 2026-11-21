@@ -20,14 +20,14 @@
 			<v-card-text>
 				<v-alert dense text type="warning" class="mb-3">{{ $t('plugins.WorkshopService.users.no_users_notice') }}</v-alert>
 				<div class="text-body-2 mb-3">{{ $t('plugins.WorkshopService.users.wizard_help') }}</div>
-				<v-row dense>
-					<v-col cols="12" sm="4"><sv-text-field v-model="first.name" :label="$t('plugins.WorkshopService.users.name')" autocomplete="username" /></v-col>
-					<v-col cols="6" sm="3"><v-text-field :append-icon="showPins ? 'mdi-eye-off' : 'mdi-eye'" @click:append="showPins = !showPins" v-model="first.pin" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin')" dense outlined hide-details autocomplete="new-password" /></v-col>
-					<v-col cols="6" sm="3"><sv-text-field v-model="first.repeat" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin_repeat')" autocomplete="new-password" /></v-col>
-					<v-col cols="12" sm="2" class="d-flex align-center">
-						<v-btn small block color="primary" :loading="busy" :disabled="!firstValid" @click="createFirst">{{ $t('plugins.WorkshopService.users.create_admin') }}</v-btn>
-					</v-col>
-				</v-row>
+				<sv-form-row>
+					<sv-text-field v-model="first.name" :label="$t('plugins.WorkshopService.users.name')" autocomplete="username" />
+					<sv-text-field v-model="first.pin" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin')" autocomplete="new-password">
+						<template #append><button type="button" class="sv-field-btn" :aria-label="showPins ? $t('plugins.WorkshopService.users.hide_pin') : $t('plugins.WorkshopService.users.show_pin')" @click="showPins = !showPins"><span class="mdi" :class="showPins ? 'mdi-eye-off' : 'mdi-eye'" aria-hidden="true" /></button></template>
+					</sv-text-field>
+					<sv-text-field v-model="first.repeat" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin_repeat')" autocomplete="new-password" />
+					<template #act><v-btn color="primary" :loading="busy" :disabled="!firstValid" @click="createFirst">{{ $t('plugins.WorkshopService.users.create_admin') }}</v-btn></template>
+				</sv-form-row>
 				<div v-if="first.pin && first.repeat && first.pin !== first.repeat" class="text-caption warning--text mt-1">{{ $t('plugins.WorkshopService.users.pins_differ') }}</div>
 				<v-alert v-if="error" dense text type="error" class="mt-3 mb-0">{{ error }}</v-alert>
 			</v-card-text>
@@ -91,16 +91,18 @@
 		</template>
 
 		<!-- add / edit a person -->
-		<v-dialog v-model="dlg" max-width="480">
+		<v-dialog v-model="dlg" max-width="480" persistent @keydown.esc="closeForm" @click:outside="closeForm">
 			<v-card>
-				<v-card-title class="text-subtitle-1">{{ form.edit ? $t('plugins.WorkshopService.users.edit_title', { name: form.name }) : $t('plugins.WorkshopService.users.new_title') }}</v-card-title>
+				<v-card-title class="text-subtitle-1">{{ form.edit ? $t('plugins.WorkshopService.users.edit_title', { name: form.name }) : $t('plugins.WorkshopService.users.new_title') }}<sv-unsaved-mark :show="hasUnsaved" class="ml-3" /></v-card-title>
 				<v-card-text>
 					<v-text-field v-if="!form.edit" v-model="form.name" :label="$t('plugins.WorkshopService.users.name')" dense outlined counter="32" autocomplete="off" />
 					<template v-if="!form.edit">
-						<v-row dense>
-							<v-col cols="6"><v-text-field :append-icon="showPins ? 'mdi-eye-off' : 'mdi-eye'" @click:append="showPins = !showPins" v-model="form.pin" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin')" dense outlined hide-details autocomplete="new-password" /></v-col>
-							<v-col cols="6"><sv-text-field v-model="form.repeat" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin_repeat')" autocomplete="new-password" /></v-col>
-						</v-row>
+						<sv-form-row>
+							<sv-text-field v-model="form.pin" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin')" autocomplete="new-password">
+								<template #append><button type="button" class="sv-field-btn" :aria-label="showPins ? $t('plugins.WorkshopService.users.hide_pin') : $t('plugins.WorkshopService.users.show_pin')" @click="showPins = !showPins"><span class="mdi" :class="showPins ? 'mdi-eye-off' : 'mdi-eye'" aria-hidden="true" /></button></template>
+							</sv-text-field>
+							<sv-text-field v-model="form.repeat" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin_repeat')" autocomplete="new-password" />
+						</sv-form-row>
 						<div class="text-caption grey--text mt-1 mb-3">{{ $t('plugins.WorkshopService.users.pin_help', { min: state.min_pin, max: state.max_pin }) }}</div>
 					</template>
 					<sv-select v-model="form.role" :items="roleItems" :label="$t('plugins.WorkshopService.users.role')" :disabled="form.edit && isMe({ name: form.name })" />
@@ -115,26 +117,28 @@
 				</v-card-text>
 				<v-card-actions>
 					<v-spacer />
-					<v-btn text @click="dlg = false">{{ $t('plugins.WorkshopService.common.cancel') }}</v-btn>
-					<v-btn color="primary" :loading="busy" :disabled="!formValid" @click="saveForm">{{ $t('plugins.WorkshopService.users.save') }}</v-btn>
+					<v-btn text @click="closeForm">{{ $t('plugins.WorkshopService.common.cancel') }}</v-btn>
+					<v-btn color="primary" :class="{ 'sv-save-hot': hasUnsaved }" :loading="busy" :disabled="!formValid" @click="saveForm">{{ $t('plugins.WorkshopService.users.save') }}</v-btn>
 				</v-card-actions>
 			</v-card>
 		</v-dialog>
 
 		<!-- PIN: reset one of a person, or change my own -->
-		<v-dialog v-model="dlgPin" max-width="400">
+		<v-dialog v-model="dlgPin" max-width="400" persistent @keydown.esc="closePin" @click:outside="closePin">
 			<v-card>
-				<v-card-title class="text-subtitle-1">{{ $t('plugins.WorkshopService.users.reset_title', { name: pinForm.name }) }}</v-card-title>
+				<v-card-title class="text-subtitle-1">{{ $t('plugins.WorkshopService.users.reset_title', { name: pinForm.name }) }}<sv-unsaved-mark :show="hasUnsaved" class="ml-3" /></v-card-title>
 				<v-card-text>
-					<v-text-field :append-icon="showPins ? 'mdi-eye-off' : 'mdi-eye'" @click:append="showPins = !showPins" v-model="pinForm.pin" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.new_pin')" dense outlined autocomplete="new-password" />
+					<sv-text-field v-model="pinForm.pin" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.new_pin')" autocomplete="new-password" class="mb-3">
+						<template #append><button type="button" class="sv-field-btn" :aria-label="showPins ? $t('plugins.WorkshopService.users.hide_pin') : $t('plugins.WorkshopService.users.show_pin')" @click="showPins = !showPins"><span class="mdi" :class="showPins ? 'mdi-eye-off' : 'mdi-eye'" aria-hidden="true" /></button></template>
+					</sv-text-field>
 					<sv-text-field v-model="pinForm.repeat" :type="showPins ? 'text' : 'password'" inputmode="numeric" :label="$t('plugins.WorkshopService.users.pin_repeat')" autocomplete="new-password" />
 					<div class="text-caption grey--text mt-2">{{ $t('plugins.WorkshopService.users.reset_help') }}</div>
 					<v-alert v-if="formError" dense text type="error" class="mt-3 mb-0">{{ formError }}</v-alert>
 				</v-card-text>
 				<v-card-actions>
 					<v-spacer />
-					<v-btn text @click="dlgPin = false">{{ $t('plugins.WorkshopService.common.cancel') }}</v-btn>
-					<v-btn color="primary" :loading="busy" :disabled="!pinValid" @click="savePin">{{ $t('plugins.WorkshopService.users.save') }}</v-btn>
+					<v-btn text @click="closePin">{{ $t('plugins.WorkshopService.common.cancel') }}</v-btn>
+					<v-btn color="primary" :class="{ 'sv-save-hot': hasUnsaved }" :loading="busy" :disabled="!pinValid" @click="savePin">{{ $t('plugins.WorkshopService.users.save') }}</v-btn>
 				</v-card-actions>
 			</v-card>
 		</v-dialog>
@@ -145,10 +149,14 @@
 'use strict'
 
 import SvTextField from './ui/SvTextField.vue'
+import SvFormRow from './ui/SvFormRow.vue'
 import SvSelect from './ui/SvSelect.vue'
 import { api, adoptSession, currentIdentity, onIdentity, whoami } from './workshop-api.js'
 import { signedOut } from './workshop-auth.js'
 import { roleMixin } from './role-mixin.js'
+import SvUnsavedMark from './ui/SvUnsavedMark.vue'
+import { unsavedMixin } from './ui/unsaved-mixin.js'
+import { snapshot } from './ui/unsaved-guard.js'
 import SessionNotice from './SessionNotice.vue'
 import RoleChip from './RoleChip.vue'
 import UsersSessions from './UsersSessions.vue'
@@ -162,8 +170,8 @@ function emptyForm() {
 
 export default {
 	name: 'UsersCard',
-	components: { SvTextField, SvSelect, SessionNotice, RoleChip, UsersSessions, SvToggle },
-	mixins: [roleMixin],
+	components: { SvTextField, SvFormRow, SvSelect, SessionNotice, RoleChip, UsersSessions, SvToggle, SvUnsavedMark },
+	mixins: [roleMixin, unsavedMixin],
 	// the people, the sessions and every open form or dialog came from the session that left (ESTANDAR 3.3): emptied on sign-out / change of role
 	sessionData: ['state', 'showPins', 'first', 'form', 'dlg', 'pinForm', 'dlgPin', 'armed', 'busy', 'error', 'formError'],
 	data() {
@@ -171,8 +179,8 @@ export default {
 			state: { configured: null, users: [], settings: {}, roles: [], custom_roles: [], modes: [], min_pin: 4, max_pin: 12 },
 			identity: currentIdentity(),
 			showPins: false, first: { name: '', pin: '', repeat: '' },
-			form: emptyForm(), dlg: false,
-			pinForm: { name: '', pin: '', repeat: '' }, dlgPin: false,
+			form: emptyForm(), dlg: false, formBase: null,
+			pinForm: { name: '', pin: '', repeat: '' }, dlgPin: false, pinBase: null,
 			armed: '', busy: false, error: '', formError: '', off: null
 		};
 	},
@@ -260,10 +268,32 @@ export default {
 			}
 			this.busy = false;
 		},
-		openNew() { this.formError = ''; this.form = emptyForm(); this.dlg = true; },
+		// unsaved changes (unsaved-mixin.js): what was typed in the person dialog and in the PIN dialog, against how each one opened
+		unsavedPair() {
+			return [{ f: this.dlg ? this.form : null, p: this.dlgPin ? this.pinForm : null }, { f: this.dlg ? this.formBase : null, p: this.dlgPin ? this.pinBase : null }];
+		},
+		async saveBeforeLeaving() {
+			if (this.dlg) {
+				if (!this.formValid) return false;
+				await this.saveForm();
+				if (this.dlg) return false;
+			}
+			if (this.dlgPin) {
+				if (!this.pinValid) return false;
+				await this.savePin();
+				if (this.dlgPin) return false;
+			}
+			return true;
+		},
+		discardUnsaved() { this.dlg = false; this.dlgPin = false; },
+		// Cancel, Escape and a touch outside: out at once when nothing was typed, else the dialog of unsaved changes asks
+		closeForm() { this.leaveWith(() => { this.dlg = false; }); },
+		closePin() { this.leaveWith(() => { this.dlgPin = false; }); },
+		openNew() { this.formError = ''; this.form = emptyForm(); this.formBase = snapshot(this.form); this.dlg = true; },
 		openEdit(u) {
 			this.formError = '';
 			this.form = Object.assign(emptyForm(), { edit: true, name: u.name, role: u.role, modes: u.modes.slice(), camera: !!u.camera_for_viewer });
+			this.formBase = snapshot(this.form);
 			this.dlg = true;
 		},
 		async saveForm() {
@@ -281,7 +311,7 @@ export default {
 			}
 			this.busy = false;
 		},
-		openReset(u) { this.formError = ''; this.pinForm = { name: u.name, pin: '', repeat: '' }; this.dlgPin = true; },
+		openReset(u) { this.formError = ''; this.pinForm = { name: u.name, pin: '', repeat: '' }; this.pinBase = snapshot(this.pinForm); this.dlgPin = true; },
 		async savePin() {
 			const p = this.pinForm;
 			this.busy = true;

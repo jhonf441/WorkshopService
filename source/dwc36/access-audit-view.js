@@ -32,6 +32,33 @@ export function resultOf(row) {
 	return row && DENIED_CODES.includes(row.code) ? 'denied' : 'error'
 }
 
+// The filters in the address (?s=security&t=activity&f=...): only what differs from a fresh screen, as a short JSON; what comes back is cleaned (known keys, text, a range of a known shape)
+const FILTER_TEXT = ['user', 'group', 'op', 'target', 'result']
+export function filtersToQuery(f, fresh) {
+	const x = f || {}
+	const base = fresh || {}
+	const out = {}
+	FILTER_TEXT.forEach(k => { if (String(x[k] || '').trim()) out[k] = String(x[k]).trim() })
+	;['denied', 'errors'].forEach(k => { if (x[k]) out[k] = true })
+	if (x.detail === false) out.detail = false
+	if (x.range && JSON.stringify(x.range) !== JSON.stringify(base.range)) out.range = x.range
+	return Object.keys(out).length ? JSON.stringify(out) : ''
+}
+
+export function filtersFromQuery(text) {
+	let o = null
+	try { o = JSON.parse(String(text || '')) } catch (e) { return {} }
+	if (!o || typeof o !== 'object' || Array.isArray(o)) return {}
+	const out = {}
+	FILTER_TEXT.forEach(k => { if (typeof o[k] === 'string' && o[k].length <= 200) out[k] = o[k] })
+	if (out.result && !RESULTS.includes(out.result)) delete out.result
+	;['denied', 'errors'].forEach(k => { if (o[k] === true) out[k] = true })
+	if (o.detail === false) out.detail = false
+	const r = o.range
+	if (r && typeof r === 'object' && (r.type === 'relative' || r.type === 'absolute')) out.range = r
+	return out
+}
+
 export function listArgs(f, offset) {
 	const x = f || {}
 	const out = { limit: PAGE_SIZE, offset: offset | 0 }

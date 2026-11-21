@@ -1,15 +1,20 @@
 <template>
-	<!-- The card of one key, read only: classes, capabilities, other operations, denied entries, how many operations it may call (the list is the
-	     service's answer), uses, last use and the expiry the key already had (shown, never edited here: the API section keeps that field).
+	<!-- The card of one key (the actions are the ones of the list: edit, switch and delete, asked of the card above): classes, capabilities, other operations, denied entries, how many operations it may call (the list is the
+	     service's answer), uses, last use and the expiry (changed in the edit dialog).
 	       <access-key-card :row="keyRows(...)[0]" :now="epoch seconds" @back="..." /> -->
 	<div v-if="row" class="access-key-card">
 		<div class="access-view-head">
 			<v-btn small outlined class="access-touch" @click="$emit('back')"><v-icon left small>mdi-arrow-left</v-icon>{{ $t('plugins.WorkshopService.access.common_back') }}</v-btn>
 			<strong class="access-view-name">{{ row.name }}</strong>
-			<v-chip small outlined label :color="row.enabled ? 'success' : ''">{{ $t('plugins.WorkshopService.access.keys_state_' + (row.enabled ? 'active' : 'suspended')) }}</v-chip>
+			<v-chip small outlined label :color="row.status === 'active' ? 'success' : row.status === 'ended' ? 'error' : ''">{{ $t('plugins.WorkshopService.access.keys_state_' + row.status) }}</v-chip>
+			<v-chip v-if="row.raw.strict === false" small outlined label color="warning" :title="$t('plugins.WorkshopService.keys.cap_legacy_hint')">{{ $t('plugins.WorkshopService.keys.cap_legacy') }}</v-chip>
 			<v-chip v-if="row.unused" small outlined label color="warning" class="access-unused-mark">{{ $tc('plugins.WorkshopService.access.keys_unused_days', row.unused.days, { n: row.unused.days }) }}</v-chip>
 		</div>
-		<div class="wf-note mb-2" role="note"><v-icon class="wf-note-icon" aria-hidden="true">mdi-key-outline</v-icon><span>{{ $t('plugins.WorkshopService.access.keys_format_help') }}</span></div>
+		<div v-if="canChange" class="access-person-line mb-2">
+			<v-btn small outlined class="access-touch" @click="$emit('edit', row)"><v-icon left small>mdi-pencil</v-icon>{{ $t('plugins.WorkshopService.keys.edit') }}</v-btn>
+			<sv-toggle :value="row.status === 'active'" :label="$t('plugins.WorkshopService.access.keys_switch')" :disabled="row.status === 'ended'" @input="v => $emit('toggle', { row, on: v })" />
+			<v-btn small outlined color="error" class="access-touch" @click="$emit('remove', row)"><v-icon left small>mdi-delete</v-icon>{{ $t('plugins.WorkshopService.keys.revoke') }}</v-btn>
+		</div>
 		<div class="access-person-line"><span class="access-rule-label">{{ $t('plugins.WorkshopService.access.keys_card_classes') }}</span>
 			<v-chip v-for="k in card.classes" :key="'k:' + k" small outlined label>{{ $t('plugins.WorkshopService.' + classKey(k)) }}</v-chip>
 			<span v-if="!card.classes.length">{{ $t('plugins.WorkshopService.access.common_none') }}</span>
@@ -50,10 +55,13 @@ import { SHOWN_OPS, dateOf, expiryOf, keyCard } from './access-keys-view.js'
 import { accessApi } from './access-api.js'
 import { capTitle, classKey, isCap } from './key-names.js'
 import { displayNamesMixin } from './display-names-mixin.js'
+import SvToggle from './ui/SvToggle.vue'
 
 export default {
+	components: { SvToggle },
 	mixins: [displayNamesMixin],
 	props: {
+		canChange: { type: Boolean, default: false },
 		row: { type: Object, default: null },
 		now: { type: Number, default: 0 }
 	},

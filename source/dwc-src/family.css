@@ -268,13 +268,17 @@
 .wf-session-chip.is-role .wf-session-chip-icon { color: var(--wf-n-role); }
 .wf-session-chip-icon svg { width: 16px; height: 16px; fill: currentColor; }
 /* N2 a section note */
-.wf-notice { display: flex; align-items: flex-start; gap: 10px; margin: 0 0 12px; padding: 8px 12px; border: 1px solid color-mix(in srgb, var(--wf-n-c) 40%, transparent); border-left: 3px solid var(--wf-n-c); border-radius: 8px; background: var(--wf-n-bg); font-size: 13px; line-height: 1.4; }
+.wf-notice { container-type: inline-size; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 12px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--wf-n-c) 40%, transparent); border-left: 3px solid var(--wf-n-c); border-radius: 8px; background: var(--wf-n-bg); font-size: 13px; line-height: 1.4; }
 .wf-notice-icon, .wf-reason-icon, .wf-cover-icon { flex: none; width: 16px; height: 16px; font-size: 16px; color: var(--wf-n-c); }
 .wf-notice-icon { margin-top: 1px; }
 .wf-notice-icon svg, .wf-reason-icon svg, .wf-cover-icon svg { width: 100%; height: 100%; fill: currentColor; }
 .wf-notice-body { flex: 1 1 auto; min-width: 0; }
 .wf-notice-text { color: var(--wf-n-t); overflow-wrap: anywhere; }
-.wf-notice-action { margin-left: auto; flex: none; }
+.wf-notice-icon { grid-column: 1; grid-row: 1; }
+.wf-notice-body { grid-column: 2; grid-row: 1; }
+/* narrow (a side panel): icon + text on top, the button below at full width (44px); wide: text and button on one row */
+.wf-notice .wf-notice-action { grid-column: 1 / -1; grid-row: 2; width: 100%; min-height: 44px; justify-content: center; }
+@container (min-width: 420px) { .wf-notice .wf-notice-action { grid-column: 3; grid-row: 1; width: auto; min-height: 0; align-self: center; } }
 .wf-btn-icon { flex: none; width: 16px; height: 16px; font-size: 16px; line-height: 16px; margin-right: 6px; }
 .wf-notice .wf-btn, .wf-cover .wf-btn, .wf-reason .wf-btn { width: auto; flex: none; align-self: center; }
 /* N3 the reason next to a disabled control (or group): no box, one line of text */

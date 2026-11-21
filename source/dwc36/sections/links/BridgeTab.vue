@@ -49,8 +49,15 @@
 						<div class="sv-stat" data-stat="errors" :data-level="e.totals.duet_errors ? 'warn' : null"><b>{{ e.totals.duet_errors }}</b><span>{{ tr('errors_title') }} · {{ tr('n_kicked', { n: e.totals.kicked || 0 }, e.totals.kicked || 0) }}</span></div>
 					</div>
 					<div v-if="e.history" class="sv-chart" data-part="chart">
-						<p class="sv-quiet">{{ tr('last_hour_per_minute') }} · {{ hourText }}</p>
-						<svg :viewBox="'0 0 600 ' + GH" preserveAspectRatio="none" role="img" :aria-label="tr('last_hour_per_minute')"><g v-for="(b, i) in bars" :key="i"><title>{{ barTitle(b) }}</title><rect class="sv-bar-q" :x="i * 10 + 1" :y="GH - b.hc" width="8" :height="b.hc" /><rect class="sv-bar-o" :x="i * 10 + 1" :y="GH - b.hc - b.ho" width="8" :height="b.ho" /><rect v-if="b.r" class="sv-bar-r" :x="i * 10 + 1" y="0" width="8" height="3" /></g></svg>
+						<p class="sv-quiet">{{ tr('last_hour_per_minute') }} · {{ hourText }} <sv-help v-bind="help('chart', 'bridgeCard')" /></p>
+						<svg :viewBox="'0 0 600 ' + GH" preserveAspectRatio="none" role="group" tabindex="0" :aria-label="tr('last_hour_per_minute') + '. ' + tr('bar_hint')" @keydown.left.prevent="move(-1)" @keydown.right.prevent="move(1)" @keydown.home.prevent="move(-60)" @keydown.end.prevent="move(60)"><defs><pattern id="sv-hatch" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1.3" height="3" fill="currentColor" fill-opacity="0.5" /></pattern></defs><g v-for="(b, i) in bars" :key="i" role="img" :aria-label="barTitle(b)" @mouseenter="picked = b" @click="picked = b"><title>{{ barTitle(b) }}</title><rect class="sv-bar-q" :x="i * 10 + 1" :y="GH - b.hc" width="8" :height="b.hc" /><rect class="sv-bar-o" :x="i * 10 + 1" :y="GH - b.hc - b.ho" width="8" :height="b.ho" /><rect fill="url(#sv-hatch)" :x="i * 10 + 1" :y="GH - b.hc - b.ho" width="8" :height="b.ho" /><path v-if="b.r" class="sv-bar-r" :d="'M' + (i * 10) + ',0 h10 l-5,6 z'" /></g></svg>
+						<p class="sv-quiet" data-part="axis"><span>{{ tr('axis_start') }}</span> → <span>{{ tr('axis_now') }}</span> · {{ tr('axis_max', { n: chartTop }) }}</p>
+						<p class="sv-quiet" role="status" data-part="bar-readout">{{ picked ? barTitle(picked) : tr('bar_hint') }}</p>
+					</div>
+					<div v-if="e.history" class="sv-chips" role="list" data-part="legend" :aria-label="tr('chart_legend')">
+						<span class="sv-chip-sm" role="listitem" data-legend="queries"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect class="sv-bar-q" width="12" height="12" /></svg>{{ tr('legend_queries') }}</span>
+						<span class="sv-chip-sm" role="listitem" data-legend="orders"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect class="sv-bar-o" width="12" height="12" /><rect fill="url(#sv-hatch)" width="12" height="12" /></svg>{{ tr('legend_orders') }}</span>
+						<span class="sv-chip-sm" role="listitem" data-legend="rejections"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path class="sv-bar-r" d="M0,0 h12 l-6,10 z" /></svg>{{ tr('legend_rejections') }}</span>
 					</div>
 				</section>
 
@@ -81,7 +88,7 @@ import { want } from '../../core/store/session.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
 import * as contract from '../../bridge-contract.js'
 import { parsePortError } from '../../bridge-port.js'
-import { CHART_HEIGHT, READ_FAILS, bytes, chartBars, dur, hourTotals, inUseReason, ipOf, num } from '../../bridge-view.js'
+import { CHART_HEIGHT, READ_FAILS, bytes, chartBars, chartMax, dur, hourTotals, inUseReason, ipOf, num } from '../../bridge-view.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
 import SvHelp from '../../ui/SvHelp.vue'
 import SvReason from '../../ui/SvReason.vue'
@@ -102,7 +109,7 @@ export default {
 	mixins: [rowsMixin, bridgeOrders],
 	props: { active: { type: Boolean, default: false } },
 	data() {
-		return { unitSwitch, contractOpen: false, GH: CHART_HEIGHT }
+		return { unitSwitch, contractOpen: false, GH: CHART_HEIGHT, picked: null }
 	},
 	computed: {
 		e() {
@@ -195,6 +202,9 @@ export default {
 		bars() {
 			return chartBars(this.e.history, this.GH)
 		},
+		chartTop() {
+			return chartMax(this.e.history)
+		},
 		hourText() {
 			const s = hourTotals(this.e.history)
 			return tr('hour_summary', { o: tr('n_orders', { n: s[0] }, s[0]), q: tr('n_queries', { n: s[1] }, s[1]), r: tr('n_rejections', { n: s[2] }, s[2]) })
@@ -228,8 +238,17 @@ export default {
 			if (this.inUse) return
 			if (this.touch('restart')) this.order({ action: 'restart' }, 'restart')
 		},
+		// the chart is ONE stop of the keyboard: the arrows move from minute to minute, Home and End go to the first and the last (a touch or the mouse pick a bar too)
+		move(step) {
+			const n = this.bars.length
+			if (!n) return
+			const at = this.picked ? this.bars.indexOf(this.picked) : n
+			this.picked = this.bars[Math.max(0, Math.min(n - 1, step === -60 ? 0 : step === 60 ? n - 1 : at + step))]
+		},
 		barTitle(b) {
-			return tr('bar_title', { m: b.minutes, o: tr('n_orders', { n: b.orders }, b.orders), q: tr('n_queries', { n: b.queries }, b.queries) }) + (b.rejections ? tr('bar_rejections', { n: b.rejections }, b.rejections) : '') + (b.connections ? tr('bar_connections', { n: b.connections }, b.connections) : '')
+			const o = tr('n_orders', { n: b.orders }, b.orders)
+			const q = tr('n_queries', { n: b.queries }, b.queries)
+			return tr(b.minutes ? 'bar_title' : 'bar_title_now', { m: b.minutes, o, q }) + tr('bar_rejections', { n: b.rejections }, b.rejections) + (b.connections ? tr('bar_connections', { n: b.connections }, b.connections) : '')
 		}
 	}
 }

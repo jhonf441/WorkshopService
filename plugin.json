@@ -197,6 +197,8 @@
     "job_trace.py",
     "jog_move.py",
     "jog_pure.py",
+    "journal_ops.py",
+    "journal_view.py",
     "laser_correction.py",
     "laser_guard.py",
     "layer_recipes.py",
@@ -239,6 +241,7 @@
     "machine_heightmap.py",
     "machine_history.py",
     "machine_layout.py",
+    "machine_led.py",
     "machine_level.py",
     "machine_limits.py",
     "machine_maintenance.py",
@@ -290,6 +293,7 @@
     "notifier.py",
     "origin_track.py",
     "os_gateway.py",
+    "password_policy.py",
     "paths.py",
     "pellet_layers.py",
     "pellet_layers_ops.py",
@@ -350,17 +354,17 @@
     "RELEASE.json"
   ],
   "dwcFiles": [
-    "css/WorkshopService.4829d305.css",
-    "css/WorkshopService.4829d305.css.gz",
-    "js/WorkshopService.92fa9746.js",
-    "js/WorkshopService.92fa9746.js.gz"
+    "css/WorkshopService.11209316.css",
+    "css/WorkshopService.11209316.css.gz",
+    "js/WorkshopService.1b722167.js",
+    "js/WorkshopService.1b722167.js.gz"
   ],
   "sdFiles": [],
   "pid": -1,
   "id": "WorkshopService",
   "name": "Workshop Service",
   "author": "jhonf441",
-  "version": "2.53.0",
+  "version": "2.57.1",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopService",
   "tags": [

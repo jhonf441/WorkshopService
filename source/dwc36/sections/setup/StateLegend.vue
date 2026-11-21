@@ -25,7 +25,7 @@ export default {
 		return {
 			LEVELS,
 			FILE_STATES,
-			LEVEL: { identical: 'ok', present: 'ok', missing: 'error', edited: 'warn', not_yet: 'rest', attention: 'warn' },
+			LEVEL: { identical: 'ok', present: 'ok', missing: 'error', edited: 'warn', reviewed: 'ok', not_yet: 'rest', attention: 'warn' },
 			LEVEL_ICON: { ok: 'mdi-check-circle-outline', warn: 'mdi-alert-outline', error: 'mdi-close-circle-outline', rest: 'mdi-clock-outline' }
 		}
 	},

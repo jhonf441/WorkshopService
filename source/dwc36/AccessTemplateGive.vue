@@ -19,11 +19,12 @@
 			<div v-if="loaded && !people.length" class="wf-help mt-1">{{ $t('plugins.WorkshopService.access.who_none') }}</div>
 		</v-card-text>
 		<v-card-actions class="access-template-actions sv-card-actions">
-			<v-btn small outlined class="access-touch" @click="$emit('close')">{{ $t('plugins.WorkshopService.access.common_cancel') }}</v-btn>
+			<sv-unsaved-mark :show="hasUnsaved" />
+			<v-btn small outlined class="access-touch" @click="leave()">{{ $t('plugins.WorkshopService.access.common_cancel') }}</v-btn>
 			<v-btn v-if="!profiles.length" small outlined class="access-touch" :disabled="locked" @click="$emit('copy', template)"><v-icon left small>mdi-content-copy</v-icon>{{ $t('plugins.WorkshopService.access.templates_copy') }}</v-btn>
-			<v-btn small color="primary" class="access-touch" :loading="checking" :disabled="locked || self || !user || !profile" @click="preview()">{{ $t('plugins.WorkshopService.access.templates_give_preview') }}</v-btn>
+			<v-btn small color="primary" class="access-touch" :class="{ 'sv-save-hot': hasUnsaved }" :loading="checking" :disabled="locked || self || !user || !profile" @click="preview()">{{ $t('plugins.WorkshopService.access.templates_give_preview') }}</v-btn>
 		</v-card-actions>
-		<access-edit-dialog :change="change" :before="brief" view="person" :groups="groups" @cancel="change = null" @done="done()" @stale="gone()" />
+		<access-edit-dialog :change="change" :before="brief" view="person" :groups="groups" @cancel="cancelChange()" @done="done()" @stale="gone()" />
 	</v-card>
 </template>
 
@@ -31,6 +32,9 @@
 'use strict'
 
 import SvSelect from './ui/SvSelect.vue'
+import SvUnsavedMark from './ui/SvUnsavedMark.vue'
+import { unsavedMixin } from './ui/unsaved-mixin.js'
+import { dropLeave, resumeLeave } from './ui/unsaved-guard.js'
 import AccessEditDialog from './AccessEditDialog.vue'
 import { askMixin } from './access-ask-mixin.js'
 import { roleMixin } from './role-mixin.js'
@@ -41,8 +45,8 @@ import { currentIdentity } from './workshop-api.js'
 
 export default {
 	name: 'AccessTemplateGive',
-	components: { SvSelect, AccessEditDialog },
-	mixins: [roleMixin, askMixin],
+	components: { SvSelect, AccessEditDialog, SvUnsavedMark },
+	mixins: [roleMixin, askMixin, unsavedMixin],
 	props: {
 		template: { type: Object, required: true },
 		profiles: { type: Array, default: () => [] }, // the names of the own saved profiles
@@ -50,7 +54,7 @@ export default {
 		locked: { type: Boolean, default: false } // the session may not attach, or the access file is damaged
 	},
 	data() {
-		return { people: [], groups: null, loaded: false, user: null, profile: this.profiles.indexOf(this.copyName) >= 0 ? this.copyName : (this.profiles[0] || null), change: null, brief: null, failed: '', saved: false }
+		return { people: [], groups: null, loaded: false, user: null, profile: this.profiles.indexOf(this.copyName) >= 0 ? this.copyName : (this.profiles[0] || null), change: null, brief: null, failed: '', saved: false, leaveAfterSave: false }
 	},
 	computed: {
 		self() {
@@ -68,6 +72,26 @@ export default {
 		this.loaded = true
 	},
 	methods: {
+		// unsaved changes (unsaved-mixin.js): the person chosen (the profile starts as the copy of the template: only a person is a choice made)
+		unsavedPair() {
+			return [this.user || null, null]
+		},
+		async saveBeforeLeaving() {
+			await this.preview()
+			if (!this.change) return false
+			this.leaveAfterSave = true
+			return 'later'
+		},
+		discardUnsaved() {
+			this.user = null
+		},
+		leave() {
+			this.leaveWith(() => this.$emit('close'))
+		},
+		cancelChange() {
+			this.change = null
+			if (this.leaveAfterSave) { this.leaveAfterSave = false; dropLeave() }
+		},
 		// the dry run first (askMixin.passes), then the dialog: the person is read again so the dialog shows the state the service has now
 		async preview() {
 			if (this.locked || this.self || !this.user || !this.profile || this.checking) return
@@ -87,8 +111,10 @@ export default {
 			this.change = null
 			this.saved = true
 			this.$emit('done')
+			if (this.leaveAfterSave) { this.leaveAfterSave = false; resumeLeave() }
 		},
 		gone() {
+			if (this.leaveAfterSave) { this.leaveAfterSave = false; dropLeave() }
 			this.change = null
 			this.failed = this.$t('plugins.WorkshopService.access.state_stale')
 		}

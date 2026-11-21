@@ -3,16 +3,18 @@
 	     and the service has the last word. Goes through AccessEditDialog (operation access.groups.set, through the dialog).
 	       <access-group-new :groups="answer of access.groups.list" :locked="false" @created="reload()" /> -->
 	<div class="access-group-new mb-3">
-		<v-btn small color="primary" class="access-touch" :disabled="locked" @click="open = !open"><v-icon left small>mdi-plus</v-icon>{{ $t('plugins.WorkshopService.access.groups_new') }}</v-btn>
-		<div v-if="open" class="access-group-new-form">
+		<v-btn small color="primary" class="access-touch" :disabled="locked" @click="toggle()"><v-icon left small>mdi-plus</v-icon>{{ $t('plugins.WorkshopService.access.groups_new') }}</v-btn>
+		<span class="sv-vh" role="status" aria-live="polite" data-part="said">{{ said }}</span>
+		<div v-if="open" ref="form" class="access-group-new-form">
 			<sv-text-field v-model="name" maxlength="32" :label="$t('plugins.WorkshopService.access.groups_name')" :error="problemText" />
 			<div class="wf-help">{{ $t('plugins.WorkshopService.access.groups_name_rule') }}</div>
 			<sv-text-field v-model="description" maxlength="200" :label="$t('plugins.WorkshopService.access.groups_description')" />
-			<v-btn small color="primary" class="access-touch" :disabled="locked || !!problem || !name" @click="ask()">{{ $t('plugins.WorkshopService.access.change_do_group_create') }}</v-btn>
+			<sv-unsaved-mark :show="hasUnsaved" />
+			<v-btn small color="primary" class="access-touch" :class="{ 'sv-save-hot': hasUnsaved }" :disabled="locked || !!problem || !name" @click="ask()">{{ $t('plugins.WorkshopService.access.change_do_group_create') }}</v-btn>
 		</div>
 		<access-state v-if="stale" state="stale" />
 		<v-alert v-if="refused" type="warning" outlined dense class="mb-2" role="alert">{{ $t('plugins.WorkshopService.access.pedit_precheck_refused') }} {{ refused }}</v-alert>
-		<access-edit-dialog :change="change" :before="null" view="group" :groups="groups" @cancel="change = null" @done="done()" @stale="gone()" />
+		<access-edit-dialog :change="change" :before="null" view="group" :groups="groups" @cancel="cancelChange()" @done="done()" @stale="gone()" />
 	</div>
 </template>
 
@@ -21,6 +23,10 @@
 
 import SvTextField from './ui/SvTextField.vue'
 import AccessState from './AccessState.vue'
+import { revealMixin } from './reveal-mixin.js'
+import SvUnsavedMark from './ui/SvUnsavedMark.vue'
+import { unsavedMixin } from './ui/unsaved-mixin.js'
+import { dropLeave, resumeLeave } from './ui/unsaved-guard.js'
 import AccessEditDialog from './AccessEditDialog.vue'
 import { askMixin } from './access-ask-mixin.js'
 import { BASE_ROLES } from './access-people-view.js'
@@ -29,18 +35,22 @@ import { groupNameProblem } from './access-edit-view.js'
 const ROLE_NONE = 'none' // role_store.NONE_ROLE: not a name for a group either
 
 export default {
-	components: { SvTextField, AccessState, AccessEditDialog },
-	mixins: [askMixin],
+	components: { SvTextField, AccessState, AccessEditDialog, SvUnsavedMark },
+	mixins: [askMixin, revealMixin, unsavedMixin],
 	props: {
 		groups: { type: Object, default: null }, // access.groups.list
 		locked: { type: Boolean, default: false }
 	},
 	data() {
-		return { open: false, name: '', description: '', change: null, stale: false }
+		return { open: false, name: '', description: '', change: null, stale: false, leaveAfterSave: false }
 	},
 	watch: {
 		name() {
 			this.refused = ''
+		},
+		// the form opens under the button: the focus goes to its first field (and it is said)
+		open(v) {
+			if (v) this.$nextTick(() => this.showResult(this.$refs.form, { focus: true, said: this.$t('plugins.WorkshopService.access.groups_new_opened') }))
 		}
 	},
 	computed: {
@@ -60,6 +70,29 @@ export default {
 		}
 	},
 	methods: {
+		// unsaved changes (unsaved-mixin.js): the name and the description typed and not created
+		unsavedPair() {
+			return [{ n: this.name, d: this.description }, { n: '', d: '' }]
+		},
+		async saveBeforeLeaving() {
+			await this.ask()
+			if (!this.change) return false
+			this.leaveAfterSave = true
+			return 'later'
+		},
+		discardUnsaved() {
+			this.name = ''
+			this.description = ''
+			this.open = false
+		},
+		toggle() {
+			if (!this.open) this.open = true
+			else this.leaveWith(() => { this.open = false })
+		},
+		cancelChange() {
+			this.change = null
+			if (this.leaveAfterSave) { this.leaveAfterSave = false; dropLeave() }
+		},
 		async ask() {
 			if (this.locked || this.problem || this.checking) return
 			this.stale = false
@@ -72,10 +105,12 @@ export default {
 			this.name = ''
 			this.description = ''
 			this.$emit('created')
+			if (this.leaveAfterSave) { this.leaveAfterSave = false; resumeLeave() }
 		},
 		// a group with that name appeared while the dialog was open: nothing was saved
 		gone() {
 			this.change = null
+			if (this.leaveAfterSave) { this.leaveAfterSave = false; dropLeave() }
 			this.stale = true
 			this.$emit('created')
 		}

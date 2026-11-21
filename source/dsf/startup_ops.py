@@ -17,9 +17,10 @@ import sd_integrity
 import sd_restore
 import sd_pending
 import sd_view
+import settings_store
 import startup_plan
 import service_restart
-from workshop_api import ADMIN, ApiError, Arg, Op, READ
+from workshop_api import ADMIN, ApiError, Arg, Op, READ, WRITE
 
 
 def _written(fn, *args, **kw):
@@ -28,6 +29,36 @@ def _written(fn, *args, **kw):
         return fn(*args, **kw)
     finally:
         sd_pending.forget()
+
+
+def accepted_reviews():
+    value = settings_store.get("file-review")["value"]
+    return value if isinstance(value, dict) else {}
+
+def file_review(args, c):
+    path = args["path"]
+    found = [f for p in sd_files.listing()["plugins"] for f in p["files"] if f["path"] == path]
+    if not found:
+        raise ApiError("invalid_args", "not a file the plugins bring", field="path")
+    f = found[0]
+    if args.get("reviewed", True) is False:
+        settings_store.merge("file-review", {path: ""})
+        return {"path": path, "reviewed": False}
+    if f["status"] != "edited" or not f.get("sha"):
+        raise ApiError("invalid_args", "only a file edited by hand can be left as it is", field="path")
+    if args.get("expected_sha") and args["expected_sha"] != f["sha"]:
+        raise ApiError("conflict", "the file changed since the person looked at it", field="expected_sha")
+    settings_store.merge("file-review", {path: f["sha"]})
+    return {"path": path, "reviewed": True, "sha": f["sha"]}
+
+def review_op():
+    a, S, B = Arg, "str", "bool"
+    return Op("startup.file.review", file_review, WRITE,
+       {"path": a(S, True, desc="Path of the file relative to 0:/, as the list of files shows it."),
+        "reviewed": a(B, default=True, desc="true: leave the file as it is (the person edited it on purpose); false: ask for attention again."),
+        "expected_sha": a(S, desc="The sha the person was looking at (the `sha` of startup.files): a file that changed since is refused.")},
+       "Remembers that a hand-edited file was looked at and is meant to stay as it is. It is kept against the sha of the content: the file asks for attention "
+       "again only when it changes again. Nothing on the SD is written; it only stores the decision in the service settings.", log=False)
 
 
 def build(ctx):
@@ -42,7 +73,7 @@ def build(ctx):
         return report
 
     def files(args, c):
-        out = sd_files.listing(plugin=args.get("plugin") or None)
+        out = sd_files.mark_reviewed(sd_files.listing(plugin=args.get("plugin") or None), accepted_reviews())
         try:
             last = install_log.last_action_by_path()
         except Exception:  # noqa: BLE001 -- the log is a help: without it the rows simply carry no "applied" answer
@@ -71,7 +102,6 @@ def build(ctx):
 
     def _getters(c):
         return service_restart.default_getters((ctx or {}).get("bridge"))
-
     def restore_preview(args, c):
         return sd_restore.preview(args["path"], getters=_getters(c))
 
@@ -87,7 +117,6 @@ def build(ctx):
 
     def plan(args, c):
         return startup_plan.plan(getters=_getters(c))
-
     def apply_(args, c):
         if args.get("apply") is not True:
             raise ApiError("invalid_args", "applying needs apply true, with the items the person ticked", field="apply")
@@ -110,6 +139,7 @@ def build(ctx):
            "Applies ONLY the items of startup.plan that the person ticked, each with the expected_sha of the preview (a file that changed since is skipped). "
            "Refused unless the board is idle. Safety files (pause, cancel, homing, laser guard, start-up) also need confirm_safety on the item and machine_off. "
            "The old file is first copied to sys/workshop/legacy/<date>/, writes are atomic and read back, and the run goes to the install log."),
+        review_op(),
         Op("startup.file.view", file_view, READ,
            {"path": a(S, True, desc="Path of the file relative to 0:/, as the list of files shows it.")},
            "One file of the SD to read: is it there, its text (cut at 200 KB; network and password lines masked), what differs from the factory copy "

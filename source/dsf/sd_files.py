@@ -36,10 +36,20 @@ def status_of(row):
 def _entry(row):
     out = {"path": row["path"], "kind": row["kind"], "status": status_of(row), "state": row["state"],
            "used_by": row.get("used_by", []), "safety": bool(row.get("safety"))}
+    if row.get("sha_found"):
+        out["sha"] = row["sha_found"]  # the content on the SD now: "leave it as it is" is remembered against this
     if row.get("created_before"):
         out["created_before"] = True
     if row.get("breaks_if_missing"):
         out["breaks_if_missing"] = row["breaks_if_missing"]
+    return out
+
+
+def mark_reviewed(out, accepted):
+    """Sets `reviewed` on every file of a listing whose current sha is the one the person accepted ({path: sha}); a file that changed again is not."""
+    for p in out["plugins"]:
+        for f in p["files"]:
+            f["reviewed"] = bool(f.get("sha")) and accepted.get(f["path"]) == f["sha"]
     return out
 
 

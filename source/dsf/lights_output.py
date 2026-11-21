@@ -88,14 +88,15 @@ def e_declared(e):
     """Is strip E<e> in config.g (M950 E<e>)? Undeclared, M150 would give an error on every command: that extra strip is not painted. 10 s cache."""
     if time.time() - DECLARED["ts"] > 10:
         es = set()
-        try:
-            with open(CONFIG_G, encoding="utf-8") as f:
-                for line in f:
-                    m = re.match(r"^\s*M950\s+E(\d+)", line)
-                    if m:
-                        es.add(int(m.group(1)))
-        except OSError:
-            pass
+        for path in (CONFIG_G, os.path.join(os.path.dirname(CONFIG_G), "workshop", "machine.g")):   # machine.g: the strips the Machine page creates
+            try:
+                with open(path, encoding="utf-8") as f:
+                    for line in f:
+                        m = re.match(r"^\s*M950\s+E(\d+)\b", line)
+                        if m:
+                            es.add(int(m.group(1)))
+            except OSError:
+                continue
         DECLARED.update(ts=time.time(), es=es)
     return int(e) in DECLARED["es"]
 

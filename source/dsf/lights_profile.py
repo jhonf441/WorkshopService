@@ -25,6 +25,12 @@ from messages import M
 
 SD = paths.SD
 CONFIG_G = os.path.join(SD, "sys", "config.g")
+
+
+def config_files(config_g=None):
+    """The files that may declare a strip: config.g and sys/workshop/machine.g (where the Machine page writes the strips it creates; config.g calls it)."""
+    g = config_g or CONFIG_G
+    return (g, os.path.join(os.path.dirname(g), "workshop", "machine.g"))
 LIGHTS_G = os.path.join(SD, "sys", "workshop", "macros", "system", "lights.g")
 
 DEFAULTS = {
@@ -339,16 +345,29 @@ def clean(config):
     return out
 
 
+def strip_file(led_strip):
+    """The file whose `M950 E<strip>` line declares the strip (config.g first, then machine.g), or None."""
+    for path in config_files():
+        try:
+            with open(path, encoding="utf-8") as f:
+                if any(re.match(rf"^\s*M950\s+E{int(led_strip)}\b", line) for line in f):
+                    return path
+        except OSError:
+            continue
+    return None
+
+
 def m950(led_strip):
-    """M950 E<strip> line of config.g and its U (declared number of LEDs)."""
-    try:
-        with open(CONFIG_G, encoding="utf-8") as f:
-            for line in f:
-                if re.match(rf"^\s*M950\s+E{int(led_strip)}\b", line):
-                    m = re.search(r"\bU(\d+)", line.split(";")[0])
-                    return {"line": line.rstrip("\n"), "total": int(m.group(1)) if m else None}
-    except OSError:
-        pass
+    """M950 E<strip> line of config.g (or of machine.g, where the Machine page writes the strips it creates) and its U (declared number of LEDs)."""
+    for path in config_files():
+        try:
+            with open(path, encoding="utf-8") as f:
+                for line in f:
+                    if re.match(rf"^\s*M950\s+E{int(led_strip)}\b", line):
+                        m = re.search(r"\bU(\d+)", line.split(";")[0])
+                        return {"line": line.rstrip("\n"), "total": int(m.group(1)) if m else None}
+        except OSError:
+            continue
     return {"line": None, "total": None}
 
 

@@ -16,7 +16,7 @@
 			<access-state v-else :state="state" :detail="detail" @retry="read()">
 				<activity-chain :can-verify="canTools" @broken="v => $emit('chain', v)" />
 				<activity-alerts :tick="tick" @see="seeRefusals" />
-				<activity-filters :value="f" :users="users" :groups="groupNames" :start-open="!narrow" @input="f = $event" @clear="clearFilters()" />
+				<activity-filters :value="f" :users="users" :groups="groupNames" :start-open="!narrow" :operations="operations" :seen-ops="seenOps" :seen-targets="seenTargets" :origin="origin" @input="onFilters" @clear="clearFilters()" />
 				<div v-if="!rows.length && !loading" class="wf-help access-own-empty">{{ $t('plugins.WorkshopService.access.audit_empty') }}</div>
 				<div v-else class="access-table-wrap">
 					<table class="access-table">
@@ -84,7 +84,9 @@ import { resolve, localText, relative } from './range-picker.js'
 import { stateOfError } from './access-profile-view.js'
 import { displayNamesMixin } from './display-names-mixin.js'
 import { isNarrowScreen } from './access-report-view.js'
-import { KEPT_DAYS, PAGE_SIZE, listArgs, pageText, rowView } from './access-audit-view.js'
+import { KEPT_DAYS, PAGE_SIZE, filtersFromQuery, filtersToQuery, listArgs, pageText, rowView } from './access-audit-view.js'
+import { pageState } from './core/page-state.js'
+import { go } from './app/url-sync.js'
 
 const SLOW_MS = 15000
 const RESULT_COLOR = { allowed: 'success', denied: 'error', error: 'warning' }
@@ -108,7 +110,7 @@ export default {
 	data() {
 		return {
 			f: freshFilters(), rows: [], total: 0, users: [], groups: null, offset: 0, loading: false, error: '', failure: null, slow: false, tick: 0,
-			event: null, settingsOpen: false, identity: currentIdentity(), off: null, narrow: isNarrowScreen(), PAGE: PAGE_SIZE, KEPT_DAYS, RESULT_COLOR
+			page: pageState, event: null, settingsOpen: false, seenOps: [], seenTargets: [], origin: '', identity: currentIdentity(), off: null, narrow: isNarrowScreen(), PAGE: PAGE_SIZE, KEPT_DAYS, RESULT_COLOR
 		}
 	},
 	computed: {
@@ -137,9 +139,16 @@ export default {
 		detail() { return this.failure ? this.failure.message || '' : '' }
 	},
 	watch: {
-		f: { deep: true, handler() { this.offset = 0; this.read() } }
+		f: { deep: true, handler() { this.offset = 0; this.read(); this.writeUrl() } },
+		// the Back button or a link changed the filters in the address
+		'page.filter'(now) { if (now !== filtersToQuery(this.f, freshFilters())) this.f = Object.assign(freshFilters(), filtersFromQuery(now)) }
 	},
-	created() { this._gen = 0; this._readSeq = 0 },
+	created() {
+		this._gen = 0
+		this._readSeq = 0
+		// the filters travel in the address (?f=): a link or a reload brings them back
+		if (pageState.filter) this.f = Object.assign(freshFilters(), filtersFromQuery(pageState.filter))
+	},
 	mounted() {
 		this.off = onIdentity(i => { this.identity = i; if (this.isAdmin) this.start() })
 		if (this.isAdmin) this.start()
@@ -179,6 +188,14 @@ export default {
 			this.tick++
 			this.read()
 		},
+		// the operations and the targets that appear in the record are offered by the filters (kept while the screen lives, so taking a filter off does not shrink the list)
+		noteSeen(rows) {
+			rows.forEach(r => {
+				if (r.op && this.seenOps.indexOf(r.op) < 0) this.seenOps.push(r.op)
+				const t = r.detail && typeof r.detail === 'object' && r.detail.target ? String(r.detail.target) : ''
+				if (t && this.seenTargets.indexOf(t) < 0) this.seenTargets.push(t)
+			})
+		},
 		move(dir) { this.offset = Math.max(0, this.offset + dir * PAGE_SIZE); this.read() },
 		// the button of an alert: the refusals of that minute and the one before, by permission
 		seeRefusals(minute) {
@@ -186,9 +203,18 @@ export default {
 			if (isNaN(at.getTime())) return
 			const p = n => String(n).padStart(2, '0')
 			const text = d => d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + 'T' + p(d.getHours()) + ':' + p(d.getMinutes())
+			this.origin = this.$t('plugins.WorkshopService.access.audit_f_origin_alert', { time: text(at).replace('T', ' ') })
 			this.f = Object.assign(freshFilters(), { detail: this.f.detail, denied: true, range: { type: 'absolute', from: text(new Date(at.getTime() - 60000)), to: text(at) } })
 		},
-		clearFilters() { this.f = Object.assign(freshFilters(), { detail: this.f.detail }) },
+		clearFilters() { this.origin = ''; this.f = Object.assign(freshFilters(), { detail: this.f.detail }) },
+		// the person changed a filter by hand: it no longer comes from a button
+		onFilters(v) { this.origin = ''; this.f = v },
+		// the address says the filters (replace: no step of the history for each keystroke)
+		writeUrl() {
+			const now = filtersToQuery(this.f, freshFilters())
+			if (now === (pageState.filter || '')) return
+			go({ s: pageState.section, t: pageState.tab, a: pageState.anchor, f: now }, { replace: true })
+		},
 		// the groups of the filter come from access.groups.list; if it fails the filter just has no groups (the other filters work)
 		async loadGroups() {
 			try { this.groups = await accessApi.groupsList() } catch (e) { this.groups = null }
@@ -208,6 +234,7 @@ export default {
 				const r = await accessApi.auditList(listArgs(Object.assign({}, this.f, { from: d.from, to: d.to }), this.offset), { noLogin: true })
 				if (!current()) return
 				this.rows = r.rows || []
+				this.noteSeen(this.rows)
 				this.total = r.total || 0
 				this.users = r.users || []
 				this.error = ''

@@ -18,9 +18,12 @@ import paths
 import re
 import time
 
+import socket
+
 import activity
 import board_reply
 import fs_atomic
+import password_policy
 from messages import M, J, B
 
 CONFIG_G = paths.CONFIG_G
@@ -66,14 +69,24 @@ def _write(raw_text):
     fs_atomic.write_bytes(CONFIG_G, raw_text)
 
 
-def _valid(key):
-    if not 4 <= len(key) <= 60:
-        return M("password_must_have_4_to_60_characters")
-    if any(c in key for c in '";\r\n') or any(ord(c) < 32 for c in key):
-        return M("password_cannot_contain_quotes_semicolons_line_breaks")
-    if key.lower() == "reprap":
-        return M("password_reprap_factory_one_no_password_use")
-    return ""
+def _names(params):
+    """What the password must not be equal to: who is changing it, this machine's name and its addresses, the workshop's own names."""
+    out = [params.get("U"), "workshop", "taller"]  # the machine's own name and addresses are read below, never written here
+    try:
+        host = socket.gethostname()
+        out += [host, host.split(".")[0]]
+        out += [a[4][0] for a in socket.getaddrinfo(host, None, socket.AF_INET)]
+    except OSError:
+        pass
+    return [n for n in out if n]
+
+
+def _valid(key, repeat=None, names=()):
+    """(reason code, message) of the first rule of password_policy.check that the password breaks, or ("", "")."""
+    reason = password_policy.check(key, repeat, names)
+    if not reason:
+        return "", ""
+    return reason, M("password_policy_" + reason, min=password_policy.MIN_LEN, max=password_policy.MAX_LEN)
 
 
 def run(params, bridge, config):
@@ -87,9 +100,11 @@ def run(params, bridge, config):
 
     if action in ("set", "put"):
         key = str(params.get("V") or "")
-        reason = _valid(key)
+        again = params.get("W")
+        reason, message = _valid(key, None if again is None else str(again), _names(params))
         if reason:
-            raise Refused("invalid_args", M("password_password", reason=reason), field="password")
+            # 422 invalid_args: `reason` is the rule (characters, length, mismatch, one_class, common, names, pattern, factory): the page says it under the field
+            raise Refused("invalid_args", M("password_password", reason=message), field="repeat" if reason == "mismatch" else "password", reason=reason)
         try:
             raw_text = _read()
             backup = _back_up()

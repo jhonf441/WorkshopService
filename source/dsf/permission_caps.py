@@ -29,7 +29,8 @@ HARDWARE_PARAMS = "machine.hardware_params"
 # Operations that can NEVER be granted to a role that is not an administrator (the owner's list of 2026-11-06).
 NOT_DELEGABLE = ("users.*", "roles.*", "access.*", "keys.*", "password.*", "auth.resolve", "package.apply", "profile.set", "config.restore",
                  "power.full_reset", "comms.set", "guard.set", "db.folder", "db.delete_previous", "activity.delete", "activity.clear",
-                 "history.delete", "audit.verify", "audit.export", "audit.settings", "lights.apply_m950", "machine.history.restore", "startup.integrity.restore*", "startup.apply")
+                 "history.delete", "audit.verify", "audit.export", "audit.settings", "lights.apply_m950", "machine.history.restore", "startup.integrity.restore*", "startup.apply",
+                 "journal.read")  # the system log shows internals of the machine: administrator only, never a grant (proposed 2026-11-21, to confirm with the owner)
 
 
 def _c(category, klass, risk, *ops):
@@ -42,7 +43,7 @@ CAPABILITIES = {
     "machine.view": _c("machine", "read", 1, "state.get", "motion.state", "motion.ask", "frame.status", "view.heartbeat", "pid.status", "pid.trace",
                        "motors.reread", "safety.status", "guard.status", "bedzones.get", "bedcal.status", "pelletlayers.list", "pelletlayers.get", "pelletlayers.status", "layerrecipes.list", "layerrecipes.get", "layerrecipes.preview", "layerrecipes.status", "bedestimates.get", "readiness.list", "workstate.get", "machine.overview",
                        "machine.state", "machine.runs", "machine.layout", "machine.limits.get", "machine.power.get", "machine.offsets.get",
-                       "machine.tool.get", "machine.beds.get", "machine.motion.get", "machine.shaping.get", "machine.workarea.get",
+                       "machine.tool.get", "machine.beds.get", "machine.led.get", "machine.motion.get", "machine.shaping.get", "machine.workarea.get",
                        "machine.workarea.positions", "machine.mesh.list", "machine.mesh.get", "machine.maintenance.get", "machine.height.get"),
     "machine.stop": _c("machine", "stop", 1, "jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "bedcal.stop", "pelletlayers.disarm", "layerrecipes.disarm", "machine.stop",
                        "livejob.stop_safe"),
@@ -59,7 +60,7 @@ CAPABILITIES = {
                          "machine.mesh.taper", "machine.calc", "machine.offsets.snapshot"),
     "machine.maintenance": _c("machine", "write", 1, "machine.maintenance.done", "machine.maintenance.plan.set"),
     "machine.config_view": _c("machine", "read", 2, "machine.config.plan", "machine.history.list", "machine.history.get", "machine.history.compare",
-                              "machine.report", "machine.tool.pins", "machine.tool.preview", "machine.beds.preview"),
+                              "machine.report", "machine.tool.pins", "machine.tool.preview", "machine.beds.preview", "machine.led.preview"),
     "machine.config_apply": _c("machine", "write", 3, "machine.config.apply"),
     # decision of the owner (2026-11-11): restoring a configuration record is for administrators only, never delegable (NOT_DELEGABLE)
     "machine.config_restore": _c("machine", "admin", 4, "machine.history.restore"),
@@ -119,7 +120,7 @@ CAPABILITIES = {
                       "modules.list", "examples.list", "startup.integrity", "startup.files", "startup.file.view", "startup.plan", "startup.runs.*", "package.export", "package.preview", "preflight.run", "plugins.stopped.get", "db.status"),
     "config.api": _c("config", "read", 1, "api.describe", "api.ping"),
     "config.edit": _c("config", "write", 2, "config.snapshot", "config.commit", "config.lock", "config.unlock", "config.arm", "config.confirm",
-                      "config.rollback", "settings.set", "settings.merge", "examples.create"),
+                      "config.rollback", "settings.set", "settings.merge", "examples.create", "startup.file.review"),
     "processes.control": _c("system", "write", 2, "modules.set", "processes.pause", "processes.resume", "processes.restart"),
     # restarting the whole service is its OWN capability (not part of processes.control): granting "Procesos: parar y arrancar" never grants it;
     # an administrator may still grant this one on purpose (the level 3 confirmation and the idle checks always apply)
@@ -129,6 +130,8 @@ CAPABILITIES = {
     "config.critical": _c("config", "admin", 4, "config.restore", "package.apply", "startup.integrity.restore.preview", "startup.integrity.restore", "startup.apply", "profile.set", "comms.set"),
     # -- system --
     "system.view": _c("system", "read", 1, "health.history"),
+    # a log shows internals of the machine (addresses, errors): like the audit list, it is never part of a read-only profile
+    "system.journal": _c("system", "admin", 3, "journal.read"),
     "config.database": _c("config", "write", 2, "db.places", "db.backup", "db.keep", "db.settings"),
     "config.database_admin": _c("config", "admin", 4, "db.folder", "db.delete_previous"),
 }

@@ -73,7 +73,6 @@ export default {
 </script>
 
 <style>
-.access-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin-bottom: 8px; }
 .access-search { max-width: 320px; }
 .access-kinds { display: inline-flex; border: 1px solid var(--wf-line); border-radius: 8px; overflow: hidden; }
 .access-kind { padding: 0 14px; background: transparent; color: inherit; font-size: 13px; cursor: pointer; border: 0; }

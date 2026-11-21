@@ -22,12 +22,12 @@ FEATURE_OF names the feature of each L4 module (rule 2 of 2.1: features do not i
 _LAYERS = {
     "L0": (
         "paths", "sd_paths", "fs_atomic", "service_log", "messages", "job_states", "ports", "dsf_compat", "mode_paths", "boards_table",
-        "camera_proto", "gcodelib_geo", "net_guard", "architecture_map", "api_docs", "api_admin_reading", "access_rev", "clock", "gcode_classes", "os_gateway", "board_reply",
+        "camera_proto", "password_policy", "gcodelib_geo", "net_guard", "architecture_map", "api_docs", "api_admin_reading", "access_rev", "clock", "gcode_classes", "os_gateway", "board_reply",
     ),
     "L1": (
         "publisher", "machine_state", "listener_channel", "communication", "db", "db_dates", "db_schema", "db_conn", "audit_chain", "audit_store", "audit_settings", "config_store", "settings_store", "service_settings", "users", "role_store", "api_keys",
         "bridge_contract", "real_mode", "cpu_meter", "capabilities", "capabilities_io", "machine_profile", "work_state",
-        "sd_manifest", "native_merge", "health_history", "install_log", "published_texts", "gcode_temps", "tuya_meter",
+        "sd_manifest", "native_merge", "health_history", "journal_view", "install_log", "published_texts", "gcode_temps", "tuya_meter",
         "bed_zones_mirror", "laser_correction", "focus_geometry", "lights_config", "gcodelib_files", "gcodelib_kind", "gcodelib_thumb",
     ),
     "L2": (
@@ -63,7 +63,7 @@ _LAYERS = {
         "machine_odometer", "machine_offsets", "machine_ops", "machine_overview", "machine_parsers", "machine_patch",
         "machine_patch_motion", "machine_plans", "machine_plans_motion", "machine_power", "machine_probe",
         "machine_procedures", "machine_report", "machine_safety", "machine_sensors", "machine_shaping", "machine_store", "machine_testmove",
-        "machine_tool", "machine_try", "machine_try_kinds", "machine_tune", "machine_verify", "machine_workarea",
+        "machine_tool", "machine_led", "machine_try", "machine_try_kinds", "machine_tune", "machine_verify", "machine_workarea",
         "pid_trace", "handlers/pid_zones", "handlers/config",
         # printing (zones, pellet, recipes, G-code library)
         "bed_estimates", "bed_zones", "bed_zones_config", "bed_zones_geometry", "bed_zones_intercept", "layer_recipes",
@@ -84,7 +84,7 @@ _LAYERS = {
     ),
     "L5": (
         "workshop_api", "identity", "permissions", "permission_caps", "access_profile", "access_base", "access_eval", "access_store", "access_person", "access_targets", "access_context", "access_admin", "access_ops", "access_plugin_files", "access_plugin_manifest", "access_report", "access_review", "access_usage", "audit", "audit_alarms", "audit_reads", "audit_ops", "api_macros", "api_ops", "api_users", "handler_refusal",
-        "roles_ops", "settings_ops", "profile_ops", "startup_ops", "bed_zones_ops", "bed_calibration_ops", "layer_recipes_ops", "gcodelib_ops",
+        "roles_ops", "journal_ops", "settings_ops", "profile_ops", "startup_ops", "bed_zones_ops", "bed_calibration_ops", "layer_recipes_ops", "gcodelib_ops",
         "pellet_layers_ops", "guard_api", "activity_ops", "energy_ops", "notifications_ops", "service_ops", "jobs_ops", "lights_ops", "power_ops",
     ),
     "L6": ("main", "bootstrap"),
@@ -108,7 +108,7 @@ _FEATURES = {
                 "machine_mesh", "machine_motion", "machine_odometer", "machine_offsets", "machine_ops", "machine_overview",
                 "machine_parsers", "machine_patch", "machine_patch_motion", "machine_plans", "machine_plans_motion",
                 "machine_power", "machine_probe", "machine_procedures", "machine_report", "machine_safety", "machine_sensors", "machine_shaping",
-                "machine_store", "machine_testmove", "machine_tool", "machine_try", "machine_try_kinds", "machine_tune",
+                "machine_store", "machine_testmove", "machine_tool", "machine_led", "machine_try", "machine_try_kinds", "machine_tune",
                 "machine_verify", "machine_workarea", "pid_trace", "handlers/pid_zones", "handlers/config"),
     "printing": ("bed_estimates", "bed_zones", "bed_zones_config", "bed_zones_geometry", "bed_zones_intercept", "layer_recipes",
                  "layer_recipes_file", "layer_recipes_plan", "layer_recipes_preview", "layer_recipes_run",

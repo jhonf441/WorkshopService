@@ -47,8 +47,8 @@
 					<sv-select id="sv-db-mirror" v-model="draft.mirror" :options="mirrorOptions" :disabled="!mayEdit" @focusin.native="readPlaces" />
 				</div>
 				<div class="sv-fbar sv-fcell-wide">
-					<button type="submit" class="sv-btn sv-main" data-act="save-settings" :disabled="!mayEdit || stale || dbSettings.busy() || !dirty">{{ t('data.settings_save') }}</button>
-					<span class="sv-quiet">{{ t(dirty ? 'data.settings_unsaved' : 'data.settings_nothing') }}</span>
+					<button type="submit" class="sv-btn sv-main" :class="{ 'sv-save-hot': hasUnsaved }" data-act="save-settings" :disabled="!mayEdit || stale || dbSettings.busy() || !dirty">{{ t('data.settings_save') }}</button>
+					<span class="sv-quiet">{{ t(hasUnsaved ? 'data.settings_unsaved' : 'data.settings_nothing') }}</span>
 				</div>
 				<p v-if="problem" class="sv-field-error" role="alert" data-part="settings-problem"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('data.settings_invalid') }}</p>
 				<div v-if="dbSettings.state === 'done'" class="sv-row-out" data-kind="done" role="status"><span class="mdi mdi-check-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('data.settings_done') }}</div>
@@ -118,6 +118,8 @@ import { dbPlaces, dbStatus } from '../../core/resources.js'
 import { dbBackup, dbDeletePrevious, dbFolder, dbKeep, dbSettings } from '../../core/actions/data.js'
 import { want } from '../../core/store/session.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
+import { unsavedMixin } from '../../ui/unsaved-mixin.js'
+import { saveWithAction } from '../../ui/unsaved-guard.js'
 import { dateTime, time, toMs } from '../../core/format/dates.js'
 import { durationText } from '../../core/format/duration.js'
 import { timeNow } from '../../core/clock.js'
@@ -137,7 +139,7 @@ const withCurrent = (base, v) => (typeof v === 'number' && base.indexOf(v) < 0 ?
 export default {
 	name: 'BackupsTab',
 	components: { SvActionRow, SvConfirmDialog, SvHelp, SvReason, SvSelect, SvSwitch, SvZone },
-	mixins: [rowsMixin],
+	mixins: [rowsMixin, unsavedMixin],
 	inject: { nav: { from: 'svNav', default: () => ({ go() {}, href: () => '#' }) } },
 	props: { active: { type: Boolean, default: false } },
 	data() {
@@ -218,6 +220,17 @@ export default {
 		}
 	},
 	methods: {
+		// unsaved changes (unsaved-mixin.js): the form against what the service holds
+		unsavedPair() {
+			return [this.draft, draftOf(this.r)]
+		},
+		saveBeforeLeaving() {
+			if (parseCount(this.draft.daily) === null || parseCount(this.draft.weekly) === null) return false
+			return saveWithAction(this.dbSettings, () => this.save())
+		},
+		discardUnsaved() {
+			this.draft = draftOf(this.r)
+		},
 		follow(e, place) {
 			if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button > 0)) return
 			if (e && typeof e.preventDefault === 'function') e.preventDefault()

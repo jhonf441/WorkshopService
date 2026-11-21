@@ -26,7 +26,7 @@
 			<label class="sv-field-line"><span>{{ tr('minutes_until_debug_turns_itself_off') }}</span><span class="sv-field"><input v-model.number="config.debug_timeout_min" type="number" min="1" max="1440" :aria-label="tr('minutes_until_debug_turns_itself_off')" :disabled="!mayEdit"></span></label>
 			<label class="sv-check"><input v-model="config.debug_renew" type="checkbox" :disabled="!mayEdit"><span>{{ tr('debug_renew_label') }}</span></label>
 			<p class="sv-hint">{{ tr('debug_renew_help') }}</p>
-			<div class="sv-fbar"><button type="submit" class="sv-btn sv-main" data-act="save-config" :disabled="!mayEdit || saving">{{ tr('save') }}</button><span class="sv-quiet">{{ t('data.settings_nothing') }}</span></div>
+			<div class="sv-fbar"><button type="submit" class="sv-btn sv-main" :class="{ 'sv-save-hot': hasUnsaved }" data-act="save-config" :disabled="!mayEdit || saving">{{ tr('save') }}</button><sv-unsaved-mark :show="hasUnsaved" /><span v-if="!hasUnsaved" class="sv-quiet">{{ t('data.settings_nothing') }}</span></div>
 			<div v-if="note" class="sv-row-out" :data-kind="note.ok ? 'done' : 'error'" :role="note.ok ? 'status' : 'alert'" data-part="note"><span class="mdi sv-ico sv-ico-s" :class="note.ok ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline'" aria-hidden="true" />{{ note.text }}</div>
 		</form>
 		<sv-reason :lock="lockOf(['bridge.service.set'])" @sign-in="signIn" />
@@ -36,6 +36,9 @@
 <script>
 import { bridge, loadConfig, saveConfig } from '../../core/store/bridge.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
+import SvUnsavedMark from '../../ui/SvUnsavedMark.vue'
+import { unsavedMixin } from '../../ui/unsaved-mixin.js'
+import { snapshot } from '../../ui/unsaved-guard.js'
 import { parsePortError, portHint } from '../../bridge-port.js'
 import * as forms from '../../bridge-forms.js'
 import SvReason from '../../ui/SvReason.vue'
@@ -43,10 +46,10 @@ import { tr } from './bridge-orders.js'
 
 export default {
 	name: 'BridgeSettings',
-	components: { SvReason },
-	mixins: [rowsMixin],
+	components: { SvReason, SvUnsavedMark },
+	mixins: [rowsMixin, unsavedMixin],
 	data() {
-		return { config: null, names: [], queriesTxt: '', saving: false, note: null }
+		return { config: null, names: [], queriesTxt: '', saving: false, note: null, base: null }
 	},
 	computed: {
 		mayEdit() {
@@ -70,12 +73,25 @@ export default {
 	},
 	methods: {
 		tr,
+		// unsaved changes (unsaved-mixin.js): the form against what was read from the bridge file (a form not read yet has none)
+		unsavedPair() {
+			return this.config && this.base ? [{ config: this.config, names: this.names, queriesTxt: this.queriesTxt }, this.base] : [null, null]
+		},
+		async saveBeforeLeaving() {
+			if (!this.config || !forms.validPort(Number(this.config.port))) return false
+			await this.save()
+			return !!this.note && this.note.ok === true
+		},
+		discardUnsaved() {
+			if (this.base) { this.config = snapshot(this.base.config); this.names = snapshot(this.base.names); this.queriesTxt = this.base.queriesTxt }
+		},
 		async open() {
 			this.note = null
 			const f = forms.configFrom(await loadConfig())
 			this.config = f.config
 			this.names = f.names
 			this.queriesTxt = f.queriesTxt
+			this.base = snapshot({ config: this.config, names: this.names, queriesTxt: this.queriesTxt })
 		},
 		async save() {
 			const port = Number(this.config.port)
@@ -84,6 +100,7 @@ export default {
 			try {
 				await saveConfig(current => forms.applyConfig(current, this.config, port, this.names, this.queriesTxt))
 				this.note = { ok: true, text: tr('saved_the_bridge_picks_it_up') }
+				this.base = snapshot({ config: this.config, names: this.names, queriesTxt: this.queriesTxt })
 			} catch (e) {
 				this.note = { ok: false, text: this.t('common.could_not_save_x', { x: e.message }) }
 			}

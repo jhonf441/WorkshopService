@@ -12,6 +12,7 @@ import re
 import config_scan
 import machine_config as mc
 import machine_file
+import machine_led
 import machine_patch as pt
 from workshop_api import READ, Arg, Op
 
@@ -327,6 +328,8 @@ def plan_tool(values, env):
 
 def _get(args, ctx):
     import machine_ops as mo
+    if args.get("_led"):   # machine.led.get: the same live data (the late import stays in one place)
+        return _led_get(mo.read_sd, mo.model())
     om = mo.model()
     state, _ = _state(mo.read_sd, om)
     tools = []
@@ -369,6 +372,8 @@ def _modes(args):
 
 def _preview(args, ctx):
     import machine_ops as mo
+    if args.get("_led"):   # machine.led.preview
+        return _led_preview(args.get("spec"), mo.read_sd, mo.model())
     state, _ = _state(mo.read_sd, mo.model())
     bad = machine_file.modes_problem(args.get("spec"))
     if bad:
@@ -380,13 +385,77 @@ def _preview(args, ctx):
     return {"lines": built["lines"], "files": machine_file.preview_files(mc), "warnings": ["tool_restart"], "errors": [], "modes": _modes(args)}
 
 
+# ---- LED strips (the plan config.led_strip; the pure part is machine_led.py) ----
+
+def _led_state(read, om):
+    texts = _config_texts(read)
+    strips = (om or {}).get("ledStrips")
+    limit = ((om or {}).get("limits") or {}).get("ledStrips")
+    return {"texts": texts, "in_model": {i for i, x in enumerate(strips) if x} if isinstance(strips, list) else set(),
+            "max_strips": limit if isinstance(limit, int) and limit > 0 else machine_led.MAX_STRIPS, "known_pins": set(CAPS), "other_user": where_used}
+
+
+def led_plan_error(e):
+    err = mc.PlanError(e.code, e.field)
+    err.where = e.where
+    return err
+
+
+def plan_led_strip(values, env):
+    """Adds the line of a LED strip to machine.g (and the call to it in config.g the first time). The machine restarts to read it."""
+    spec = values.get("spec", values)
+    try:
+        built = machine_led.build_lines(spec, _led_state(env["read"], env.get("om")))
+    except machine_led.LedError as e:
+        raise led_plan_error(e)
+    return machine_file.plan_body(mc, config_scan.scan(env["read"]), "led", built["summary"]["strip"], built, spec.get("modes") if isinstance(spec, dict) else None, "led_restart")
+
+
+def _led_get(read, om):
+    st = _led_state(read, om)
+    texts = st["texts"]
+    strips = machine_led.strips_in(texts)
+    used = {s["e"] for s in strips} | st["in_model"]
+    pins = []
+    for p in machine_led.LED_PINS:
+        by = machine_led.pin_user(texts, p, where_used)
+        pins.append({"pin": p, "free": by is None, "dedicated": p == machine_led.DEDICATED, "used_by": by})
+    return {"strips": [dict(s, in_model=s["e"] in st["in_model"]) for s in strips], "in_model": sorted(st["in_model"]),
+            "next_strip": next((n for n in range(st["max_strips"]) if n not in used), None), "max_strips": st["max_strips"], "pins": pins,
+            "types": [{"id": k, "t": v} for k, v in machine_led.TYPES.items()], "default_type": machine_led.DEFAULT_TYPE, "max_leds": machine_led.MAX_LEDS}
+
+
+def _led_preview(spec, read, om):
+
+    bad = machine_file.modes_problem(spec)
+    if bad:
+        return {"lines": [], "files": [], "warnings": [], "errors": [bad]}
+    try:
+        built = machine_led.build_lines(spec, _led_state(read, om))
+    except machine_led.LedError as e:
+        err = {"code": e.code, "field": e.field}
+        if e.where:
+            err["where"] = e.where
+        return {"lines": [], "files": [], "warnings": [], "errors": [err]}
+    modes = machine_file.clean_modes(spec.get("modes"))
+    return {"lines": built["lines"], "files": machine_file.preview_files(mc), "warnings": ["led_restart"], "errors": [], "strip": built["summary"], "modes": list(modes) if modes else None}
+
+
+def _led_ops():
+    return [Op("machine.led.get", lambda args, ctx: _get({"_led": True}, ctx), READ, {}, "The LED strips the configuration declares (M950 E lines: strip number, pin, type T, number of LEDs, file and line), the first free strip "
+               "number, the pins a strip may use with who uses each one, the types offered (rgbw = T2, rgb = T1) and the limits.", log=False),
+            Op("machine.led.preview", lambda args, ctx: _preview({"_led": True, "spec": args.get("spec")}, ctx), READ, {"spec": Arg("obj", desc="The strip as the plan config.led_strip takes it: strip (E number), pin, leds, type (rgbw or rgb, default rgbw), modes (optional).")},
+               "The exact configuration line the plan config.led_strip would write, the files it goes into (machine.g and, the first time, config.g), or what is wrong "
+               "(a strip number or a pin already used says the file and line). Writes nothing.", log=False)]
+
+
 def ops():
     return [Op("machine.tool.get", _get, READ, {}, "The tools the machine has now (number, name, heaters, drives, fans, offsets), the next free tool number and the mode "
                "of the machine (Laser / CNC / FFF).", log=False),
             Op("machine.tool.pins", _pins, READ, {"kind": Arg("str", desc="Optional capability to ask for: pwm, digital, adc, temp (temperature input), spi or servo.")},
                "The pins of the board no line of the configuration uses, with what each one can do, and the ones that are in use with the command that uses them.", log=False),
             Op("machine.tool.preview", _preview, READ, {"spec": Arg("obj", desc="The tool as in the design: type, number, name, heaters, fans, sensors, output, drive, offsets.")},
-               "The exact configuration lines the plan config.tool would write for this tool, or what is wrong with it. Writes nothing.", log=False)]
+               "The exact configuration lines the plan config.tool would write for this tool, or what is wrong with it. Writes nothing.", log=False)] + _led_ops()
 
 
-PLANNERS = {"config.tool": plan_tool}
+PLANNERS = {"config.tool": plan_tool, "config.led_strip": plan_led_strip}

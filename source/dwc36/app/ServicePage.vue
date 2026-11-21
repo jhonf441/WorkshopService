@@ -34,6 +34,7 @@
 			</div>
 		</div>
 		<session-section :open="page.section === 'session'" @close="closeSession" />
+		<sv-unsaved-dialog />
 	</div>
 </template>
 
@@ -64,6 +65,8 @@ import SvBand from '../ui/SvBand.vue'
 import SvSectionNav from '../ui/SvSectionNav.vue'
 import SvTabs from '../ui/SvTabs.vue'
 import SvZone from '../ui/SvZone.vue'
+import SvUnsavedDialog from '../ui/SvUnsavedDialog.vue'
+import { routeGuard } from '../ui/unsaved-guard.js'
 import '../styles/tokens.css'
 import '../styles/kit.css'
 import '../styles/page.css'
@@ -73,7 +76,7 @@ const SIGNED_OUT = ['signed-out', 'signing-in', 'expired', 'pin-locked']
 
 export default {
 	name: 'ServicePage',
-	components: { AccessHost, SecurityHost, HomeSection, HealthSection, MachineSection, DataSection, SetupSection, LinksSection, SessionSection, SvBand, SvSectionNav, SvTabs, SvZone },
+	components: { AccessHost, SecurityHost, HomeSection, HealthSection, MachineSection, DataSection, SetupSection, LinksSection, SessionSection, SvBand, SvSectionNav, SvTabs, SvZone, SvUnsavedDialog },
 	// the words of the kit come from the catalogs of this page (area `kit`); a role id is said by its name
 	provide() {
 		return {
@@ -180,6 +183,13 @@ export default {
 			if (c.state === 'role') return { state: 'role', text: t('shell.cover_admin_role', { role: this.roleName(this.session.roleName || this.session.role) }), neededRole: 'admin' }
 			return null
 		}
+	},
+	// an editor with unsaved changes: a change of section or tab, the Back button and DWC's own menu ask first (unsaved-guard.js); leaving by reload is the browser's message
+	beforeRouteUpdate(to, from, next) {
+		routeGuard(to, from, next)
+	},
+	beforeRouteLeave(to, from, next) {
+		routeGuard(to, from, next)
 	},
 	watch: {
 		'$route.query'() {

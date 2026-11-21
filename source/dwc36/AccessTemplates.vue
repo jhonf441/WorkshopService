@@ -5,7 +5,7 @@
 	     The ONE reason for the buttons is drawn by the section. Emits `go` ({ tab }) for the Administrator card.
 	     Operations: access.profiles.list, roles.list, users.list (reads); the writes (save a profile, attach it) and their dry runs belong to the existing editor and dialog. -->
 	<div class="access-templates">
-		<access-profile-editor v-if="draft" :key="'t:' + draft.n" :name="''" :seed="draft.doc" :seed-text="draft.text" :caps="capsAnswer" :limits="limits" :damaged="damaged" @back="closeDraft()" @saved="reload()" />
+		<div v-if="draft" ref="draftBox" class="access-template-draft"><access-profile-editor :key="'t:' + draft.n" :name="''" :seed="draft.doc" :seed-text="draft.text" :caps="capsAnswer" :limits="limits" :damaged="damaged" @back="closeDraft()" @saved="reload()" /></div>
 		<access-state v-else :state="state" :detail="detail" @retry="load()">
 			<v-card class="mb-3">
 				<v-card-title class="text-subtitle-1">
@@ -15,9 +15,14 @@
 				</v-card-title>
 				<v-card-text>
 					<div class="wf-help mb-3">{{ $t('plugins.WorkshopService.access.templates_intro') }}</div>
-					<access-template-give v-if="giving" :key="'g:' + giving.id" :template="giving" :profiles="ownProfiles" :copy-name="copyNameOf(giving)" :locked="lockedGive" @close="giving = null" @copy="t => { giving = null; copy(t) }" @done="reload()" />
+					<span class="sv-vh" role="status" aria-live="polite" data-part="said">{{ said }}</span>
 					<div class="access-template-grid">
-						<access-template-card v-for="t in templates" :key="t.id" :template="t" :titles="titles" :locked-copy="lockedCopy" :locked-give="lockedGive" @copy="copy" @give="giving = $event" />
+						<template v-for="t in templates">
+							<access-template-card :key="t.id" :template="t" :titles="titles" :locked-copy="lockedCopy" :locked-give="lockedGive" :far-note="farNote && lastId === t.id ? farNote : ''" @copy="copy" @give="give" />
+							<div v-if="giving && giving.id === t.id" :key="'g:' + t.id" ref="giveBox" class="access-template-give-slot">
+								<access-template-give :template="giving" :profiles="ownProfiles" :copy-name="copyNameOf(giving)" :locked="lockedGive" @close="giving = null" @copy="x => { giving = null; copy(x) }" @done="reload()" />
+							</div>
+						</template>
 						<v-card class="access-template-admin sv-card-fill" outlined>
 							<v-card-title class="text-subtitle-1"><v-icon small class="mr-2" aria-hidden="true">mdi-shield-account-outline</v-icon>{{ $t('plugins.WorkshopService.access.templates_admin_title') }}</v-card-title>
 							<v-card-text>
@@ -55,6 +60,7 @@ import AccessTemplateCard from './AccessTemplateCard.vue'
 import AccessTemplateGive from './AccessTemplateGive.vue'
 import ProfileName from './ProfileName.vue'
 import { roleMixin } from './role-mixin.js'
+import { revealMixin } from './reveal-mixin.js'
 import { accessApi } from './access-api.js'
 import { stateOfError } from './access-profile-view.js'
 import { TEMPLATES } from './access-templates.js'
@@ -63,9 +69,9 @@ import { copyName, ownNames, pluginRows, templateDoc, titlesOf } from './access-
 export default {
 	name: 'AccessTemplates',
 	components: { AccessState, AccessProfileEditor, AccessTemplateCard, AccessTemplateGive, ProfileName },
-	mixins: [roleMixin],
+	mixins: [roleMixin, revealMixin],
 	data() {
-		return { templates: TEMPLATES, list: null, capsAnswer: {}, loading: false, failed: '', failure: null, draft: null, drafts: 0, giving: null }
+		return { templates: TEMPLATES, list: null, capsAnswer: {}, loading: false, failed: '', failure: null, draft: null, drafts: 0, giving: null, lastId: '' }
 	},
 	computed: {
 		titles() {
@@ -116,6 +122,19 @@ export default {
 			const name = this.$t('plugins.WorkshopService.access.templates_' + t.id + '_name')
 			this.drafts++
 			this.draft = { n: this.drafts, doc: templateDoc(t, this.copyNameOf(t)), text: this.$t('plugins.WorkshopService.access.templates_copy_note', { name }) }
+			this.lastId = t.id
+			// the editor opens in the place of the cards: bring it into view, mark it, focus its first field and say it
+			this.$nextTick(() => this.showResult(this.$refs.draftBox, { focus: true, said: this.$t('plugins.WorkshopService.access.templates_copy_opened', { name: this.copyNameOf(t) }) }))
+		},
+		// "Give to a person": the panel opens right under the card (not at the top of the page) and gets the same treatment
+		give(t) {
+			this.giving = t
+			this.lastId = t.id
+			const name = this.$t('plugins.WorkshopService.access.templates_' + t.id + '_name')
+			this.$nextTick(() => {
+				const b = this.$refs.giveBox
+				this.showResult(Array.isArray(b) ? b[0] : b, { focus: true, said: this.$t('plugins.WorkshopService.access.templates_give_opened', { name }) })
+			})
 		},
 		closeDraft() {
 			this.draft = null
@@ -144,5 +163,6 @@ export default {
 </script>
 
 <style>
+.access-template-give-slot { grid-column: 1 / -1; }
 .access-template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; align-items: stretch; }
 </style>

@@ -66,7 +66,7 @@
 						<small class="sv-quiet">{{ t('machine.tune_range', { min: f.min, max: f.max }) }}</small>
 						<span v-if="problem(f)" class="sv-field-error" role="alert"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('machine.tune_invalid', { min: f.min, max: f.max }) }}</span>
 					</label>
-					<div class="sv-fbar"><button type="submit" class="sv-btn sv-main" :disabled="stale || perm('guard.set').state !== 'ok' || guardTune.busy()">{{ t('machine.tune_save') }}</button><span class="sv-quiet">{{ t('data.settings_nothing') }}</span></div>
+					<div class="sv-fbar"><button type="submit" class="sv-btn sv-main" :class="{ 'sv-save-hot': hasUnsaved }" :disabled="stale || perm('guard.set').state !== 'ok' || guardTune.busy()">{{ t('machine.tune_save') }}</button><sv-unsaved-mark :show="hasUnsaved" /><span class="sv-quiet">{{ t('data.settings_nothing') }}</span></div>
 					<div v-if="guardTune.state === 'done'" class="sv-row-out" data-kind="done" role="status"><span class="mdi mdi-check-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('machine.tune_done') }}</div>
 					<div v-else-if="guardTune.state === 'error' && guardTune.error" class="sv-row-out" data-kind="error" role="alert"><span class="mdi mdi-close-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ guardTune.error.message }}</div>
 				</form>
@@ -95,6 +95,9 @@ import SvReason from '../../ui/SvReason.vue'
 import SvSwitch from '../../ui/SvSwitch.vue'
 import { guardLead, guardRows, guardSummary } from './view.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
+import SvUnsavedMark from '../../ui/SvUnsavedMark.vue'
+import { unsavedMixin } from '../../ui/unsaved-mixin.js'
+import { saveWithAction } from '../../ui/unsaved-guard.js'
 
 const ICONS = { fine: 'mdi-check-circle-outline', resting: 'mdi-sleep', down: 'mdi-close-circle-outline' }
 const FIELDS = Object.freeze([
@@ -109,8 +112,8 @@ const PLUGIN_NAMES = { WorkshopVision: 'Vision', WorkshopRS485: 'RS485' }
 
 export default {
 	name: 'GuardCard',
-	components: { SvActionRow, SvConfirmDialog, SvHelp, SvReason, SvSwitch },
-	mixins: [rowsMixin],
+	components: { SvActionRow, SvConfirmDialog, SvHelp, SvReason, SvSwitch, SvUnsavedMark },
+	mixins: [rowsMixin, unsavedMixin],
 	data() {
 		return { guardAction, guardEnable, guardTune, PLUGIN_NAMES, ICONS, FIELDS, draft: {}, tried: false }
 	},
@@ -186,6 +189,22 @@ export default {
 		},
 		onTune(open) {
 			if (open) guardSettings.show()
+		},
+		// unsaved changes (unsaved-mixin.js): the four values typed against the ones the service holds
+		unsavedPair() {
+			const s = this.settings
+			if (!s || !Object.keys(this.draft).length) return [null, null]
+			const own = {}
+			const saved = {}
+			FIELDS.forEach(f => { own[f.id] = String(this.draft[f.id]).trim(); saved[f.id] = String(s[f.id]) })
+			return [own, saved]
+		},
+		saveBeforeLeaving() {
+			if (FIELDS.some(f => this.number(f) === null)) return false
+			return saveWithAction(this.guardTune, () => this.saveTune())
+		},
+		discardUnsaved() {
+			if (this.settings) this.fill(this.settings)
 		},
 		fill(s) {
 			const d = {}

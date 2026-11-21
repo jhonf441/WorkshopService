@@ -77,3 +77,7 @@ Two people can run the environment at once on different ports (`--api-port`, `--
   `enabledPlugins` and the cache of the service worker are not exercised. The other plugins of the family (the control bar, the shared PIN dialog of
   another plugin) are not there.
 - The DWC session is not checked: a request that carries `X-Session-Key` counts as a DWC session, any other as an open call.
+
+## Layout audit: which widths
+
+`tools/dev/layout_audit.js` (see its header) is run in every place at 390, 1097x617, 1280 and 1920 px. Besides overlap, edges and contrast it checks the forms: `formgap` (sibling fields of one row more than 48 px apart) and `formbase` (the action of a row more than 4 px off the base of its input). A form row is made with `SvFormRow` (`dwc36/ui`), never with the 12-column grid.

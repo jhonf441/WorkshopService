@@ -76,6 +76,13 @@ export function changedCount(view) {
 	return (view.diff_lines || []).filter(l => l.flag !== 'same').length + (view.factory.removed || []).reduce((n, r) => n + r.lines.length, 0)
 }
 
+// What restoring would do, counted on the same rows the viewer draws: the lines of the card that are not the factory ones (marked ~ and +) go, the factory
+// lines the person removed (marked -) come back.
+export function lossCounts(view) {
+	const r = rows(view)
+	return { lose: r.filter(x => x.flag === 'changed' || x.flag === 'added').length, back: r.filter(x => x.flag === 'factory').length }
+}
+
 // The lines of the card that differ from the factory copy as runs [from, to] (what the chips "You edited" jump to).
 export function changedRanges(view) {
 	if (!hasComparison(view)) return []

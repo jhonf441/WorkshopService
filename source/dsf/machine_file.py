@@ -24,14 +24,14 @@ import native_merge as nm
 REL = "sys/workshop/machine.g"
 ROOT = "0:/" + REL
 CONFIG = "0:/sys/config.g"
-KINDS = ("tool", "bed")
+KINDS = ("tool", "bed", "led")
 MODES = tuple(mode_paths.MODE_FILES)          # ("Laser", "CNC", "FFF"): the values of global.selectedMode
 HOOK = nm.Hook("machine", "sys/config.g", ROOT)
 HEADER = [
     "; machine.g -- what the workshop creates in the machine (tools, bed heaters). config.g calls this file once, near its end.",
     "; Every block between the >>> and <<< lines belongs to the Machine page: change it there. Your own lines go outside the blocks.",
 ]
-_ID = re.compile(r"^machine\.(tool|bed)\.(\d{1,3})$")
+_ID = re.compile(r"^machine\.(tool|bed|led)\.(\d{1,3})$")
 _MODE = re.compile(r'==\s*"([A-Za-z]+)"')
 _GUARD = "if global.selectedMode"
 _CUT = ("M99", "M2", "M0", "M1")

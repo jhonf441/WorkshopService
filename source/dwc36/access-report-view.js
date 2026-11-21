@@ -12,16 +12,18 @@
 //   peopleRows(answer, text, sort)               rows of the people table, filtered by text and sorted
 //   keyRows(answer, text, sort)                  rows of the keys table
 //   usedList(row)                                the last use of each capability of a person, the newest first
-//   summaryOf(answer)                            { locked, never, unusedKeys } counts for the line on top
+//   keysOverview(answer)                         { total, active, off, expired, unused, exceptions } counts by state and the exceptions (expired, never used)
+//   summaryOf(answer)                            { locked, never, unusedKeys, expiredKeys } counts for the line on top
 //   agoText(t, now, epoch) / durationText(t, s)  "3 h", "ago 3 days", through the translator t(key, params) of the screen (a key 'users.x' is of the area users)
 //   reportText(answer, t)                        the report as plain text (to copy)
 //   isNarrowScreen(env)                          true under 900 px wide: LAYOUT only (one open rule, folded filters); no feature depends on it
 
 import { BASE_ROLES } from './access-people-view.js'
 import { dateText, clockText } from './access-review-view.js'
+import { statusOf } from './access-keys-view.js'
 
 export const PEOPLE_SORTS = Object.freeze(['name', 'role', 'last_login', 'pin_age', 'lock', 'last_use'])
-export const KEY_SORTS = Object.freeze(['name', 'state', 'last_use', 'idle', 'created', 'reach'])
+export const KEY_SORTS = Object.freeze(['name', 'state', 'last_use', 'idle', 'created'])
 export const NARROW_QUERY = '(max-width: 900px)'
 
 const MIN = 60
@@ -95,9 +97,9 @@ export function peopleRows(answer, text, sort) {
 	return sortRows(rows, sort || { field: 'name', dir: 'asc' }, (r, f) => (PERSON_VALUE[f] || PERSON_VALUE.name)(r))
 }
 
-function keyRow(k) {
+function keyRow(k, now) {
 	const lastUse = num(k.last_used)
-	return {
+	const row = {
 		id: String(k.id || ''),
 		name: String(k.name || ''),
 		enabled: k.enabled !== false,
@@ -106,29 +108,38 @@ function keyRow(k) {
 		unused: lastUse === null,
 		idleDays: num(k.idle_days),
 		uses: k.uses | 0,
-		breadth: k.breadth | 0,
 		expires: num(k.expires)
 	}
+	row.status = statusOf(row, now)   // the same word as Access > Keys (Active / Expired / Off)
+	return row
 }
 
 const KEY_VALUE = {
 	name: (r) => r.name,
-	state: (r) => (r.enabled ? 1 : 0),
+	state: (r) => ({ active: 2, off: 1, ended: 0 })[r.status],
 	last_use: (r) => r.lastUse,
 	idle: (r) => r.idleDays,
-	created: (r) => r.created,
-	reach: (r) => r.breadth
+	created: (r) => r.created
 }
 
 export function keyRows(answer, text, sort) {
 	const needle = String(text || '').trim().toLowerCase()
-	const rows = list(answer && answer.keys).map(keyRow).filter((r) => !needle || has(r.name, needle))
+	const now = (answer && answer.generated) | 0
+	const rows = list(answer && answer.keys).map((k) => keyRow(k, now)).filter((r) => !needle || has(r.name, needle))
 	return sortRows(rows, sort || { field: 'name', dir: 'asc' }, (r, f) => (KEY_VALUE[f] || KEY_VALUE.name)(r))
+}
+
+// what the report says about keys: COUNTS by state and the EXCEPTIONS (expired, never used), not the table: the table of every key is Access > Keys.
+// { total, active, off, expired, unused, exceptions: [{ id, name, status, unused }] } (an exception is a key that is expired or has never been used)
+export function keysOverview(answer) {
+	const rows = keyRows(answer, '', { field: 'name', dir: 'asc' })
+	const count = (st) => rows.filter((r) => r.status === st).length
+	return { total: rows.length, active: count('active'), off: count('off'), expired: count('ended'), unused: rows.filter((r) => r.unused).length, exceptions: rows.filter((r) => r.status === 'ended' || r.unused) }
 }
 
 export function summaryOf(answer) {
 	const people = list(answer && answer.people).map(personRow)
-	return { locked: people.filter((p) => p.locked).length, never: people.filter((p) => p.neverSignedIn).length, unusedKeys: list(answer && answer.keys).map(keyRow).filter((k) => k.unused).length }
+	return { locked: people.filter((p) => p.locked).length, never: people.filter((p) => p.neverSignedIn).length, unusedKeys: keysOverview(answer).unused, expiredKeys: keysOverview(answer).expired }
 }
 
 export function durationText(t, seconds) {
@@ -157,7 +168,7 @@ export function reportText(answer, t) {
 	})
 	lines.push('', t('report_keys_title'))
 	keyRows(answer, '', { field: 'name', dir: 'asc' }).forEach((k) => {
-		lines.push([k.name, t(k.enabled ? 'report_key_active' : 'report_key_suspended'), agoText(t, now, k.lastUse), k.idleDays === null ? '-' : t('report_idle_days', { n: k.idleDays }, k.idleDays), k.created === null ? '-' : dateText(k.created)].join(' | '))
+		lines.push([k.name, t('keys_state_' + k.status), agoText(t, now, k.lastUse), k.created === null ? '-' : dateText(k.created), k.expires === null ? t('keys_no_end') : dateText(k.expires)].join(' | '))
 	})
 	return lines.join('\n')
 }

@@ -36,7 +36,7 @@ export const ADMIN_ENTRY = 'admin'      // the one entry a person who does not a
 export const ADMIN_OP = 'access.profiles.list'   // who may read the profiles administers (the same question the old page asked)
 
 const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k)
-const place = (s, t, a) => Object.freeze({ s, t: t || '', a: a || '' })
+const place = (s, t, a, f) => Object.freeze(f ? { s, t: t || '', a: a || '', f } : { s, t: t || '', a: a || '' })
 
 export function sectionOf(id) {
 	return SECTIONS.find(x => x.id === id) || null
@@ -82,11 +82,11 @@ export function oldPlace(id) {
 	return null
 }
 
-function normal(s, t, a) {
+function normal(s, t, a, f) {
 	const sec = sectionOf(s)
 	if (!sec) return null
 	const tabs = sec.tabs
-	return place(sec.id, tabs.length ? (tabs.indexOf(t) >= 0 ? t : tabs[0]) : '', typeof a === 'string' ? a : '')
+	return place(sec.id, tabs.length ? (tabs.indexOf(t) >= 0 ? t : tabs[0]) : '', typeof a === 'string' ? a : '', typeof f === 'string' ? f : '')
 }
 
 export function placeOf(query) {
@@ -94,12 +94,13 @@ export function placeOf(query) {
 	const s = typeof q.s === 'string' ? q.s : ''
 	const t = typeof q.t === 'string' ? q.t : ''
 	const a = typeof q.a === 'string' ? q.a : ''
+	const f = typeof q.f === 'string' ? q.f : ''
 	if (s) {
 		const here = sectionOf(s)
 		// a tab that moved away with its old section ('people/password') is looked up before the section's own tabs
 		const moved = own(OLD, s + '/' + t) && (!here || here.tabs.indexOf(t) < 0) ? OLD[s + '/' + t] : null
 		if (moved) return place(moved.s, moved.t, a || moved.a)
-		if (here) return normal(s, t, a)
+		if (here) return normal(s, t, a, f)
 		const old = oldPlace(s)
 		if (old) return place(old.s, old.t, a || old.a)
 	}
@@ -115,15 +116,16 @@ export function placeOf(query) {
 }
 
 export function queryOf(p) {
-	const n = normal(p && p.s, p && p.t, p && p.a) || place(HOME)
+	const n = normal(p && p.s, p && p.t, p && p.a, p && p.f) || place(HOME)
 	const q = { s: n.s }
 	if (n.t) q.t = n.t
 	if (n.a) q.a = n.a
+	if (n.f) q.f = n.f // the filters of a screen (the recorded activity): they travel in the address like the rest
 	return q
 }
 
 export function samePlace(x, y) {
-	return !!x && !!y && x.s === y.s && x.t === y.t && x.a === y.a
+	return !!x && !!y && x.s === y.s && x.t === y.t && x.a === y.a && (x.f || '') === (y.f || '')
 }
 
 export function navEntries(mayAdmin) {

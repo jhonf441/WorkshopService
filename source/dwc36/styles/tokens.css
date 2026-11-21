@@ -4,6 +4,7 @@
 :root {
 	--sv-text: rgba(255, 255, 255, 0.92);
 	--sv-text-2: rgba(255, 255, 255, 0.72);
+	--sv-code: #fff; --sv-comment: #8696a3;   /* the file viewer: code (14:1 on its box) and comment (4.9:1 on the box, 3:1 against the code) */
 	--sv-control-line: #8c8c8c;      /* the border of everything that is touched: reaches 3:1 on the surface (--wf-line does not) */
 	--sv-focus: #90caf9;
 	--sv-on-accent: #fff;            /* text on --wf-accent, on the plugin badge and on a filled danger button */
@@ -25,6 +26,7 @@
 .theme--light.v-application, .theme--light .workshop-theme, html:has(.theme--light) {
 	--sv-text: rgba(0, 0, 0, 0.87);
 	--sv-text-2: rgba(0, 0, 0, 0.68);
+	--sv-code: #111; --sv-comment: #5f7280;
 	--sv-control-line: #757575;
 	--sv-focus: #0d47a1;
 	--sv-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);

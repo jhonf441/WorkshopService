@@ -10,7 +10,7 @@
 		<access-profiles-tab v-else-if="current === 'profiles'" :focus="focusFor('profiles')" @damaged="v => $emit('damaged', v)" />
 		<access-templates v-else-if="current === 'templates'" @go="goInside" />
 		<access-can v-else-if="current === 'can'" :focus="focusFor('can')" @go="goInside" />
-		<access-keys-tab v-else :focus="focusFor('keys')" :operations="operations" />
+		<access-keys v-else :focus="focusFor('keys')" :operations="operations" />
 		<access-change-dialog v-model="dialog" />
 	</div>
 </template>
@@ -24,7 +24,7 @@ import AccessPeopleTab from './AccessPeopleTab.vue'
 import AccessProfilesTab from './AccessProfilesTab.vue'
 import AccessTemplates from './AccessTemplates.vue'
 import AccessCan from './AccessCan.vue'
-import AccessKeysTab from './AccessKeysTab.vue'
+import AccessKeys from './AccessKeys.vue'
 import { accessCanMixin } from './reason-mixin.js'
 import AccessLockReason from './AccessLockReason.vue'
 import { focusOf } from './access-go.js'
@@ -37,7 +37,7 @@ const TAB_OPS = {
 }
 
 export default {
-	components: { AccessLockReason, AccessState, AccessChangeDialog, AccessPeopleTab, AccessProfilesTab, AccessTemplates, AccessCan, AccessKeysTab },
+	components: { AccessLockReason, AccessState, AccessChangeDialog, AccessPeopleTab, AccessProfilesTab, AccessTemplates, AccessCan, AccessKeys },
 	mixins: [accessCanMixin],
 	props: {
 		go: { type: Object, default: () => ({ tab: '', n: 0 }) }, // { tab, name?, id?, n }: show that tab (and the object) when n changes (asked from Security)

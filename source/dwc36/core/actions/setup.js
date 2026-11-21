@@ -5,6 +5,7 @@
 //
 //   applyChanges.run(payload)    startup.apply     the ticked changes of the plan (buildPayload of package-wizard.js); level 3 dialog
 //   restoreFile.run(args)        startup.integrity.restore   { path, expected_sha, apply: true }: the factory copy of a file; level 3 dialog
+//   reviewFile.run(args)         startup.file.review  { path, reviewed, expected_sha }: leave an edited file as it is (or ask again); one touch
 //   packageExport.run({ categories })    package.export    answers { name, data (base64), manifest, skipped }; one touch (it only reads)
 //   packageApply.run({ data, replace })  package.apply     the package of another machine, file by file; level 3 dialog
 //
@@ -18,5 +19,7 @@ const again = () => [startupPlan.reload(), startupFiles.reload(), readiness.relo
 
 export const applyChanges = createAction({ op: 'startup.apply', group: 'setup', arm: 'dialog', after: again })
 export const restoreFile = createAction({ op: 'startup.integrity.restore', group: 'setup', arm: 'dialog', after: again })
+// "Leave it as it is": a hand-edited file the person looked at and kept on purpose; the service remembers it against the sha of the content (no SD write)
+export const reviewFile = createAction({ op: 'startup.file.review', group: 'setup', after: () => [startupFiles.reload(), readiness.reload()] })
 export const packageExport = createAction({ op: 'package.export', group: 'setup' })
 export const packageApply = createAction({ op: 'package.apply', group: 'setup', arm: 'dialog', after: () => [startupFiles.reload()] })

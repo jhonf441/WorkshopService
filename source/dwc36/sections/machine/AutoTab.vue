@@ -67,7 +67,7 @@
 							<button v-for="s in delays" :key="s" type="button" :aria-pressed="delay === s ? 'true' : 'false'" :disabled="c.disabled" :data-delay="s" @click="saveDelay(s)">{{ secs(s) }}</button>
 						</span>
 						<span class="sv-field sv-field-short"><input v-model="other" type="text" inputmode="decimal" maxlength="5" :disabled="c.disabled" :placeholder="t('machine.delay_other')" :aria-label="t('machine.delay_other')" :aria-invalid="otherBad ? 'true' : null" @keydown.enter.prevent="saveOther"></span>
-						<button type="button" class="sv-btn" :disabled="c.disabled || !other" @click="saveOther">{{ t('machine.delay_save') }}</button>
+						<button type="button" class="sv-btn" :class="{ 'sv-save-hot': hasUnsaved }" :disabled="c.disabled || !other" @click="saveOther">{{ t('machine.delay_save') }}</button><sv-unsaved-mark :show="hasUnsaved" />
 					</template>
 					<span v-if="otherBad" class="sv-field-error" role="alert"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('machine.delay_invalid') }}</span>
 					<template #help><sv-help v-bind="help('delay')" /></template>
@@ -136,6 +136,9 @@ import SvSwitch from '../../ui/SvSwitch.vue'
 import GuardCard from './GuardCard.vue'
 import { delayChoices, idleChoices, parseDelay, relayState, secondsParts, zonesArgs, zonesInfo } from './view.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
+import SvUnsavedMark from '../../ui/SvUnsavedMark.vue'
+import { unsavedMixin } from '../../ui/unsaved-mixin.js'
+import { saveWithAction } from '../../ui/unsaved-guard.js'
 
 const OPS = ['power.after_job', 'movement.lock', 'air.auto', 'air.delay', 'guard.set', 'bedzones.set', 'camera.stop', 'camera.start', 'job.close', 'camera.status', 'bedzones.get', 'guard.status']
 const RELEASES = [10, 20, 30, 60]
@@ -143,8 +146,8 @@ const LIGHTS_PAGE = '/Plugins/Lights'
 
 export default {
 	name: 'AutoTab',
-	components: { GuardCard, SvActionRow, SvHelp, SvReason, SvSwitch },
-	mixins: [rowsMixin],
+	components: { GuardCard, SvActionRow, SvHelp, SvReason, SvSwitch, SvUnsavedMark },
+	mixins: [rowsMixin, unsavedMixin],
 	props: { active: { type: Boolean, default: false } },
 	data() {
 		return { afterJob, airAuto, closeJob, moveIdle, moveMode, moveRelease, airDelay, zonesSet, other: '', otherTried: false, lastIdle: 0, lastRelease: 0, lastDelay: 0, wantZones: null }
@@ -260,6 +263,17 @@ export default {
 			this.lastDelay = s
 			if (s === this.delay) return
 			this.airDelay.run({ seconds: s })
+		},
+		// unsaved changes (unsaved-mixin.js): the delay typed in the free box and not saved yet (the buttons and switches of this tab act at once: nothing to guard there)
+		unsavedPair() {
+			return [this.other, '']
+		},
+		saveBeforeLeaving() {
+			if (parseDelay(this.other) === null) return false
+			return saveWithAction(this.airDelay, () => this.saveOther())
+		},
+		discardUnsaved() {
+			this.other = ''
 		},
 		saveOther() {
 			this.otherTried = true

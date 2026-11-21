@@ -19,7 +19,7 @@ export const AREAS = Object.freeze([
 	{ id: 'energy', icon: 'mdi-flash-outline', caps: ['energy.view', 'energy.timers', 'energy.meter', 'energy.shutdown', 'energy.reset'] },
 	{ id: 'camera', icon: 'mdi-camera-outline', caps: ['camera.view', 'camera.capture', 'camera.vision', 'camera.manage', 'camera.settings', 'camera.relay'] },
 	{ id: 'activity', icon: 'mdi-bell-outline', caps: ['activity.view', 'activity.write', 'activity.settings', 'activity.delete'] },
-	{ id: 'service', icon: 'mdi-cog-outline', caps: ['config.view', 'config.api', 'config.edit', 'config.bridge', 'config.critical', 'processes.control', 'service.restart', 'system.plugins', 'system.view'] },
+	{ id: 'service', icon: 'mdi-cog-outline', caps: ['config.view', 'config.api', 'config.edit', 'config.bridge', 'config.critical', 'processes.control', 'service.restart', 'system.plugins', 'system.view', 'system.journal'] },
 	{ id: 'security', icon: 'mdi-shield-account-outline', caps: ['security.session', 'security.audit', 'security.audit_tools', 'security.users', 'security.roles', 'security.access', 'security.keys', 'security.passwords'] }
 ].map(a => Object.freeze(Object.assign({}, a, { caps: Object.freeze(a.caps) }))))
 

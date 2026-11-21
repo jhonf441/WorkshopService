@@ -6,7 +6,7 @@
 // A plugin:  { plugin, version, counts: { expected, present, ok, edited, missing, not_yet, attention }, files: [file] }
 // A file:    { path, kind, status, state, used_by: [], safety, created_before?, breaks_if_missing? }
 //
-//   fileState(f)            'identical' | 'present' | 'missing' | 'edited' | 'not_yet' | 'attention'  (the word of the row)
+//   fileState(f)            'identical' | 'present' | 'missing' | 'edited' | 'reviewed' | 'not_yet' | 'attention'  (the word of the row; reviewed = edited and left as it is)
 //   needsAttention(f)       a missing, a hand edited or an odd file
 //   splitPath(path)         { name, dir } : the file name and the folder it lives in
 //   groupFiles(plugins, f)  the plugins with only the files that match { q, only }, each row decorated for the view
@@ -19,9 +19,9 @@
 
 import { RUN_ACTIONS } from './package-wizard.js'
 
-export const FILE_STATES = ['identical', 'present', 'missing', 'edited', 'not_yet', 'attention']
-export const STATE_ICON = { identical: 'mdi-check-all', present: 'mdi-check', missing: 'mdi-file-alert-outline', edited: 'mdi-pencil-outline', not_yet: 'mdi-timer-sand', attention: 'mdi-alert-outline' }
-export const STATE_COLOR = { identical: 'success', present: 'success', missing: 'error', edited: 'warning', not_yet: 'grey', attention: 'warning' }
+export const FILE_STATES = ['identical', 'present', 'missing', 'edited', 'reviewed', 'not_yet', 'attention']
+export const STATE_ICON = { identical: 'mdi-check-all', present: 'mdi-check', missing: 'mdi-file-alert-outline', edited: 'mdi-pencil-outline', reviewed: 'mdi-check-circle-outline', not_yet: 'mdi-timer-sand', attention: 'mdi-alert-outline' }
+export const STATE_COLOR = { identical: 'success', present: 'success', missing: 'error', edited: 'warning', reviewed: 'success', not_yet: 'grey', attention: 'warning' }
 const ATTENTION = ['missing', 'edited', 'attention']
 
 export function emptyFilter() {
@@ -31,7 +31,8 @@ export function emptyFilter() {
 export function fileState(f) {
 	const s = f && f.status
 	if (s === 'ok') return f.kind === 'workshop-owned' ? 'identical' : 'present'
-	if (s === 'edited' || s === 'missing' || s === 'not_yet') return s
+	if (s === 'edited') return f.reviewed ? 'reviewed' : 'edited'  // the person left it as it is: back to attention only when the content changes (the service decides)
+	if (s === 'missing' || s === 'not_yet') return s
 	return 'attention'
 }
 
@@ -69,7 +70,7 @@ export function groupFiles(plugins, filter) {
 }
 
 export function fileCounts(plugins) {
-	const c = { plugins: 0, files: 0, present: 0, missing: 0, edited: 0, attention: 0, not_yet: 0, identical: 0 }
+	const c = { plugins: 0, files: 0, present: 0, missing: 0, edited: 0, attention: 0, not_yet: 0, identical: 0, reviewed: 0 }
 	for (const p of plugins || []) {
 		c.plugins++
 		for (const f of p.files || []) {
@@ -80,6 +81,7 @@ export function fileCounts(plugins) {
 			else if (s === 'edited') c.edited++
 			else if (s === 'attention') c.attention++
 			else if (s === 'not_yet') c.not_yet++
+			if (s === 'reviewed') c.reviewed++
 			if (s !== 'missing' && s !== 'not_yet') c.present++
 		}
 	}
@@ -89,7 +91,7 @@ export function fileCounts(plugins) {
 // Something to restore from the factory copy: only a file of the workshop that is edited or gone. Safety files and the rest are refused by the service
 // with their reason, which the preview shows.
 export function canRestore(f) {
-	return !!f && f.kind === 'workshop-owned' && (f.status === 'edited' || f.status === 'missing')
+	return !!f && f.kind === 'workshop-owned' && (f.status === 'edited' || f.status === 'missing')  // a reviewed file is still an edited one: it can still be restored
 }
 
 const REFUSALS = ['already_ok', 'factory_missing', 'factory_mismatch', 'wrong_kind', 'not_in_manifest', 'not_a_file', 'safety', 'board_busy']

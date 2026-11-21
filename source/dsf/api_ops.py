@@ -23,7 +23,7 @@ import camera_access
 import audit
 import guard_api
 import handler_refusal
-import health_history
+import health_history, journal_ops  # noqa: E401 (one line: the file may not grow, test_architecture)
 import identity
 import config_package
 import startup_summary
@@ -341,7 +341,7 @@ def _ops():
         Op("state.get", _state_get, READ, {"keys": a(L, desc="Names of the data keys to return (for example motion, liveJob); empty returns every key.")},
            "Returns the data the service publishes in the object model (plugins.WorkshopService.data) from its memory; nothing is asked to the board.",
            log=False),
-        *health_history.ops(),  # health.history
+        *health_history.ops(), *journal_ops.ops(),  # health.history, journal.read
         *guard_api.ops(),  # protection guard (guard.status, guard.set)
         # activity
         Op("activity.log", H("log", {}, {"type": "T", "text": "N", "zone": "Z", "points": "P"}), WRITE,
@@ -618,8 +618,8 @@ def _ops():
            macro=True),
         # DWC password
         Op("password.status", H("password", {"S": "status"}), READ, {}, "Says whether DWC has a password (an active M551 in sys/config.g), as {\"set\": true | false | null (config.g not readable)}; it is never shown."),
-        Op("password.set", H("password", {"S": "set"}, {"password": "V"}), ADMIN,
-           {"password": a(S, True, desc="New password: 4 to 60 characters, without double quotes, semicolons or line breaks, not \"reprap\". Never kept in the history.")},
+        Op("password.set", H("password", {"S": "set"}, {"password": "V", "repeat": "W"}, actor=True), ADMIN,
+           {"password": a(S, True, desc="New password: 10 to 60 characters, not only letters or only digits, not a common one (or one with a 1, 123 or ! tail), not the name of a person, of the machine or its address, not a repetition or a sequence, and without \" ' ; { } \\ or control characters (they break the line M551 of config.g). Refused with 422 invalid_args and error.reason (characters, length, factory, mismatch, one_class, common, names, pattern). Never kept in the history."), "repeat": a(S, False, desc="The password typed a second time: when given it must be equal (reason mismatch). Never kept in the history.")},
            "Sets or changes the DWC password: writes M551 in sys/config.g (with a backup copy) and applies it at once. Logged in Activity; needs a confirmation.",
            confirm={"level": 3, "key": "password.set"}),
         Op("password.clear", H("password", {"S": "clear"}), ADMIN, {},
@@ -774,7 +774,7 @@ def _ops():
 
 LAST_MAX = 25
 last = []
-_SECRET_ARGS = {"password", "key", "pin", "old_pin", "new_pin", "token", "topic", "local_key"}
+_SECRET_ARGS = {"password", "repeat", "key", "pin", "old_pin", "new_pin", "token", "topic", "local_key"}
 
 
 def _keys_store():

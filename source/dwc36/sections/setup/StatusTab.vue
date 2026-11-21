@@ -146,6 +146,7 @@ export default {
 			if (w === 'login') return this.t('startup_master.login_row')
 			if (w === 'unchecked') return this.t('setup.word_unchecked')
 			if (w === 'pending') return this.tc('startup_master.pending', r.entry.total, { n: r.entry.pending, total: r.entry.total })
+			if (r.entry && r.entry.skipped) return this.t('startup_master.ready_skipped', { n: r.entry.skipped })
 			return this.t('startup_master.ready')
 		}
 	}

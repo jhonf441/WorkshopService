@@ -7,17 +7,18 @@
 				<v-icon small class="mr-2 svx-ico">mdi-timer-outline</v-icon>{{ $t('plugins.WorkshopService.users.sessions_title') }}
 			</v-card-title>
 			<v-card-text>
-				<v-row dense>
-					<v-col cols="12"><sv-toggle v-model="cfg.never_expires" :label="$t('plugins.WorkshopService.users.never_expires')" /><div class="text-caption grey--text">{{ $t('plugins.WorkshopService.users.never_expires_help') }}</div></v-col>
-					<v-col cols="6" sm="3"><sv-text-field v-model.number="cfg.idle_minutes" type="number" min="1" max="1440" :disabled="!!cfg.never_expires" :label="$t('plugins.WorkshopService.users.idle_minutes')" /></v-col>
-					<v-col cols="6" sm="3"><sv-text-field v-model.number="cfg.max_hours" type="number" min="1" max="168" :disabled="!!cfg.never_expires" :label="$t('plugins.WorkshopService.users.max_hours')" /></v-col>
-				</v-row>
+				<sv-toggle v-model="cfg.never_expires" :label="$t('plugins.WorkshopService.users.never_expires')" />
+				<div class="text-caption grey--text mb-3 sv-prose">{{ $t('plugins.WorkshopService.users.never_expires_help') }}</div>
+				<sv-form-row class="mb-3">
+					<sv-text-field v-model.number="cfg.idle_minutes" type="number" min="1" max="1440" :disabled="!!cfg.never_expires" :label="$t('plugins.WorkshopService.users.idle_minutes')" />
+					<sv-text-field v-model.number="cfg.max_hours" type="number" min="1" max="168" :disabled="!!cfg.never_expires" :label="$t('plugins.WorkshopService.users.max_hours')" />
+				</sv-form-row>
 				<sv-toggle v-model="cfg.camera_for_viewer" :label="$t('plugins.WorkshopService.users.camera_for_viewers')" />
 				<div class="text-caption grey--text mb-2">{{ $t('plugins.WorkshopService.users.camera_for_viewers_help') }}</div>
 				<sv-toggle v-model="cfg.anonymous_viewer" :label="$t('plugins.WorkshopService.users.anonymous_viewer')" />
 				<div class="text-caption grey--text mb-2">{{ $t('plugins.WorkshopService.users.anonymous_viewer_help') }}</div>
-				<v-btn small color="primary" :loading="busy" @click="saveSettings">{{ $t('plugins.WorkshopService.users.save') }}</v-btn>
-				<span v-if="msg" class="text-caption ml-3">{{ msg }}</span>
+				<v-btn small color="primary" :class="{ 'sv-save-hot': hasUnsaved }" :loading="busy" @click="saveSettings">{{ $t('plugins.WorkshopService.users.save') }}</v-btn>
+				<sv-unsaved-mark :show="hasUnsaved" class="ml-3" /><span v-if="msg" class="text-caption ml-3">{{ msg }}</span>
 				<v-divider class="my-4" />
 				<div class="text-body-2 font-weight-medium">{{ $t('plugins.WorkshopService.users.close_title') }}</div>
 				<div class="text-caption grey--text mb-2">{{ $t('plugins.WorkshopService.users.close_help') }}</div>
@@ -51,27 +52,45 @@
 'use strict'
 
 import SvTextField from './ui/SvTextField.vue'
+import SvFormRow from './ui/SvFormRow.vue'
 import { api, whoami } from './workshop-api.js'
 import { roleMixin } from './role-mixin.js'
+import SvUnsavedMark from './ui/SvUnsavedMark.vue'
+import { unsavedMixin } from './ui/unsaved-mixin.js'
+import { snapshot } from './ui/unsaved-guard.js'
 import SvToggle from './ui/SvToggle.vue'
 
 export default {
 	name: 'UsersSessions',
-	components: { SvTextField, SvToggle },
-	mixins: [roleMixin],
+	components: { SvTextField, SvFormRow, SvToggle, SvUnsavedMark },
+	mixins: [roleMixin, unsavedMixin],
 	// what was typed or answered belongs to the session that left: emptied on sign-out and on a change of role
 	sessionData: ['dlgOff', 'offPin', 'offError', 'armed', 'busy', 'msg', 'closeMsg'],
 	props: { settings: { type: Object, default: () => ({}) } }, // users.list settings: the values of the form
 	data() {
 		return {
 			cfg: Object.assign({ idle_minutes: 720, max_hours: 12, never_expires: false, camera_for_viewer: false, anonymous_viewer: false }, this.settings),
-			dlgOff: false, offPin: '', offError: '', armed: false, busy: false, msg: '', closeMsg: ''
+			dlgOff: false, offPin: '', offError: '', armed: false, busy: false, msg: '', closeMsg: '', base: null
 		}
 	},
 	watch: {
-		settings(s) { Object.assign(this.cfg, s) }
+		settings(s) { Object.assign(this.cfg, s); this.base = snapshot(this.cfg) }
+	},
+	created() {
+		this.base = snapshot(this.cfg) // what the service holds: the values of the form when it opened
 	},
 	methods: {
+		// unsaved changes (unsaved-mixin.js): the form of the sessions against what the service holds
+		unsavedPair() {
+			return [this.cfg, this.base]
+		},
+		async saveBeforeLeaving() {
+			await this.saveSettings()
+			return !this.hasUnsaved
+		},
+		discardUnsaved() {
+			if (this.base) Object.assign(this.cfg, this.base)
+		},
 		fail(e) { return e && e.code !== 'cancelled' ? (e.message || String(e)) : '' },
 		async switchOff() {
 			if (!this.offPin) return
@@ -114,6 +133,7 @@ export default {
 				const c = this.cfg
 				const r = await api('users.settings', { idle_minutes: Number(c.idle_minutes), max_hours: Number(c.max_hours), never_expires: !!c.never_expires, camera_for_viewer: !!c.camera_for_viewer, anonymous_viewer: !!c.anonymous_viewer })
 				Object.assign(this.cfg, r.settings)
+				this.base = snapshot(this.cfg)
 				this.msg = this.$t('plugins.WorkshopService.users.saved')
 				this.$emit('changed')
 			} catch (e) {

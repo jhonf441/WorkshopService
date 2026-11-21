@@ -27,11 +27,12 @@
 			</v-card-text>
 			<v-card-actions>
 				<v-spacer />
-				<v-btn small text class="access-touch" @click="$emit('close')">{{ $t('plugins.WorkshopService.access.common_back') }}</v-btn>
-				<v-btn small color="primary" class="access-touch" :disabled="!canChange || !lines.length" @click="review = true">{{ $t('plugins.WorkshopService.access.audit_set_review') }}</v-btn>
+				<sv-unsaved-mark :show="hasUnsaved" />
+				<v-btn small text class="access-touch" @click="leave()">{{ $t('plugins.WorkshopService.access.common_back') }}</v-btn>
+				<v-btn small color="primary" class="access-touch" :class="{ 'sv-save-hot': hasUnsaved }" :disabled="!canChange || !lines.length" @click="review = true">{{ $t('plugins.WorkshopService.access.audit_set_review') }}</v-btn>
 			</v-card-actions>
 		</v-card>
-		<access-change-dialog v-if="review" :value="true" :title="$t('plugins.WorkshopService.access.audit_set_title')" :confirm-label="$t('plugins.WorkshopService.access.audit_set_save')" :busy="saving" :error="error" @input="review = false" @confirm="save()">
+		<access-change-dialog v-if="review" :value="true" :title="$t('plugins.WorkshopService.access.audit_set_title')" :confirm-label="$t('plugins.WorkshopService.access.audit_set_save')" :busy="saving" :error="error" @input="closeReview" @confirm="save()">
 			<template #before><ul class="activity-lines"><li v-for="l in lines" :key="'b' + l.id">{{ labelOf(l) }}: {{ valueOf(l, l.from) }}</li></ul></template>
 			<template #after><ul class="activity-lines"><li v-for="l in lines" :key="'a' + l.id">{{ labelOf(l) }}: {{ valueOf(l, l.to) }}</li></ul></template>
 			<template #summary><div v-if="turnsOn" class="wf-note is-warn" role="note"><v-icon class="wf-note-icon" aria-hidden="true">mdi-sd</v-icon><span>{{ $t('plugins.WorkshopService.access.audit_set_reads_on_note') }}</span></div></template>
@@ -43,6 +44,9 @@
 'use strict'
 
 import SvSelect from './ui/SvSelect.vue'
+import SvUnsavedMark from './ui/SvUnsavedMark.vue'
+import { unsavedMixin } from './ui/unsaved-mixin.js'
+import { dropLeave, resumeLeave } from './ui/unsaved-guard.js'
 import AccessChangeDialog from './AccessChangeDialog.vue'
 import { accessApi } from './access-api.js'
 import SvToggle from './ui/SvToggle.vue'
@@ -64,10 +68,11 @@ const ALARMS = [
 ]
 
 export default {
-	components: { SvSelect, AccessChangeDialog, SvToggle },
+	components: { SvSelect, AccessChangeDialog, SvToggle, SvUnsavedMark },
+	mixins: [unsavedMixin],
 	props: { canChange: { type: Boolean, default: true } },
 	data() {
-		return { before: null, draft: null, failure: '', review: false, saving: false, error: '', saved: false, categories: CATEGORIES, alarms: ALARMS }
+		return { before: null, draft: null, failure: '', review: false, saving: false, error: '', saved: false, leaveAfterSave: false, categories: CATEGORIES, alarms: ALARMS }
 	},
 	computed: {
 		lines() {
@@ -81,6 +86,26 @@ export default {
 		this.load()
 	},
 	methods: {
+		// unsaved changes (unsaved-mixin.js): the draft against the settings the service holds; saving is the one before / after review
+		unsavedPair() {
+			return this.before && this.draft ? [this.draft, settingsDraft(this.before)] : [null, null]
+		},
+		saveBeforeLeaving() {
+			if (!this.canChange || !this.lines.length) return false
+			this.leaveAfterSave = true
+			this.review = true
+			return 'later'
+		},
+		discardUnsaved() {
+			if (this.before) this.draft = settingsDraft(this.before)
+		},
+		leave() {
+			this.leaveWith(() => this.$emit('close'))
+		},
+		closeReview() {
+			this.review = false
+			if (this.leaveAfterSave) { this.leaveAfterSave = false; dropLeave() }
+		},
 		items(key) {
 			const n = NUMBERS[key]
 			return choicesFor(key, this.before && this.before[key]).map(v => ({ value: v, text: this.$tc(AREA + n.text, v / n.scale, { n: v / n.scale }) }))
@@ -115,6 +140,7 @@ export default {
 				this.take(((await accessApi.auditSettings(patch)) || {}).settings)
 				this.review = false
 				this.saved = true
+				if (this.leaveAfterSave) { this.leaveAfterSave = false; resumeLeave() }
 			} catch (e) {
 				this.error = this.$t(AREA + 'audit_set_error', { detail: (e && e.message) || String(e) })
 			}

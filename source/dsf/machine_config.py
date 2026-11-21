@@ -578,7 +578,7 @@ def _plan_op(args, ctx):
         if e.code in ("not_implemented", "unknown_kind"):
             raise ApiError("not_implemented" if e.code == "not_implemented" else "invalid_args", M("machine_config_kind_" + e.code, kind=args["kind"]), field="kind")
         where = getattr(e, "where", None)
-        key = e.code + "_at" if where and e.code in ("pin_used", "tool_exists") else _msg_code(e.code)
+        key = e.code + "_at" if where and e.code in ("pin_used", "tool_exists", "led_exists") else _msg_code(e.code)
         raise ApiError("invalid_args", M("machine_config_plan_" + key, field=e.field, file=(where or {}).get("file", ""), line=(where or {}).get("line", "")),
                        field="values." + e.field, reason=e.code, **({"where": where} if where else {}))
     return public(plan)
@@ -589,7 +589,7 @@ def _msg_code(code):
                             "duplicate_point", "no_limits", "patch_expression", "patch_unsupported_form", "patch_bad_axis",
                             "patch_missing_line", "current_over_limit", "bad_type", "no_frequency", "tool_exists", "pin_used", "pin_unknown", "pin_capability", "driver_unknown",
                             "driver_used", "laser_mode", "tool_name", "bed_exists", "bed_missing", "not_bed_heater", "no_heater_line", "heater_used", "sensor_used", "no_sensor_link",
-                            "pin_not_mosfet", "machine_file_broken", "machine_hook_edited", "machine_hook_broken", "tc_type", "mains", "wires", "rtd_ref", "analog_range", "analog_filter", "therm_c") else "other"
+                            "pin_not_mosfet", "led_exists", "led_exists_at", "machine_file_broken", "machine_hook_edited", "machine_hook_broken", "tc_type", "mains", "wires", "rtd_ref", "analog_range", "analog_filter", "therm_c") else "other"
 
 
 def _role_ok(ctx, kind):

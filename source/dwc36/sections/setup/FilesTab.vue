@@ -14,6 +14,8 @@
 					<label class="sv-field"><span class="mdi mdi-magnify sv-ico sv-ico-s" aria-hidden="true" /><input v-model="filter.q" type="search" :placeholder="t('configPackage.files_search')" :aria-label="t('configPackage.files_search')"></label>
 					<label class="sv-check"><input v-model="filter.only" type="checkbox"><span>{{ t('configPackage.files_only', { n: attention }) }}</span></label>
 				</div>
+				<p class="sv-quiet" data-part="files-what">{{ t('configPackage.files_what') }}</p>
+				<sv-help :what="t('configPackage.files_help_what')" :why="t('configPackage.files_help_why')" :missing="t('configPackage.files_help_missing')" :how="t('configPackage.files_help_how')" />
 				<p v-if="!groups.length" class="sv-quiet" role="status" data-part="none">{{ t('configPackage.files_none') }}</p>
 				<details v-for="p in groups" :key="p.plugin" class="sv-fold" :open="p.attention > 0 || !!filter.q" :data-open="p.attention > 0 || !!filter.q ? '' : null" :data-plugin="p.plugin">
 					<summary>
@@ -24,30 +26,17 @@
 					</summary>
 					<div class="sv-fold-body">
 						<ul class="sv-rows">
-							<sv-action-row v-for="f in p.files" :key="f.path" icon="mdi-file-outline" :name="f.name" :desc="f.dir + f.name" :data-file="f.path">
+							<sv-action-row v-for="f in p.files" :key="f.path" below icon="mdi-file-outline" :name="f.name" :desc="f.dir + f.name" :data-file="f.path">
 								<p v-if="f.breaks_if_missing" class="sv-row-desc">{{ t('sd_files.breaks', { what: f.breaks_if_missing }) }}</p>
 								<p class="sv-row-desc">{{ kindText(f) }} · {{ t('sd_files.used_by') }}: {{ usedBy(f) }}<span v-if="f.safety" class="sv-tag">{{ t('sd_files.safety') }}</span></p>
 								<template #control>
 									<span class="sv-state" :data-level="LEVEL[f.fileState]" :data-file="f.path" :title="t('configPackage.fsh_' + f.fileState)"><span class="mdi sv-ico sv-ico-s" :class="LEVEL_ICON[LEVEL[f.fileState]]" aria-hidden="true" />{{ t('configPackage.fs_' + f.fileState) }}</span>
-									<button type="button" class="sv-btn" data-act="view" :aria-label="t('configPackage.view_file') + ': ' + f.name" @click="view(f.path)">{{ t('configPackage.view_file') }}</button>
-									<button v-if="restorable(f)" type="button" class="sv-btn" data-act="changes" :disabled="!mayRestore || stale" :aria-label="t('configPackage.changes_show') + ': ' + f.name" @click="togglePreview(f)">
-										<span v-if="!mayRestore" class="mdi mdi-lock-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t(previews[f.path] ? 'configPackage.changes_hide' : 'configPackage.changes_show') }}
-									</button>
-								</template>
-								<template v-if="previews[f.path]" #body>
-									<div v-if="previews[f.path]" class="sv-changes" data-part="preview">
-										<p v-for="r in previews[f.path].refusals || []" :key="r.code" class="sv-field-error" role="status"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ refusal(r) }}</p>
-										<template v-if="diff(f).length">
-											<p class="sv-quiet" data-part="diff-effect">{{ diffText(f) }} {{ t('sd_files.diff_help') }}</p>
-											<pre class="sv-diff"><span v-for="(l, i) in diff(f)" :key="i" :class="'d-' + l.cls">{{ l.text }}
-</span></pre>
-										</template>
-										<p v-else-if="!(previews[f.path].refusals || []).length" class="sv-quiet">{{ t('sd_files.diff_none') }}</p>
-										<div v-if="previews[f.path].allowed" class="sv-row-ctl">
-											<button type="button" class="sv-btn sv-danger" data-act="restore" :disabled="restoreFile.busy()" @click="askRestore(f)">{{ t('configPackage.restore') }}</button>
-											<span class="sv-quiet">{{ t('configPackage.restore_help') }}</span>
-										</div>
-									</div>
+									<button type="button" class="sv-btn" data-act="view" :aria-label="t('configPackage.view_file') + ': ' + f.name" @click="view(f)">{{ t('configPackage.view_file') }}</button>
+									<template v-if="f.attention || f.fileState === 'reviewed'">
+										<button v-if="restorable(f)" type="button" class="sv-btn" data-act="restore-open" :disabled="!mayRestore" :aria-label="t('configPackage.restore_factory') + ': ' + f.name" @click="view(f, true)"><span v-if="!mayRestore" class="mdi mdi-lock-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('configPackage.restore_factory') }}</button>
+										<button v-if="f.fileState === 'edited'" type="button" class="sv-btn" data-act="keep" :disabled="!mayReview" :title="t('configPackage.keep_help')" :aria-label="t('configPackage.keep') + ': ' + f.name" @click="keep(f, true)">{{ t('configPackage.keep') }}</button>
+										<button v-if="f.fileState === 'reviewed'" type="button" class="sv-btn" data-act="unkeep" :disabled="!mayReview" :aria-label="t('configPackage.unkeep') + ': ' + f.name" @click="keep(f, false)">{{ t('configPackage.unkeep') }}</button>
+									</template>
 								</template>
 							</sv-action-row>
 						</ul>
@@ -59,13 +48,33 @@
 			<sv-reason :lock="lockOf(['startup.integrity.restore'])" @sign-in="signIn" />
 		</section>
 
-		<sv-text-view ref="reader" :open="viewer.show" :title="viewer.path" :rows="shownRows" :loading="viewer.loading" :error="viewer.error" :gap-text="gapText" :block-text="blockText" :legend="t('sd_files.view_legend')" @close="viewer.show = false" @retry="view(viewer.path)" @copy="copyFile" @download="downloadFile">
+		<sv-text-view ref="reader" :open="viewer.show" :title="viewer.path" :rows="shownRows" :loading="viewer.loading" :error="viewer.error" :gap-text="gapText" :block-text="blockText" :legend="t('sd_files.view_legend')" :mark-titles="markTitles" @close="viewer.show = false" @retry="view(viewer.file)" @copy="copyFile" @download="downloadFile">
 			<template #head>
 				<template v-if="viewer.view">
 					<p data-part="view-head"><b>{{ headline }}</b></p>
 					<p v-for="(n, i) in notes" :key="i" class="sv-quiet">{{ n }}</p>
 					<p class="sv-quiet">{{ appliedText }}</p>
+					<div v-if="viewer.restore" class="sv-note" role="status" data-part="restore-step">
+						<p><b>{{ t('sd_files.restore_title') }}</b></p>
+						<p v-if="viewer.restore.loading" class="sv-quiet">{{ t('sd_files.restore_loading') }}</p>
+						<template v-else>
+							<p v-for="r in viewer.restore.refusals" :key="r.code" class="sv-field-error"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ refusal(r) }}</p>
+							<p v-if="viewer.restore.allowed">{{ restoreText }}</p>
+						</template>
+					</div>
 					<p v-if="viewer.view && !shownRows.length" class="sv-quiet">{{ t(viewer.view.content === '' ? 'sd_files.view_empty' : 'sd_files.view_nothing') }}</p>
+				</template>
+			</template>
+			<template #foot-left>
+				<template v-if="viewer.view && viewer.file">
+					<template v-if="viewer.restore">
+						<button type="button" class="sv-btn" data-act="restore-back" @click="viewer.restore = null">{{ t('sd_files.restore_back') }}</button>
+						<button type="button" class="sv-btn sv-danger" data-act="restore" :disabled="!restoreReady || restoreFile.busy()" @click="askRestore(viewer.file)">{{ t('configPackage.restore') }}</button>
+					</template>
+					<template v-else-if="viewer.file.attention || viewer.file.fileState === 'reviewed'">
+						<button v-if="restorable(viewer.file)" type="button" class="sv-btn" data-act="restore-step" :disabled="!mayRestore" @click="startRestore">{{ t('configPackage.restore_factory') }}</button>
+						<button v-if="viewer.file.fileState === 'edited'" type="button" class="sv-btn" data-act="keep" :disabled="!mayReview" :title="t('configPackage.keep_help')" @click="keep(viewer.file, true)">{{ t('configPackage.keep') }}</button>
+					</template>
 				</template>
 			</template>
 			<template #tools>
@@ -74,9 +83,10 @@
 			<template #legend>
 				<div v-if="viewer.view && viewer.view.present && viewer.view.content !== null" class="sv-tv-legend-box" data-part="diff-legend">
 					<p v-if="comparison" class="sv-quiet sv-tv-legend">
-						<span class="sv-tv-key d-changed"><b>~</b>{{ t('sd_files.key_changed') }}</span><span class="sv-tv-key d-added"><b>+</b>{{ t('sd_files.key_added') }}</span><span class="sv-tv-key d-factory"><b>-</b>{{ t('sd_files.key_factory') }}</span><span class="sv-tv-key">{{ t('sd_files.key_same') }}</span><span class="sv-tv-key sv-comment">{{ t('sd_files.key_comment') }}</span>
+						<span class="sv-tv-key d-changed"><b>~</b>{{ t('sd_files.key_changed') }}</span><span class="sv-tv-key d-added"><b>+</b>{{ t('sd_files.key_added') }}</span><span class="sv-tv-key d-factory"><b>-</b>{{ t('sd_files.key_factory') }}</span><span class="sv-tv-key d-same">{{ t('sd_files.key_same') }}</span><span class="sv-tv-key sv-comment">{{ t('sd_files.key_comment') }}</span>
 					</p>
 					<p v-else class="sv-quiet sv-tv-legend" data-part="no-factory">{{ t('sd_files.key_no_factory') }}</p>
+					<sv-help v-if="comparison" :what="t('sd_files.legend_help_what')" :why="t('sd_files.legend_help_why')" :missing="t('sd_files.legend_help_missing')" :how="t('sd_files.legend_help_how')" />
 					<div v-if="comparison && editedRanges.length" class="sv-chips" data-part="edited-chips">
 						<span class="sv-quiet">{{ t('sd_files.edited_chips') }}</span>
 						<button v-for="r in editedRanges" :key="r[0]" type="button" class="sv-btn" :class="{ 'sv-on': activeLine === r[0] }" :aria-pressed="activeLine === r[0] ? 'true' : 'false'" :data-line="r[0]" @click="goTo(r)">{{ rangeLabel(r) }}</button>
@@ -96,16 +106,16 @@ import { locale, saveText } from '../../core/dwc.js'
 import { copyText } from '../../copy.js'
 import { startupFiles } from '../../core/resources.js'
 import { want } from '../../core/store/session.js'
-import { restoreFile } from '../../core/actions/setup.js'
+import { restoreFile, reviewFile } from '../../core/actions/setup.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
 import { time } from '../../core/format/dates.js'
 import { canRestore, emptyFilter, fileCounts, groupFiles, needsAttention, refusalKey } from '../../package-view.js'
-import { diffLines, diffStats } from '../../package-wizard.js'
 import { kindKey } from '../../sd-files.js'
 import * as sv from '../../sd-viewer.js'
 import StateLegend from './StateLegend.vue'
 import SvActionRow from '../../ui/SvActionRow.vue'
 import SvConfirmDialog from '../../ui/SvConfirmDialog.vue'
+import SvHelp from '../../ui/SvHelp.vue'
 import SvReason from '../../ui/SvReason.vue'
 import SvTextView from '../../ui/SvTextView.vue'
 import SvZone from '../../ui/SvZone.vue'
@@ -115,14 +125,18 @@ const LEVEL_ICON = { ok: 'mdi-check-circle-outline', warn: 'mdi-alert-outline', 
 
 export default {
 	name: 'FilesTab',
-	components: { StateLegend, SvActionRow, SvConfirmDialog, SvReason, SvTextView, SvZone },
+	components: { StateLegend, SvActionRow, SvConfirmDialog, SvHelp, SvReason, SvTextView, SvZone },
 	mixins: [rowsMixin],
 	inject: { nav: { from: 'svNav', default: () => ({ go() {}, href: () => '#' }) } },
 	props: { active: { type: Boolean, default: false } },
 	data() {
-		return { activeLine: 0, files: startupFiles, restoreFile, filter: emptyFilter(), previews: {}, note: null, target: { name: '', dir: '' }, viewer: { show: false, path: '', loading: false, view: null, error: '', only: false }, LEVEL, LEVEL_ICON }
+		return { activeLine: 0, files: startupFiles, restoreFile, reviewFile, filter: emptyFilter(), note: null, target: { name: '', dir: '' }, viewer: { show: false, path: '', file: null, restore: null, loading: false, view: null, error: '', only: false }, LEVEL, LEVEL_ICON }
 	},
 	computed: {
+		// what the mark in the margin of a line means (the tooltip of the mark; the legend above says the same)
+		markTitles() {
+			return { changed: this.t('sd_files.key_changed'), added: this.t('sd_files.key_added'), factory: this.t('sd_files.key_factory') }
+		},
 		plugins() {
 			return (this.files.data && this.files.data.plugins) || []
 		},
@@ -143,6 +157,19 @@ export default {
 		},
 		mayRestore() {
 			return this.perm('startup.integrity.restore').state === 'ok'
+		},
+		mayReview() {
+			return this.perm('startup.file.review').state === 'ok'
+		},
+		// the restore step of the viewer: the service allows it and the preview has the sha to send back
+		restoreReady() {
+			const r = this.viewer.restore
+			return !!(r && !r.loading && r.allowed && r.expected_sha)
+		},
+		// what restoring does, in the SAME colours and direction as the lines of the viewer: yours (~ and +) go, the factory ones you removed (-) come back
+		restoreText() {
+			const n = sv.lossCounts(this.viewer.view)
+			return this.t('sd_files.restore_effect', { lose: this.tc('sd_files.restore_lose', n.lose, { n: n.lose }), back: this.tc('sd_files.restore_back_lines', n.back, { n: n.back }) })
 		},
 		comparison() {
 			return sv.hasComparison(this.viewer.view)
@@ -165,10 +192,11 @@ export default {
 		}
 	},
 	watch: {
-		active: { immediate: true, handler(on) { if (on) { want(['startup.files', 'startup.file.view', 'startup.integrity.restore']); this.files.show() } else this.files.hide() } },
-		// what the service holds changed (a file was restored): the previews belonged to the old state
-		'files.loadedAt'() { this.previews = {} },
+		active: { immediate: true, handler(on) { if (on) { want(['startup.files', 'startup.file.view', 'startup.integrity.restore', 'startup.file.review']); this.files.show() } else this.files.hide() } },
+		// what the service holds changed (a file was restored): the restore step belonged to the old state
+		'files.loadedAt'() { if (this.viewer.restore) this.viewer.restore = null },
 		'restoreFile.state'(now) {
+			if (now === 'done') this.viewer.show = false
 			if (now === 'done') this.note = { ok: true, text: this.t('configPackage.restored', { name: this.target.name, backup: (this.restoreFile.data && this.restoreFile.data.backup_path) || '-' }) }
 			else if (now === 'error' && this.restoreFile.error && this.restoreFile.error.kind !== 'session' && this.restoreFile.error.kind !== 'role') this.note = { ok: false, text: this.t('configPackage.restore_failed', { name: this.target.name, why: this.restoreFile.error.message }) }
 		}
@@ -223,39 +251,43 @@ export default {
 			const k = refusalKey(r.code)
 			return k ? this.t('configPackage.' + k) : r.reason || r.code
 		},
-		diff(f) {
-			const p = this.previews[f.path]
-			return p ? diffLines(p.diff) : []
+		// "Leave it as it is": the person edited the file on purpose; it asks for attention again only if its content changes again
+		async keep(f, on) {
+			this.note = null
+			await this.reviewFile.run({ path: f.path, reviewed: on, expected_sha: on ? f.sha : undefined })
+			if (this.reviewFile.state === 'error') this.note = { ok: false, text: this.t('configPackage.keep_failed', { name: f.name }) }
+			else if (this.viewer.show) this.viewer.show = false
 		},
-		diffText(f) {
-			const s = diffStats(this.previews[f.path].diff)
-			return this.t('sd_files.diff_count', { del: this.tc('sd_files.diff_removed', s.del, { n: s.del }), add: this.tc('sd_files.diff_added', s.add, { n: s.add }) })
-		},
-		async togglePreview(f) {
-			if (!this.mayRestore) return
-			if (this.previews[f.path]) { this.$delete(this.previews, f.path); return }
+		// the restore step: the service says if it is allowed and gives the sha of the file the person is looking at (nothing is written)
+		async startRestore() {
+			if (!this.mayRestore || !this.viewer.file) return
+			const mine = { loading: true, allowed: false, refusals: [], expected_sha: '' }
+			this.viewer.restore = mine
+			this.viewer.only = this.comparison
 			try {
-				const r = await call('startup.integrity.restore.preview', { path: f.path }, { quiet: true })
-				this.$set(this.previews, f.path, r.data || {})
+				const r = await call('startup.integrity.restore.preview', { path: this.viewer.file.path }, { quiet: true })
+				if (this.viewer.restore === mine) this.viewer.restore = Object.assign({ loading: false }, r.data || {})
 			} catch (e) {
-				this.note = { ok: false, text: this.t('configPackage.restore_failed', { name: f.name, why: e.message }) }
+				if (this.viewer.restore === mine) this.viewer.restore = { loading: false, allowed: false, expected_sha: '', refusals: [{ code: 'error', reason: e.message }] }
 			}
 		},
 		askRestore(f) {
-			const pv = this.previews[f.path]
+			const pv = this.viewer.restore
 			if (!pv || !pv.allowed) return
 			this.note = null
 			this.target = { name: f.name, dir: f.dir }
 			this.restoreFile.run({ path: f.path, expected_sha: pv.expected_sha, apply: true })
 		},
-		async view(path) {
-			const mine = { show: true, path, loading: true, view: null, error: '', only: false }
+		async view(f, restore) {
+			const path = f.path
+			const mine = { show: true, path, file: f, restore: null, loading: true, view: null, error: '', only: false }
 			this.viewer = mine
 			try {
 				const r = await call('startup.file.view', { path }, { quiet: true })
 				if (this.viewer !== mine) return
 				mine.view = r.data
 				mine.only = sv.hasComparison(r.data) && sv.changedCount(r.data) > 0
+				if (restore) { mine.loading = false; this.startRestore() }
 			} catch (e) {
 				if (this.viewer !== mine) return
 				mine.error = sv.friendlyError(e, this.tt)

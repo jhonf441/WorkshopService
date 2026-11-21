@@ -44,7 +44,12 @@ NAMES["layer-recipes"] = CONFIG_DIR
 NAMES["bed-estimates"] = CONFIG_DIR
 # G-code library of the printing plugin (gcodelib_indexer.py): {enabled, cache_mb, auto_index}; an ordinary store, the technician writes it.
 NAMES["gcodelib"] = CONFIG_DIR
-SERVICE_ONLY = frozenset({"machine-calibrations", "machine-maintenance", "pellet-layers", "layer-recipes", "bed-estimates"})
+# What the person decided not to use in the "Start-up" card of each plugin: {"<PluginId>": ["row id", ...]}; an ordinary store (operator reads, technician writes).
+NAMES["startup"] = CONFIG_DIR
+# Files a person looked at and decided to leave as they are ("Leave it as it is", Setup > Files): {"<path>": "<sha256 of the content they accepted>"}. Only the
+# service writes it (startup.file.review), and the review stops counting as soon as the file changes again (another sha).
+NAMES["file-review"] = CONFIG_DIR
+SERVICE_ONLY = frozenset({"machine-calibrations", "machine-maintenance", "pellet-layers", "layer-recipes", "bed-estimates", "file-review"})
 MAX_BYTES = 2 * 1024 * 1024  # a settings file is small; this stops a runaway client
 NO_FILE_REV = "0"  # rev of a file that does not exist yet
 

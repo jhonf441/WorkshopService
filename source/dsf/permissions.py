@@ -81,7 +81,7 @@ OP_ROLES = {
     "state.get": VIEWER, "motion.state": VIEWER, "motion.ask": VIEWER, "frame.status": VIEWER, "view.heartbeat": VIEWER,
     "job.get": VIEWER, "risk.list": VIEWER, "pid.status": VIEWER, "pid.trace": VIEWER, "blackbox.status": VIEWER, "config.guard": VIEWER,
     "lights.get": VIEWER, "motors.reread": VIEWER, "activity.list": VIEWER, "activity.summary": VIEWER,
-    "health.history": VIEWER, "energy.history": VIEWER, "energy.period": VIEWER, "energy.rate_get": VIEWER, "db.status": VIEWER,
+    "health.history": VIEWER, "journal.read": ADMIN, "energy.history": VIEWER, "energy.period": VIEWER, "energy.rate_get": VIEWER, "db.status": VIEWER,
     # -- camera and Vision answers (viewer only with camera_for_viewer, see CAMERA_OPS) --
     "camera.status": OPERATOR, "camera.token": OPERATOR, "vision.get": OPERATOR,
     # -- operator: move, run jobs, work lights, camera, captures --
@@ -125,6 +125,7 @@ OP_ROLES = {
     "db.places": TECHNICIAN, "db.backup": TECHNICIAN, "db.keep": TECHNICIAN, "db.settings": TECHNICIAN,
     "modules.list": TECHNICIAN, "modules.set": TECHNICIAN, "processes.pause": TECHNICIAN, "processes.resume": TECHNICIAN, "processes.restart": TECHNICIAN, "examples.list": TECHNICIAN, "examples.create": TECHNICIAN,
     # start-up report (SD-LAYOUT.md E.2, F.5): reading the integrity of the SD and the install log reveals the layout, so technician; none of them writes
+    "startup.file.review": TECHNICIAN,  # "leave it as it is": remembers the sha of a hand-edited file the person decided to keep (writes one settings file)
     "startup.integrity": TECHNICIAN, "startup.files": TECHNICIAN, "startup.file.view": TECHNICIAN, "startup.runs.list": TECHNICIAN, "startup.runs.get": TECHNICIAN,
     # restoring a workshop file from the factory copy (SD-LAYOUT.md phase 6): the preview shows the diff of a file and the restore is explicit; both admin
     "startup.integrity.restore.preview": ADMIN, "startup.integrity.restore": ADMIN,
@@ -172,7 +173,7 @@ OP_ROLES = {
     "machine.history.restore": ADMIN, "machine.report": TECHNICIAN,
     "machine.offsets.get": OPERATOR, "machine.offsets.snapshot": TECHNICIAN, "machine.limits.get": OPERATOR, "machine.power.get": OPERATOR, "machine.power.resume": TECHNICIAN,
     "machine.layout": OPERATOR,
-    "machine.try": TECHNICIAN, "machine.try.pending": TECHNICIAN, "machine.mark_cross": TECHNICIAN, "machine.test_move": TECHNICIAN, "machine.tool.get": OPERATOR, "machine.tool.pins": TECHNICIAN, "machine.tool.preview": TECHNICIAN, "machine.beds.get": OPERATOR, "machine.beds.preview": TECHNICIAN,
+    "machine.try": TECHNICIAN, "machine.try.pending": TECHNICIAN, "machine.mark_cross": TECHNICIAN, "machine.test_move": TECHNICIAN, "machine.tool.get": OPERATOR, "machine.tool.pins": TECHNICIAN, "machine.tool.preview": TECHNICIAN, "machine.beds.get": OPERATOR, "machine.beds.preview": TECHNICIAN, "machine.led.get": OPERATOR, "machine.led.preview": TECHNICIAN,
     # height calibration of the tool (was a card of the Workbench): reading is an operator's, everything that changes or moves a technician's
     "machine.height.get": OPERATOR, "machine.height.save": TECHNICIAN, "machine.height.hook": TECHNICIAN, "machine.height.step": TECHNICIAN,
     # work area of each mode (was a card of the Workbench): reading is an operator's, saving and moving a technician's

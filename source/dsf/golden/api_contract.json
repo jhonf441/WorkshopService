@@ -3002,6 +3002,61 @@
    "log": false,
    "role": "operator"
   },
+  "journal.read": {
+   "args": {
+    "level": {
+     "choices": [
+      "all",
+      "notice",
+      "warning",
+      "error"
+     ],
+     "desc": "Lowest level shown: all (default), notice, warning or error (that level and the worse ones).",
+     "type": "str"
+    },
+    "lines": {
+     "desc": "Most lines returned (default 200); the last ones are kept.",
+     "max": 500,
+     "min": 10,
+     "type": "int"
+    },
+    "search": {
+     "desc": "Text the line (or its program name) must contain, any case; it is data, never passed to a program.",
+     "type": "str"
+    },
+    "since": {
+     "choices": [
+      "15min",
+      "1h",
+      "6h",
+      "24h",
+      "7d"
+     ],
+     "desc": "How far back: 15min, 1h (default), 6h, 24h or 7d.",
+     "type": "str"
+    },
+    "unit": {
+     "choices": [
+      "duetcontrolserver",
+      "duetwebserver",
+      "duetpluginservice",
+      "workshop-gcode-bridge",
+      "NetworkManager",
+      "ssh",
+      "kernel"
+     ],
+     "desc": "Which log: a Duet or workshop unit, NetworkManager, ssh or the kernel (default duetcontrolserver).",
+     "type": "str"
+    }
+   },
+   "capability": "system.journal",
+   "desc": "Reads the system journal of one unit of a closed list (or the kernel), read-only. Returns {readable, lines: [{t: epoch ms, p: 0-7, who, text}], truncated}; when the service cannot read the journal, {readable: false, reason: no_permission | failed | no_journalctl}.",
+   "exclusive": false,
+   "kind": "read",
+   "log": false,
+   "role": "admin",
+   "slow": true
+  },
   "keys.create": {
    "args": {
     "days": {
@@ -4040,6 +4095,29 @@
    "kind": "read",
    "log": false,
    "role": "operator"
+  },
+  "machine.led.get": {
+   "args": {},
+   "capability": "machine.view",
+   "desc": "The LED strips the configuration declares (M950 E lines: strip number, pin, type T, number of LEDs, file and line), the first free strip number, the pins a strip may use with who uses each one, the types offered (rgbw = T2, rgb = T1) and the limits.",
+   "exclusive": false,
+   "kind": "read",
+   "log": false,
+   "role": "operator"
+  },
+  "machine.led.preview": {
+   "args": {
+    "spec": {
+     "desc": "The strip as the plan config.led_strip takes it: strip (E number), pin, leds, type (rgbw or rgb, default rgbw), modes (optional).",
+     "type": "obj"
+    }
+   },
+   "capability": "machine.config_view",
+   "desc": "The exact configuration line the plan config.led_strip would write, the files it goes into (machine.g and, the first time, config.g), or what is wrong (a strip number or a pin already used says the file and line). Writes nothing.",
+   "exclusive": false,
+   "kind": "read",
+   "log": false,
+   "role": "technician"
   },
   "machine.limits.get": {
    "args": {},
@@ -5324,8 +5402,12 @@
   "password.set": {
    "args": {
     "password": {
-     "desc": "New password: 4 to 60 characters, without double quotes, semicolons or line breaks, not \"reprap\". Never kept in the history.",
+     "desc": "New password: 10 to 60 characters, not only letters or only digits, not a common one (or one with a 1, 123 or ! tail), not the name of a person, of the machine or its address, not a repetition or a sequence, and without \" ' ; { } \\ or control characters (they break the line M551 of config.g). Refused with 422 invalid_args and error.reason (characters, length, factory, mismatch, one_class, common, names, pattern). Never kept in the history.",
      "required": true,
+     "type": "str"
+    },
+    "repeat": {
+     "desc": "The password typed a second time: when given it must be equal (reason mismatch). Never kept in the history.",
      "type": "str"
     }
    },
@@ -5724,7 +5806,7 @@
   "readiness.list": {
    "args": {},
    "capability": "machine.view",
-   "desc": "What each plugin's start-up card last reported: {plugins: {Id: {pending, total, at}}}. A plugin that never reported is missing.",
+   "desc": "What each plugin's start-up card last reported: {plugins: {Id: {pending, total, skipped?, at}}}. A plugin that never reported is missing.",
    "exclusive": false,
    "kind": "read",
    "log": false,
@@ -5732,8 +5814,12 @@
   },
   "readiness.report": {
    "args": {
+    "omitted": {
+     "desc": "The ids the page had put away when it reported (list of strings).",
+     "type": "obj"
+    },
     "pending": {
-     "desc": "Rows still to configure (orange or red).",
+     "desc": "Rows still to configure (orange or red), never an optional one that is off.",
      "max": 500,
      "min": 0,
      "required": true,
@@ -5744,8 +5830,18 @@
      "required": true,
      "type": "str"
     },
+    "rows": {
+     "desc": "The rows as the machine says them, before any decision: [{id, state: configured|example|missing|session|na, optional}]. With them the service recounts every time it is asked, applying the decisions of the settings file startup.",
+     "type": "obj"
+    },
+    "skipped": {
+     "desc": "Optional rows that are off or that the person chose not to use (not steps to do). Omitted = 0.",
+     "max": 500,
+     "min": 0,
+     "type": "int"
+    },
     "total": {
-     "desc": "Rows that apply to this machine.",
+     "desc": "Rows that are steps of the person (optional ones that are off or not in use are not counted).",
      "max": 500,
      "min": 0,
      "required": true,
@@ -5958,7 +6054,7 @@
   "settings.get": {
    "args": {
     "name": {
-     "desc": "Settings file: one of bed-estimates, bed-zones, bridge, buttons, camera, cameras, clamps, current, focus, gcodelib, jog, jog-macros, laser, laser-designs, layer-recipes, machine-calibrations, machine-maintenance, machine-pointsets, materials, motors, pellet-layers, printing, rs485, step-ceiling, vision, work_state, zcal, zone-extra, zone-sizes, zone-zpoints (a name, never a path).",
+     "desc": "Settings file: one of bed-estimates, bed-zones, bridge, buttons, camera, cameras, clamps, current, file-review, focus, gcodelib, jog, jog-macros, laser, laser-designs, layer-recipes, machine-calibrations, machine-maintenance, machine-pointsets, materials, motors, pellet-layers, printing, rs485, startup, step-ceiling, vision, work_state, zcal, zone-extra, zone-sizes, zone-zpoints (a name, never a path).",
      "required": true,
      "type": "str"
     }
@@ -5973,7 +6069,7 @@
   "settings.merge": {
    "args": {
     "name": {
-     "desc": "Settings file: one of bed-estimates, bed-zones, bridge, buttons, camera, cameras, clamps, current, focus, gcodelib, jog, jog-macros, laser, laser-designs, layer-recipes, machine-calibrations, machine-maintenance, machine-pointsets, materials, motors, pellet-layers, printing, rs485, step-ceiling, vision, work_state, zcal, zone-extra, zone-sizes, zone-zpoints (a name, never a path).",
+     "desc": "Settings file: one of bed-estimates, bed-zones, bridge, buttons, camera, cameras, clamps, current, file-review, focus, gcodelib, jog, jog-macros, laser, laser-designs, layer-recipes, machine-calibrations, machine-maintenance, machine-pointsets, materials, motors, pellet-layers, printing, rs485, startup, step-ceiling, vision, work_state, zcal, zone-extra, zone-sizes, zone-zpoints (a name, never a path).",
      "required": true,
      "type": "str"
     },
@@ -5998,7 +6094,7 @@
      "type": "str"
     },
     "name": {
-     "desc": "Settings file: one of bed-estimates, bed-zones, bridge, buttons, camera, cameras, clamps, current, focus, gcodelib, jog, jog-macros, laser, laser-designs, layer-recipes, machine-calibrations, machine-maintenance, machine-pointsets, materials, motors, pellet-layers, printing, rs485, step-ceiling, vision, work_state, zcal, zone-extra, zone-sizes, zone-zpoints (a name, never a path).",
+     "desc": "Settings file: one of bed-estimates, bed-zones, bridge, buttons, camera, cameras, clamps, current, file-review, focus, gcodelib, jog, jog-macros, laser, laser-designs, layer-recipes, machine-calibrations, machine-maintenance, machine-pointsets, materials, motors, pellet-layers, printing, rs485, startup, step-ceiling, vision, work_state, zcal, zone-extra, zone-sizes, zone-zpoints (a name, never a path).",
      "required": true,
      "type": "str"
     },
@@ -6061,6 +6157,30 @@
    "kind": "admin",
    "log": true,
    "role": "admin"
+  },
+  "startup.file.review": {
+   "args": {
+    "expected_sha": {
+     "desc": "The sha the person was looking at (the `sha` of startup.files): a file that changed since is refused.",
+     "type": "str"
+    },
+    "path": {
+     "desc": "Path of the file relative to 0:/, as the list of files shows it.",
+     "required": true,
+     "type": "str"
+    },
+    "reviewed": {
+     "default": true,
+     "desc": "true: leave the file as it is (the person edited it on purpose); false: ask for attention again.",
+     "type": "bool"
+    }
+   },
+   "capability": "config.edit",
+   "desc": "Remembers that a hand-edited file was looked at and is meant to stay as it is. It is kept against the sha of the content: the file asks for attention again only when it changes again. Nothing on the SD is written; it only stores the decision in the service settings.",
+   "exclusive": true,
+   "kind": "write",
+   "log": false,
+   "role": "technician"
   },
   "startup.file.view": {
    "args": {
