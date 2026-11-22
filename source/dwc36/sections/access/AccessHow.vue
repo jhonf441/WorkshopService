@@ -24,7 +24,7 @@
 			<p data-part="example-result"><b>{{ t('access_help.step_result') }}:</b> {{ t('access_help.ex_result_full') }}</p>
 		</div>
 		<div class="sv-how-terms" role="group" :aria-label="t('access_help.terms_label')" data-part="terms">
-			<button v-for="id in TERMS" :id="'sv-how-' + id" :key="id" type="button" class="sv-btn sv-how-term" :aria-expanded="open === id ? 'true' : 'false'" :aria-controls="'sv-how-d-' + id" @click="open = open === id ? '' : id"><span class="mdi sv-ico" :class="TERM_ICONS[id]" aria-hidden="true" />{{ t('access_help.term_' + id + '_name') }}</button>
+			<button v-for="id in TERMS" :id="'sv-how-' + id" :key="id" type="button" class="wf-btn sv-btn sv-how-term" :aria-expanded="open === id ? 'true' : 'false'" :aria-controls="'sv-how-d-' + id" @click="open = open === id ? '' : id"><span class="mdi sv-ico" :class="TERM_ICONS[id]" aria-hidden="true" />{{ t('access_help.term_' + id + '_name') }}</button>
 		</div>
 		<div v-if="open" :id="'sv-how-d-' + open" class="sv-note" data-level="info" role="region" :aria-label="t('access_help.term_' + open + '_name')" data-part="detail"><div>
 			<p>{{ t('access_help.term_' + open + '_def') }}</p>

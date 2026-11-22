@@ -7,7 +7,7 @@ export const READ_MS = 3000 // the state file is read this often
 export const READ_MAX_MS = 30000 // ... and this seldom when it is not there (404)
 export const READ_FAILS = 3 // failed reads of the state file in a row before the card says it cannot read it
 export const UNIT_EVERY = 4 // the unit of the Pi is read once every this many turns of the read
-export const ARM_MS = 4000 // a double tap is armed for this long
+export { ARM_MS } from './arm-ms.js' // a double tap is armed for this long (the one family value)
 export const ACTION_WAIT_MS = 8000 // the bridge has this long to answer an action
 export const CHART_HEIGHT = 60
 

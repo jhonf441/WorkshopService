@@ -13,11 +13,11 @@
 				<li v-for="r in m.rows" :key="r.id" :data-level="r.level" :data-row="r.id">
 					<span class="sv-level"><span class="mdi sv-ico sv-ico-s" :class="r.level === 'error' ? 'mdi-close-circle-outline' : 'mdi-alert-outline'" aria-hidden="true" />{{ t(r.level === 'error' ? 'home.level_error' : 'home.level_warn') }}</span>
 					<span class="sv-attn-text">{{ rowText(r) }}</span>
-					<a v-if="r.to" class="sv-btn sv-text" :href="nav.href(r.to)" @click="follow($event, r.to)">{{ t('home.go_' + r.to.s + (r.to.t ? '_' + r.to.t : '')) }}</a>
+					<a v-if="r.to" class="wf-btn sv-btn sv-text" :href="nav.href(r.to)" @click="follow($event, r.to)">{{ t('home.go_' + r.to.s + (r.to.t ? '_' + r.to.t : '')) }}</a>
 				</li>
 			</ul>
 			<p v-if="m.state.running && visitor" class="sv-quiet sv-home-note">{{ t('home.attn_visitor') }}</p>
-			<p v-if="m.readinessFailed" class="sv-quiet sv-home-note" role="status">{{ t('home.setup_unknown') }} <button type="button" class="sv-btn sv-text" @click="readiness.reload()">{{ t('kit.retry') }}</button></p>
+			<p v-if="m.readinessFailed" class="sv-quiet sv-home-note" role="status">{{ t('home.setup_unknown') }} <button type="button" class="wf-btn sv-btn sv-text" @click="readiness.reload()">{{ t('kit.retry') }}</button></p>
 		</section>
 
 		<div class="sv-cols">
@@ -61,8 +61,8 @@
 						</template>
 					</sv-action-row>
 				</ul>
-				<sv-reason :lock="blockLock" @sign-in="signIn" />
-				<p class="sv-quiet sv-home-note"><a class="sv-btn sv-text" :href="nav.href({ s: 'machine', t: 'auto' })" @click="follow($event, { s: 'machine', t: 'auto' })">{{ t('home.more_in_machine') }}</a></p>
+				<lock-reason class="sv-lock" :lock="blockLock" />
+				<p class="sv-quiet sv-home-note"><a class="wf-btn sv-btn sv-text" :href="nav.href({ s: 'machine', t: 'auto' })" @click="follow($event, { s: 'machine', t: 'auto' })">{{ t('home.more_in_machine') }}</a></p>
 			</section>
 		</div>
 	</div>
@@ -79,7 +79,7 @@ import { ageSeconds, durationText } from '../../core/format/duration.js'
 import { time as clockTime, toMs } from '../../core/format/dates.js'
 import { serviceText } from '../../service-text.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvReason from '../../ui/SvReason.vue'
+import LockReason from '../../LockReason.vue'
 import SvSwitch from '../../ui/SvSwitch.vue'
 import SvVerdict from '../../ui/SvVerdict.vue'
 import { homeModel } from './model.js'
@@ -92,7 +92,7 @@ const STATUS = ['idle', 'processing', 'paused', 'pausing', 'resuming', 'busy', '
 
 export default {
 	name: 'HomeSection',
-	components: { SvActionRow, SvReason, SvSwitch, SvVerdict },
+	components: { SvActionRow, LockReason, SvSwitch, SvVerdict },
 	inject: { nav: { from: 'svNav', default: () => ({ go() {}, href: () => '#' }) } },
 	props: { active: { type: Boolean, default: false } },
 	data() {

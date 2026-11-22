@@ -6,7 +6,7 @@ On top of that FORBIDDEN is a second, independent wall: even if somebody adds a 
 a driver register, maps an expansion board, defines pins or stops the machine as an emergency is refused (and a test feeds every
 template and a battery of bad lines through it).
 
-Why those codes are forbidden (the policy of the owner, CLAUDE.md "NEVER write driver registers"):
+Why those codes are forbidden (project policy: never write driver registers):
   - `M569.2` (any: `W..` writes a raw TMC register and can damage the chip; even the read `R..` is the Motors poller's job, not
     Machine's) and `M569.1` (closed loop writes);
   - `M918`: expansion board mapping; `M950`: pins (admin, lights module); `M112`: emergency stop belongs to DWC / Jog.

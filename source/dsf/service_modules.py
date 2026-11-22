@@ -58,7 +58,7 @@ PRINTING = process_registry.PRINTING  # record of the PID tuning (pid_trace.py)
 # user can change each one in the service page (config "modulos": {process: "auto" | "on" | "off"}).
 # Derived from the one table of the processes (process_registry.py): which plugins need each one.
 PROCESSES = process_registry.plugin_needs()
-# Safety processes are NEVER gated by plugins (CLAUDE.md: "Safety modules are never gated"): in "auto" they always run.
+# Safety processes are NEVER gated by plugins (project rule: safety modules are never gated): in "auto" they always run.
 # Only an explicit "off" of the user in config "modulos" stops them.
 SAFETY = process_registry.never_gated()
 MODES = ("auto", "on", "off")

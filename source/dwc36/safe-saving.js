@@ -61,22 +61,23 @@
   // A file that is nowhere is remembered for a while ("nothing"): a page that rereads a .json every few seconds (the bridge, the trajectory)
   // would ask for it, and for its .bak, every time. 404 without asking for NOTHING_MS (it grows if it keeps missing). Saving the file forgets it.
   var NOTHING_MS = 10000;
-  var NOTHING_MAX_MS = 300000; // 2026-10-17: before 60 s (about 100 queries / 10 min for files that do not exist); now it grows up to 5 min
-  // and it is remembered between page loads (sessionStorage): reloading DWC does not ask again for what is not there
+  var NOTHING_MAX_MS = 3600000; // 2026-10-17: 60 s -> 5 min; 2026-11-21: 1 h (files that are created only on first save logged 'Could not find file' per new tab)
+  // and it is remembered between page loads AND between tabs (localStorage): neither reloading nor opening DWC again asks for what is not there
   function nothingRead(p) {
     try {
-      var o = JSON.parse(window.sessionStorage.getItem("__workshopNothing:" + p) || "null");
+      var raw = window.localStorage.getItem("__workshopNothing:" + p);
+      var o = JSON.parse(raw || "null");
       return o && o.until > Date.now() ? o : null;
     } catch (e) {
-      return null;
+      return undefined; // no storage (or unreadable): memory only
     }
   }
   function nothingWrite(p, o) {
     try {
-      if (o) window.sessionStorage.setItem("__workshopNothing:" + p, JSON.stringify(o));
-      else window.sessionStorage.removeItem("__workshopNothing:" + p);
+      if (o) window.localStorage.setItem("__workshopNothing:" + p, JSON.stringify(o));
+      else window.localStorage.removeItem("__workshopNothing:" + p);
     } catch (e) {
-      /*  without sessionStorage: only in memory */
+      /*  without localStorage: only in memory */
     }
   }
   var where = {};
@@ -124,10 +125,9 @@
   }
   function read(p, url, init) {
     var d = where[p];
-    if (!d) {
-      var g = nothingRead(p);
-      if (g) d = where[p] = { nothing: true, ms: g.ms, until: g.until };
-    }
+    var g = nothingRead(p);
+    if (g) d = where[p] = { nothing: true, ms: g.ms, until: g.until };
+    else if (g === null && d && Date.now() < d.until) d = null, delete where[p]; // another tab saved the file: forget it here too
     if (d && Date.now() < d.until) {
       if (d.nothing) return Promise.resolve(noThis());
     }

@@ -30,7 +30,7 @@ HARDWARE_PARAMS = "machine.hardware_params"
 NOT_DELEGABLE = ("users.*", "roles.*", "access.*", "keys.*", "password.*", "auth.resolve", "package.apply", "profile.set", "config.restore",
                  "power.full_reset", "comms.set", "guard.set", "db.folder", "db.delete_previous", "activity.delete", "activity.clear",
                  "history.delete", "audit.verify", "audit.export", "audit.settings", "lights.apply_m950", "machine.history.restore", "startup.integrity.restore*", "startup.apply",
-                 "journal.read")  # the system log shows internals of the machine: administrator only, never a grant (proposed 2026-11-21, to confirm with the owner)
+                 "journal.read")  # the system log shows internals of the machine: administrator only, never a grant (owner's decision, 2026-11-22)
 
 
 def _c(category, klass, risk, *ops):
@@ -62,7 +62,7 @@ CAPABILITIES = {
     "machine.config_view": _c("machine", "read", 2, "machine.config.plan", "machine.history.list", "machine.history.get", "machine.history.compare",
                               "machine.report", "machine.tool.pins", "machine.tool.preview", "machine.beds.preview", "machine.led.preview"),
     "machine.config_apply": _c("machine", "write", 3, "machine.config.apply"),
-    # decision of the owner (2026-11-11): restoring a configuration record is for administrators only, never delegable (NOT_DELEGABLE)
+    # project decision (2026-11-11): restoring a configuration record is for administrators only, never delegable (NOT_DELEGABLE)
     "machine.config_restore": _c("machine", "admin", 4, "machine.history.restore"),
     "machine.try": _c("machine", "motion", 3, "machine.try", "machine.try.pending"),
     HARDWARE_PARAMS: _c("machine", "admin", 4),

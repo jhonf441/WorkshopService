@@ -44,7 +44,7 @@ def brief(rec):
 
 
 def role_for(kind):
-    """The role a restore of a record of this kind needs: always an administrator (decision of the owner, 2026-11-11)."""
+    """The role a restore of a record of this kind needs: always an administrator (project decision, 2026-11-11)."""
     return permissions.ADMIN
 
 

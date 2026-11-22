@@ -8,10 +8,10 @@
 			<div class="sv-card-head">
 				<h2 id="sv-lc-title"><span class="mdi mdi-console-line sv-ico" aria-hidden="true" />{{ t('common.received_commands') }}</h2>
 				<span class="sv-age" data-part="live" :title="t(live ? 'commandsReceived.updates_by_itself_with_each_new' : 'commandsReceived.paused_it_doesn_t_update_by')"><span class="mdi sv-ico sv-ico-s" :class="live ? 'mdi-record-circle-outline' : 'mdi-pause-circle-outline'" aria-hidden="true" />{{ t(live ? 'commandsReceived.live' : 'commandsReceived.paused') }}</span>
-				<button type="button" class="sv-btn sv-text" data-act="live" @click="live = !live">{{ t(live ? 'common.pause' : 'common.follow') }}</button>
-				<button type="button" class="sv-btn" data-act="refresh" @click="load(0)"><span class="mdi mdi-refresh sv-ico sv-ico-s" aria-hidden="true" />{{ t('common.refresh') }}</button>
+				<button type="button" class="wf-btn sv-btn sv-text" data-act="live" @click="live = !live">{{ t(live ? 'common.pause' : 'common.follow') }}</button>
+				<button type="button" class="wf-btn sv-btn" data-act="refresh" @click="load(0)"><span class="mdi mdi-refresh sv-ico sv-ico-s" aria-hidden="true" />{{ t('common.refresh') }}</button>
 			</div>
-			<sv-zone :status="zone" :error="error" :lock="lock" :empty-title="t('commandsReceived.no_commands_in_this_range')" @retry="load(0)" @sign-in="signIn">
+			<wf-zone class="sv-zone-host" :status="zone" :error="error" :lock="zoneLock(lock)" :empty-title="t('commandsReceived.no_commands_in_this_range')" @retry="load(0)" @sign-in="signIn">
 				<div v-if="fig" class="sv-stats" data-part="figures">
 					<div class="sv-stat" data-stat="changes"><b>{{ fig.changes }}</b><span>{{ t('commandsReceived.change_something') }}</span></div>
 					<div class="sv-stat" data-stat="reads"><b>{{ fig.readings }}</b><span>{{ t('commandsReceived.reads') }}</span></div>
@@ -36,18 +36,18 @@
 							<label class="sv-field"><span class="mdi mdi-magnify sv-ico sv-ico-s" aria-hidden="true" /><input v-model="draft.query" type="search" :placeholder="t('common.find')" :aria-label="t('common.find')" @keyup.enter="applyFilters"></label>
 							<label class="sv-check"><input v-model="draft.errors" type="checkbox"><span>{{ t('commandsReceived.errors_only') }}</span></label>
 						</div>
-						<div class="sv-row-ctl"><button type="button" class="sv-btn sv-main" data-act="apply" @click="applyFilters">{{ t('links.apply') }}</button><button type="button" class="sv-btn sv-text" data-act="clear" @click="clearFilters">{{ t('links.clear') }}</button></div>
+						<div class="sv-row-ctl"><button type="button" class="wf-btn sv-btn wf-main" data-act="apply" @click="applyFilters">{{ t('links.apply') }}</button><button type="button" class="wf-btn sv-btn sv-text" data-act="clear" @click="clearFilters">{{ t('links.clear') }}</button></div>
 					</div>
 				</details>
 				<p v-if="!rows.length" class="sv-quiet" role="status" data-part="none">{{ t(q.rw === 1 ? 'commandsReceived.no_command_that_changes_something_in' : 'commandsReceived.no_commands_in_this_range') }}
-					<button v-if="q.rw === 1 && fig && fig.readings" type="button" class="sv-btn sv-text" data-act="see-reads" @click="pickClass(2)">{{ tc('commandsReceived.there_are_n_reads', fig.readings, { n: fig.readings }) }} {{ t('commandsReceived.show_them') }}</button></p>
+					<button v-if="q.rw === 1 && fig && fig.readings" type="button" class="wf-btn sv-btn sv-text" data-act="see-reads" @click="pickClass(2)">{{ tc('commandsReceived.there_are_n_reads', fig.readings, { n: fig.readings }) }} {{ t('commandsReceived.show_them') }}</button></p>
 				<div v-else class="sv-scroll"><table class="sv-table">
 					<caption class="sv-vh">{{ t('common.received_commands') }}</caption>
 					<thead><tr><th scope="col">{{ t('links.col_when') }}</th><th scope="col">{{ t('links.col_who') }}</th><th scope="col">{{ t('links.col_op') }}</th><th scope="col">{{ t('commandsReceived.result') }}</th><th scope="col" class="sv-num">{{ t('links.col_time') }}</th></tr></thead>
 					<tbody>
 						<template v-for="r in rows">
 							<tr :key="r.id" :data-command="r.id" :data-open="open === r.id ? '' : null">
-								<td :data-label="t('links.col_when')"><button type="button" class="sv-btn sv-text" data-act="open" :aria-expanded="open === r.id ? 'true' : 'false'" @click="open = open === r.id ? null : r.id">{{ hour(r.ts) }}</button></td>
+								<td :data-label="t('links.col_when')"><button type="button" class="wf-btn sv-btn sv-text" data-act="open" :aria-expanded="open === r.id ? 'true' : 'false'" @click="open = open === r.id ? null : r.id">{{ hour(r.ts) }}</button></td>
 								<td :data-label="t('links.col_who')">{{ who(r) }}</td>
 								<td :data-label="t('links.col_op')"><b>{{ r.name }}</b> <code class="sv-code">{{ r.code }}</code></td>
 								<td :data-label="t('commandsReceived.result')"><span class="sv-word" :data-level="r.ok ? 'ok' : 'warn'"><span class="mdi sv-ico sv-ico-s" :class="r.ok ? 'mdi-check-circle-outline' : 'mdi-alert-outline'" aria-hidden="true" />{{ t(r.ok ? 'commandsReceived.answered_ok' : 'commandsReceived.failed') }}</span><span v-if="r.origin && r.origin.result === 'blocked'" class="sv-tag">{{ t('commandsReceived.blocked') }}</span></td>
@@ -67,15 +67,15 @@
 				</table></div>
 				<div class="sv-row-ctl">
 					<span class="sv-quiet" data-part="count">{{ total ? t('links.shown_of', { shown: rows.length, total: total }) : '' }}</span>
-					<button v-if="rows.length < total" type="button" class="sv-btn" data-act="more" :disabled="loading" @click="load(rows.length)">{{ t('kit.load_more') }}</button>
+					<button v-if="rows.length < total" type="button" class="wf-btn sv-btn" data-act="more" :disabled="loading" @click="load(rows.length)">{{ t('kit.load_more') }}</button>
 				</div>
 				<ul class="sv-rows">
 					<sv-action-row icon="mdi-delete-outline" :name="t('commandsReceived.delete_this_range')" :desc="t('commandsReceived.kept_30_days_reads_1_day')" :action="deleteCommands" :permission="perm('history.delete')" :stale="stale" :label="t('commandsReceived.delete_this_range')" danger @run="deleteCommands.run({ from: range.from, to: range.to })" @retry="deleteCommands.run({ from: range.from, to: range.to })" />
 				</ul>
-				<sv-reason :lock="lockOf(['history.delete'])" @sign-in="signIn" />
-			</sv-zone>
+				<lock-reason class="sv-lock" :lock="lockOf(['history.delete'])" />
+			</wf-zone>
 		</section>
-		<sv-confirm-dialog :confirm="deleteCommands.confirm" :title="t('links.delete_title')" :text="t('links.delete_text')" :object="{ name: range.from + ' → ' + range.to, context: tc('links.delete_count', total || 0, { n: total || 0 }) }" :verb="t('commandsReceived.delete_this_range')" danger
+		<wf-confirm :confirm="deleteCommands.confirm" :title="t('links.delete_title')" :text="t('links.delete_text')" :object="{ name: range.from + ' → ' + range.to, context: tc('links.delete_count', total || 0, { n: total || 0 }) }" :verb="t('commandsReceived.delete_this_range')" danger
 			@accept="deleteCommands.accept()" @cancel="deleteCommands.cancel()" />
 	</div>
 </template>
@@ -90,12 +90,12 @@ import { deleteCommands } from '../../core/actions/links.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
 import { copyText } from '../../copy.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvConfirmDialog from '../../ui/SvConfirmDialog.vue'
+import WfConfirm from '../../WfConfirm.vue'
 import RangePicker from '../../RangePicker.vue'
 import { absolute, resolve } from '../../range-picker.js'
-import SvReason from '../../ui/SvReason.vue'
+import LockReason from '../../LockReason.vue'
 import SvCopyButton from '../../ui/SvCopyButton.vue'
-import SvZone from '../../ui/SvZone.vue'
+import WfZone from '../../WfZone.vue'
 import SvSelect from '../../ui/SvSelect.vue'
 import { CLASSES, FILTERS, PAGE, SPANS, activeFilters, argsOf, emptyQuestion, fieldsOf, figuresOf, hourOf, niceResponse, originKey, rangeFrom, rangeOf, RESULT_KEYS } from './commands-view.js'
 
@@ -105,7 +105,7 @@ const SUMMARY_LIST = { via: 'ways', channel: 'channels', kind: 'kinds', plugin: 
 
 export default {
 	name: 'CommandsTab',
-	components: { RangePicker, SvCopyButton, SvActionRow, SvConfirmDialog, SvReason, SvSelect, SvZone },
+	components: { RangePicker, SvCopyButton, SvActionRow, WfConfirm, LockReason, SvSelect, WfZone },
 	mixins: [rowsMixin],
 	props: { active: { type: Boolean, default: false } },
 	data() {

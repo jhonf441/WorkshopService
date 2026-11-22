@@ -1,6 +1,6 @@
 """machine.overview and machine.state (Machine v2, phase 0): what the page and the other plugins' cards read.
 
-overview()  open to EVERY role (decision of the owner, Q8): per kind of calibration a traffic light and its age, what the machine is ready
+overview()  open to EVERY role (project decision): per kind of calibration a traffic light and its age, what the machine is ready
             for, and whether a procedure is running. No values of offsets, limits or meshes.
 state()     for operators and up: the overview plus the modules that are available or hidden WITH THE REASON, the runs, the newest
             calibration records with their values, the maintenance state and the machine block of the profile.

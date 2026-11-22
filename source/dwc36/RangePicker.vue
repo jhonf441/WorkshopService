@@ -272,7 +272,7 @@ export default {
 </script>
 
 <style scoped>
-.field { padding: 2px 8px; min-height: 36px; border: 1px solid rgba(128, 128, 128, 0.45); border-radius: 4px; color: inherit; background: transparent; }
+.field { padding: 2px 8px; min-height: 44px; box-sizing: border-box; border: 1px solid rgba(128, 128, 128, 0.45); border-radius: 4px; color: inherit; background: transparent; }
 .field:focus { outline: 2px solid var(--v-primary-base, #1976d2); }
 .field.bad { border-color: var(--v-error-base, #d32f2f); }
 .field.amount { width: 72px; }

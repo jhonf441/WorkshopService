@@ -12,7 +12,7 @@
 		<div v-else-if="!rows.length && !loading" class="wf-help">{{ $t('plugins.WorkshopService.access.audit_alerts_none') }}</div>
 		<ul v-else class="activity-alert-list">
 			<li v-for="a in rows" :key="a.id" class="activity-alert"><v-icon small color="warning">mdi-alert-outline</v-icon><span class="text-caption">{{ a.ts }}</span> {{ a.text }}
-				<button v-if="a.minute" type="button" class="sv-btn sv-text activity-alert-see" data-act="see" @click="$emit('see', a.minute)">{{ $t('plugins.WorkshopService.access.audit_alert_see') }}</button></li>
+				<button v-if="a.minute" type="button" class="wf-btn sv-btn sv-text activity-alert-see" data-act="see" @click="$emit('see', a.minute)">{{ $t('plugins.WorkshopService.access.audit_alert_see') }}</button></li>
 		</ul>
 		<div v-if="total > rows.length" class="text-caption">{{ $tc('plugins.WorkshopService.access.audit_alerts_more', total - rows.length, { n: total - rows.length }) }}</div>
 	</div>

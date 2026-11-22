@@ -104,8 +104,16 @@ function finish() {
 }
 
 export function discardAndLeave() {
-	dirtyGuards().forEach(g => { try { if (g.discard) g.discard() } catch (e) { /* the editor goes anyway */ } })
-	finish()
+	// an editor may discard asynchronously (it re-reads its file): wait for it, and go anyway when it fails
+	const waits = []
+	dirtyGuards().forEach(g => {
+		try {
+			const r = g.discard ? g.discard() : null
+			if (r && typeof r.then === 'function') waits.push(r.catch(() => { /* the editor goes anyway */ }))
+		} catch (e) { /* the editor goes anyway */ }
+	})
+	if (!waits.length) { finish(); return undefined }
+	return Promise.all(waits).then(finish)
 }
 
 export async function saveAndLeave() {

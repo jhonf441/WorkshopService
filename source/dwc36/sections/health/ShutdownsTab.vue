@@ -23,7 +23,7 @@
 					<h3 class="sv-h3">{{ t(OLD + 'box_todo') }}</h3>
 					<ol class="sv-health-steps"><li v-for="s in steps" :key="s">{{ s }}</li></ol>
 				</template>
-				<details class="sv-help" data-part="lines">
+				<details class="sv-disclose" data-part="lines">
 					<summary><span class="mdi mdi-text-long sv-ico sv-ico-s" aria-hidden="true" />{{ tc('health.box_lines', lines.length) }}</summary>
 					<pre class="sv-health-pre" tabindex="0">{{ lines.join('\n') }}</pre>
 				</details>
@@ -38,7 +38,7 @@
 				<sv-action-row v-else icon="mdi-eye-outline" :name="t('health.box_show_name')" :desc="t('health.box_show_desc')" :action="boxShow" :permission="perm('blackbox.show')" :stale="!running"
 					:label="t('health.box_show')" @run="boxShow.run()" @retry="boxShow.run()" />
 			</ul>
-			<sv-reason v-if="report || last" :lock="lock" @sign-in="signIn" />
+			<lock-reason class="sv-lock" v-if="report || last" :lock="lock" />
 		</section>
 
 		<section class="sv-card" aria-labelledby="sv-hn-title">
@@ -47,9 +47,9 @@
 			<details class="sv-fold" :open="nowOpen" data-part="now" @toggle="setNow($event.target.open)">
 				<summary><span class="mdi mdi-chevron-right sv-ico sv-chev" aria-hidden="true" /><span class="sv-fold-name">{{ t('health.now_open') }}</span></summary>
 				<div v-if="nowOpen" class="sv-fold-body">
-					<sv-zone :status="now.status" :error="now.error" :lock="now.lock" :updated="nowTime" refreshable :empty-title="t('health.now_empty')" @retry="now.reload()" @refresh="now.reload()" @sign-in="signIn">
+					<wf-zone class="sv-zone-host" :status="now.status" :error="now.error" :lock="zoneLock(now.lock)" :updated="nowTime" refreshable :empty-title="t('health.now_empty')" @retry="now.reload()" @refresh="now.reload()" @sign-in="signIn">
 						<pre class="sv-health-pre" tabindex="0">{{ now.data }}</pre>
-					</sv-zone>
+					</wf-zone>
 				</div>
 			</details>
 		</section>
@@ -66,8 +66,9 @@ import { boxHide, boxShow } from '../../core/actions/processes.js'
 import { time as clockTime } from '../../core/format/dates.js'
 import { analyzeBox } from '../../black-box.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvReason from '../../ui/SvReason.vue'
-import SvZone from '../../ui/SvZone.vue'
+import LockReason from '../../LockReason.vue'
+import WfZone from '../../WfZone.vue'
+import { zoneLock } from '../../core/rows-mixin.js'
 
 const MAX_LINES = 200
 const OLD = 'plugins.WorkshopService.servicePage.'
@@ -81,7 +82,7 @@ const now = createResource({
 
 export default {
 	name: 'ShutdownsTab',
-	components: { SvActionRow, SvReason, SvZone },
+	components: { SvActionRow, LockReason, WfZone },
 	props: { active: { type: Boolean, default: false } },
 	data() {
 		return { OLD, MAX_LINES, boxHide, boxShow, now, nowOpen: false, downloading: false, downloadNote: '' }
@@ -137,6 +138,7 @@ export default {
 		this.now.hide()
 	},
 	methods: {
+		zoneLock,
 		t,
 		tc,
 		signIn,

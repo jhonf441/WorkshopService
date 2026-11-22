@@ -13,7 +13,7 @@
 					</div>
 					<p v-for="s in skipped" :key="s.path" class="sv-field-error" role="status" data-part="skipped"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" /><code class="sv-code">{{ s.path }}</code> {{ t('package.skipped_' + s.reason) }}</p>
 					<template #ctl-after><span v-if="exported" class="sv-row-desc" role="status" data-part="exported">{{ tc('package.exported', exported, { n: exported }) }}</span></template>
-					<template #help><sv-help v-bind="help('export', 'setup')" /></template>
+					<template #help><help-fold v-bind="help('export', 'setup')" /></template>
 				</sv-action-row>
 				<sv-action-row below icon="mdi-import" :name="t('package.import_title')" :desc="t('package.import_note')" :action="packageApply" :permission="perm('package.apply')" :stale="stale" :label="todo ? t('package.import', { n: todo }) : ''" @run="askApply" @retry="askApply">
 					<p class="sv-row-desc" data-part="why">{{ t('package.import_why') }}</p>
@@ -21,15 +21,15 @@
 					<p class="sv-row-desc" data-part="limits">{{ t('setup.package_limits', { soft: SOFT, hard: HARD }) }}</p>
 					<p v-if="fileProblem" class="sv-field-error" role="alert" data-part="file-problem"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('setup.file_' + fileProblem, { soft: SOFT, hard: HARD }) }}</p>
 					<template #ctl-before>
-							<label class="sv-btn sv-file"><span>{{ t('package.choose_file') }}</span><input type="file" accept=".zip,application/zip" class="sv-vh" data-part="file" :disabled="!mayImport || stale" @change="pick($event.target.files && $event.target.files[0])"></label>
+							<label class="wf-btn sv-btn sv-file"><span>{{ t('package.choose_file') }}</span><input type="file" accept=".zip,application/zip" class="sv-vh" data-part="file" :disabled="!mayImport || stale" @change="pick($event.target.files && $event.target.files[0])"></label>
 					</template>
 					<template #body>
 						<div v-if="message && message.where === 'import'" class="sv-row-out" :data-kind="message.ok ? 'done' : 'error'" :role="message.ok ? 'status' : 'alert'" data-part="message"><span class="mdi sv-ico sv-ico-s" :class="message.ok ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline'" aria-hidden="true" /><span>{{ message.text }}<small v-if="message.hint" class="sv-row-desc">{{ message.hint }}</small><code v-if="message.code" class="sv-code">{{ message.code }}</code></span></div>
 					</template>
-					<template #help><sv-help v-bind="help('import', 'setup')" /></template>
+					<template #help><help-fold v-bind="help('import', 'setup')" /></template>
 				</sv-action-row>
 			</ul>
-			<sv-reason :lock="lockOf(['package.export', 'package.apply'])" @sign-in="signIn" />
+			<lock-reason class="sv-lock" :lock="lockOf(['package.export', 'package.apply'])" />
 			<p class="sv-quiet">{{ t('package.secrets_note') }}</p>
 
 			<div v-if="items" class="sv-preview" data-part="preview">
@@ -53,7 +53,7 @@
 			<div v-if="message && message.where !== 'import'" class="sv-row-out" :data-kind="message.ok ? 'done' : 'error'" :role="message.ok ? 'status' : 'alert'" data-part="message"><span class="mdi sv-ico sv-ico-s" :class="message.ok ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline'" aria-hidden="true" /><span>{{ message.text }}<small v-if="message.hint" class="sv-row-desc">{{ message.hint }}</small><code v-if="message.code" class="sv-code">{{ message.code }}</code></span></div>
 		</section>
 
-		<sv-confirm-dialog :confirm="packageApply.confirm" :title="t('setup.import_title')" :text="t('setup.import_text')" :object="{ name: fileName, context: t('setup.import_context', { n: todo }) }" :effects="effects" :verb="t('package.import', { n: todo })"
+		<wf-confirm :confirm="packageApply.confirm" :title="t('setup.import_title')" :text="t('setup.import_text')" :object="{ name: fileName, context: t('setup.import_context', { n: todo }) }" :effects="effects" :verb="t('package.import', { n: todo })"
 			@accept="packageApply.accept()" @cancel="packageApply.cancel()" />
 	</div>
 </template>
@@ -65,9 +65,9 @@ import { want } from '../../core/store/session.js'
 import { packageApply, packageExport } from '../../core/actions/setup.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvConfirmDialog from '../../ui/SvConfirmDialog.vue'
-import SvHelp from '../../ui/SvHelp.vue'
-import SvReason from '../../ui/SvReason.vue'
+import WfConfirm from '../../WfConfirm.vue'
+import HelpFold from '../../HelpFold.vue'
+import LockReason from '../../LockReason.vue'
 import { PACKAGE_CATEGORIES, PACKAGE_HARD_KB, PACKAGE_SOFT_KB, packageSize, packageTodo, toBase64 } from './view.js'
 
 const LEVEL = { create: 'ok', same: 'rest', conflict: 'warn', reference: 'rest', skip: 'rest' }
@@ -78,7 +78,7 @@ const PACKAGE_LIMITS = { zip: 700, files: 500, total: 8 }
 
 export default {
 	name: 'PackageTab',
-	components: { SvActionRow, SvConfirmDialog, SvHelp, SvReason },
+	components: { SvActionRow, WfConfirm, HelpFold, LockReason },
 	mixins: [rowsMixin],
 	props: { active: { type: Boolean, default: false } },
 	data() {

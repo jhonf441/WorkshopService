@@ -7,7 +7,7 @@
 				<h2 id="sv-dd-title"><span class="mdi mdi-database-outline sv-ico" aria-hidden="true" />{{ t('data.db_title') }}</h2>
 				<span v-if="status.data" class="sv-chip" :data-level="fig.ok ? null : 'warn'"><span class="mdi sv-ico sv-ico-s" :class="fig.ok ? 'mdi-check-circle-outline' : 'mdi-alert-outline'" aria-hidden="true" />{{ t(fig.ok ? 'data.db_check_ok' : 'data.db_check_bad') }}</span>
 			</div>
-			<sv-zone :status="status.status" :error="status.error" :lock="status.lock" :updated="updated" refreshable :empty-title="t('data.db_none')" @retry="status.reload()" @refresh="status.reload()" @sign-in="signIn">
+			<wf-zone class="sv-zone-host" :status="status.status" :error="status.error" :lock="zoneLock(status.lock)" :updated="updated" refreshable :empty-title="t('data.db_none')" @retry="status.reload()" @refresh="status.reload()" @sign-in="signIn">
 				<div class="sv-stats">
 					<div class="sv-stat" data-stat="size"><b>{{ fig.mb === null ? '–' : fig.mb + ' MB' }}</b><span>{{ t('data.db_size') }}</span></div>
 					<div class="sv-stat" data-stat="rows"><b>{{ fig.rows }}</b><span>{{ t('data.db_rows') }}</span></div>
@@ -27,7 +27,7 @@
 						</tr>
 					</tbody>
 				</table>
-			</sv-zone>
+			</wf-zone>
 		</section>
 
 		<section v-if="status.data" class="sv-card" aria-labelledby="sv-dd-sum" data-card="summarize">
@@ -37,10 +37,10 @@
 					<template #control="c">
 						<sv-switch :checked="summarize === true" :word="t(summarize === null ? 'data.word_unknown' : summarize ? 'data.word_on' : 'data.word_off')" :label="t('data.sum_name')" :state="c.state" :disabled="c.disabled || summarize === null" @toggle="toggleSummarize" />
 					</template>
-					<template #help><sv-help v-bind="help('summarize', 'data')" /></template>
+					<template #help><help-fold v-bind="help('summarize', 'data')" /></template>
 				</sv-action-row>
 			</ul>
-			<sv-reason :lock="lockOf(['db.settings'])" @sign-in="signIn" />
+			<lock-reason class="sv-lock" :lock="lockOf(['db.settings'])" />
 		</section>
 	</div>
 </template>
@@ -54,15 +54,15 @@ import { rowsMixin } from '../../core/rows-mixin.js'
 import { date, time, toMs } from '../../core/format/dates.js'
 import { tableLabel } from '../../table-names.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvHelp from '../../ui/SvHelp.vue'
-import SvReason from '../../ui/SvReason.vue'
+import HelpFold from '../../HelpFold.vue'
+import LockReason from '../../LockReason.vue'
 import SvSwitch from '../../ui/SvSwitch.vue'
-import SvZone from '../../ui/SvZone.vue'
+import WfZone from '../../WfZone.vue'
 import { figuresOf, tablesOf } from './view.js'
 
 export default {
 	name: 'DbTab',
-	components: { SvActionRow, SvHelp, SvReason, SvSwitch, SvZone },
+	components: { SvActionRow, HelpFold, LockReason, SvSwitch, WfZone },
 	mixins: [rowsMixin],
 	props: { active: { type: Boolean, default: false } },
 	data() {

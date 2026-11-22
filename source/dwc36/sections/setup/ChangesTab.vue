@@ -10,12 +10,12 @@
 			</div>
 			<p class="sv-lead">{{ t('startup_wizard.intro') }}</p>
 			<state-legend kind="levels" />
-			<sv-zone :status="status" :error="plan.error" :lock="plan.lock" :updated="updated" refreshable :empty-title="t('startup_wizard.none')" @retry="plan.reload()" @refresh="plan.reload()" @sign-in="signIn">
+			<wf-zone class="sv-zone-host" :status="status" :error="plan.error" :lock="zoneLock(plan.lock)" :updated="updated" refreshable :empty-title="t('startup_wizard.none')" @retry="plan.reload()" @refresh="plan.reload()" @sign-in="signIn">
 				<div v-if="plan.data && plan.data.sd_empty" class="sv-note" data-level="info" role="note"><span class="mdi mdi-information-outline sv-ico" aria-hidden="true" /><span>{{ t('startup_wizard.new_install') }}</span></div>
 				<div v-if="blockers.length" class="sv-note" data-level="warn" role="note" data-part="busy"><span class="mdi mdi-alert-outline sv-ico" aria-hidden="true" /><span>{{ t('startup_wizard.busy') }} <small v-for="b in blockers" :key="b.code + b.detail">{{ b.reason }} </small></span></div>
 				<div v-if="items.length" class="sv-tools">
-					<button type="button" class="sv-btn" data-act="mark-all" :disabled="!tools.canAll" @click="markAll">{{ t('startup_wizard.mark_all') }}</button>
-					<button type="button" class="sv-btn sv-text" data-act="clear" :disabled="!tools.canClear" @click="clearMarks">{{ t('startup_wizard.clear_all') }}</button>
+					<button type="button" class="wf-btn sv-btn" data-act="mark-all" :disabled="!tools.canAll" @click="markAll">{{ t('startup_wizard.mark_all') }}</button>
+					<button type="button" class="wf-btn sv-btn sv-text" data-act="clear" :disabled="!tools.canClear" @click="clearMarks">{{ t('startup_wizard.clear_all') }}</button>
 				</div>
 				<details v-for="g in groups" :key="g.id" class="sv-fold" open :data-group="g.id">
 					<summary>
@@ -28,12 +28,12 @@
 							<sv-action-row v-for="it in g.items" :key="it.id" icon="mdi-file-edit-outline" :name="it.path" :desc="reasonText(it)" :data-item="it.id">
 								<template #control>
 									<label class="sv-check"><input type="checkbox" :data-item="it.id" :checked="!!sel.ticked[it.id]" :disabled="!it.selectable || !mayApply || stale" :aria-label="t('startup_wizard.accept') + ': ' + it.path" @change="tick(it.id, $event.target.checked)"><span>{{ t('startup_wizard.kind_' + it.kind) }}</span></label>
-									<button type="button" class="sv-btn sv-text" data-act="diff" @click="toggleDiff(it.id)">{{ t(open[it.id] ? 'startup_wizard.hide_diff' : 'startup_wizard.show_diff') }}</button>
+									<button type="button" class="wf-btn sv-btn sv-text" data-act="diff" @click="toggleDiff(it.id)">{{ t(open[it.id] ? 'startup_wizard.hide_diff' : 'startup_wizard.show_diff') }}</button>
 								</template>
 								<p v-if="!it.selectable" class="sv-field-error" role="status"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ blockedText(it) }}</p>
 								<p v-if="it.safety" class="sv-row-desc" data-part="safety"><span class="sv-tag">{{ t('startup_wizard.safety_chip') }}</span> {{ t('startup_wizard.safety_' + it.safety) }}</p>
 								<template v-if="it.safety && sel.ticked[it.id]">
-									<button v-if="needsDiff(it)" type="button" class="sv-btn" data-act="open-diff" @click="openDiff(it.id)">{{ t('startup_wizard.open_diff_btn') }}</button>
+									<button v-if="needsDiff(it)" type="button" class="wf-btn sv-btn" data-act="open-diff" @click="openDiff(it.id)">{{ t('startup_wizard.open_diff_btn') }}</button>
 									<label v-else class="sv-check"><input type="checkbox" :checked="!!sel.safe[it.id]" data-act="safe" @change="safe(it.id, $event.target.checked)"><span>{{ t('startup_wizard.safety_confirm', { path: it.path, why: t('startup_wizard.safety_' + it.safety) }) }}</span></label>
 									<p v-if="needsDiff(it)" class="sv-quiet">{{ t('startup_wizard.safety_open_diff') }}</p>
 								</template>
@@ -54,10 +54,10 @@
 					<label v-if="risky.length" class="sv-check"><input type="checkbox" :checked="sel.machineOff" data-act="machine-off" @change="off($event.target.checked)"><span>{{ t('startup_wizard.machine_off') }}</span></label>
 					<p v-if="block && picked.length" class="sv-quiet" role="status" data-part="block">{{ t('startup_wizard.block_' + block) }}</p>
 					<p v-else-if="!picked.length" class="sv-quiet">{{ t('startup_wizard.block_none') }}</p>
-					<button type="button" class="sv-btn sv-main" data-act="apply" :disabled="!mayApply || stale || !!block || applyChanges.busy()" @click="apply">{{ tc('startup_wizard.apply', picked.length, { n: picked.length }) }}</button>
+					<button type="button" class="wf-btn sv-btn wf-main" data-act="apply" :disabled="!mayApply || stale || !!block || applyChanges.busy()" @click="apply">{{ tc('startup_wizard.apply', picked.length, { n: picked.length }) }}</button>
 				</div>
-				<sv-reason :lock="lockOf(['startup.apply'])" @sign-in="signIn" />
-			</sv-zone>
+				<lock-reason class="sv-lock" :lock="lockOf(['startup.apply'])" />
+			</wf-zone>
 			<div v-if="applyChanges.state === 'error' && applyChanges.error && applyChanges.error.kind !== 'session' && applyChanges.error.kind !== 'role'" class="sv-row-out" data-kind="error" role="alert" data-part="apply-error"><span class="mdi mdi-close-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ applyChanges.error.message }}</div>
 		</section>
 
@@ -73,7 +73,7 @@
 
 		<section class="sv-card" aria-labelledby="sv-sc-hist" data-card="history">
 			<div class="sv-card-head"><h2 id="sv-sc-hist"><span class="mdi mdi-history sv-ico" aria-hidden="true" />{{ t('configPackage.history_title') }}</h2></div>
-			<sv-zone :status="runs.status" :error="runs.error" :lock="runs.lock" :empty-title="t('configPackage.history_empty')" @retry="runs.reload()" @sign-in="signIn">
+			<wf-zone class="sv-zone-host" :status="runs.status" :error="runs.error" :lock="zoneLock(runs.lock)" :empty-title="t('configPackage.history_empty')" @retry="runs.reload()" @sign-in="signIn">
 				<ul class="sv-rows">
 					<li v-for="r in runs.rows" :key="r.run_id" class="sv-row" :data-run="r.run_id">
 						<div class="sv-row-main"><span class="mdi mdi-history sv-ico" aria-hidden="true" />
@@ -84,7 +84,7 @@
 								<p v-if="counts(r).skipped" class="sv-hint">{{ t('configPackage.run_skipped_help') }}</p>
 							</div>
 						</div>
-						<div class="sv-row-ctl"><button type="button" class="sv-btn sv-text" data-act="run" @click="toggleRun(r.run_id)">{{ t(details[r.run_id] ? 'configPackage.run_hide' : 'configPackage.run_show') }}</button></div>
+						<div class="sv-row-ctl"><button type="button" class="wf-btn sv-btn sv-text" data-act="run" @click="toggleRun(r.run_id)">{{ t(details[r.run_id] ? 'configPackage.run_hide' : 'configPackage.run_show') }}</button></div>
 						<div v-if="details[r.run_id]" class="sv-row-body" data-part="body">
 							<ul class="sv-effects" data-part="run-detail"><li v-for="a in split(r).done" :key="a.id"><code class="sv-code">{{ a.path }}</code> - {{ actionText(a.action) }}<template v-if="a.reason"> ({{ a.reason }})</template></li></ul>
 							<details v-if="split(r).skipped.length" class="sv-fold" data-part="skipped">
@@ -95,11 +95,11 @@
 					</li>
 				</ul>
 				<p v-if="runs.total > runs.rows.length" class="sv-quiet">{{ t('configPackage.history_more', { n: runs.rows.length, total: runs.total }) }}
-					<button v-if="runs.hasMore" type="button" class="sv-btn sv-text" data-act="more" :disabled="runs.more" @click="runs.loadMore()">{{ t('kit.load_more') }}</button></p>
-			</sv-zone>
+					<button v-if="runs.hasMore" type="button" class="wf-btn sv-btn sv-text" data-act="more" :disabled="runs.more" @click="runs.loadMore()">{{ t('kit.load_more') }}</button></p>
+			</wf-zone>
 		</section>
 
-		<sv-confirm-dialog :confirm="applyChanges.confirm" :title="t('setup.apply_title')" :text="t('setup.apply_text')" :object="{ name: tc('startup_wizard.apply', picked.length, { n: picked.length }), context: t('setup.apply_context') }" :effects="effects"
+		<wf-confirm :confirm="applyChanges.confirm" :title="t('setup.apply_title')" :text="t('setup.apply_text')" :object="{ name: tc('startup_wizard.apply', picked.length, { n: picked.length }), context: t('setup.apply_context') }" :effects="effects"
 			:verb="tc('startup_wizard.apply', picked.length, { n: picked.length })" @accept="applyChanges.accept()" @cancel="applyChanges.cancel()" />
 	</div>
 </template>
@@ -116,14 +116,14 @@ import { runCounts, splitActions } from '../../package-view.js'
 import { applyBlock, buildPayload, byGroup, chosen, chosenSafety, clearAll, diffLines, diffStats, emptySelection, errCode, needsDiffOpen, openableIds, resultRows, runAction, selectAll, setMachineOff, setSafe, setSeen, setTicked, toolbarState } from '../../package-wizard.js'
 import StateLegend from './StateLegend.vue'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvConfirmDialog from '../../ui/SvConfirmDialog.vue'
-import SvReason from '../../ui/SvReason.vue'
-import SvZone from '../../ui/SvZone.vue'
+import WfConfirm from '../../WfConfirm.vue'
+import LockReason from '../../LockReason.vue'
+import WfZone from '../../WfZone.vue'
 import { BLOCKED, TRIGGERS, WHY } from './view.js'
 
 export default {
 	name: 'ChangesTab',
-	components: { StateLegend, SvActionRow, SvConfirmDialog, SvReason, SvZone },
+	components: { StateLegend, SvActionRow, WfConfirm, LockReason, WfZone },
 	mixins: [rowsMixin],
 	props: { active: { type: Boolean, default: false } },
 	data() {

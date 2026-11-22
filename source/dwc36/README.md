@@ -37,7 +37,7 @@ Rules the tests keep: files up to 400 lines, no `v-html`, no colours in `.vue`, 
 1. Add the section or tab to `app/places.js` (id, icon, tabs, whether it is for administrators).
 2. Create `sections/<id>/index.vue` with props `active` and `tab`; start reads with `resource.show()` when `active`, stop them with `hide()`.
 3. Reads: `createResource` in `core/resources.js`. Changes: `createAction` in `core/actions/<id>.js` (level `arm: 'none' | 'double' | 'dialog'`).
-4. Draw with the kit: `SvZone` for a read, `SvActionRow` for a row, `SvConfirmDialog` for a level 3 or 4 confirmation, `SvHelp` for the four-line help.
+4. Lock sentence of a block: the shared `LockReason` (`:lock="lockOf([...])"`). Draw with the kit: the shared `WfZone` for a read, `SvActionRow` for a row, `SvConfirmDialog` for a level 3 or 4 confirmation, the shared `HelpFold` (`v-bind="help(id, area)"`) for the four-line help.
 5. Texts in a catalog area of `i18n/es.json` and `i18n/en.json` (plurals as `a | b`, same placeholders).
 6. Register the section in `app/ServicePage.vue` (`seen<Id>` + `v-if` / `v-show`) and add a test `tests/section-<id>.test.js`.
 
@@ -51,6 +51,6 @@ The simulator does not publish guard state, has no plugins installed and no brid
 
 ## Pieces that are candidates for the family
 
-`ui/SvActionRow`, `SvZone`, `SvSheet`, `SvConfirmDialog`, `SvReason`, `SvHelp`, `SvBand`, `SvSectionNav`, `SvTabs`, `SvVerdict`, `SvSwitch`
+`ui/SvActionRow`, `SvBand`, `SvSectionNav`, `SvTabs`, `SvVerdict`, `SvSwitch`
 (copying one to `TallerPlugins/vue/_shared36` means its files plus the classes it uses from `styles/kit.css`); `core/store/action.js`,
 `resource.js` and `core/api/call.js` are the data layer a plugin page would share.

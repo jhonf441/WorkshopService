@@ -11,7 +11,7 @@
 	            ctl-before (before the control, in the same line), ctl-after (next to the control, e.g. its result), help (the row help), body (what the row unfolds, a block under the head at the full width), default (extra lines under the sentence).
 	     Events: run (the control was touched: the screen calls action.run with its arguments), retry.
 	     The outcome under the row follows the action: sending, verifying, done (leaves by itself), refused (stays until the next try),
-	     not confirmed. A locked control shows NO sentence here: the block carries one for all its rows (SvReason). -->
+	     not confirmed. A locked control shows NO sentence here: the block carries one for all its rows (LockReason). -->
 	<li class="sv-row" :class="{ 'sv-stale': stale }" :data-state="state" :data-ctl="below ? 'below' : null">
 		<div class="sv-row-main">
 			<span v-if="icon" class="mdi sv-ico" :class="icon" aria-hidden="true" />
@@ -25,7 +25,7 @@
 			<slot name="ctl-before" />
 			<span v-if="resolving" class="sv-neutral" role="img" :aria-label="kt('checking_permission')" />
 			<slot v-else name="control" :state="state" :disabled="disabled" :armed="armed" :run="run" :hold="hold" :cancel="cancel">
-				<button v-if="label" type="button" class="sv-btn" :class="{ 'sv-danger': danger }" :data-state="state" :disabled="disabled" :aria-disabled="locked ? 'true' : null" :aria-describedby="locked && permission.text ? reasonId : null" :title="locked && permission.text ? permission.text : null"
+				<button v-if="label" type="button" class="wf-btn sv-btn" :class="{ 'wf-danger': danger }" :data-state="state" :disabled="disabled" :aria-disabled="locked ? 'true' : null" :aria-describedby="locked && permission.text ? reasonId : null" :title="locked && permission.text ? permission.text : null"
 					:aria-busy="busyHeld ? 'true' : null" @click="run" @focus="onFocus" @blur="onBlur" @keydown.esc="cancel">
 					<span v-if="locked" class="mdi mdi-lock-outline sv-ico sv-ico-s" aria-hidden="true" />
 					<!-- the button keeps ONE width: the texts it may show are stacked and the longest one sets it; a wait is a spinner over the text, never another text -->
@@ -37,14 +37,14 @@
 		</div>
 		<!-- a locked control carries its reason RIGHT THERE (what asks for the role, the role and what to do), grey with a padlock; the one of the foot of the card is then not drawn -->
 		<p v-if="locked && permission.text" :id="reasonId" class="sv-row-reason" data-part="reason"><span class="mdi mdi-lock-outline sv-ico sv-ico-s" aria-hidden="true" />{{ permission.text }}</p>
-		<slot name="help" />
+		<div v-if="$scopedSlots.help || $slots.help" class="sv-row-help" data-part="help"><slot name="help" /></div>
 		<!-- what a row unfolds (a diff, a detail): a block of its own under the head, the full width of the row, never beside the control -->
 		<div v-if="$scopedSlots.body || $slots.body" class="sv-row-body" data-part="body"><slot name="body" /></div>
 		<div v-if="out" class="sv-row-out" :data-kind="out.kind" :role="out.kind === 'error' ? 'alert' : 'status'">
 			<span class="mdi sv-ico sv-ico-s" :class="out.icon" aria-hidden="true" />
 			<span>{{ out.text }}<code v-if="out.code">{{ out.code }}</code></span>
-			<button v-if="out.retry" type="button" class="sv-btn" @click="$emit('retry')">{{ kt('retry') }}</button>
-			<button v-if="out.signIn" type="button" class="sv-btn sv-main" @click="svSignIn()">{{ kt('sign_in') }}</button>
+			<button v-if="out.retry" type="button" class="wf-btn sv-btn" @click="$emit('retry')">{{ kt('retry') }}</button>
+			<button v-if="out.signIn" type="button" class="wf-btn sv-btn wf-main" @click="svSignIn()">{{ kt('sign_in') }}</button>
 		</div>
 	</li>
 </template>
@@ -119,7 +119,7 @@ export default {
 				if (a.error.code === 'unverified') return line('unverified', this.kt('unverified'), '', true)
 				// the session closed under the person's hand: said HERE, next to what they touched, with the way in
 				if (a.error.kind === 'session' && a.error.reason !== 'damaged' && a.error.reason !== 'unknown') return Object.assign(line('error', this.kt('session_closed')), { signIn: typeof this.svSignIn === 'function' })
-				if (a.error.kind === 'session' || a.error.kind === 'role') return null      // the block says it once (SvReason)
+				if (a.error.kind === 'session' || a.error.kind === 'role') return null      // the block says it once (LockReason)
 				return line('error', [this.kt('refused'), this.errorText || a.error.message].filter(Boolean).join(' '), a.error.code, true)
 			}
 			return null

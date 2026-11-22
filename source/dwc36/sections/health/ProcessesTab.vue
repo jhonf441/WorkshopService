@@ -23,7 +23,7 @@
 					<label class="sv-field"><span class="mdi mdi-magnify sv-ico sv-ico-s" aria-hidden="true" /><input v-model="query" type="search" :placeholder="t('health.search')" :aria-label="t('health.search')"></label>
 				</div>
 				<p v-if="!groups.length" class="sv-quiet" role="status" data-part="none">{{ t(query ? 'health.none_found' : 'health.none_filter') }}
-					<button v-if="query || shownFilter !== 'all'" type="button" class="sv-btn sv-text" @click="clearFilters">{{ t('health.show_all') }}</button></p>
+					<button v-if="query || shownFilter !== 'all'" type="button" class="wf-btn sv-btn sv-text" @click="clearFilters">{{ t('health.show_all') }}</button></p>
 				<details v-for="g in groups" :key="g.id" class="sv-fold" :open="groupOpen(g)" :data-open="groupOpen(g) ? '' : null" :data-group="g.id" @toggle="setGroup(g, $event.target.open)">
 					<summary>
 						<span class="mdi mdi-chevron-right sv-ico sv-chev" aria-hidden="true" />
@@ -51,9 +51,9 @@
 					<ul v-if="reasons.length" class="sv-effects" data-part="reasons"><li v-for="(r, k) in reasons" :key="k">{{ r }}</li></ul>
 				</sv-action-row>
 			</ul>
-			<sv-reason :lock="perm" @sign-in="signIn" />
+			<lock-reason class="sv-lock" :lock="perm" />
 		</section>
-		<sv-confirm-dialog :confirm="serviceRestart.confirm" :title="t('health.service_confirm_title')" :text="t('health.service_restart_desc')" :object="{ name: t('health.service_object'), context: serviceLine }"
+		<wf-confirm :confirm="serviceRestart.confirm" :title="t('health.service_confirm_title')" :text="t('health.service_restart_desc')" :object="{ name: t('health.service_object'), context: serviceLine }"
 			:verb="t('health.service_restart')" danger @accept="serviceRestart.accept()" @cancel="serviceRestart.cancel()" />
 	</div>
 </template>
@@ -71,8 +71,8 @@ import { clearRestartNote, restartWatch } from '../../core/actions/service-resta
 import { ageSeconds, durationText } from '../../core/format/duration.js'
 import { serviceText } from '../../service-text.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvConfirmDialog from '../../ui/SvConfirmDialog.vue'
-import SvReason from '../../ui/SvReason.vue'
+import WfConfirm from '../../WfConfirm.vue'
+import LockReason from '../../LockReason.vue'
 import ProcessItem from './ProcessItem.vue'
 import { FILTERS, counts, defaultFilter, groupsOf, itemsOf, readableId } from './view.js'
 
@@ -89,7 +89,7 @@ const vision = createResource({
 
 export default {
 	name: 'ProcessesTab',
-	components: { ProcessItem, SvActionRow, SvConfirmDialog, SvReason },
+	components: { ProcessItem, SvActionRow, WfConfirm, LockReason },
 	props: { active: { type: Boolean, default: false }, anchor: { type: String, default: '' } },
 	data() {
 		return { FILTERS, WORD_LEVEL, serviceRestart, watch: restartWatch, vision, filter: '', query: '', openGroups: {}, openItems: {}, marked: '' }

@@ -100,13 +100,13 @@ def _stub_modules():
 def default_model():
     """A small invented object model: enough for the operations that read the state of the machine. Not a capture of a real one."""
     return {
-        "state": {"status": "idle", "upTime": 3600, "machineMode": "Laser", "laserPwm": 0, "currentTool": -1, "atxPower": True},
+        "state": {"status": "idle", "upTime": 3600, "machineMode": "FFF", "laserPwm": 0, "currentTool": -1, "atxPower": True},
         "job": {"file": {"fileName": None}, "duration": None, "lastFileName": None},
         "move": {"axes": [{"letter": a, "homed": True, "machinePosition": 0, "userPosition": 0, "min": 0, "max": 300} for a in "XYZ"],
                  "currentMove": {"topSpeed": 0, "requestedSpeed": 0}, "workplaceNumber": 0},
         "boards": [{"name": "Duet 3 MB6HC", "shortName": "MB6HC", "firmwareVersion": "3.6.3", "vIn": {"current": 24.1}, "mcuTemp": {"current": 38.0}}],
-        "global": {"selectedMode": "laser", "powerOffOnFinish": False, "workshopLanguage": "es"},
-        "heat": {"heaters": [], "bedHeaters": []}, "tools": [], "fans": [], "sensors": {"endstops": [], "probes": []},
+        "global": {"selectedMode": "fff", "powerOffOnFinish": False, "workshopLanguage": "es"},
+        "heat": {"heaters": [{"current": 24.5, "state": "off", "active": 0, "standby": 0, "max": 300, "sensor": 0, "name": "Hotend"}, {"current": 23.1, "state": "off", "active": 0, "standby": 0, "max": 120, "sensor": 1, "name": "Bed"}], "bedHeaters": [1]}, "tools": [{"number": 0, "name": "Pellet", "heaters": [0], "extruders": [0], "active": [0], "standby": [0], "state": "off", "fans": []}], "fans": [], "sensors": {"endstops": [], "probes": []},
         "inputs": [{"name": n, "state": "idle"} for n in ("HTTP", "Telnet", "File", "USB", "Aux", "Trigger", "Queue", "LCD", "SBC", "Daemon", "Aux2", "Autopause")],
         "network": {"hostname": "dev-sim", "interfaces": [{"actualIP": "127.0.0.1", "type": "lan"}]},
         "plugins": {},

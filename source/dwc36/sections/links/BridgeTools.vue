@@ -26,7 +26,7 @@
 						<div class="sv-row-main"><div><div class="sv-row-name"><code class="sv-code">{{ c.cmd }}</code> <sv-copy-button kind="command" :label="c.cmd" :done="copied === c.cmd" @copy="copy(c.cmd)" /></div><div class="sv-row-desc">{{ c.desc }}<template v-if="!c.test"> · <span :title="c.because">{{ tr('only_from_your_program') }}</span></template></div></div></div>
 						<div v-if="c.test" class="sv-row-ctl">
 							<label class="sv-field"><span class="sv-vh">{{ tr('sends') }}</span><input :value="field(c)" type="text" :aria-label="tr('sends')" @input="fields[c.cmd] = $event.target.value" @keyup.enter="test(c)"></label>
-							<button type="button" class="sv-btn" data-act="test" :disabled="tests[c.cmd] && tests[c.cmd].sending" @click="test(c)">{{ tr('test') }}</button>
+							<button type="button" class="wf-btn sv-btn" data-act="test" :disabled="tests[c.cmd] && tests[c.cmd].sending" @click="test(c)">{{ tr('test') }}</button>
 						</div>
 						<div v-if="tests[c.cmd] && tests[c.cmd].text" class="sv-row-out" :data-kind="tests[c.cmd].ok ? 'done' : 'error'" :role="tests[c.cmd].ok ? 'status' : 'alert'" data-part="test-result"><span>{{ tests[c.cmd].hour }}<template v-if="tests[c.cmd].ms != null"> · {{ tests[c.cmd].ms }} ms</template> · {{ tr('sent') }} <code class="sv-code">{{ tests[c.cmd].sent }}</code> {{ tr('bridge_response') }}</span></div>
 						<pre v-if="tests[c.cmd] && tests[c.cmd].text" class="sv-diff">{{ tests[c.cmd].text }}</pre>
@@ -45,9 +45,9 @@
 					<span class="sv-chip-sm sv-dbg-count" data-part="count">{{ tr('n_lines', { n: lines.length }, lines.length) }}</span>
 				</div>
 				<div class="sv-dbg-tools" role="group" :aria-label="tr('debug')">
-					<button type="button" class="sv-btn" data-act="debug_extend" :disabled="!isOn || !mayOrder || busy('debug_extend')" @click="order({ action: 'debug_extend' }, 'debug_extend')"><span class="mdi mdi-timer-plus-outline sv-ico sv-ico-s" aria-hidden="true" />{{ tr('debug_extend') }}</button>
-					<button type="button" class="sv-btn" data-act="pause" :disabled="!isOn" :aria-pressed="paused ? 'true' : 'false'" @click="paused = !paused"><span class="mdi sv-ico sv-ico-s" :class="paused ? 'mdi-play' : 'mdi-pause'" aria-hidden="true" />{{ t(paused ? 'common.follow' : 'common.pause') }}</button>
-					<button type="button" class="sv-btn" data-act="clear" :disabled="!isOn && !lines.length" @click="clear"><span class="mdi mdi-broom sv-ico sv-ico-s" aria-hidden="true" />{{ tr('clear') }}</button>
+					<button type="button" class="wf-btn sv-btn" data-act="debug_extend" :disabled="!isOn || !mayOrder || busy('debug_extend')" @click="order({ action: 'debug_extend' }, 'debug_extend')"><span class="mdi mdi-timer-plus-outline sv-ico sv-ico-s" aria-hidden="true" />{{ tr('debug_extend') }}</button>
+					<button type="button" class="wf-btn sv-btn" data-act="pause" :disabled="!isOn" :aria-pressed="paused ? 'true' : 'false'" @click="paused = !paused"><span class="mdi sv-ico sv-ico-s" :class="paused ? 'mdi-play' : 'mdi-pause'" aria-hidden="true" />{{ t(paused ? 'common.follow' : 'common.pause') }}</button>
+					<button type="button" class="wf-btn sv-btn" data-act="clear" :disabled="!isOn && !lines.length" @click="clear"><span class="mdi mdi-broom sv-ico sv-ico-s" aria-hidden="true" />{{ tr('clear') }}</button>
 					<span class="sv-dbg-sep" aria-hidden="true" />
 					<sv-copy-button kind="debug" :done="copiedLines" @copy="copyLines" />
 					<sv-select v-model="client" :options="clientOptions" :aria-label="tr('debug_client')" :disabled="!isOn" />

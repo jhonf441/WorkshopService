@@ -26,18 +26,20 @@
 				<span v-if="e.count" class="sv-nav-count" :aria-label="countLabel(e.count)">{{ e.count }}</span>
 			</a>
 		</div>
-		<sv-sheet :open="open" :title="pickLabel" @close="open = false">
-			<a v-for="e in entries" :key="e.id" class="sv-nav-item" :class="{ 'sv-locked': !!e.lock }" :href="e.href || '#'" :data-entry="e.id" :data-lock="e.lock || null" :title="e.lockLabel || null" :aria-label="e.lockLabel ? e.name + ': ' + e.lockLabel : null" :aria-current="e.id === current ? 'page' : null" :data-sv-autofocus="e.id === current ? '' : null" @click="pick($event, e.id)">
+		<wf-sheet :open="open" :title="pickLabel" @close="open = false">
+			<div class="sv-nav-sheet">
+			<a v-for="e in entries" :key="e.id" class="sv-nav-item" :class="{ 'sv-locked': !!e.lock }" :href="e.href || '#'" :data-entry="e.id" :data-lock="e.lock || null" :title="e.lockLabel || null" :aria-label="e.lockLabel ? e.name + ': ' + e.lockLabel : null" :aria-current="e.id === current ? 'page' : null" :data-wf-autofocus="e.id === current ? '' : null" @click="pick($event, e.id)">
 				<span class="sv-nav-iconbox"><span class="mdi sv-ico" :class="e.icon" aria-hidden="true" /><span v-if="e.lock" class="mdi sv-lockmark" :class="e.lock === 'session' ? 'mdi-account-lock' : 'mdi-lock'" aria-hidden="true" /></span>
 				<span class="sv-nav-name">{{ e.name }}</span>
 				<span v-if="e.count" class="sv-nav-count" :aria-label="countLabel(e.count)">{{ e.count }}</span>
 			</a>
-		</sv-sheet>
+			</div>
+		</wf-sheet>
 	</nav>
 </template>
 
 <script>
-import SvSheet from './SvSheet.vue'
+import WfSheet from '../WfSheet.vue'
 
 // the rail is open and kept open by default; what the person chooses is kept in this device (no storage: it is just not remembered)
 function readStore(key) {
@@ -54,7 +56,7 @@ function writeStore(key, v) {
 
 export default {
 	name: 'SvSectionNav',
-	components: { SvSheet },
+	components: { WfSheet },
 	props: {
 		entries: { type: Array, default: () => [] },
 		current: { type: String, default: '' },

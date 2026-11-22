@@ -7,7 +7,7 @@ Windows user profile service walked all of them at every sign-in (335 s of black
 Python (TMP / TEMP / TMPDIR) and Node (os.tmpdir) both honour these variables, so one wrapper
 covers every test without touching them.
 
-Usage (from the repo root; run ONE test file per process as CLAUDE.md asks):
+Usage (from the repo root; run ONE test file per process as the project rules ask):
 
     python tools/run_tests.py --cwd dsf -- python -m unittest test_identity
     python tools/run_tests.py -- node tests/lines-frozen.test.js

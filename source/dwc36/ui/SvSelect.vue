@@ -5,7 +5,7 @@
 	     Event: input (the value), as v-model. -->
 	<div class="sv-select" @focusout="onFocusOut">
 		<label v-if="label" class="sv-label" :for="id || uid + '-b'">{{ label }}</label>
-		<button :id="id || (label ? uid + '-b' : null)" type="button" class="sv-btn sv-select-btn" aria-haspopup="listbox" :aria-expanded="open ? 'true' : 'false'" :aria-label="ariaLabel || null" :aria-controls="open ? uid : null" :aria-activedescendant="open ? uid + '-' + active : null" :disabled="disabled" @click="toggle" @keydown="onKey">
+		<button :id="id || (label ? uid + '-b' : null)" type="button" class="wf-btn sv-btn sv-select-btn" aria-haspopup="listbox" :aria-expanded="open ? 'true' : 'false'" :aria-label="ariaLabel || null" :aria-controls="open ? uid : null" :aria-activedescendant="open ? uid + '-' + active : null" :disabled="disabled" @click="toggle" @keydown="onKey">
 			<span class="sv-select-text">{{ currentLabel }}</span><span class="mdi mdi-menu-down sv-ico" aria-hidden="true" />
 		</button>
 		<ul v-if="open" :id="uid" class="sv-select-list" role="listbox" :aria-label="ariaLabel || null">

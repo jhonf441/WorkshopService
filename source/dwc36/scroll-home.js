@@ -1,5 +1,7 @@
 'use strict'
 
+// Placing the page (FASE4: moved from the service page to the family, vue/_shared36/scroll-home.js; the twin in WorkshopService/dwc36 is byte-equal).
+// The header is the first of .sv-head (service), .wf-bar / .page-header (PageHeader of the family).
 // Placing the page. DWC draws its status panels above every plugin page (from 960 px of width), so on a low screen (the kiosk)
 // only a strip of this page is visible when it opens. The page does not touch DWC: when it is ACTIVATED (the person enters its
 // route, loads it, or arrives by a link) and less than 320 px are visible under its header, it brings its header to the top of the
@@ -25,6 +27,12 @@ export const WATCH_MS = 6000     // and it is never watched longer than this
 const FIELDS = ['INPUT', 'SELECT', 'TEXTAREA']
 const PERSON_EVENTS = ['wheel', 'touchstart', 'keydown', 'mousedown']
 
+// a dialog is open: the veil of the service page (.sv-veil.on), the veil of the family pieces WfSheet / WfConfirm (.wf-veil: it exists only while open), the PIN pad, a Vuetify dialog or overlay
+export const DIALOG_SELECTOR = '.sv-veil.on, .wf-veil, [data-tp-pin], .v-dialog--active, .v-overlay--active'
+export function dialogIsOpen(doc) {
+	return !!doc.querySelector(DIALOG_SELECTOR)
+}
+
 export function placementDelta(m) {
 	const x = m || {}
 	if (x.anchor || x.scrolled || x.dialogOpen) return 0
@@ -42,7 +50,7 @@ export function settled(m) {
 export function placeOnActivation(el, opts) {
 	const o = opts || {}
 	if (typeof window === 'undefined' || typeof document === 'undefined' || !el || typeof el.getBoundingClientRect !== 'function') return () => {}
-	const header = el.querySelector('.sv-head') || el
+	const header = el.querySelector('.sv-head, .wf-bar, .page-header') || el
 	const raf = window.requestAnimationFrame || (fn => setTimeout(fn, 16))
 	const clock = () => Date.now()
 	let over = false
@@ -64,7 +72,7 @@ export function placeOnActivation(el, opts) {
 		const active = document.activeElement
 		const delta = placementDelta({
 			headerTop: r.top, headerBottom: r.bottom, viewport: window.innerHeight, barTop: o.barTop, anchor: o.anchor, scrolled: false,
-			focusTag: active && active.tagName, dialogOpen: !!document.querySelector('.sv-veil.on, [data-tp-pin]')
+			focusTag: active && active.tagName, dialogOpen: dialogIsOpen(document)
 		})
 		if (delta) window.scrollBy(0, delta)
 		if (settled({ now: clock(), startedAt, stableSince })) return stop()

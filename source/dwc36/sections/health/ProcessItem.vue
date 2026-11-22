@@ -33,10 +33,10 @@
 			</template>
 
 			<h3 class="sv-h3">{{ t('health.blk_do') }}</h3>
-			<p v-if="item.kind === 'separate'" data-part="where">{{ t('health.sep_where') }} <a v-if="place" class="sv-btn sv-text" :href="nav.href(place)" @click="follow($event, place)">{{ t('health.sep_go_' + item.id) }}</a></p>
+			<p v-if="item.kind === 'separate'" data-part="where">{{ t('health.sep_where') }} <a v-if="place" class="wf-btn sv-btn sv-text" :href="nav.href(place)" @click="follow($event, place)">{{ t('health.sep_go_' + item.id) }}</a></p>
 			<template v-else>
 				<p v-if="pendingStuck" class="sv-field-error" role="alert" data-part="stuck"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('health.restart_stuck') }}
-					<a class="sv-btn sv-text" :href="nav.href(SERVICE_PLACE)" @click="follow($event, SERVICE_PLACE)">{{ t('health.restart_stuck_go') }}</a></p>
+					<a class="wf-btn sv-btn sv-text" :href="nav.href(SERVICE_PLACE)" @click="follow($event, SERVICE_PLACE)">{{ t('health.restart_stuck_go') }}</a></p>
 				<p v-else-if="item.restartPending" class="sv-quiet" role="status" data-part="pending"><span class="sv-spin" aria-hidden="true" />{{ t('health.restart_pending') }}</p>
 				<p v-if="!item.pausable" class="sv-quiet" data-part="no-controls">{{ t(item.safety ? 'health.no_controls_safety' : 'health.no_controls') }}</p>
 				<ul class="sv-rows">
@@ -57,10 +57,10 @@
 						<p v-if="waitsRestart" class="sv-row-desc" role="status" data-part="waits">{{ t('health.mode_waits') }}</p>
 					</sv-action-row>
 				</ul>
-				<sv-reason :lock="lock" @sign-in="$emit('sign-in')" />
+				<lock-reason class="sv-lock" :lock="lock" />
 			</template>
 
-			<details class="sv-help" data-part="tech">
+			<details class="sv-disclose" data-part="tech">
 				<summary><span class="mdi mdi-code-braces sv-ico sv-ico-s" aria-hidden="true" />{{ t('health.blk_tech') }}</summary>
 				<dl>
 					<dt>{{ t('health.tech_id') }}</dt><dd><code class="sv-code">{{ item.id }}</code></dd>
@@ -78,7 +78,7 @@ import { modeAction, processAction } from '../../core/actions/processes.js'
 import { durationText } from '../../core/format/duration.js'
 import { serviceText } from '../../service-text.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvReason from '../../ui/SvReason.vue'
+import LockReason from '../../LockReason.vue'
 import { MODES, RESTART_STUCK_S, readableId, reasonOf } from './view.js'
 
 const LOOK = {
@@ -94,7 +94,7 @@ const dur = s => durationText(s, (k, p) => t('kit.' + k, p))
 
 export default {
 	name: 'ProcessItem',
-	components: { SvActionRow, SvReason },
+	components: { SvActionRow, LockReason },
 	inject: { nav: { from: 'svNav', default: () => ({ go() {}, href: () => '#' }) } },
 	props: {
 		item: { type: Object, required: true },

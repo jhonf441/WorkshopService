@@ -11,7 +11,7 @@
 		</div>
 		<div class="roles-tools">
 			<nav class="roles-index" :aria-label="r('index_label')">
-				<button v-for="g in groups" :key="'i:' + g.id" type="button" class="sv-btn roles-index-chip" :class="{ 'is-active': activeId === g.id }" :aria-current="activeId === g.id ? 'true' : null" :aria-expanded="isOpen(g) ? 'true' : 'false'" :title="r('index_go')" @click="jump(g)"><v-icon x-small aria-hidden="true">mdi-link-variant</v-icon>{{ g.title }} ({{ g.caps.length }})</button>
+				<button v-for="g in groups" :key="'i:' + g.id" type="button" class="wf-btn sv-btn roles-index-chip" :class="{ 'is-active': activeId === g.id }" :aria-current="activeId === g.id ? 'true' : null" :aria-expanded="isOpen(g) ? 'true' : 'false'" :title="r('index_go')" @click="jump(g)"><v-icon x-small aria-hidden="true">mdi-link-variant</v-icon>{{ g.title }} ({{ g.caps.length }})</button>
 			</nav>
 			<button v-if="editingCol" type="button" class="roles-only-diff" :aria-pressed="onlyDiff ? 'true' : 'false'" @click="onlyDiff = !onlyDiff"><v-icon small aria-hidden="true">{{ onlyDiff ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline' }}</v-icon>{{ r('only_diff', { role: editingCol.label }) }}</button>
 		</div>

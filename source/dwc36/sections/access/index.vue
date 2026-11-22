@@ -4,7 +4,7 @@
 	     the request of Security to show an object ("go"). Props: active (this section is in view), tab. -->
 	<div class="sv-access">
 		<access-how />
-		<p class="sv-quiet sv-purpose" data-part="purpose">{{ t('access_help.purpose_' + tab) }} <button type="button" class="sv-btn sv-text" data-act="how" @click="showTerm('')">{{ t('access_help.how_link') }}</button></p>
+		<p class="sv-quiet sv-purpose" data-part="purpose">{{ t('access_help.purpose_' + tab) }} <button type="button" class="wf-btn sv-btn sv-text" data-act="how" @click="showTerm('')">{{ t('access_help.how_link') }}</button></p>
 		<access-section v-if="tab !== 'settings'" :operations="operations" :tab="tab" :go="go" @tab="onTab" />
 		<password-tab v-if="seenPassword" v-show="tab === 'settings'" :active="active && tab === 'settings'" />
 	</div>

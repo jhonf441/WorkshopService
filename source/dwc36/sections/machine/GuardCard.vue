@@ -13,20 +13,20 @@
 					<sv-switch :checked="enabled === true" :word="t(enabled === null ? 'machine.word_unknown' : enabled ? 'machine.word_guard_on' : 'machine.word_guard_off')" :label="t('machine.guard_name')"
 						:state="c.state" :disabled="c.disabled || enabled === null" @toggle="toggleGuard" @hold="on => held(c, on)" @escape="c.cancel" />
 				</template>
-				<template #help><sv-help v-bind="help('guard')" /></template>
+				<template #help><help-fold v-bind="help('guard')" /></template>
 			</sv-action-row>
 			<sv-action-row icon="mdi-alert-outline" :name="t('machine.guard_action_name')" :desc="t('machine.guard_action_desc')" :action="guardAction" :permission="perm('guard.set')" :stale="stale"
 				:label="action === 'pause' ? t('machine.guard_to_notify') : action === 'notify' ? t('machine.guard_to_pause') : ''" @run="changeAction" @retry="changeAction">
 				<span class="sv-value"><span class="mdi sv-ico" :class="action === 'pause' ? 'mdi-pause-circle-outline' : 'mdi-bell-outline'" aria-hidden="true" />{{ t(action === 'pause' ? 'machine.guard_does_pause' : action === 'notify' ? 'machine.guard_does_notify' : 'machine.word_unknown') }}</span>
 				<p class="sv-row-desc" data-part="phone">
 					<span class="sv-state" :data-level="phone === true ? 'ok' : 'rest'"><span class="mdi mdi-cellphone-message sv-ico sv-ico-s" aria-hidden="true" />{{ t(phone === null ? 'machine.guard_phone_unknown' : phone ? 'machine.guard_phone_on' : 'machine.guard_phone_off') }}</span>
-					<button v-if="phonePage" type="button" class="sv-btn sv-text" data-act="phone" @click="openPhone">{{ t('machine.guard_phone_setting') }}</button>
+					<button v-if="phonePage" type="button" class="wf-btn sv-btn sv-text" data-act="phone" @click="openPhone">{{ t('machine.guard_phone_setting') }}</button>
 				</p>
 				<p v-if="action === 'notify' && phone === false" class="sv-field-error" role="status" data-part="phone-hint"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('machine.guard_phone_hint') }}</p>
-				<template #help><sv-help v-bind="help('guard_action')" /></template>
+				<template #help><help-fold v-bind="help('guard_action')" /></template>
 			</sv-action-row>
 		</ul>
-		<sv-reason :lock="lock" @sign-in="signIn" />
+		<lock-reason class="sv-lock" :lock="lock" />
 
 		<details class="sv-fold" data-part="watches">
 			<summary>
@@ -66,18 +66,18 @@
 						<small class="sv-quiet">{{ t('machine.tune_range', { min: f.min, max: f.max }) }}</small>
 						<span v-if="problem(f)" class="sv-field-error" role="alert"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('machine.tune_invalid', { min: f.min, max: f.max }) }}</span>
 					</label>
-					<div class="sv-fbar"><button type="submit" class="sv-btn sv-main" :class="{ 'sv-save-hot': hasUnsaved }" :disabled="stale || perm('guard.set').state !== 'ok' || guardTune.busy()">{{ t('machine.tune_save') }}</button><sv-unsaved-mark :show="hasUnsaved" /><span class="sv-quiet">{{ t('data.settings_nothing') }}</span></div>
+					<div class="sv-fbar"><button type="submit" class="wf-btn sv-btn wf-main" :class="{ 'sv-save-hot': hasUnsaved }" :disabled="stale || perm('guard.set').state !== 'ok' || guardTune.busy()">{{ t('machine.tune_save') }}</button><sv-unsaved-mark :show="hasUnsaved" /><span class="sv-quiet">{{ t('data.settings_nothing') }}</span></div>
 					<div v-if="guardTune.state === 'done'" class="sv-row-out" data-kind="done" role="status"><span class="mdi mdi-check-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('machine.tune_done') }}</div>
 					<div v-else-if="guardTune.state === 'error' && guardTune.error" class="sv-row-out" data-kind="error" role="alert"><span class="mdi mdi-close-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ guardTune.error.message }}</div>
 				</form>
 			</div>
 		</details>
 
-		<sv-confirm-dialog :confirm="guardEnable.confirm" :title="t('machine.guard_off_title')" :text="t('machine.guard_off_text')" :object="{ name: t('machine.guard_name'), context: t('machine.guard_context', { n: sum.total }) }"
+		<wf-confirm :confirm="guardEnable.confirm" :title="t('machine.guard_off_title')" :text="t('machine.guard_off_text')" :object="{ name: t('machine.guard_name'), context: t('machine.guard_context', { n: sum.total }) }"
 			:effects="offEffects" :verb="t('machine.guard_off_verb')" @accept="guardEnable.accept()" @cancel="guardEnable.cancel()" />
-		<sv-confirm-dialog :confirm="guardAction.confirm" :title="t('machine.guard_notify_title')" :text="t('machine.guard_notify_text')" :object="{ name: t('machine.guard_name'), context: t('machine.guard_context', { n: sum.total }) }"
+		<wf-confirm :confirm="guardAction.confirm" :title="t('machine.guard_notify_title')" :text="t('machine.guard_notify_text')" :object="{ name: t('machine.guard_name'), context: t('machine.guard_context', { n: sum.total }) }"
 			:effects="[t('machine.guard_notify_e1'), t('machine.guard_notify_e2')]" :verb="t('machine.guard_notify_verb')" @accept="guardAction.accept()" @cancel="guardAction.cancel()" />
-		<sv-confirm-dialog :confirm="guardTune.confirm" :title="t('machine.tune_confirm_title')" :text="t('machine.tune_confirm_text')" :object="{ name: t('machine.guard_name') }"
+		<wf-confirm :confirm="guardTune.confirm" :title="t('machine.tune_confirm_title')" :text="t('machine.tune_confirm_text')" :object="{ name: t('machine.guard_name') }"
 			:verb="t('machine.tune_save')" @accept="guardTune.accept()" @cancel="guardTune.cancel()" />
 	</section>
 </template>
@@ -89,9 +89,9 @@ import { guardAction, guardEnable, guardTune } from '../../core/actions/machine.
 import { guardSettings } from '../../core/resources.js'
 import { serviceText } from '../../service-text.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvConfirmDialog from '../../ui/SvConfirmDialog.vue'
-import SvHelp from '../../ui/SvHelp.vue'
-import SvReason from '../../ui/SvReason.vue'
+import WfConfirm from '../../WfConfirm.vue'
+import HelpFold from '../../HelpFold.vue'
+import LockReason from '../../LockReason.vue'
 import SvSwitch from '../../ui/SvSwitch.vue'
 import { guardLead, guardRows, guardSummary } from './view.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
@@ -112,7 +112,7 @@ const PLUGIN_NAMES = { WorkshopVision: 'Vision', WorkshopRS485: 'RS485' }
 
 export default {
 	name: 'GuardCard',
-	components: { SvActionRow, SvConfirmDialog, SvHelp, SvReason, SvSwitch, SvUnsavedMark },
+	components: { SvActionRow, WfConfirm, HelpFold, LockReason, SvSwitch, SvUnsavedMark },
 	mixins: [rowsMixin, unsavedMixin],
 	data() {
 		return { guardAction, guardEnable, guardTune, PLUGIN_NAMES, ICONS, FIELDS, draft: {}, tried: false }

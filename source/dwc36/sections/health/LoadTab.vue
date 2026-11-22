@@ -23,7 +23,7 @@
 				</tbody>
 			</table>
 			<p v-else class="sv-quiet">{{ t('health.load_none') }}</p>
-			<p v-if="piHealth" class="sv-quiet sv-home-note"><a class="sv-btn sv-text" :href="PI_HEALTH" @click="toPiHealth">{{ t('health.load_pi_health') }}</a></p>
+			<p v-if="piHealth" class="sv-quiet sv-home-note"><a class="wf-btn sv-btn sv-text" :href="PI_HEALTH" @click="toPiHealth">{{ t('health.load_pi_health') }}</a></p>
 		</template>
 	</section>
 		<screen-card />

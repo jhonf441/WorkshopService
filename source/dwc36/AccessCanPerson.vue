@@ -20,7 +20,7 @@
 			<li v-for="(s, i) in view.sources" :key="i">{{ sourceText(s) }}</li>
 		</ul>
 
-		<div class="access-filters">
+		<div class="sv-tbar">
 			<div class="access-kinds" role="group">
 				<button v-for="f in filters" :key="f" type="button" class="access-kind access-touch" :class="{ 'is-on': show === f }" :aria-pressed="show === f ? 'true' : 'false'" @click="show = f">{{ $t('plugins.WorkshopService.access.who_filter_' + f) }}</button>
 			</div>

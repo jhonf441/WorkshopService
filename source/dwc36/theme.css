@@ -67,12 +67,6 @@
 	--v-error-base: #ff7676;
 }
 
-/* Touch targets and small text (QA 3.7 #09, real page QA-12). DESIGN.md: nothing that is touched is less than 32 px high; the x-small
- * buttons were 20 px with a 10 px label and the icon buttons 28 px. On a touch screen (coarse pointer) 44 px. */
-:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-btn { min-height: 32px; }
-:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-btn--icon { min-width: 32px; }
-:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-chip--link { min-height: 32px; }
-@media (pointer: coarse) {
-	:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-btn, :is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-chip--link, :is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .st-item, :is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .st-fold { min-height: 44px; }
-	:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .v-btn--icon, :is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) .st-fold { min-width: 44px; }
-}
+/* Touch targets (FASE4, decision 2026-11-21): 44 px ALWAYS, on any pointer (the kiosk may report a fine one). An icon button looks small and is
+ * touched over 44 px by the invisible area family.css draws (::after), so only the min-height of text buttons and links is set here. */
+:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) :is(.v-btn:not(.v-btn--icon), .v-chip--link, .st-item) { min-height: 44px; }

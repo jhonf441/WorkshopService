@@ -105,7 +105,7 @@ const stamp = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISO
 
 function defaultSettings() {
   // DWC keeps its settings on the SD: the page is one of the plugins of this build, switched on here; language and theme as asked
-  return JSON.stringify({ main: { language: LANG, darkTheme: DARK, enabledPlugins: [PLUGIN], settingsStorageLocal: false, lastHostname: "127.0.0.1:" + PORT }, machine: { enabledPlugins: [] } });
+  return JSON.stringify({ main: { language: LANG, darkTheme: DARK, enabledPlugins: (process.env.QA_PLUGINS ? process.env.QA_PLUGINS.split(",") : [PLUGIN]), settingsStorageLocal: false, lastHostname: "127.0.0.1:" + PORT }, machine: { enabledPlugins: [] } });
 }
 
 function readBody(req) {

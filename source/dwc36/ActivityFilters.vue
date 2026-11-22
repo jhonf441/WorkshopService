@@ -3,15 +3,15 @@
 	     folds under "More filters". The value is one object, the screen owns it:
 	       <activity-filters :value="f" :users="[...]" :groups="[...]" @input="f = $event" @clear="..." /> -->
 	<div class="activity-filters">
-		<div class="access-filters activity-main">
+		<div class="sv-tbar activity-main">
 			<range-picker :value="value.range" @input="set('range', $event)" />
-			<button v-for="c in chips" :key="c.id" type="button" class="sv-btn activity-chip" :class="{ 'sv-on': value[c.id] }" :aria-pressed="value[c.id] ? 'true' : 'false'" @click="set(c.id, !value[c.id])">{{ $t('plugins.WorkshopService.access.' + c.key) }}</button>
-			<button type="button" class="sv-btn" :aria-expanded="open ? 'true' : 'false'" @click="open = !open"><span class="mdi mdi-filter-variant sv-ico sv-ico-s" aria-hidden="true" />{{ $t('plugins.WorkshopService.access.audit_f_more') }}</button>
+			<button v-for="c in chips" :key="c.id" type="button" class="wf-btn sv-btn activity-chip" :class="{ 'sv-on': value[c.id] }" :aria-pressed="value[c.id] ? 'true' : 'false'" @click="set(c.id, !value[c.id])">{{ $t('plugins.WorkshopService.access.' + c.key) }}</button>
+			<button type="button" class="wf-btn sv-btn" :aria-expanded="open ? 'true' : 'false'" @click="open = !open"><span class="mdi mdi-filter-variant sv-ico sv-ico-s" aria-hidden="true" />{{ $t('plugins.WorkshopService.access.audit_f_more') }}</button>
 		</div>
 		<div v-if="active.length" class="activity-active" role="group" data-part="active-filters" :aria-label="$t('plugins.WorkshopService.access.audit_f_active')">
 			<span class="sv-label">{{ $t('plugins.WorkshopService.access.audit_f_active') }}</span>
-			<span v-for="c in active" :key="c.id" class="sv-chip-sm activity-active-chip" :data-filter="c.id">{{ c.text }}<button type="button" class="sv-btn sv-text activity-active-x" :aria-label="$t('plugins.WorkshopService.access.audit_f_remove_one', { what: c.text })" :title="$t('plugins.WorkshopService.access.audit_f_remove_one', { what: c.text })" @click="removeOne(c.id)"><span class="mdi mdi-close sv-ico sv-ico-s" aria-hidden="true" /></button></span>
-			<button type="button" class="sv-btn sv-text" data-act="clear-filters" @click="$emit('clear')">{{ $t('plugins.WorkshopService.access.audit_f_clear') }}</button>
+			<span v-for="c in active" :key="c.id" class="sv-chip-sm activity-active-chip" :data-filter="c.id">{{ c.text }}<button type="button" class="wf-btn sv-btn sv-text activity-active-x" :aria-label="$t('plugins.WorkshopService.access.audit_f_remove_one', { what: c.text })" :title="$t('plugins.WorkshopService.access.audit_f_remove_one', { what: c.text })" @click="removeOne(c.id)"><span class="mdi mdi-close sv-ico sv-ico-s" aria-hidden="true" /></button></span>
+			<button type="button" class="wf-btn sv-btn sv-text" data-act="clear-filters" @click="$emit('clear')">{{ $t('plugins.WorkshopService.access.audit_f_clear') }}</button>
 			<span v-if="origin" class="wf-help" data-part="filter-origin">{{ origin }}</span>
 		</div>
 		<p class="wf-help mt-1" data-part="filters-help">{{ $t('plugins.WorkshopService.access.audit_f_denied_help') }}</p>
@@ -22,7 +22,7 @@
 			<div class="activity-field" data-part="op-field"><span class="activity-label"><label class="sv-label" for="af-op">{{ $t('plugins.WorkshopService.access.audit_f_operation') }}</label><help-tip :title="$t('plugins.WorkshopService.access.audit_f_operation')" :what="$t('plugins.WorkshopService.access.audit_f_op_help_what')" :how="$t('plugins.WorkshopService.access.audit_f_op_help_how')" /></span><sv-combo id="af-op" :value="value.op" :options="opOptions" allow-free :placeholder="$t('plugins.WorkshopService.access.audit_f_op_placeholder')" :aria-label="$t('plugins.WorkshopService.access.audit_f_operation')" :none-text="$t('plugins.WorkshopService.access.audit_f_none')" :clear-label="$t('plugins.WorkshopService.access.audit_f_any')" @input="set('op', $event || '')" /></div>
 			<div class="activity-field"><span class="activity-label"><label class="sv-label" for="af-target">{{ $t('plugins.WorkshopService.access.audit_f_target') }}</label><help-tip :title="$t('plugins.WorkshopService.access.audit_f_target')" :what="$t('plugins.WorkshopService.access.audit_f_target_help_what')" :how="$t('plugins.WorkshopService.access.audit_f_target_help_how')" /></span><sv-combo id="af-target" :value="value.target" :options="targetOptions" allow-free :placeholder="$t('plugins.WorkshopService.access.audit_f_target_placeholder')" :aria-label="$t('plugins.WorkshopService.access.audit_f_target')" :none-text="$t('plugins.WorkshopService.access.audit_f_none')" :clear-label="$t('plugins.WorkshopService.access.audit_f_any')" @input="set('target', $event || '')" /></div>
 			<div class="activity-field"><label class="sv-label" for="af-result">{{ $t('plugins.WorkshopService.access.audit_f_result') }}</label><sv-select id="af-result" :value="value.result" :items="results" clearable @input="set('result', $event || '')" /></div>
-			<div class="activity-field activity-clear"><button type="button" class="sv-btn sv-text" @click="$emit('clear')">{{ $t('plugins.WorkshopService.access.audit_f_clear') }}</button></div>
+			<div class="activity-field activity-clear"><button type="button" class="wf-btn sv-btn sv-text" @click="$emit('clear')">{{ $t('plugins.WorkshopService.access.audit_f_clear') }}</button></div>
 		</div>
 	</div>
 </template>

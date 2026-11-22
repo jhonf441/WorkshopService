@@ -20,7 +20,9 @@
 <script>
 'use strict'
 
-// THE "?" of the family (DESIGN.md section 7b; its look, shared with the JS twin, is design/family.css): a small button next to a field, a title or a card that opens a card with the help of THAT thing, in
+// LEGACY since 2026-11-21 (project decision): the family's help is <help-fold> ("What it is and how to use it") and <help-line> (short text, in line). This popover "?" stays only where it
+// is used today; tests/help-unified.test.js freezes how many each plugin has and the number only shrinks. Do NOT add new ones.
+// The "?" of the family as it was (DESIGN.md section 7b; its look, shared with the JS twin, is design/family.css): a small button next to a field, a title or a card that opens a card with the help of THAT thing, in
 // the four lines of the start-up cards: what it is, what it is for, what you lose without it, how to use it. Every plugin uses this one piece, so the
 // button looks the same, sits at the end of the row and says the same four things everywhere. Empty lines are not drawn. For a longer text of the whole
 // page use the "How it works" fold (wf-more) once, never one fold under every input.

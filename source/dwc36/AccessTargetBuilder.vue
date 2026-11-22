@@ -3,7 +3,7 @@
 	     (workshop:plugin:type/id) with an example, and is added to the rule with "Add target". A wrong id is said next to the field.
 	       <access-target-builder @add="pattern => ..." /> -->
 	<div class="access-target-builder" data-part="target-builder">
-		<div class="access-target-row">
+		<div class="sv-form-row">
 			<label class="sv-label">{{ $t('plugins.WorkshopService.access.target_plugin') }}<sv-select v-model="plugin" :options="pluginOptions" :aria-label="$t('plugins.WorkshopService.access.target_plugin')" /></label>
 			<label class="sv-label">{{ $t('plugins.WorkshopService.access.target_type') }}<sv-select v-model="type" :options="typeOptions" :aria-label="$t('plugins.WorkshopService.access.target_type')" /></label>
 			<label class="sv-label">{{ $t('plugins.WorkshopService.access.target_which') }}<sv-select v-model="scope" :options="scopeOptions" :aria-label="$t('plugins.WorkshopService.access.target_which')" /></label>
@@ -103,11 +103,9 @@ export default {
 </script>
 
 <style>
-.access-target-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
-.access-target-row .sv-label { display: flex; flex-direction: column; gap: 4px; }
+.sv-form-row .sv-field-error { margin-top: 8px; }
 .access-target-result { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0 4px; }
 .access-target-idhead { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
 .access-target-says { font-size: 13px; }
 .access-target-problem { margin-top: 8px; }
-.access-target-row .sv-field-error { margin-top: 8px; }
 </style>

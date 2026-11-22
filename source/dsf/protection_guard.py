@@ -20,7 +20,7 @@ What it does, every PERIOD_S:
 
 Who watches the watchers: the guard watches status_light (and the other processes); status_light calls degraded(),
 which also reports True when the guard's own loop stopped ticking, so a dead guard shows on the strip too. If the whole
-service dies, sys/daemon.g takes the LEDs back after 10 s without the Pi heartbeat (CLAUDE.md).
+service dies, sys/daemon.g takes the LEDs back after 10 s without the Pi heartbeat.
 
 Settings: config["guard"] (see DEFAULTS); read live, changed with the API operation guard.set (admin).
 """

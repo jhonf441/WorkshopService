@@ -2,7 +2,7 @@
 	<!-- The table of profiles (read only): filter by name and by kind, base profiles first. Under 900 px the rows become cards (access.css rules below).
 	       <access-profile-list :list="answer of access.profiles.list" :editable="true" @open="row => ..." @removed="name => ..." /> -->
 	<div class="access-profile-list">
-		<div class="access-filters">
+		<div class="sv-tbar">
 			<sv-text-field v-model="text" icon="mdi-magnify" type="search" class="access-search" :placeholder="$t('plugins.WorkshopService.access.common_search')" :aria-label="$t('plugins.WorkshopService.access.common_search')" />
 			<div class="access-kinds" role="group">
 				<button v-for="k in kinds" :key="k" type="button" class="access-kind access-touch" :class="{ 'is-on': kind === k }" :aria-pressed="kind === k ? 'true' : 'false'" @click="kind = k">{{ $t('plugins.WorkshopService.access.profiles_filter_' + k) }}</button>

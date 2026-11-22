@@ -4,7 +4,8 @@
 	     thousands of elements at once. A wait shows a bar and a text; after 10 s it says it is taking longer and offers to try again.
 	     Props: open, title, rows [{ n (number or null), text, flag ('same' | 'changed' | 'added' | 'factory' | 'gap'), count (for a gap), block (id of the block the workshop manages that holds the row, or ''), blockStart (the first row of a block: its label is drawn above), comment (a comment line) }], loading, error (a sentence),
 	     gapText (function(count) -> sentence). Slots: head (what is above the toolbar), tools (more controls in the same row of tools), legend (under the toolbar), foot-left. Methods: jumpToRange(from, to) / jumpToLine(n). Events: close, retry, copy, download. -->
-	<sv-sheet :open="open" :title="title" wide @close="$emit('close')">
+	<wf-sheet :open="open" :title="title" wide @close="$emit('close')">
+		<div class="sv-sheet-flow">
 		<div class="sv-tv-head"><slot name="head" /></div>
 		<!-- the frame never changes: the same tools and the same box whether it is waiting, failed or showing the text (no jump of layout) -->
 		<div class="sv-tv-bar" role="toolbar" :aria-label="kt('view_tools')" :aria-busy="loading ? 'true' : null">
@@ -19,8 +20,8 @@
 			</div>
 			<div class="sv-tv-acts">
 				<span class="sv-tv-wrap" :title="kt('view_wrap_help')" data-part="wrap"><span class="mdi mdi-wrap sv-ico sv-ico-s" aria-hidden="true" /><sv-switch :checked="wrap" :word="kt('view_wrap')" :label="kt('view_wrap')" :disabled="idle" @toggle="wrap = !wrap" /></span>
-				<button type="button" class="sv-btn" data-act="copy" :disabled="idle" @click="$emit('copy')"><span class="mdi mdi-content-copy sv-ico sv-ico-s" aria-hidden="true" />{{ kt('view_copy') }}</button>
-				<button type="button" class="sv-btn" data-act="download" :disabled="idle" @click="$emit('download')"><span class="mdi mdi-download sv-ico sv-ico-s" aria-hidden="true" />{{ kt('view_download') }}</button>
+				<button type="button" class="wf-btn sv-btn" data-act="copy" :disabled="idle" @click="$emit('copy')"><span class="mdi mdi-content-copy sv-ico sv-ico-s" aria-hidden="true" />{{ kt('view_copy') }}</button>
+				<button type="button" class="wf-btn sv-btn" data-act="download" :disabled="idle" @click="$emit('download')"><span class="mdi mdi-download sv-ico sv-ico-s" aria-hidden="true" />{{ kt('view_download') }}</button>
 			</div>
 		</div>
 		<span class="sv-vh" role="status" aria-live="polite" data-part="said">{{ said }}</span>
@@ -30,9 +31,9 @@
 			<!-- waiting: ONE thin line at the top that moves for ever; it shows after 400 ms and stays 400 ms at least (ui/sv-busy.js), so it never blinks -->
 			<span v-if="busyHeld" class="sv-tv-progress" role="status" data-part="loading"><i /><span class="sv-vh">{{ kt('view_loading') }}</span></span>
 			<div v-if="loading" class="sv-tv-wait" data-part="waiting">
-				<template v-if="slow"><span class="sv-tv-wait-text">{{ kt('view_slow') }}</span><button type="button" class="sv-btn" data-act="retry" @click="$emit('retry')">{{ kt('retry') }}</button></template>
+				<template v-if="slow"><span class="sv-tv-wait-text">{{ kt('view_slow') }}</span><button type="button" class="wf-btn sv-btn" data-act="retry" @click="$emit('retry')">{{ kt('retry') }}</button></template>
 			</div>
-			<p v-else-if="error" class="sv-field-error sv-tv-wait" role="alert" data-part="error"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ error }} <button type="button" class="sv-btn sv-text" data-act="retry" @click="$emit('retry')">{{ kt('retry') }}</button></p>
+			<p v-else-if="error" class="sv-field-error sv-tv-wait" role="alert" data-part="error"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ error }} <button type="button" class="wf-btn sv-btn sv-text" data-act="retry" @click="$emit('retry')">{{ kt('retry') }}</button></p>
 			<div v-else ref="scroller" class="sv-tv sv-tv-in" :class="{ 'sv-nowrap': !wrap }" tabindex="0" role="region" :aria-label="title" data-part="body" @scroll="onScroll">
 				<template v-for="(r, i) in shown">
 					<div v-if="r.flag === 'gap'" :key="i" class="sv-tv-gap" :data-row="i">{{ gapText ? gapText(r.count) : r.count }}</div>
@@ -44,13 +45,14 @@
 				<p v-if="shown.length < rows.length" class="sv-quiet sv-tv-more" role="status">{{ kt('view_more', { shown: shown.length, total: rows.length }) }}</p>
 			</div>
 		</div>
-		<template #foot><slot name="foot-left" /><button type="button" class="sv-btn" data-sv-autofocus @click="$emit('close')">{{ kt('close') }}</button></template>
-	</sv-sheet>
+		</div>
+		<template #foot><slot name="foot-left" /><button type="button" class="wf-btn sv-btn" data-wf-autofocus @click="$emit('close')">{{ kt('close') }}</button></template>
+	</wf-sheet>
 </template>
 
 <script>
 import { svTextMixin } from './sv-text.js'
-import SvSheet from './SvSheet.vue'
+import WfSheet from '../WfSheet.vue'
 import SvSwitch from './SvSwitch.vue'
 import { svBusyMixin } from './sv-busy.js'
 import { rowRange, scrollTopFor, wentKey } from './text-view-jump.js'
@@ -62,7 +64,7 @@ const FLASH_MS = 1800   // how long the line that was jumped to stays marked
 
 export default {
 	name: 'SvTextView',
-	components: { SvSheet, SvSwitch },
+	components: { WfSheet, SvSwitch },
 	mixins: [svTextMixin, svBusyMixin],
 	props: {
 		open: { type: Boolean, default: false },

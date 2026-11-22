@@ -13,7 +13,9 @@
 
 import { STOP_OPS } from './access-reason.js'
 
-export const ARM_MS = 3500
+import { ARM_MS } from './arm-ms.js'
+
+export { ARM_MS }
 
 export const ACTION_LEVELS = Object.freeze({
 	'power.after_job': 'double', // only the direction that arms the shutdown at the end of the job; turning it off is one tap

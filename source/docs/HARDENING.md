@@ -39,7 +39,7 @@ Install (all **[SUDO]**, **[FREE MACHINE]**: DWC is unreachable for a minute):
 4. `sudo cp tools/proxy/workshop-nginx.conf /etc/nginx/conf.d/workshop.conf`, remove the default site
    (`sudo rm /etc/nginx/sites-enabled/default`), `sudo nginx -t`.
 5. `sudo systemctl restart duetwebserver` (or `duetcontrolserver` if your image runs them together), then `sudo systemctl enable --now nginx`.
-6. Check from the PC: `curl -sI -H 'Accept-Encoding: gzip' http://192.168.1.10/ | grep -i "content-encoding\|x-frame"`, open DWC, the
+6. Check from the PC (set `WORKSHOP_HOST` to the Pi's address, e.g. `192.0.2.10`): `curl -sI -H 'Accept-Encoding: gzip' http://$WORKSHOP_HOST/ | grep -i "content-encoding\|x-frame"`, open DWC, the
    console of every page must show no Content-Security-Policy-Report-Only violation for a week; then rename that header to
    `Content-Security-Policy` in the file and reload nginx.
 7. Rollback: restore `http.json.bak`, `sudo systemctl stop nginx`, restart DuetWebServer. The service itself is not touched.

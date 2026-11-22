@@ -4,9 +4,9 @@
 	     folded, who is connected, security and key, settings, activity, the commands it understands and the debug lines. The states of the file are
 	     said as what they are: not installed, old, unknown format, unreadable, or its unit stopped. Prop: active (this tab is in view). -->
 	<div class="sv-links-bridge">
-		<sv-zone :status="zone" :error="problem" :empty-title="t('bridgeCard.reading_status')" @retry="bridge.readFails = 0; readState()">
+		<wf-zone class="sv-zone-host" :status="zone" :error="problem" :empty-title="t('bridgeCard.reading_status')" @retry="bridge.readFails = 0; readState()">
 			<sv-verdict :level="level" :title="stateText" :facts="facts">
-				<button v-if="e && !stopped && !schemaProblem" type="button" class="sv-btn" data-act="contract" @click="contractOpen = true">{{ tr('contract_open') }}</button>
+				<button v-if="e && !stopped && !schemaProblem" type="button" class="wf-btn sv-btn" data-act="contract" @click="contractOpen = true">{{ tr('contract_open') }}</button>
 			</sv-verdict>
 
 			<section class="sv-card" aria-labelledby="sv-lb-title" data-card="bridge">
@@ -18,13 +18,13 @@
 							<sv-switch :checked="unit.active" :word="t(unit.active ? 'home.word_on' : 'home.word_off')" :label="tr('unit_switch')" :state="c.state" :disabled="c.disabled || unit.can_control === false" @toggle="toggleUnit" @hold="on => held(c, on)" @escape="c.cancel" />
 						</template>
 						<p v-if="unit.can_control === false" class="sv-row-desc" data-part="no-control">{{ tr('unit_no_permission') }}</p>
-						<template #help><sv-help v-bind="help('unit', 'links')" /></template>
+						<template #help><help-fold v-bind="help('unit', 'links')" /></template>
 					</sv-action-row>
 					<sv-action-row v-if="e && !stopped && !schemaProblem" icon="mdi-restart" :name="tr('restart_bridge')" :desc="inUse || ''" :permission="perm('bridge.service.set')" :label="tr(armed === 'restart' ? 'restart_bridge_confirm' : 'restart_bridge').split(' (')[0]" :stale="!!inUse" @run="restart">
-						<template #help><sv-help v-bind="help('restart', 'links')" /></template>
+						<template #help><help-fold v-bind="help('restart', 'links')" /></template>
 					</sv-action-row>
 				</ul>
-				<sv-reason :lock="lockOf(['bridge.service.set'])" @sign-in="signIn" />
+				<lock-reason class="sv-lock" :lock="lockOf(['bridge.service.set'])" />
 				<div v-if="outcome" class="sv-row-out" :data-kind="outcome.ok ? 'done' : 'error'" :role="outcome.ok ? 'status' : 'alert'" data-part="outcome"><span class="mdi sv-ico sv-ico-s" :class="outcome.ok ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline'" aria-hidden="true" />{{ outcome.text }}</div>
 				<p v-if="portError" class="sv-field-error" role="alert" data-part="port-error"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ errorText }}</p>
 
@@ -39,11 +39,11 @@
 					<p v-if="!e.exclusive" class="sv-value" data-part="control"><span class="mdi mdi-account-multiple-outline sv-ico" aria-hidden="true" />{{ tr('shared') }} · {{ tr('non_exclusive_mode_every_connection_can') }}</p>
 					<p v-else-if="e.owner" class="sv-value" data-part="control"><span class="mdi mdi-steering sv-ico" aria-hidden="true" />{{ e.owner }} · {{ ipOf(e.owner_id) }} · {{ tr('has_had_it_for_t_others_only_query', { t: dur(e.owner_since_s) }) }}</p>
 					<p v-else class="sv-value" data-part="control"><span class="mdi mdi-steering-off sv-ico" aria-hidden="true" />{{ tr('free') }} · {{ tr('the_first_connection_that_sends_a') }}</p>
-					<div v-if="e.exclusive && e.owner" class="sv-row-ctl"><button type="button" class="sv-btn" data-act="release" :disabled="!mayOrder || busy('release')" @click="order({ action: 'release' }, 'release')">{{ tr('release_control') }}</button></div>
+					<div v-if="e.exclusive && e.owner" class="sv-row-ctl"><button type="button" class="wf-btn sv-btn" data-act="release" :disabled="!mayOrder || busy('release')" @click="order({ action: 'release' }, 'release')">{{ tr('release_control') }}</button></div>
 					<div v-if="e.focus_lock" class="sv-note" data-level="warn" role="alert" data-part="focus-lock">
 						<span class="mdi mdi-alert-outline sv-ico" aria-hidden="true" />
 						<span><b>{{ tr('focus_locked_title') }}</b> · {{ tr('focus_locked_text') }} <span class="sv-quiet">{{ tr('focus_locked_since', { t: dur(e.focus_lock.since_s) }) }}</span></span>
-						<button type="button" class="sv-btn sv-danger" :class="{ 'sv-armed': armed === 'focus_unlock' }" data-act="focus-unlock" :title="tr('focus_unlock_help')" :disabled="!mayOrder || busy('focus_unlock')" @click="unlockFocus">{{ tr(armed === 'focus_unlock' ? 'focus_unlock_confirm' : 'focus_unlock') }}</button>
+						<button type="button" class="wf-btn sv-btn wf-danger" :class="{ 'sv-armed': armed === 'focus_unlock' }" data-act="focus-unlock" :title="tr('focus_unlock_help')" :disabled="!mayOrder || busy('focus_unlock')" @click="unlockFocus">{{ tr(armed === 'focus_unlock' ? 'focus_unlock_confirm' : 'focus_unlock') }}</button>
 					</div>
 					<div class="sv-stats" data-part="figures">
 						<div class="sv-stat" data-stat="connected"><b>{{ e.clients.length }}<small v-if="sec"> / {{ sec.max_connections }}</small></b><span>{{ tr('connected_title') }} · {{ tr('n_since_it_started', { n: e.totals.connections }) }}</span></div>
@@ -56,7 +56,8 @@
 						<div class="sv-stat" data-stat="errors" :data-level="e.totals.duet_errors ? 'warn' : null"><b>{{ e.totals.duet_errors }}</b><span>{{ tr('errors_title') }} · {{ tr('n_kicked', { n: e.totals.kicked || 0 }, e.totals.kicked || 0) }}</span></div>
 					</div>
 					<div v-if="e.history" class="sv-chart" data-part="chart">
-						<p class="sv-quiet">{{ tr('last_hour_per_minute') }} · {{ hourText }} <sv-help v-bind="help('chart', 'bridgeCard')" /></p>
+						<p class="sv-quiet">{{ tr('last_hour_per_minute') }} · {{ hourText }}</p>
+						<help-fold v-bind="help('chart', 'bridgeCard')" />
 						<svg :viewBox="'0 0 600 ' + GH" preserveAspectRatio="none" role="group" tabindex="0" :aria-label="tr('last_hour_per_minute') + '. ' + tr('bar_hint')" @keydown.left.prevent="move(-1)" @keydown.right.prevent="move(1)" @keydown.home.prevent="move(-60)" @keydown.end.prevent="move(60)"><defs><pattern id="sv-hatch" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1.3" height="3" fill="currentColor" fill-opacity="0.5" /></pattern></defs><g v-for="(b, i) in bars" :key="i" role="img" :aria-label="barTitle(b)" @mouseenter="picked = b" @click="picked = b"><title>{{ barTitle(b) }}</title><rect class="sv-bar-q" :x="i * 10 + 1" :y="GH - b.hc" width="8" :height="b.hc" /><rect class="sv-bar-o" :x="i * 10 + 1" :y="GH - b.hc - b.ho" width="8" :height="b.ho" /><rect fill="url(#sv-hatch)" :x="i * 10 + 1" :y="GH - b.hc - b.ho" width="8" :height="b.ho" /><path v-if="b.r" class="sv-bar-r" :d="'M' + (i * 10) + ',0 h10 l-5,6 z'" /></g></svg>
 						<p class="sv-quiet" data-part="axis"><span>{{ tr('axis_start') }}</span> → <span>{{ tr('axis_now') }}</span> · {{ tr('axis_max', { n: chartTop }) }}</p>
 						<p class="sv-quiet" role="status" data-part="bar-readout">{{ picked ? barTitle(picked) : tr('bar_hint') }}</p>
@@ -82,7 +83,7 @@
 				</details>
 				<bridge-tools />
 			</template>
-		</sv-zone>
+		</wf-zone>
 		<bridge-contract :open="contractOpen" :stopped="stopped" @close="contractOpen = false" />
 	</div>
 </template>
@@ -97,11 +98,11 @@ import * as contract from '../../bridge-contract.js'
 import { parsePortError } from '../../bridge-port.js'
 import { CHART_HEIGHT, READ_FAILS, bytes, chartBars, chartMax, dur, hourTotals, inUseReason, ipOf, num } from '../../bridge-view.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvHelp from '../../ui/SvHelp.vue'
-import SvReason from '../../ui/SvReason.vue'
+import HelpFold from '../../HelpFold.vue'
+import LockReason from '../../LockReason.vue'
 import SvSwitch from '../../ui/SvSwitch.vue'
 import SvVerdict from '../../ui/SvVerdict.vue'
-import SvZone from '../../ui/SvZone.vue'
+import WfZone from '../../WfZone.vue'
 import { timeNow } from '../../core/clock.js'
 import BridgeConnections from './BridgeConnections.vue'
 import BridgeContract from './BridgeContract.vue'
@@ -112,7 +113,7 @@ import { bridgeOrders, tr } from './bridge-orders.js'
 
 export default {
 	name: 'BridgeTab',
-	components: { BridgeConnections, BridgeContract, BridgeSafety, BridgeSettings, BridgeTools, SvActionRow, SvHelp, SvReason, SvSwitch, SvVerdict, SvZone },
+	components: { BridgeConnections, BridgeContract, BridgeSafety, BridgeSettings, BridgeTools, SvActionRow, HelpFold, LockReason, SvSwitch, SvVerdict, WfZone },
 	mixins: [rowsMixin, bridgeOrders],
 	props: { active: { type: Boolean, default: false } },
 	data() {

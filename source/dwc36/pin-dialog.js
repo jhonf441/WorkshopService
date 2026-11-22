@@ -35,7 +35,7 @@ function icon(path, size, color) {
 }
 
 function field(label, type, mode) {
-	const wrap = el('label', 'display:block;margin-top:12px;font-size:11px;font-weight:500;letter-spacing:0.4px;text-transform:uppercase;color:#b0bec5;')
+	const wrap = el('label', 'display:block;margin-top:12px;font-size:12px;font-weight:500;letter-spacing:0.4px;text-transform:uppercase;color:#b0bec5;')
 	wrap.appendChild(document.createTextNode(label))
 	const input = el('input', 'display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:8px 12px;font-size:16px;min-height:44px;' +
 		'background:#263238;color:#eceff1;border:1px solid rgba(255,255,255,0.23);border-radius:4px;outline:none;text-transform:none;letter-spacing:normal;font-family:inherit;')

@@ -9,8 +9,8 @@
 				<span v-if="ops.length" class="sv-chip">{{ tc('servicePage.n_operations', ops.length, { n: ops.length }) }}</span>
 			</div>
 			<p class="sv-lead">{{ t('links.api_lead') }}</p>
-			<p class="sv-quiet"><a class="sv-btn sv-text" :href="nav.href({ s: 'access', t: 'keys' })" @click="follow($event)">{{ t('links.keys_link') }}</a></p>
-			<sv-zone :status="status" :error="apis.error" :lock="apis.lock" :empty-title="t('links.api_none')" @retry="apis.reload()" @sign-in="signIn">
+			<p class="sv-quiet"><a class="wf-btn sv-btn sv-text" :href="nav.href({ s: 'access', t: 'keys' })" @click="follow($event)">{{ t('links.keys_link') }}</a></p>
+			<wf-zone class="sv-zone-host" :status="status" :error="apis.error" :lock="zoneLock(apis.lock)" :empty-title="t('links.api_none')" @retry="apis.reload()" @sign-in="signIn">
 				<div class="sv-tools">
 					<label class="sv-field"><span class="mdi mdi-magnify sv-ico sv-ico-s" aria-hidden="true" /><input v-model="q" type="search" :placeholder="t('links.search')" :aria-label="t('links.search')"></label>
 					<span class="sv-seg" role="group" :aria-label="t('links.mode_label')">
@@ -62,7 +62,7 @@
 							<p class="sv-quiet">{{ t('links.test_title') }}<span v-if="second(o)" class="sv-field-error"> {{ t('links.test_acts') }}</span></p>
 							<div class="sv-row-ctl">
 								<label class="sv-field"><span class="sv-vh">{{ t('links.test_args') }}</span><input :value="code(o)" type="text" :aria-label="t('links.test_args')" data-part="args" @input="setCode(o, $event.target.value)" @keyup.enter="send(o)"></label>
-								<button type="button" class="sv-btn sv-main" data-act="send" :disabled="tries[o.name] && tries[o.name].sending" @click="send(o)">{{ t(armed === o.name ? 'links.test_again' : 'links.test_send') }}</button>
+								<button type="button" class="wf-btn sv-btn wf-main" data-act="send" :disabled="tries[o.name] && tries[o.name].sending" @click="send(o)">{{ t(armed === o.name ? 'links.test_again' : 'links.test_send') }}</button>
 							</div>
 							<div v-if="result(o)" class="sv-row-out" :data-kind="result(o).ok ? 'done' : 'error'" :role="result(o).ok ? 'status' : 'alert'" data-part="result">
 								<span class="mdi sv-ico sv-ico-s" :class="result(o).ok ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline'" aria-hidden="true" />
@@ -72,8 +72,8 @@
 						</div>
 					</div>
 				</details>
-				<p v-if="more" class="sv-quiet"><button type="button" class="sv-btn" data-act="more" @click="showMore">{{ t('servicePage.show_more_ops', { n: more }) }}</button></p>
-			</sv-zone>
+				<p v-if="more" class="sv-quiet"><button type="button" class="wf-btn sv-btn" data-act="more" @click="showMore">{{ t('servicePage.show_more_ops', { n: more }) }}</button></p>
+			</wf-zone>
 		</section>
 	</div>
 </template>
@@ -86,16 +86,16 @@ import { every, timeNow } from '../../core/clock.js'
 import { want } from '../../core/store/session.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
 import { copyText } from '../../copy.js'
-import SvZone from '../../ui/SvZone.vue'
+import WfZone from '../../WfZone.vue'
 import SvCopyButton from '../../ui/SvCopyButton.vue'
+import { ARM_MS } from '../../arm-ms.js'
 import { CATEGORIES, FIRST, SUBS_SHOWN, categoryOf, MORE, countsOf, curlText, exampleArgs, filterOps, macroText, needsSecondTouch, opsOf, requestText, rulesOf, subsOf, summaryOf } from './api-view.js'
 
 const MODES = ['all', 'read', 'write']
-const ARM_MS = 5000
 
 export default {
 	name: 'ApiTab',
-	components: { SvCopyButton, SvZone },
+	components: { SvCopyButton, WfZone },
 	mixins: [rowsMixin],
 	inject: { nav: { from: 'svNav', default: () => ({ go() {}, href: () => '#' }) } },
 	props: { active: { type: Boolean, default: false } },

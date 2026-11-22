@@ -22,7 +22,7 @@ export const unsavedMixin = {
 		this.unsavedOff = registerGuard({
 			dirty: () => this.hasUnsaved,
 			save: () => (typeof this.saveBeforeLeaving === 'function' ? Promise.resolve(this.saveBeforeLeaving()) : Promise.resolve(false)),
-			discard: () => { if (typeof this.discardUnsaved === 'function') this.discardUnsaved() },
+			discard: () => (typeof this.discardUnsaved === 'function' ? this.discardUnsaved() : undefined),
 			label: () => (typeof this.unsavedLabel === 'function' ? this.unsavedLabel() : '')
 		})
 	},

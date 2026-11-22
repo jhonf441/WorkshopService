@@ -15,7 +15,7 @@
 						<access-person-card v-if="selected && selected.kind === 'person'" :key="'p:' + selected.name" :name="selected.name" :role-groups="selectedRoleGroups" :users-off="usersOff" :groups="groups" @back="selected = null" @changed="load()" @see-can="n => $emit('see-can', n)" />
 						<access-group-card v-else-if="selected" :key="'g:' + selected.name" :name="selected.name" :users="usersOff ? [] : users" :groups="groups" :damaged="!!groups.damaged" @back="selected = null" @changed="load()" />
 						<template v-else>
-							<div class="access-filters">
+							<div class="sv-tbar">
 								<div class="access-kinds" role="group">
 									<button v-for="v in views" :key="v" type="button" class="access-kind access-touch" :class="{ 'is-on': view === v }" :aria-pressed="view === v ? 'true' : 'false'" @click="view = v">{{ $t('plugins.WorkshopService.access.people_view_' + v) }}</button>
 								</div>

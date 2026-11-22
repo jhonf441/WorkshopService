@@ -30,14 +30,14 @@
 									<span class="sv-seg" role="group" :aria-label="t('machine.comms_service')"><button v-for="id in choices" :key="id" type="button" :aria-pressed="pickService === id ? 'true' : 'false'" :disabled="c.disabled" :data-pick-service="id" @click="pickService = id">{{ choiceText(id) }}</button></span></div>
 								<div v-if="hasJog" class="sv-pick-line"><span class="sv-label" data-part="label-jog">{{ t('machine.comms_jog') }}</span>
 									<span class="sv-seg" role="group" :aria-label="t('machine.comms_jog')"><button v-for="id in choices" :key="id" type="button" :aria-pressed="pickJog === id ? 'true' : 'false'" :disabled="c.disabled" :data-pick-jog="id" @click="pickJog = id">{{ choiceText(id) }}</button></span></div>
-								<button type="button" class="sv-btn sv-main" :class="{ 'sv-save-hot': hasUnsaved }" :disabled="c.disabled || !changed" data-act="save" @click="save">{{ t('machine.comms_save') }}</button><sv-unsaved-mark :show="hasUnsaved" />
+								<button type="button" class="wf-btn sv-btn wf-main" :class="{ 'sv-save-hot': hasUnsaved }" :disabled="c.disabled || !changed" data-act="save" @click="save">{{ t('machine.comms_save') }}</button><sv-unsaved-mark :show="hasUnsaved" />
 							</div>
 						</template>
 						<p class="sv-note" data-level="warn" role="note" data-part="advanced-warning"><span class="mdi mdi-alert-outline sv-ico" aria-hidden="true" /><span>{{ warning }} {{ t('machine.advanced_warning') }}</span></p>
-						<template #help><sv-help v-bind="help('comms')" /></template>
+						<template #help><help-fold v-bind="help('comms')" /></template>
 					</sv-action-row>
 				</ul>
-				<sv-reason :lock="lock" @sign-in="signIn" />
+				<lock-reason class="sv-lock" :lock="lock" />
 				<details class="sv-fold" data-part="channels">
 					<summary>
 						<span class="mdi mdi-chevron-right sv-ico sv-chev" aria-hidden="true" />
@@ -59,7 +59,7 @@
 				</details>
 			</template>
 		</section>
-		<sv-confirm-dialog :confirm="commsSet.confirm" :title="t('machine.comms_confirm_title')" :text="t('machine.comms_confirm_text')" :object="{ name: t('machine.comms_title') }" :verb="t('machine.comms_verb')" danger
+		<wf-confirm :confirm="commsSet.confirm" :title="t('machine.comms_confirm_title')" :text="t('machine.comms_confirm_text')" :object="{ name: t('machine.comms_title') }" :verb="t('machine.comms_verb')" danger
 			@accept="commsSet.accept()" @cancel="commsSet.cancel()" />
 	</div>
 </template>
@@ -70,9 +70,9 @@ import { want } from '../../core/store/session.js'
 import { commsSet } from '../../core/actions/machine.js'
 import { serviceText } from '../../service-text.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvConfirmDialog from '../../ui/SvConfirmDialog.vue'
-import SvHelp from '../../ui/SvHelp.vue'
-import SvReason from '../../ui/SvReason.vue'
+import WfConfirm from '../../WfConfirm.vue'
+import HelpFold from '../../HelpFold.vue'
+import LockReason from '../../LockReason.vue'
 import SvSwitch from '../../ui/SvSwitch.vue'
 import { channelChoices, channelCounts, channelRows } from './view.js'
 import { rowsMixin } from '../../core/rows-mixin.js'
@@ -85,7 +85,7 @@ const textOf = v => (v && typeof v === 'object' ? serviceText(v) : String(v || '
 
 export default {
 	name: 'CommsTab',
-	components: { SvActionRow, SvConfirmDialog, SvHelp, SvReason, SvSwitch, SvUnsavedMark },
+	components: { SvActionRow, WfConfirm, HelpFold, LockReason, SvSwitch, SvUnsavedMark },
 	mixins: [rowsMixin, unsavedMixin],
 	props: { active: { type: Boolean, default: false } },
 	data() {

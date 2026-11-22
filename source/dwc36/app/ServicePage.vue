@@ -21,7 +21,7 @@
 			<div class="sv-body">
 				<sv-tabs :tabs="tabs" :value="at.t" :label="t('shell.tabs_label')" panel="sv-panel" @input="goTab" />
 				<div id="sv-panel" :role="tabs.length > 1 ? 'tabpanel' : null" :aria-labelledby="tabs.length > 1 ? 'sv-panel-tab-' + at.t : null">
-					<sv-zone v-if="cover" status="locked" :lock="cover" />
+					<wf-zone class="sv-zone-host" v-if="cover" status="locked" :lock="zoneLock(cover)" />
 					<home-section v-show="at.s === 'home'" :active="page.active && at.s === 'home'" />
 					<machine-section v-if="seenMachine && !cover" v-show="at.s === 'machine'" :active="page.active && at.s === 'machine'" :tab="at.t" />
 					<data-section v-if="seenData && !cover" v-show="at.s === 'data'" :active="page.active && at.s === 'data'" :tab="at.t" />
@@ -48,7 +48,7 @@ import { serviceRunning, noteChanges } from '../core/live/published.js'
 import { startHeartbeat } from '../core/live/heartbeat.js'
 import { ADMIN_ENTRY, ADMIN_OP, entryOf, navEntries, sectionOf, tabsOf } from './places.js'
 import { go, hrefOf, PATH, readPlace } from './url-sync.js'
-import { placeOnActivation } from './scroll-home.js'
+import { placeOnActivation } from '../scroll-home.js'
 import { pluginBadge } from '../plugin-colors.js'
 import { PLUGIN_ID } from '../plugin-id.js'
 import HomeSection from '../sections/home/index.vue'
@@ -64,7 +64,7 @@ import SecurityHost from '../sections/security/index.vue'
 import SvBand from '../ui/SvBand.vue'
 import SvSectionNav from '../ui/SvSectionNav.vue'
 import SvTabs from '../ui/SvTabs.vue'
-import SvZone from '../ui/SvZone.vue'
+import WfZone from '../WfZone.vue'
 import SvUnsavedDialog from '../ui/SvUnsavedDialog.vue'
 import { routeGuard } from '../ui/unsaved-guard.js'
 import '../styles/tokens.css'
@@ -76,7 +76,7 @@ const SIGNED_OUT = ['signed-out', 'signing-in', 'expired', 'pin-locked']
 
 export default {
 	name: 'ServicePage',
-	components: { AccessHost, SecurityHost, HomeSection, HealthSection, MachineSection, DataSection, SetupSection, LinksSection, SessionSection, SvBand, SvSectionNav, SvTabs, SvZone, SvUnsavedDialog },
+	components: { AccessHost, SecurityHost, HomeSection, HealthSection, MachineSection, DataSection, SetupSection, LinksSection, SessionSection, SvBand, SvSectionNav, SvTabs, WfZone, SvUnsavedDialog },
 	// the words of the kit come from the catalogs of this page (area `kit`); a role id is said by its name
 	provide() {
 		return {
@@ -268,6 +268,10 @@ export default {
 		},
 		roleName(role) {
 			return ['viewer', 'operator', 'technician', 'admin'].indexOf(role) >= 0 ? t('api.role_' + role) : String(role || '')
+		},
+		// the cover for the shared WfZone: the needed role is named as a person reads it
+		zoneLock(lock) {
+			return lock ? Object.assign({}, lock, { text: [lock.text, lock.help].filter(Boolean).join(' '), neededRole: this.roleName(lock.neededRole) }) : null
 		},
 		countLabel(n) {
 			return tc('shell.count_label', n)

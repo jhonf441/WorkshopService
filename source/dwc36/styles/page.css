@@ -26,8 +26,6 @@
 .sv-access .v-btn.v-size--x-small:not(.v-btn--icon), .sv-security .v-btn.v-size--x-small:not(.v-btn--icon) { height: auto !important; padding-top: 4px !important; padding-bottom: 4px !important; }
 .sv-access .v-btn--icon.v-size--small, .sv-security .v-btn--icon.v-size--small,
 .sv-access .v-btn--icon.v-size--x-small, .sv-security .v-btn--icon.v-size--x-small { width: 44px !important; height: 44px !important; }
-.sv-access .v-input--selection-controls .v-input__slot, .sv-security .v-input--selection-controls .v-input__slot,
-.sv-access .v-input--selection-controls .v-label, .sv-security .v-input--selection-controls .v-label { min-height: 44px !important; }
 .sv-access .v-input--selection-controls .v-input--selection-controls__input, .sv-security .v-input--selection-controls .v-input--selection-controls__input { width: 44px !important; height: 44px !important; margin-right: 0 !important; }
 .sv-access .v-text-field input, .sv-security .v-text-field input, .sv-access .v-select__selections, .sv-security .v-select__selections { min-height: 44px !important; }
 .sv-access .v-text-field--outlined.v-input--dense .v-input__control > .v-input__slot, .sv-security .v-text-field--outlined.v-input--dense .v-input__control > .v-input__slot { min-height: 44px !important; }

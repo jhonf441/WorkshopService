@@ -3,7 +3,7 @@
 	     Signed in: who I am, my role, when the session closes by itself, change my PIN, change person, sign out.
 	     Signed out: what can be seen without a session and the one way in. Nothing here opens the PIN dialog by itself.
 	     Prop: open. Event: close (the shell goes back to the place underneath). -->
-	<sv-sheet :open="open" :title="t('session.title')" @close="$emit('close')">
+	<wf-sheet :open="open" :title="t('session.title')" @close="$emit('close')">
 		<div class="sv-session" :data-mode="mode">
 			<template v-if="mode === 'damaged'">
 				<p role="alert"><strong>{{ t('shell.band_damaged_title') }}</strong></p>
@@ -20,7 +20,7 @@
 				<form v-if="pinOpen" class="sv-form sv-session-pin" autocomplete="off" @submit.prevent="submitPin">
 					<div>
 						<label class="sv-label" :for="ids.old">{{ t('session.pin_current') }}</label>
-						<span class="sv-field"><input :id="ids.old" v-model="oldPin" type="password" inputmode="numeric" autocomplete="current-password" data-sv-autofocus :aria-invalid="oldError ? 'true' : null" :aria-describedby="oldError ? ids.old + '-e' : null" :disabled="busy"></span>
+						<span class="sv-field"><input :id="ids.old" v-model="oldPin" type="password" inputmode="numeric" autocomplete="current-password" data-wf-autofocus :aria-invalid="oldError ? 'true' : null" :aria-describedby="oldError ? ids.old + '-e' : null" :disabled="busy"></span>
 						<span v-if="oldError" :id="ids.old + '-e'" class="sv-field-error" role="alert"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ oldError }}</span>
 					</div>
 					<div>
@@ -36,21 +36,21 @@
 						<span class="sv-field"><input :id="ids.again" v-model="again" :type="shown ? 'text' : 'password'" inputmode="numeric" autocomplete="new-password" :aria-invalid="againError ? 'true' : null" :aria-describedby="againError ? ids.again + '-e' : null" :disabled="busy"></span>
 						<span v-if="againError" :id="ids.again + '-e'" class="sv-field-error" role="alert"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ againError }}</span>
 					</div>
-					<button type="button" class="sv-btn sv-text" :aria-pressed="shown ? 'true' : 'false'" @click="shown = !shown"><span class="mdi sv-ico sv-ico-s" :class="shown ? 'mdi-eye-off-outline' : 'mdi-eye-outline'" aria-hidden="true" />{{ t(shown ? 'session.pin_hide' : 'session.pin_show') }}</button>
+					<button type="button" class="wf-btn sv-btn sv-text" :aria-pressed="shown ? 'true' : 'false'" @click="shown = !shown"><span class="mdi sv-ico sv-ico-s" :class="shown ? 'mdi-eye-off-outline' : 'mdi-eye-outline'" aria-hidden="true" />{{ t(shown ? 'session.pin_hide' : 'session.pin_show') }}</button>
 					<p v-if="lockedS > 0" class="sv-field-error" role="alert"><span class="mdi mdi-lock-clock sv-ico sv-ico-s" aria-hidden="true" />{{ t('session.pin_locked', { t: lockedText }) }}</p>
 					<p v-else-if="otherError" class="sv-field-error" role="alert"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ otherError }}</p>
-					<div class="sv-sheet-foot">
-						<button type="button" class="sv-btn" :disabled="busy" @click="closePin">{{ kt('cancel') }}</button>
-						<button type="submit" class="sv-btn sv-main" :disabled="busy || lockedS > 0" :aria-busy="busy ? 'true' : null"><span class="sv-btn-stack"><span>{{ t('session.pin_save') }}</span></span></button>
+					<div class="wf-sheet-foot">
+						<button type="button" class="wf-btn sv-btn" :disabled="busy" @click="closePin">{{ t('kit.cancel') }}</button>
+						<button type="submit" class="wf-btn sv-btn wf-main" :disabled="busy || lockedS > 0" :aria-busy="busy ? 'true' : null"><span class="sv-btn-stack"><span>{{ t('session.pin_save') }}</span></span></button>
 					</div>
 				</form>
 
 				<template v-else>
 					<p v-if="note" class="sv-session-note" role="status"><span class="mdi mdi-check-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ note }}</p>
 					<div class="sv-session-acts">
-						<button type="button" class="sv-btn" data-act="pin" @click="openPin">{{ t('session.change_pin') }}</button>
-						<button type="button" class="sv-btn" data-act="switch" @click="switchPerson">{{ kt('change_person') }}</button>
-						<button type="button" class="sv-btn" data-act="out" @click="leave">{{ t('session.sign_out') }}</button>
+						<button type="button" class="wf-btn sv-btn" data-act="pin" @click="openPin">{{ t('session.change_pin') }}</button>
+						<button type="button" class="wf-btn sv-btn" data-act="switch" @click="switchPerson">{{ kt('change_person') }}</button>
+						<button type="button" class="wf-btn sv-btn" data-act="out" @click="leave">{{ t('session.sign_out') }}</button>
 					</div>
 				</template>
 			</template>
@@ -68,11 +68,11 @@
 				<p v-if="note" class="sv-session-note" role="status">{{ note }}</p>
 				<p>{{ t(s.loginRequired ? 'session.out_closed' : 'session.out_text') }}</p>
 				<div class="sv-session-acts">
-					<button type="button" class="sv-btn sv-main" data-act="in" data-sv-autofocus @click="switchPerson">{{ kt('sign_in') }}</button>
+					<button type="button" class="wf-btn sv-btn wf-main" data-act="in" data-wf-autofocus @click="switchPerson">{{ kt('sign_in') }}</button>
 				</div>
 			</template>
 		</div>
-	</sv-sheet>
+	</wf-sheet>
 </template>
 
 <script>
@@ -82,7 +82,7 @@ import { session, signIn, signOut } from '../../core/store/session.js'
 import { createAction } from '../../core/store/action.js'
 import { durationText } from '../../core/format/duration.js'
 import { svTextMixin } from '../../ui/sv-text.js'
-import SvSheet from '../../ui/SvSheet.vue'
+import WfSheet from '../../WfSheet.vue'
 import { modeOf, pinProblems, pinRequirements, roleText } from './view.js'
 
 const changePin = createAction({ op: 'auth.change_pin' })
@@ -91,7 +91,7 @@ let serial = 0
 
 export default {
 	name: 'SessionSection',
-	components: { SvSheet },
+	components: { WfSheet },
 	mixins: [svTextMixin],
 	props: { open: { type: Boolean, default: false } },
 	data() {
@@ -175,7 +175,7 @@ export default {
 		openPin() {
 			this.note = ''
 			this.pinOpen = true
-			this.focusOn('[data-sv-autofocus]')
+			this.focusOn('[data-wf-autofocus]')
 		},
 		// the keyboard focus goes where the task goes on (the first field, the field at fault, the button that opened the form)
 		focusOn(selector) {

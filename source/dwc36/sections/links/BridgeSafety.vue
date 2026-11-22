@@ -31,9 +31,9 @@
 			<h3 id="sv-bs-key" class="sv-panel-title">{{ tr('key_to_send_commands') }} <span class="sv-word" :data-level="sec.password ? 'ok' : 'rest'">{{ tr(sec.password ? 'enabled' : 'no_key') }}</span></h3>
 			<div class="sv-row-ctl">
 				<label class="sv-field"><span class="sv-vh">{{ tr(sec.password ? 'new_key' : 'key_min_4_characters') }}</span><input v-model="keyNew" :type="viewKey ? 'text' : 'password'" autocomplete="new-password" :placeholder="tr(sec.password ? 'new_key' : 'key_min_4_characters')" :aria-label="tr(sec.password ? 'new_key' : 'key_min_4_characters')" :disabled="!mayOrder"></label>
-				<button type="button" class="sv-btn sv-text" data-act="view-key" :aria-pressed="viewKey ? 'true' : 'false'" @click="viewKey = !viewKey"><span class="mdi sv-ico sv-ico-s" :class="viewKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline'" aria-hidden="true" />{{ t(viewKey ? 'session.pin_hide' : 'session.pin_show') }}</button>
-				<button type="button" class="sv-btn sv-main" data-act="put-key" :disabled="!mayOrder || keyNew.length < 4 || busy('key')" @click="putKey">{{ tr(sec.password ? 'change_key' : 'enable_key') }}</button>
-				<button v-if="sec.password" type="button" class="sv-btn sv-danger" data-act="remove-key" :disabled="!mayOrder || busy('remove')" @click="removeKey">{{ armed === 'remove-key' ? tr('sure_tap_again') : tr('remove_key') }}</button>
+				<button type="button" class="wf-btn sv-btn sv-text" data-act="view-key" :aria-pressed="viewKey ? 'true' : 'false'" @click="viewKey = !viewKey"><span class="mdi sv-ico sv-ico-s" :class="viewKey ? 'mdi-eye-off-outline' : 'mdi-eye-outline'" aria-hidden="true" />{{ t(viewKey ? 'session.pin_hide' : 'session.pin_show') }}</button>
+				<button type="button" class="wf-btn sv-btn wf-main" data-act="put-key" :disabled="!mayOrder || keyNew.length < 4 || busy('key')" @click="putKey">{{ tr(sec.password ? 'change_key' : 'enable_key') }}</button>
+				<button v-if="sec.password" type="button" class="wf-btn sv-btn wf-danger" data-act="remove-key" :disabled="!mayOrder || busy('remove')" @click="removeKey">{{ armed === 'remove-key' ? tr('sure_tap_again') : tr('remove_key') }}</button>
 			</div>
 			<p class="sv-hint">{{ tr('with_a_key_a_new_connection') }} <code class="sv-code">BRIDGE KEY &lt;password&gt;</code>. {{ tr('stored_encrypted_salted_sha256') }}<template v-if="!sec.trusted.length"> {{ tr('before_enabling_it_mark_the_program') }}</template></p>
 		</section>
@@ -43,13 +43,13 @@
 			<p class="sv-hint">{{ t('links.panel_trust_desc') }}</p>
 			<ul v-if="sec.trusted.length" class="sv-rows">
 				<li v-for="ip in sec.trusted" :key="ip" class="sv-row" :data-trusted="ip"><div class="sv-row-main"><div><div class="sv-row-name">{{ ip }}<template v-if="nameOf(ip)"> ({{ nameOf(ip) }})</template></div></div></div>
-					<div class="sv-row-ctl"><button type="button" class="sv-btn sv-text" data-act="untrust" :aria-label="tr('remove_trust') + ': ' + ip" :disabled="!mayOrder || busy('conf-' + ip)" @click="order({ action: 'trust', ip: ip, yes: false }, 'conf-' + ip)">{{ tr('remove_trust') }}</button></div></li>
+					<div class="sv-row-ctl"><button type="button" class="wf-btn sv-btn sv-text" data-act="untrust" :aria-label="tr('remove_trust') + ': ' + ip" :disabled="!mayOrder || busy('conf-' + ip)" @click="order({ action: 'trust', ip: ip, yes: false }, 'conf-' + ip)">{{ tr('remove_trust') }}</button></div></li>
 			</ul>
 			<p v-else class="sv-quiet">{{ tr('none_f') }}</p>
-			<div v-for="cl in pending" :key="'add' + cl.ip" class="sv-row-ctl"><button type="button" class="sv-btn" data-act="trust-client" :disabled="!mayOrder || busy('conf-' + cl.ip)" @click="order({ action: 'trust', ip: cl.ip, yes: true }, 'conf-' + cl.ip)">{{ tr('trust_this_ip') }}: {{ cl.name }} ({{ cl.ip }})</button></div>
+			<div v-for="cl in pending" :key="'add' + cl.ip" class="sv-row-ctl"><button type="button" class="wf-btn sv-btn" data-act="trust-client" :disabled="!mayOrder || busy('conf-' + cl.ip)" @click="order({ action: 'trust', ip: cl.ip, yes: true }, 'conf-' + cl.ip)">{{ tr('trust_this_ip') }}: {{ cl.name }} ({{ cl.ip }})</button></div>
 			<div class="sv-row-ctl">
 				<label class="sv-field"><span class="sv-vh">{{ tr('trust_add_label') }}</span><input v-model="trustNew" type="text" placeholder="192.0.2.16" autocomplete="off" :aria-label="tr('trust_add_label')" :aria-invalid="trustNew && !trustValid ? 'true' : null" :disabled="!mayOrder" @keyup.enter="addTrust"></label>
-				<button type="button" class="sv-btn" data-act="trust-add" :disabled="!mayOrder || !trustValid || busy('trust-add')" @click="addTrust">{{ tr('trust_add_button') }}</button>
+				<button type="button" class="wf-btn sv-btn" data-act="trust-add" :disabled="!mayOrder || !trustValid || busy('trust-add')" @click="addTrust">{{ tr('trust_add_button') }}</button>
 			</div>
 			<p v-if="trustNew && !trustValid" class="sv-field-error" role="alert" data-part="trust-invalid"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ tr('trust_add_invalid') }}</p>
 		</section>
@@ -59,10 +59,10 @@
 			<p class="sv-hint">{{ t('links.panel_limits_desc') }}</p>
 			<label v-for="f in LIMITS" :key="f.id" class="sv-field-line"><span>{{ tr(f.label) }}</span><span class="sv-field"><input v-model.number="form[f.id]" type="number" :min="f.min" :max="f.max" :aria-label="tr(f.label)" :disabled="!mayOrder"></span></label>
 			<label class="sv-check"><input v-model="form.queries_in_job" type="checkbox" :disabled="!mayOrder"><span>{{ tr('position_queries_in_job') }}</span></label>
-			<div class="sv-fbar"><button type="submit" class="sv-btn sv-main" :class="{ 'sv-save-hot': hasUnsaved }" data-act="save-safety" :disabled="!mayOrder || saving">{{ tr('save') }}</button><sv-unsaved-mark :show="hasUnsaved" /><span class="sv-quiet">{{ t('data.settings_nothing') }}</span></div>
+			<div class="sv-fbar"><button type="submit" class="wf-btn sv-btn wf-main" :class="{ 'sv-save-hot': hasUnsaved }" data-act="save-safety" :disabled="!mayOrder || saving">{{ tr('save') }}</button><sv-unsaved-mark :show="hasUnsaved" /><span class="sv-quiet">{{ t('data.settings_nothing') }}</span></div>
 			<div v-if="note" class="sv-row-out" :data-kind="note.ok ? 'done' : 'error'" :role="note.ok ? 'status' : 'alert'" data-part="note"><span class="mdi sv-ico sv-ico-s" :class="note.ok ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline'" aria-hidden="true" />{{ note.text }}</div>
 		</form>
-		<sv-reason :lock="lockOf(['bridge.service.set'])" @sign-in="signIn" />
+		<lock-reason class="sv-lock" :lock="lockOf(['bridge.service.set'])" />
 	</div>
 </template>
 
@@ -74,7 +74,7 @@ import { unsavedMixin } from '../../ui/unsaved-mixin.js'
 import { snapshot } from '../../ui/unsaved-guard.js'
 import { clientsToTrust, isTrustValid } from '../../bridge-view.js'
 import * as forms from '../../bridge-forms.js'
-import SvReason from '../../ui/SvReason.vue'
+import LockReason from '../../LockReason.vue'
 import { bridgeOrders, tr } from './bridge-orders.js'
 
 const LIMITS = Object.freeze([
@@ -84,7 +84,7 @@ const LIMITS = Object.freeze([
 
 export default {
 	name: 'BridgeSafety',
-	components: { SvReason, SvUnsavedMark },
+	components: { LockReason, SvUnsavedMark },
 	mixins: [rowsMixin, bridgeOrders, unsavedMixin],
 	data() {
 		return { LIMITS, form: forms.secFormFrom({}), allowedText: '', keyNew: '', viewKey: false, trustNew: '', saving: false, note: null, base: null }

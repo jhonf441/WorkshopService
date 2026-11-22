@@ -4,7 +4,7 @@
 		<div v-if="base" class="wf-help">{{ $t('plugins.WorkshopService.access.versions_base_none') }}</div>
 		<template v-else>
 			<div class="access-h">{{ $t('plugins.WorkshopService.access.versions_title', { name, max }) }}</div>
-			<ul class="access-version-rows">
+			<ul class="access-version-rows sv-cols-xl">
 				<li v-for="v in versions" :key="v.n" class="access-version-row">
 					<strong>v{{ v.n }}</strong>
 					<v-chip v-if="v.active" small outlined label color="success">{{ $t('plugins.WorkshopService.access.versions_active') }}</v-chip>

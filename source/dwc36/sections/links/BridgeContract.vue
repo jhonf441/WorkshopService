@@ -2,7 +2,8 @@
 	<!-- The contract of the bridge with the service, shown to the person: the channels (one card each: who writes, who reads, the file), the keys of the state
 	     file, the rules, and the REAL state file compared with them. Read-only: it writes nothing and reads only what the screen already read.
 	     Props: open, stopped (the unit was stopped: what the file holds is from before). Event: close. -->
-	<sv-sheet :open="open" :title="tr('contract_title')" wide @close="$emit('close')">
+	<wf-sheet :open="open" :title="tr('contract_title')" wide @close="$emit('close')">
+		<div class="sv-sheet-flow">
 		<div class="sv-ct-head"><span class="sv-chip-sm" data-part="version">{{ tr('contract_dlg_version', { n: version }) }}</span></div>
 		<span class="sv-seg sv-seg-full" role="group" :aria-label="tr('contract_tabs_label')">
 			<button v-for="(k, i) in TABS" :key="k" type="button" :aria-pressed="tab === i ? 'true' : 'false'" :data-tab="k" @click="tab = i">{{ tr('contract_tab_' + k) }}</button>
@@ -46,8 +47,9 @@
 				</ul>
 			</template>
 		</div>
-		<template #foot><button type="button" class="sv-btn" data-sv-autofocus @click="$emit('close')">{{ tr('contract_close') }}</button></template>
-	</sv-sheet>
+		</div>
+		<template #foot><button type="button" class="wf-btn sv-btn" data-wf-autofocus @click="$emit('close')">{{ tr('contract_close') }}</button></template>
+	</wf-sheet>
 </template>
 
 <script>
@@ -56,7 +58,7 @@ import { locale } from '../../core/dwc.js'
 import { timeNow } from '../../core/clock.js'
 import * as contract from '../../bridge-contract.js'
 import { CHANNELS, CONTRACT_VERSION, KNOWN_SCHEMAS, RULES, STATE_KEYS } from '../../bridge-contract-data.js'
-import SvSheet from '../../ui/SvSheet.vue'
+import WfSheet from '../../WfSheet.vue'
 import SvCopyButton from '../../ui/SvCopyButton.vue'
 import { copyText } from '../../copy.js'
 import { tr } from './bridge-orders.js'
@@ -65,7 +67,7 @@ const TABS = Object.freeze(['channels', 'state', 'rules', 'live'])
 
 export default {
 	name: 'BridgeContract',
-	components: { SvSheet, SvCopyButton },
+	components: { WfSheet, SvCopyButton },
 	props: { open: { type: Boolean, default: false }, stopped: { type: Boolean, default: false } },
 	data() {
 		return { TABS, copied: '', tab: 0, channels: CHANNELS, keys: STATE_KEYS, rules: RULES, version: CONTRACT_VERSION, schemas: KNOWN_SCHEMAS.join(', ') }

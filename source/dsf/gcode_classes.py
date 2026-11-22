@@ -13,7 +13,7 @@ The lists of this module are the ONLY source (machine_gcode is L4 and permission
 test_gcode_classes.py checks that they agree with machine_gcode.FORBIDDEN / TEMPLATES and with permissions.ESCALATE_IN, so a copy
 cannot drift silently.
 
-Owner rule behind `never` (CLAUDE.md "NEVER write driver registers"): M569.2 with a value (V, or W as the design writes it) and every
+Project rule behind `never` (never write driver registers): M569.2 with a value (V, or W as the design writes it) and every
 other dotted M569 sub-code are `never`; M569.2 without a value is the read of the Motors poller, so it is `read`.
 """
 import re

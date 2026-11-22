@@ -5,12 +5,12 @@
 	<div class="sv-data-backups">
 		<div v-for="n in notes" :key="n.id" class="sv-note" :data-level="n.level" :role="n.level === 'error' ? 'alert' : 'note'" :data-note="n.id">
 			<span class="mdi sv-ico" :class="n.level === 'error' ? 'mdi-close-circle-outline' : n.level === 'info' ? 'mdi-information-outline' : 'mdi-alert-outline'" aria-hidden="true" />
-			<span>{{ t('data.note_' + n.id) }}<template v-if="n.id === 'failing' || n.id === 'late'"> <a class="sv-btn sv-text" :href="nav.href({ s: 'health', t: 'processes' })" @click="follow($event, { s: 'health', t: 'processes' })">{{ t('data.note_see_process') }}</a></template></span>
+			<span>{{ t('data.note_' + n.id) }}<template v-if="n.id === 'failing' || n.id === 'late'"> <a class="wf-btn sv-btn sv-text" :href="nav.href({ s: 'health', t: 'processes' })" @click="follow($event, { s: 'health', t: 'processes' })">{{ t('data.note_see_process') }}</a></template></span>
 		</div>
 
 		<section class="sv-card" aria-labelledby="sv-db-title" data-card="copies">
 			<div class="sv-card-head"><h2 id="sv-db-title"><span class="mdi mdi-database-arrow-down-outline sv-ico" aria-hidden="true" />{{ t('data.copies_title') }}</h2></div>
-			<sv-zone :status="status.status" :error="status.error" :lock="status.lock" :updated="updated" refreshable :empty-title="t('data.db_none')" @retry="status.reload()" @refresh="status.reload()" @sign-in="signIn">
+			<wf-zone class="sv-zone-host" :status="status.status" :error="status.error" :lock="zoneLock(status.lock)" :updated="updated" refreshable :empty-title="t('data.db_none')" @retry="status.reload()" @refresh="status.reload()" @sign-in="signIn">
 				<div class="sv-stats">
 					<div class="sv-stat" data-stat="last" :data-level="r.late ? 'warn' : null"><b>{{ lastText }}</b><span>{{ lastNote }}</span></div>
 					<div class="sv-stat" data-stat="next"><b>{{ nextText }}</b><span>{{ t('data.stat_next') }}</span></div>
@@ -20,11 +20,11 @@
 				<ul class="sv-rows">
 					<sv-action-row icon="mdi-database-arrow-down-outline" :name="t('data.now_name')" :desc="t('data.now_desc')" :action="dbBackup" :permission="perm('db.backup')" :stale="stale" :label="t('data.now_label')" @run="dbBackup.run()" @retry="dbBackup.run()">
 						<p v-if="dbBackup.state === 'done' && dbBackup.data" class="sv-row-desc" role="status" data-part="backup-done">{{ t('data.now_done', { file: dbBackup.data.file, mb: dbBackup.data.mb }) }}</p>
-						<template #help><sv-help v-bind="help('now', 'data')" /></template>
+						<template #help><help-fold v-bind="help('now', 'data')" /></template>
 					</sv-action-row>
 				</ul>
-				<sv-reason :lock="lockOf(['db.backup'])" @sign-in="signIn" />
-			</sv-zone>
+				<lock-reason class="sv-lock" :lock="lockOf(['db.backup'])" />
+			</wf-zone>
 		</section>
 
 		<section v-if="status.data && status.data.backup" class="sv-card" aria-labelledby="sv-db-set" data-card="settings">
@@ -47,14 +47,14 @@
 					<sv-select id="sv-db-mirror" v-model="draft.mirror" :options="mirrorOptions" :disabled="!mayEdit" @focusin.native="readPlaces" />
 				</div>
 				<div class="sv-fbar sv-fcell-wide">
-					<button type="submit" class="sv-btn sv-main" :class="{ 'sv-save-hot': hasUnsaved }" data-act="save-settings" :disabled="!mayEdit || stale || dbSettings.busy() || !dirty">{{ t('data.settings_save') }}</button>
+					<button type="submit" class="wf-btn sv-btn wf-main" :class="{ 'sv-save-hot': hasUnsaved }" data-act="save-settings" :disabled="!mayEdit || stale || dbSettings.busy() || !dirty">{{ t('data.settings_save') }}</button>
 					<span class="sv-quiet">{{ t(hasUnsaved ? 'data.settings_unsaved' : 'data.settings_nothing') }}</span>
 				</div>
 				<p v-if="problem" class="sv-field-error" role="alert" data-part="settings-problem"><span class="mdi mdi-alert-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('data.settings_invalid') }}</p>
 				<div v-if="dbSettings.state === 'done'" class="sv-row-out" data-kind="done" role="status"><span class="mdi mdi-check-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('data.settings_done') }}</div>
 				<div v-else-if="dbSettings.state === 'error' && dbSettings.error && dbSettings.error.kind !== 'session' && dbSettings.error.kind !== 'role'" class="sv-row-out" data-kind="error" role="alert"><span class="mdi mdi-close-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('data.not_saved') }} {{ dbSettings.error.message }}</div>
 			</form>
-			<sv-reason :lock="lockOf(['db.settings'])" @sign-in="signIn" />
+			<lock-reason class="sv-lock" :lock="lockOf(['db.settings'])" />
 		</section>
 
 		<section v-if="status.data && status.data.backup" class="sv-card" aria-labelledby="sv-db-list" data-card="list">
@@ -71,8 +71,8 @@
 						<td :data-label="t('data.col_state')"><span class="sv-word" :data-level="c.state === 'kept' ? 'ok' : c.state === 'goes' ? 'warn' : 'rest'">{{ stateText(c) }}</span></td>
 						<td :data-label="t('data.col_actions')">
 							<div class="sv-row-ctl">
-								<button type="button" class="sv-btn" data-act="keep" :disabled="!mayKeep || stale || dbKeep.busy()" :aria-label="t(c.kept ? 'data.release_of' : 'data.keep_of', { file: c.file })" @click="dbKeep.run({ file: c.file, keep: !c.kept })">{{ t(c.kept ? 'data.release' : 'data.keep') }}</button>
-								<button v-if="downloadable" type="button" class="sv-btn" data-act="download" :disabled="downloading === c.file" :aria-label="t('data.download_of', { file: c.file })" @click="download(c.file)"><span class="mdi mdi-download sv-ico sv-ico-s" aria-hidden="true" /></button>
+								<button type="button" class="wf-btn sv-btn" data-act="keep" :disabled="!mayKeep || stale || dbKeep.busy()" :aria-label="t(c.kept ? 'data.release_of' : 'data.keep_of', { file: c.file })" @click="dbKeep.run({ file: c.file, keep: !c.kept })">{{ t(c.kept ? 'data.release' : 'data.keep') }}</button>
+								<button v-if="downloadable" type="button" class="wf-btn sv-btn" data-act="download" :disabled="downloading === c.file" :aria-label="t('data.download_of', { file: c.file })" @click="download(c.file)"><span class="mdi mdi-download sv-ico sv-ico-s" aria-hidden="true" /></button>
 							</div>
 						</td>
 					</tr>
@@ -81,7 +81,7 @@
 			<p v-if="r.amount > copies.length" class="sv-quiet" data-part="list-note">{{ t('data.list_note', { n: copies.length }) }}</p>
 			<div v-if="dbKeep.state === 'error' && dbKeep.error && dbKeep.error.kind !== 'session' && dbKeep.error.kind !== 'role'" class="sv-row-out" data-kind="error" role="alert"><span class="mdi mdi-close-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('data.not_done') }} {{ dbKeep.error.message }}</div>
 			<div v-if="downloadError" class="sv-row-out" data-kind="error" role="alert" data-part="download-error"><span class="mdi mdi-close-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('data.download_failed') }}</div>
-			<sv-reason :lock="lockOf(['db.keep'])" @sign-in="signIn" />
+			<lock-reason class="sv-lock" :lock="lockOf(['db.keep'])" />
 		</section>
 
 		<section v-if="status.data && status.data.backup" class="sv-card" aria-labelledby="sv-db-where" data-card="where">
@@ -89,7 +89,7 @@
 			<ul class="sv-rows">
 				<sv-action-row icon="mdi-folder-outline" :name="t('data.folder_name')" :desc="t('data.folder_desc')" :action="dbFolder" :permission="perm('db.folder')" :stale="stale" :label="t('data.folder_change')" @run="openPlaces" @retry="openPlaces">
 					<span class="sv-value"><code class="sv-code" data-part="folder">{{ r.folder }}</code></span>
-					<template #help><sv-help v-bind="help('folder', 'data')" /></template>
+					<template #help><help-fold v-bind="help('folder', 'data')" /></template>
 				</sv-action-row>
 				<sv-action-row v-if="r.previous > 0" icon="mdi-delete-outline" :name="t('data.previous_name')" :desc="tc('data.previous_desc', r.previous, { n: r.previous, folder: r.folder_previous || '' })" :action="dbDeletePrevious" :permission="perm('db.delete_previous')" :stale="stale" :label="t('data.previous_delete')" danger @run="dbDeletePrevious.run()" @retry="dbDeletePrevious.run()" />
 			</ul>
@@ -99,16 +99,16 @@
 				<p v-else-if="!moves.length" class="sv-quiet" role="status" data-part="no-places">{{ t('data.places_none') }}</p>
 				<div v-for="p in moves" :key="p.folder" class="sv-row-ctl">
 					<span class="sv-value"><b>{{ p.name }}</b> <code class="sv-code">{{ p.folder }}</code> <span class="sv-quiet">{{ t('data.places_free', { gb: p.free_gb }) }}</span></span>
-					<button type="button" class="sv-btn" data-act="move" :data-path="p.folder" @click="move(p)">{{ t('data.places_move') }}</button>
+					<button type="button" class="wf-btn sv-btn" data-act="move" :data-path="p.folder" @click="move(p)">{{ t('data.places_move') }}</button>
 				</div>
-				<button type="button" class="sv-btn sv-text" @click="choosing = false">{{ t('kit.cancel') }}</button>
+				<button type="button" class="wf-btn sv-btn sv-text" @click="choosing = false">{{ t('kit.cancel') }}</button>
 			</div>
 			<div v-if="dbFolder.state === 'done'" class="sv-row-out" data-kind="done" role="status" data-part="moved"><span class="mdi mdi-check-circle-outline sv-ico sv-ico-s" aria-hidden="true" />{{ tc('data.moved', copied, { n: copied }) }}</div>
-			<sv-reason :lock="lockOf(['db.folder', 'db.delete_previous'])" @sign-in="signIn" />
+			<lock-reason class="sv-lock" :lock="lockOf(['db.folder', 'db.delete_previous'])" />
 		</section>
 
-		<sv-confirm-dialog :confirm="dbFolder.confirm" :title="t('data.move_title')" :text="t('data.move_text', { n: r.amount || 0 })" :object="{ name: target, context: targetContext }" :verb="t('data.move_verb')" @accept="dbFolder.accept()" @cancel="dbFolder.cancel()" />
-		<sv-confirm-dialog :confirm="dbDeletePrevious.confirm" :title="t('data.previous_title')" :text="t('data.previous_text', { folder: r.folder_previous || '' })" :object="{ name: r.folder_previous || '', context: tc('data.previous_desc_short', r.previous || 0, { n: r.previous || 0 }) }" :verb="t('data.previous_delete')" danger @accept="dbDeletePrevious.accept()" @cancel="dbDeletePrevious.cancel()" />
+		<wf-confirm :confirm="dbFolder.confirm" :title="t('data.move_title')" :text="t('data.move_text', { n: r.amount || 0 })" :object="{ name: target, context: targetContext }" :verb="t('data.move_verb')" @accept="dbFolder.accept()" @cancel="dbFolder.cancel()" />
+		<wf-confirm :confirm="dbDeletePrevious.confirm" :title="t('data.previous_title')" :text="t('data.previous_text', { folder: r.folder_previous || '' })" :object="{ name: r.folder_previous || '', context: tc('data.previous_desc_short', r.previous || 0, { n: r.previous || 0 }) }" :verb="t('data.previous_delete')" danger @accept="dbDeletePrevious.accept()" @cancel="dbDeletePrevious.cancel()" />
 	</div>
 </template>
 
@@ -124,12 +124,12 @@ import { dateTime, time, toMs } from '../../core/format/dates.js'
 import { durationText } from '../../core/format/duration.js'
 import { timeNow } from '../../core/clock.js'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvConfirmDialog from '../../ui/SvConfirmDialog.vue'
-import SvHelp from '../../ui/SvHelp.vue'
-import SvReason from '../../ui/SvReason.vue'
+import WfConfirm from '../../WfConfirm.vue'
+import HelpFold from '../../HelpFold.vue'
+import LockReason from '../../LockReason.vue'
 import SvSwitch from '../../ui/SvSwitch.vue'
 import SvSelect from '../../ui/SvSelect.vue'
-import SvZone from '../../ui/SvZone.vue'
+import WfZone from '../../WfZone.vue'
 import { changed, copyRows, draftOf, mirrorChoices, moveChoices, notesOf, parseCount, sdPath } from './view.js'
 
 const DAILY = [3, 7, 14, 30]
@@ -138,7 +138,7 @@ const withCurrent = (base, v) => (typeof v === 'number' && base.indexOf(v) < 0 ?
 
 export default {
 	name: 'BackupsTab',
-	components: { SvActionRow, SvConfirmDialog, SvHelp, SvReason, SvSelect, SvSwitch, SvZone },
+	components: { SvActionRow, WfConfirm, HelpFold, LockReason, SvSelect, SvSwitch, WfZone },
 	mixins: [rowsMixin, unsavedMixin],
 	inject: { nav: { from: 'svNav', default: () => ({ go() {}, href: () => '#' }) } },
 	props: { active: { type: Boolean, default: false } },

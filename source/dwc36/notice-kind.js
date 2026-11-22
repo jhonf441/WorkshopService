@@ -27,7 +27,7 @@ export const NOTICE_COLORS = { session: 'info', role: 'neutral', down: 'warning'
 
 // The button of a notice. The default of the standard (7c): a cover offers "Sign in" only through the chip of the bar (none here) and "Retry" when
 // the service is down; a section note has none. A page whose surface has no bar chip asks for act 'sign-in': on a role cause it is drawn as
-// "Change role" (owner rule 2026-11-06: floating panels and locked launchers carry the way out), the same dialog that keeps the current session.
+// "Change role" (project rule 2026-11-06: floating panels and locked launchers carry the way out), the same dialog that keeps the current session.
 export function noticeActionOf(kind, variant, act) {
 	const given = act === null || act === undefined ? (variant === 'cover' && kind === 'down' ? 'retry' : '') : act
 	if (given === 'sign-in' && kind === 'role') return 'change-role'

@@ -18,12 +18,12 @@ SCENARIOS = ("open", "users", "anonymous", "damaged")
 
 # name, PIN, role, extra arguments of users.add
 PEOPLE = [
-    ("Ana Admin", "2468", "admin", {}),
-    ("Tomas Tecnico", "1357", "technician", {}),
-    ("Olga Operadora", "1470", "operator", {"modes": ["laser", "cnc"]}),
-    ("Victor Visitante", "2580", "viewer", {"camera_for_viewer": True}),
-    ("Nadia Nocturna", "3691", "Turno noche", {"modes": ["laser"]}),
-    ("Jose Maria Fernandez-Ruiz Jr.", "4826", "operator", {}),     # a long name with a hyphen and a dot (the longest the service accepts: 32)
+    ("Ana Admin", "482913", "admin", {}),
+    ("Tomas Tecnico", "735128", "technician", {}),
+    ("Olga Operadora", "614937", "operator", {"modes": ["laser", "cnc"]}),
+    ("Victor Visitante", "825039", "viewer", {"camera_for_viewer": True}),
+    ("Nadia Nocturna", "936257", "Turno noche", {"modes": ["laser"]}),
+    ("Jose Maria Fernandez-Ruiz Jr.", "648291", "operator", {}),     # a long name with a hyphen and a dot (the longest the service accepts: 32)
 ]
 CUSTOM_ROLE = {"name": "Turno noche", "base": "operator", "description": "Night shift: runs jobs, may not touch the lights nor the power",
                "grant": [], "deny": ["lights.*", "power.after_job"]}

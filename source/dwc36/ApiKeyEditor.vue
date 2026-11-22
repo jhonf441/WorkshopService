@@ -221,6 +221,10 @@ export default {
 .ws-keys-dialog .v-select__selection { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ws-keys-dialog .v-chip { max-width: 100%; }
 .ws-keys-dialog .v-chip .v-chip__content { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
-.ws-keys-menu { max-width: calc(100vw - 32px); }
+.ws-keys-menu { max-width: calc(100vw - 32px); border: 1px solid var(--sv-control-line); border-radius: var(--sv-r-control); background: var(--wf-surface) !important; box-shadow: var(--sv-shadow) !important; }
+.ws-keys-menu .v-list { background: var(--wf-surface) !important; padding: 4px 0; }
+.ws-keys-menu .v-list-item { min-height: var(--sv-touch); color: var(--sv-text); }
+.ws-keys-menu .v-list-item--highlighted, .ws-keys-menu .v-list-item:focus { background: var(--wf-soft); outline: 2px solid var(--sv-focus); outline-offset: -2px; }
 .ws-keys-menu .v-list-item__title, .ws-keys-menu .v-list-item__subtitle { white-space: normal; overflow-wrap: anywhere; }
+.ws-keys-menu .v-list-item__subtitle { color: var(--sv-text-2); }
 </style>

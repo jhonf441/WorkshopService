@@ -12,11 +12,8 @@ They are **candidates for the family**: taking one to `TallerPlugins/vue/_shared
 |---|---|---|---|---|
 | `SvActionRow` | `SvActionRow.vue` | The row of the page: name, sentence, control and the outcome of touching it (sending, verifying, done, refused, not confirmed). Its control is a built-in button or a slot. | every section | tested, not yet on a screen |
 | `SvSwitch` | `SvSwitch.vue` | A switch whose word is what is read; `role="switch"`. | action rows | tested, not yet on a screen |
-| `SvZone` | `SvZone.vue` | Paints the state of a read: skeleton, content with its time, refreshing, empty, old, locked (session / role), error, busy. | every section | tested, not yet on a screen |
 | `SvSheet` | `SvSheet.vue` | A box over the page: focus kept inside, Escape and a touch outside close it, focus returns to the opener. | dialogs, section picker, My session | tested, not yet on a screen |
 | `SvConfirmDialog` | `SvConfirmDialog.vue` | THE confirmation for levels 3 and 4: the object affected, what will happen, the box of level 4, a button that repeats the verb. | every destructive action | tested, not yet on a screen |
-| `SvReason` | `SvReason.vue` | ONE lock sentence per block with its way out (sign in / change person). | blocks with locked controls | tested, not yet on a screen |
-| `SvHelp` | `SvHelp.vue` | The four-line help of a row (what it is, what for, if missing, how); opens on touch and stays open. | every row of Machine and Data | on screen (Machine, Data) |
 
 | `SvBand` | `SvBand.vue` | The one band of the page (level, icon, fact, what it implies, a button). | the shell | on screen (shell) |
 | `SvSectionNav` | `SvSectionNav.vue` | First level in three forms from the same entries: picker (narrow), wrapping row (medium), rail (wide); real links, counts, locked entry. | the shell | on screen (shell) |

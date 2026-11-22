@@ -31,8 +31,8 @@ No document says "systemd, not plugin" in so many words: there is no earlier dec
      (`/etc/apparmor.d/dsf.WorkshopService`, `.WorkshopVision`, `.WorkshopRS485`) lists only `capability dac_override, dac_read_search,
      sys_nice`: a plugin cannot be given `net_bind_service` even if systemd were willing. The only plugin permission that changes
      user is `superUser` (`DuetPiManagementPlugin` has `['superUser']` and runs under the root `DuetPluginService`): that is root, which
-     the owner rules out (CLAUDE.md, unit comments, `HARDENING.md`).
-  2. Real clients on port 23 exist (the PC `.16`, an ESP32, scripts: CLAUDE.md "Network", README). Changing the port is a change of the public protocol surface.
+     the project rules out (unit comments, `docs/HARDENING.md`).
+  2. Real clients on port 23 exist (the PC `.16`, an ESP32, scripts: see the README). Changing the port is a change of the public protocol surface.
   3. The unit comment: "No Group=dsf on purpose: DSF treats every process whose primary group is dsf as a PLUGIN ('Failed to find
      plugin permissions') and cuts it", and `make_readable()` in the bridge (PR_SET_DUMPABLE, because binding a low port makes the
      process non-dumpable and DSF cannot identify it). The bridge lives as a non-plugin DSF client on purpose.

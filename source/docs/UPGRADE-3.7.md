@@ -47,9 +47,9 @@ root plugin service no longer overrides `KillMode`. The audit of this service ag
     plugin the service page or `journalctl -u duetcontrolserver` reports as failed (a plugin that fails to load is
     logged by DWC 3.7 and shown as stopped in Settings, Plugins: it stays in `enabledPlugins`, unlike DWC 3.6 which removed it. Check
     `machine.enabledPlugins` in `0:/sys/dwc-settings.json` anyway, 15 entries here, WorkshopService FIRST (a dependent plugin
-    loads only if the service comes earlier in that list, see docs/INSTALL.md), and fix it as described in CLAUDE.md). Plugin ids are case-insensitive in 3.7; ours are unchanged.
+    loads only if the service comes earlier in that list, see docs/INSTALL.md), and fix it as described in docs/INSTALL.md). Plugin ids are case-insensitive in 3.7; ours are unchanged.
     Plugin www files are installed by symlink in 3.7: `/opt/dsf/dwc/` gets links, not copies. After the upgrade
-    reload every DWC tab and the kiosk (delete its Service Worker cache, see CLAUDE.md).
+    reload every DWC tab and the kiosk (delete its Service Worker cache, see docs/INSTALL.md).
     If a Workshop page does not load, update it with `tools/install.sh` (it copies and rewrites the manifest) and
     for the other plugins `python build.py <Id> --install`.
 11. **[FREE MACHINE]** Restart the services that must come back: `/opt/dsf/bin/PluginManager reload WorkshopService`

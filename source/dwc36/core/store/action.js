@@ -1,11 +1,14 @@
 'use strict'
 
-// One thing a person does = one action = one control. It replaces the loose `sending / message / error` fields of the old page.
+// One thing a person does = one action = one control. A THIN LAYER over the shared state machine of the family (workshop-action.js): the machine owns
+// the states, the double touch, the dialog, the one-write-per-group rule, the verification and the clock; this file only brings what is the SERVICE's:
+// the call (`call(op, args, { confirm })`), the permission (`can(op)`), the confirmation the service asks for (428) with its own texts, the group that
+// defaults to the operation, the errors as `ServiceError` and the forgetting of what a person who left had started.
 //
 //   const restart = createAction({
 //     op: 'service.restart',                       the operation (also what the permission is asked for)
 //     args: () => ({}),                            optional: the arguments when run() is called without them
-//     arm: 'double',                               page confirmation: 'none' | 'double' (second touch within 5 s) | 'dialog' | 'dialog-check';
+//     arm: 'double',                               page confirmation: 'none' | 'double' (second touch within 4 s) | 'dialog' | 'dialog-check';
 //                                                  or a function of the arguments (arming asks, disarming does not)
 //     verify: { until: () => bool, timeoutMs },    for answers that prove nothing: wait until the published data shows it
 //     after: () => [users.reload()],               what to read again once it is done
@@ -13,41 +16,41 @@
 //   })
 //   restart.state    'idle' | 'armed' | 'confirming' | 'sending' | 'verifying' | 'done' | 'error'
 //   restart.error    ServiceError | null        restart.text / restart.data   what the service answered
-//   restart.confirm  { source: 'page' | 'server', level, check, title, text } while state is 'confirming' (the dialog of the kit shows it)
+//   restart.confirm  { level, check, title, text } while state is 'confirming' (WfConfirm shows it)
 //   restart.run(args)   the control was touched         restart.accept() / restart.cancel()   the answer to the dialog
-//   restart.hold(true)  keyboard focus is on the armed control: the 5 s do not run       restart.reset()
+//   restart.hold(true)  keyboard focus is on the armed control: the 4 s do not run       restart.reset()
 //   restart.permission()  can(op): 'ok' | 'session' | 'role' | 'resolving' with its text (to lock the control and say why)
 //
 // Order, always: permission -> page confirmation -> call -> confirmation asked by the service (428) -> verification -> after.
 // While it sends or verifies, a second touch does nothing: ONE request per action. A person who is not allowed never sees a dialog.
+//
+// Asked of the shared machine (to drop the two workarounds below): a hook `onServerConfirm` for the answer 428, and `permission` able to return the error itself.
 
-import Vue from 'vue'
 import { call } from '../api/call.js'
 import { ServiceError } from '../api/errors.js'
 import { can, onSessionChange } from './session.js'
 import { every, timeNow } from '../clock.js'
 import { locale } from '../dwc.js'
+import { ARM_MS } from '../../arm-ms.js'
+import { createAction as createSharedAction, WF_DONE_WINDOW } from '../../workshop-action.js'
 
-export const ARM_MS = 5000
-export const DONE_MS = 6000      // the outcome "done" leaves by itself after this (design guide 6.7)
-const BUSY = ['sending', 'verifying', 'confirming']
+export { ARM_MS }
+export const DONE_MS = WF_DONE_WINDOW      // the outcome "done" leaves by itself after this (design guide 6.7)
 
 const all = new Set()
-const groups = new Map()        // group -> the action that holds it
 let offSession = null
 
 const asError = (e, op) => (e instanceof ServiceError ? e : new ServiceError({ op, code: 'internal', message: (e && e.message) || String(e), raw: e }))
 
-function finish(x, state, error) {
-	const a = x.a
-	x.stopTimer()
-	if (groups.get(x.group) === a) groups.delete(x.group)
-	Object.assign(a, { state, error: error || null, confirm: null, armedUntil: 0 })
-	if (state === 'done') x.timerUntil(DONE_MS, () => { if (a.state === 'done') a.state = 'idle' })
-}
-
-function denied(x, permission) {
-	finish(x, 'error', new ServiceError({ op: x.o.op, code: permission.state === 'session' ? 'login_required' : 'forbidden', reason: permission.cause, message: permission.text }))
+// the shared machine asks a clock for one-shot timers; the service has ONE clock (core/clock.js: every second, replaceable by a test)
+const clock = {
+	now: () => timeNow(),
+	set(fn, ms) {
+		const at = timeNow() + ms
+		const off = every(1, () => { if (timeNow() >= at) { off(); fn() } })
+		return off
+	},
+	clear: off => { if (typeof off === 'function') off() }
 }
 
 // the texts of a confirmation the service asks for (428): the ones of the language of the page
@@ -58,111 +61,55 @@ function serverConfirm(error) {
 	return { source: 'server', level: c.level || 3, check: (c.level || 3) >= 4, key: c.key || '', title: mine.title || '', text: mine.text || error.message }
 }
 
-async function send(x, confirmed) {
-	const a = x.a
-	const mine = x.generation
-	a.state = 'sending'
-	a.confirm = null
-	groups.set(x.group, a)
-	let res
-	try {
-		res = await call(x.o.op, x.args, { confirm: confirmed })
-	} catch (e) {
-		if (mine !== x.generation) return
-		const error = asError(e, x.o.op)
-		if (error.kind === 'confirm' && !confirmed) {
-			Object.assign(a, { state: 'confirming', confirm: serverConfirm(error) })
-			return
-		}
-		return finish(x, error.kind === 'cancelled' ? 'idle' : 'error', error.kind === 'cancelled' ? null : error)
-	}
-	if (mine !== x.generation) return
-	a.text = res.text
-	a.data = res.data
-	if (x.o.verify) return verify(x)
-	return settle(x)
-}
-
-// the answer did not prove it: look at what the service publishes until it shows, or say that it could not be confirmed
-function verify(x) {
-	const a = x.a
-	const mine = x.generation
-	const until = x.o.verify.until
-	const deadline = x.now() + (x.o.verify.timeoutMs || 10000)
-	a.state = 'verifying'
-	const check = () => {
-		if (mine !== x.generation) return x.stopTimer()
-		let ok = false
-		try { ok = !!until(a.data, x.args) } catch (e) { ok = false }
-		if (ok) return settle(x)
-		if (x.now() >= deadline) finish(x, 'error', new ServiceError({ op: x.o.op, code: 'unverified', kind: 'failed', message: a.text || '' }))
-	}
-	check()
-	if (a.state === 'verifying') x.timer(check)
-}
-
-async function settle(x) {
-	const mine = x.generation
-	try {
-		const more = x.o.after ? x.o.after(x.a.data, x.args) : null
-		if (more) await Promise.all([].concat(more))
-	} catch (e) { /* the action itself was done: a failed reload shows in its own resource */ }
-	if (mine === x.generation) finish(x, 'done')
-}
-
-function run(x, args) {
-	const a = x.a
-	if (BUSY.indexOf(a.state) >= 0) return
-	const holder = groups.get(x.group)
-	if (holder && holder !== a) return
-	const permission = can(x.o.op, args ? { args } : undefined)
-	if (permission.state === 'resolving') return
-	if (!permission.allowed) return denied(x, permission)
-	x.args = args || (x.o.args ? x.o.args() : {})
-	const arm = (typeof x.o.arm === 'function' ? x.o.arm(x.args) : x.o.arm) || 'none'
-	if (arm === 'double' && a.state !== 'armed') {
-		Object.assign(a, { state: 'armed', error: null, armedUntil: x.now() + ARM_MS })
-		x.timer(() => { if (a.state === 'armed' && !x.held && x.now() >= a.armedUntil) finish(x, 'idle') })
-		return
-	}
-	x.stopTimer()
-	a.error = null
-	if (arm === 'dialog' || arm === 'dialog-check') {
-		Object.assign(a, { state: 'confirming', confirm: { source: 'page', level: arm === 'dialog' ? 3 : 4, check: arm === 'dialog-check', key: x.o.op, title: '', text: '' } })
-		groups.set(x.group, a)
-		return
-	}
-	return send(x, false)
-}
-
-function reset(x) {
-	x.generation += 1
-	finish(x, 'idle')
-	Object.assign(x.a, { text: '', data: null })
-}
-
 export function createAction(options) {
 	const o = Object.assign({ arm: 'none' }, options || {})
 	if (!o.op) throw new Error('createAction: op is required')
-	const a = Vue.observable({ op: o.op, state: 'idle', error: null, text: '', data: null, confirm: null, armedUntil: 0 })
-	const x = { a, o, group: o.group || o.op, generation: 0, args: {}, held: false, off: null, now: () => (o.now ? o.now() : timeNow()) }
-	x.stopTimer = () => { if (x.off) { x.off(); x.off = null } }
-	x.timer = fn => { x.stopTimer(); x.off = every(1, fn) }
-	x.timerUntil = (ms, fn) => { const at = x.now() + ms; x.timer(() => { if (x.now() >= at) { x.stopTimer(); fn() } }) }
-	a.run = args => run(x, args)
-	a.accept = () => (a.state === 'confirming' ? send(x, a.confirm && a.confirm.source === 'server') : undefined)
-	a.cancel = () => { if (a.state === 'confirming' || a.state === 'armed') finish(x, 'idle') }
-	// keyboard focus on the armed control: the time does not run; it starts again when the focus leaves
-	a.hold = on => {
-		x.held = !!on
-		if (!on && a.state === 'armed') a.armedUntil = x.now() + ARM_MS
+	let args = {}
+	let asked = false      // the person is answering a question the SERVICE asked: the call goes again with confirm
+	const arm = a => (typeof o.arm === 'function' ? o.arm(a) : o.arm) || 'none'
+	const inner = createSharedAction({
+		clock,
+		group: o.group || o.op,
+		arm: a => (arm(a) === 'double' ? 'double' : 'none'),
+		confirm: a => { const m = arm(a); return m === 'dialog' || m === 'dialog-check' ? { source: 'page', level: m === 'dialog' ? 3 : 4, check: m === 'dialog-check', key: o.op, title: '', text: '' } : null },
+		verify: o.verify ? { until: o.verify.until, timeoutMs: o.verify.timeoutMs || 10000, everyMs: 1000 } : undefined,
+		after: o.after,
+		run: async (a, ctx) => {
+			const confirm = !!ctx.confirmed && asked
+			asked = false
+			try {
+				return await call(o.op, a, { confirm })
+			} catch (e) {
+				const error = asError(e, o.op)
+				if (error.kind === 'confirm' && !confirm) {
+					// the service wants a question first: the action waits in 'confirming' (workaround: the machine has no hook for it, so this call never answers)
+					asked = true
+					Object.assign(inner, { state: 'confirming', error: null, confirm: serverConfirm(error) })
+					return new Promise(() => {})
+				}
+				throw error.kind === 'cancelled' ? Object.assign(error, { cancelled: true }) : error
+			}
+		}
+	})
+	const a = Object.assign(inner, { op: o.op })
+	a.permission = pargs => can(o.op, pargs ? { args: pargs } : undefined)
+	const shared = { run: inner.run, reset: inner.reset, accept: inner.accept }
+	a.run = pargs => {
+		if (a.busy()) return undefined
+		const p = a.permission(pargs)
+		if (p.state === 'resolving') return undefined
+		if (!p.allowed) {
+			// workaround: the machine builds its own refusal; the service's carries the cause (reason) and the sentence of the lock
+			a.reset()
+			Object.assign(a, { state: 'error', error: new ServiceError({ op: o.op, code: p.state === 'session' ? 'login_required' : 'forbidden', reason: p.cause, message: p.text }) })
+			return undefined
+		}
+		args = pargs || (o.args ? o.args() : {})
+		return shared.run(args)
 	}
-	a.reset = () => reset(x)
-	a.permission = args => can(o.op, args ? { args } : undefined)
-	a.busy = () => BUSY.indexOf(a.state) >= 0
-	a.dispose = () => { reset(x); all.delete(x) }
-	all.add(x)
-	if (!offSession) offSession = onSessionChange(() => all.forEach(reset))   // what was in the air belonged to the person who left
+	a.dispose = () => { a.reset(); all.delete(a) }
+	all.add(a)
+	if (!offSession) offSession = onSessionChange(() => all.forEach(x => x.reset()))   // what was in the air belonged to the person who left
 	return a
 }
 

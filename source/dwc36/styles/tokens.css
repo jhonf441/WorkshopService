@@ -5,14 +5,11 @@
 	--sv-text: rgba(255, 255, 255, 0.92);
 	--sv-text-2: rgba(255, 255, 255, 0.72);
 	--sv-code: #fff; --sv-comment: #8696a3;   /* the file viewer: code (14:1 on its box) and comment (4.9:1 on the box, 3:1 against the code) */
-	--sv-control-line: #8c8c8c;      /* the border of everything that is touched: reaches 3:1 on the surface (--wf-line does not) */
+	--sv-control-line: var(--wf-control-line, #8c8c8c);   /* the border of everything that is touched: reaches 3:1 on the surface (--wf-line does not); the value lives in family.css (FASE4) */
 	--sv-focus: #90caf9;
 	--sv-on-accent: #fff;            /* text on --wf-accent, on the plugin badge and on a filled danger button */
 	--sv-on-armed: #000;             /* text on --wf-armed */
-	--sv-danger-fill: #c62828;       /* the confirm button of a dialog that destroys something */
-	--sv-veil: rgba(0, 0, 0, 0.6);   /* behind a sheet or a dialog */
 	--sv-arm-bar: rgba(0, 0, 0, 0.55);
-	--sv-skel-shine: rgba(128, 128, 128, 0.18);
 	--sv-s1: 4px; --sv-s2: 8px; --sv-s3: 12px; --sv-s4: 16px; --sv-s5: 24px; --sv-s6: 32px;
 	--sv-r-control: 6px; --sv-r-card: 10px; --sv-r-pill: 999px;
 	--sv-touch: 44px;                /* least height and width of anything that is touched */
@@ -27,7 +24,6 @@
 	--sv-text: rgba(0, 0, 0, 0.87);
 	--sv-text-2: rgba(0, 0, 0, 0.68);
 	--sv-code: #111; --sv-comment: #5f7280;
-	--sv-control-line: #757575;
 	--sv-focus: #0d47a1;
 	--sv-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
 	--sv-cat-machine: #0277bd; --sv-cat-jobs: #7b1fa2; --sv-cat-lights: #f9a825; --sv-cat-energy: #ef6c00; --sv-cat-activity: #546e7a; --sv-cat-camera: #c2185b; --sv-cat-security: #2e7d32; --sv-cat-config: #00796b; --sv-cat-system: #6d4c41;

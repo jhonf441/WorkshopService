@@ -35,7 +35,7 @@ import release_json  # noqa: E402
 import release_zips  # noqa: E402
 
 RELEASE = os.path.join(ROOT, "dist", "release")
-# DWC 3.7 is PAUSED (owner, 2026-11-04; TallerPlugins/CLAUDE.md): only the 3.6 zip is built and checked unless --paused-37 is given
+# DWC 3.7 is PAUSED (project decision, 2026-11-04): only the 3.6 zip is built and checked unless --paused-37 is given
 PAUSED = ("3.7",)
 
 

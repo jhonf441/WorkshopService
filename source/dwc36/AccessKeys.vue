@@ -20,7 +20,7 @@
 						<div v-if="partial" class="wf-note is-warn mb-2" role="note"><v-icon class="wf-note-icon" aria-hidden="true">mdi-alert-outline</v-icon><span>{{ $t('plugins.WorkshopService.access.keys_partial') }}</span></div>
 						<access-key-card v-if="selected" :key="selected" :row="selectedRow" :now="now" :can-change="canChange" @back="selected = ''" @edit="edit" @toggle="toggle" @remove="remove" />
 						<template v-else>
-							<div class="access-filters">
+							<div class="sv-tbar">
 								<sv-text-field v-model="text" icon="mdi-magnify" type="search" class="access-search" :placeholder="$t('plugins.WorkshopService.access.common_search')" :aria-label="$t('plugins.WorkshopService.access.common_search')" />
 							</div>
 							<access-key-list :rows="rows" :now="now" :total="total" :can-change="canChange" @open="selected = $event" @edit="edit" @toggle="toggle" @remove="remove" />

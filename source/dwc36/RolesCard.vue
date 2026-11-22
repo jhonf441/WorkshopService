@@ -97,6 +97,7 @@
 'use strict'
 
 import SvTextField from './ui/SvTextField.vue'
+import { ARM_MS } from './arm-ms.js'
 import SvFormRow from './ui/SvFormRow.vue'
 import SvSelect from './ui/SvSelect.vue'
 import { api, currentIdentity, onIdentity, whoami } from './workshop-api.js'
@@ -256,7 +257,7 @@ export default {
 			if (!this.canApply) return
 			if (!this.armedApply) {
 				this.armedApply = true
-				setTimeout(() => { this.armedApply = false }, 4000)
+				setTimeout(() => { this.armedApply = false }, ARM_MS)
 				return
 			}
 			this.armedApply = false

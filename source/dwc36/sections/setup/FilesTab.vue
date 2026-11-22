@@ -9,13 +9,13 @@
 			</div>
 			<p class="sv-lead">{{ t('configPackage.files_intro') }}</p>
 			<state-legend kind="files" />
-			<sv-zone :status="status" :error="files.error" :lock="files.lock" :updated="updated" refreshable :empty-title="t('configPackage.files_empty')" @retry="files.reload()" @refresh="files.reload()" @sign-in="signIn">
+			<wf-zone class="sv-zone-host" :status="status" :error="files.error" :lock="zoneLock(files.lock)" :updated="updated" refreshable :empty-title="t('configPackage.files_empty')" @retry="files.reload()" @refresh="files.reload()" @sign-in="signIn">
 				<div class="sv-tools">
 					<label class="sv-field"><span class="mdi mdi-magnify sv-ico sv-ico-s" aria-hidden="true" /><input v-model="filter.q" type="search" :placeholder="t('configPackage.files_search')" :aria-label="t('configPackage.files_search')"></label>
 					<label class="sv-check"><input v-model="filter.only" type="checkbox"><span>{{ t('configPackage.files_only', { n: attention }) }}</span></label>
 				</div>
 				<p class="sv-quiet" data-part="files-what">{{ t('configPackage.files_what') }}</p>
-				<sv-help :what="t('configPackage.files_help_what')" :why="t('configPackage.files_help_why')" :missing="t('configPackage.files_help_missing')" :how="t('configPackage.files_help_how')" />
+				<help-fold :what="t('configPackage.files_help_what')" :why="t('configPackage.files_help_why')" :if-missing="t('configPackage.files_help_missing')" :how="t('configPackage.files_help_how')" />
 				<p v-if="!groups.length" class="sv-quiet" role="status" data-part="none">{{ t('configPackage.files_none') }}</p>
 				<details v-for="p in groups" :key="p.plugin" class="sv-fold" :open="p.attention > 0 || !!filter.q" :data-open="p.attention > 0 || !!filter.q ? '' : null" :data-plugin="p.plugin">
 					<summary>
@@ -25,17 +25,17 @@
 						<span v-if="p.attention" class="sv-word" data-level="warn">{{ t('configPackage.plugin_attention', { n: p.attention }) }}</span>
 					</summary>
 					<div class="sv-fold-body">
-						<ul class="sv-rows">
+						<ul class="sv-rows sv-cols-xl">
 							<sv-action-row v-for="f in p.files" :key="f.path" below icon="mdi-file-outline" :name="f.name" :desc="f.dir + f.name" :data-file="f.path">
 								<p v-if="f.breaks_if_missing" class="sv-row-desc">{{ t('sd_files.breaks', { what: f.breaks_if_missing }) }}</p>
 								<p class="sv-row-desc">{{ kindText(f) }} · {{ t('sd_files.used_by') }}: {{ usedBy(f) }}<span v-if="f.safety" class="sv-tag">{{ t('sd_files.safety') }}</span></p>
 								<template #control>
 									<span class="sv-state" :data-level="LEVEL[f.fileState]" :data-file="f.path" :title="t('configPackage.fsh_' + f.fileState)"><span class="mdi sv-ico sv-ico-s" :class="LEVEL_ICON[LEVEL[f.fileState]]" aria-hidden="true" />{{ t('configPackage.fs_' + f.fileState) }}</span>
-									<button type="button" class="sv-btn" data-act="view" :aria-label="t('configPackage.view_file') + ': ' + f.name" @click="view(f)">{{ t('configPackage.view_file') }}</button>
+									<button type="button" class="wf-btn sv-btn" data-act="view" :aria-label="t('configPackage.view_file') + ': ' + f.name" @click="view(f)">{{ t('configPackage.view_file') }}</button>
 									<template v-if="f.attention || f.fileState === 'reviewed'">
-										<button v-if="restorable(f)" type="button" class="sv-btn" data-act="restore-open" :disabled="!mayRestore" :aria-label="t('configPackage.restore_factory') + ': ' + f.name" @click="view(f, true)"><span v-if="!mayRestore" class="mdi mdi-lock-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('configPackage.restore_factory') }}</button>
-										<button v-if="f.fileState === 'edited'" type="button" class="sv-btn" data-act="keep" :disabled="!mayReview" :title="t('configPackage.keep_help')" :aria-label="t('configPackage.keep') + ': ' + f.name" @click="keep(f, true)">{{ t('configPackage.keep') }}</button>
-										<button v-if="f.fileState === 'reviewed'" type="button" class="sv-btn" data-act="unkeep" :disabled="!mayReview" :aria-label="t('configPackage.unkeep') + ': ' + f.name" @click="keep(f, false)">{{ t('configPackage.unkeep') }}</button>
+										<button v-if="restorable(f)" type="button" class="wf-btn sv-btn" data-act="restore-open" :disabled="!mayRestore" :aria-label="t('configPackage.restore_factory') + ': ' + f.name" @click="view(f, true)"><span v-if="!mayRestore" class="mdi mdi-lock-outline sv-ico sv-ico-s" aria-hidden="true" />{{ t('configPackage.restore_factory') }}</button>
+										<button v-if="f.fileState === 'edited'" type="button" class="wf-btn sv-btn" data-act="keep" :disabled="!mayReview" :title="t('configPackage.keep_help')" :aria-label="t('configPackage.keep') + ': ' + f.name" @click="keep(f, true)">{{ t('configPackage.keep') }}</button>
+										<button v-if="f.fileState === 'reviewed'" type="button" class="wf-btn sv-btn" data-act="unkeep" :disabled="!mayReview" :aria-label="t('configPackage.unkeep') + ': ' + f.name" @click="keep(f, false)">{{ t('configPackage.unkeep') }}</button>
 									</template>
 								</template>
 							</sv-action-row>
@@ -43,9 +43,9 @@
 					</div>
 				</details>
 				<div v-if="note" class="sv-row-out" :data-kind="note.ok ? 'done' : 'error'" :role="note.ok ? 'status' : 'alert'" data-part="note"><span class="mdi sv-ico sv-ico-s" :class="note.ok ? 'mdi-check-circle-outline' : 'mdi-close-circle-outline'" aria-hidden="true" />{{ note.text }}</div>
-				<p v-if="counts.missing > 0" class="sv-quiet"><a class="sv-btn sv-text" :href="nav.href({ s: 'setup', t: 'changes' })" @click="follow($event)">{{ t('configPackage.files_hint_missing') }} {{ t('configPackage.files_goto_apply') }}</a></p>
-			</sv-zone>
-			<sv-reason :lock="lockOf(['startup.integrity.restore'])" @sign-in="signIn" />
+				<p v-if="counts.missing > 0" class="sv-quiet"><a class="wf-btn sv-btn sv-text" :href="nav.href({ s: 'setup', t: 'changes' })" @click="follow($event)">{{ t('configPackage.files_hint_missing') }} {{ t('configPackage.files_goto_apply') }}</a></p>
+			</wf-zone>
+			<lock-reason class="sv-lock" :lock="lockOf(['startup.integrity.restore'])" />
 		</section>
 
 		<sv-text-view ref="reader" :open="viewer.show" :title="viewer.path" :rows="shownRows" :loading="viewer.loading" :error="viewer.error" :gap-text="gapText" :block-text="blockText" :legend="t('sd_files.view_legend')" :mark-titles="markTitles" @close="viewer.show = false" @retry="view(viewer.file)" @copy="copyFile" @download="downloadFile">
@@ -68,12 +68,12 @@
 			<template #foot-left>
 				<template v-if="viewer.view && viewer.file">
 					<template v-if="viewer.restore">
-						<button type="button" class="sv-btn" data-act="restore-back" @click="viewer.restore = null">{{ t('sd_files.restore_back') }}</button>
-						<button type="button" class="sv-btn sv-danger" data-act="restore" :disabled="!restoreReady || restoreFile.busy()" @click="askRestore(viewer.file)">{{ t('configPackage.restore') }}</button>
+						<button type="button" class="wf-btn sv-btn" data-act="restore-back" @click="viewer.restore = null">{{ t('sd_files.restore_back') }}</button>
+						<button type="button" class="wf-btn sv-btn wf-danger" data-act="restore" :disabled="!restoreReady || restoreFile.busy()" @click="askRestore(viewer.file)">{{ t('configPackage.restore') }}</button>
 					</template>
 					<template v-else-if="viewer.file.attention || viewer.file.fileState === 'reviewed'">
-						<button v-if="restorable(viewer.file)" type="button" class="sv-btn" data-act="restore-step" :disabled="!mayRestore" @click="startRestore">{{ t('configPackage.restore_factory') }}</button>
-						<button v-if="viewer.file.fileState === 'edited'" type="button" class="sv-btn" data-act="keep" :disabled="!mayReview" :title="t('configPackage.keep_help')" @click="keep(viewer.file, true)">{{ t('configPackage.keep') }}</button>
+						<button v-if="restorable(viewer.file)" type="button" class="wf-btn sv-btn" data-act="restore-step" :disabled="!mayRestore" @click="startRestore">{{ t('configPackage.restore_factory') }}</button>
+						<button v-if="viewer.file.fileState === 'edited'" type="button" class="wf-btn sv-btn" data-act="keep" :disabled="!mayReview" :title="t('configPackage.keep_help')" @click="keep(viewer.file, true)">{{ t('configPackage.keep') }}</button>
 					</template>
 				</template>
 			</template>
@@ -86,16 +86,16 @@
 						<span class="sv-tv-key d-changed"><b>~</b>{{ t('sd_files.key_changed') }}</span><span class="sv-tv-key d-added"><b>+</b>{{ t('sd_files.key_added') }}</span><span class="sv-tv-key d-factory"><b>-</b>{{ t('sd_files.key_factory') }}</span><span class="sv-tv-key d-same">{{ t('sd_files.key_same') }}</span><span class="sv-tv-key sv-comment">{{ t('sd_files.key_comment') }}</span>
 					</p>
 					<p v-else class="sv-quiet sv-tv-legend" data-part="no-factory">{{ t('sd_files.key_no_factory') }}</p>
-					<sv-help v-if="comparison" :what="t('sd_files.legend_help_what')" :why="t('sd_files.legend_help_why')" :missing="t('sd_files.legend_help_missing')" :how="t('sd_files.legend_help_how')" />
+					<help-fold v-if="comparison" :what="t('sd_files.legend_help_what')" :why="t('sd_files.legend_help_why')" :if-missing="t('sd_files.legend_help_missing')" :how="t('sd_files.legend_help_how')" />
 					<div v-if="comparison && editedRanges.length" class="sv-chips" data-part="edited-chips">
 						<span class="sv-quiet">{{ t('sd_files.edited_chips') }}</span>
-						<button v-for="r in editedRanges" :key="r[0]" type="button" class="sv-btn" :class="{ 'sv-on': activeLine === r[0] }" :aria-pressed="activeLine === r[0] ? 'true' : 'false'" :data-line="r[0]" @click="goTo(r)">{{ rangeLabel(r) }}</button>
+						<button v-for="r in editedRanges" :key="r[0]" type="button" class="wf-btn sv-btn" :class="{ 'sv-on': activeLine === r[0] }" :aria-pressed="activeLine === r[0] ? 'true' : 'false'" :data-line="r[0]" @click="goTo(r)">{{ rangeLabel(r) }}</button>
 					</div>
 				</div>
 			</template>
 		</sv-text-view>
 
-		<sv-confirm-dialog :confirm="restoreFile.confirm" :title="t('setup.restore_title')" :text="t('setup.restore_text')" :object="{ name: target.name, context: target.dir }" :verb="t('configPackage.restore')" danger
+		<wf-confirm :confirm="restoreFile.confirm" :title="t('setup.restore_title')" :text="t('setup.restore_text')" :object="{ name: target.name, context: target.dir }" :verb="t('configPackage.restore')" danger
 			@accept="restoreFile.accept()" @cancel="restoreFile.cancel()" />
 	</div>
 </template>
@@ -114,18 +114,18 @@ import { kindKey } from '../../sd-files.js'
 import * as sv from '../../sd-viewer.js'
 import StateLegend from './StateLegend.vue'
 import SvActionRow from '../../ui/SvActionRow.vue'
-import SvConfirmDialog from '../../ui/SvConfirmDialog.vue'
-import SvHelp from '../../ui/SvHelp.vue'
-import SvReason from '../../ui/SvReason.vue'
+import WfConfirm from '../../WfConfirm.vue'
+import HelpFold from '../../HelpFold.vue'
+import LockReason from '../../LockReason.vue'
 import SvTextView from '../../ui/SvTextView.vue'
-import SvZone from '../../ui/SvZone.vue'
+import WfZone from '../../WfZone.vue'
 
 const LEVEL = { identical: 'ok', present: 'ok', missing: 'error', edited: 'warn', not_yet: 'rest', attention: 'warn' }
 const LEVEL_ICON = { ok: 'mdi-check-circle-outline', warn: 'mdi-alert-outline', error: 'mdi-close-circle-outline', rest: 'mdi-clock-outline' }
 
 export default {
 	name: 'FilesTab',
-	components: { StateLegend, SvActionRow, SvConfirmDialog, SvHelp, SvReason, SvTextView, SvZone },
+	components: { StateLegend, SvActionRow, WfConfirm, HelpFold, LockReason, SvTextView, WfZone },
 	mixins: [rowsMixin],
 	inject: { nav: { from: 'svNav', default: () => ({ go() {}, href: () => '#' }) } },
 	props: { active: { type: Boolean, default: false } },
