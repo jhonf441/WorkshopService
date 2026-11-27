@@ -31,6 +31,7 @@ TOOLS = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(TOOLS)
 sys.path.insert(0, TOOLS)
 import build_37 as b37  # noqa: E402
+import bundle_budget  # noqa: E402
 import release_json  # noqa: E402
 import release_zips  # noqa: E402
 
@@ -83,6 +84,12 @@ def check(version):
             continue
         found, info = release_zips.check_zip(path, line, "WorkshopService", version, perms=perms)
         found += b37.check_release(path)  # the service's own rules (no source maps, nothing local, nothing unlisted)
+        mode = os.path.join(ROOT, "dist", os.path.basename(path)[:-4] + ".mode")
+        fast = os.path.isfile(mode) and open(mode, encoding="utf-8").read().strip() == "rapida"
+        if fast:
+            print("  bundle budget not enforced: fast build (only 'completa' and reused bundles are measured)")
+        else:
+            found += bundle_budget.problems(path)  # weight of the page: tools/bundle-budget.json
         print("%s  zip %d KB, js %d KB, %s" % (os.path.basename(path), info.get("zip_bytes", 0) // 1024, info.get("js_bytes", 0) // 1024, "ok" if not found else "FAIL"))
         problems += [os.path.basename(path) + ": " + p for p in found]
     problems += release_zips.check_sums(RELEASE)

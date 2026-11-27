@@ -108,5 +108,5 @@ export default {
 .access-edit-block { margin-bottom: 12px; }
 .access-edit-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
 .access-edit-pick { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.access-pick-field { max-width: 360px; }
+.access-pick-field { flex: 1 1 200px; min-width: 200px; max-width: 360px; }  /* a picker with nothing chosen is as wide as one with a name (the button shrank to its content) */
 </style>

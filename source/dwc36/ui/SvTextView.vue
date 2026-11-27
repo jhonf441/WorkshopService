@@ -60,7 +60,7 @@ import { rowRange, scrollTopFor, wentKey } from './text-view-jump.js'
 const CHUNK = 400
 const MARKS = { changed: '~', added: '+', factory: '-' }   // a mark in the margin of every line that is not the same: the colour is never the only sign
 const SLOW_MS = 10000
-const FLASH_MS = 1800   // how long the line that was jumped to stays marked
+const FLASH_MS = 2000   // how long the line that was jumped to stays marked (a bar and a ring, no motion)
 
 export default {
 	name: 'SvTextView',

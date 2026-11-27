@@ -72,13 +72,14 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .workshop-theme, .wf-bar, .sidetabs, .wf-nav, .wf-tabs, .wf-card, .st-layout, .st-body, .workshop-theme .v-card { --wf-sec-now: var(--wf-sec, var(--sec, var(--wf-badge))); }
 
 /* ================= page bar (ONE per page, always visible, outside the sections) ================= */
-.wf-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--wf-line); border-radius: 12px; background: var(--wf-surface); background-image: none; box-shadow: none; color: inherit; }
-.wf-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin: 0; border-radius: 10px; background: var(--wf-badge); color: #fff; }
+/* THE bar of the family (2026-11-22, one variant for every plugin): 48 px, badge 32, title 18/600 and ONE lead line of 13 px; text that does not fit is cut with an ellipsis (the full text is the title attribute). No vertical padding: a 44 px session chip keeps the bar at 48 px. */
+.wf-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; box-sizing: border-box; min-height: 48px; margin: 0 0 12px; padding: 0 12px; border: 1px solid var(--wf-line); border-radius: 12px; background: var(--wf-surface); background-image: none; box-shadow: none; color: inherit; }
+.wf-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin: 0; border-radius: 8px; background: var(--wf-badge); color: #fff; }
 /* the badge icon is ALWAYS white: the long selector and the !important are there so no other rule can repaint it */
 .wf-bar.wf-bar .wf-badge.wf-badge :is(.v-icon, .mdi, i, svg, .wf-badge-icon) { color: #fff !important; caret-color: #fff !important; fill: #fff; font-size: 22px; width: auto; height: auto; line-height: 1; opacity: 1; margin: 0; }
-.wf-bar-txt { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.wf-bar .wf-title { margin: 0; font-size: 18px !important; font-weight: 600; line-height: 1.3; letter-spacing: 0; text-transform: none; color: inherit; }
-.wf-bar .wf-lead { margin: 0; max-width: 80ch; font-size: 13px; font-weight: 400; line-height: 1.4; letter-spacing: 0; opacity: 0.7; }
+.wf-bar-txt { flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.wf-bar .wf-title { margin: 0; font-size: 18px !important; font-weight: 600; line-height: 22px; letter-spacing: 0; text-transform: none; color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wf-bar .wf-lead { margin: 0; font-size: 13px; font-weight: 400; line-height: 18px; letter-spacing: 0; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wf-bar-right { margin-left: auto; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 /* state = a dot + the word, no border; a data pill (counter, "T1") = a 1 px border */
 .wf-state { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
@@ -93,10 +94,6 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .wf-bar .page-health { cursor: pointer; }
 /* old pages that still draw the bar as a v-card: the same look, so a page being migrated does not jump */
 .workshop-theme .v-card.page-header { border: 1px solid var(--wf-line); border-radius: 12px; background: var(--wf-surface); background-image: none; box-shadow: none; }
-/* compact bar (PageHeader prop `compact`): the pages that sit under DWC's own panels and need the room; the height drops from about 76 px to about 48 px */
-.page-header--compact .wf-badge { border-radius: 8px; }
-.page-header--compact .wf-title { font-size: 16px !important; line-height: 1.2; }
-.page-header--compact .wf-lead { font-size: 12px; line-height: 1.25; }
 
 /* ================= section menu (side bar) ================= */
 :is(.sidetabs, .wf-nav) { border-right-color: var(--wf-line); }
@@ -171,7 +168,6 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .wf-sub > :is(h4, .wf-subt) { margin: 0; font-size: 14px; font-weight: 600; }
 /* a button that is a direct child keeps its own width (a column would stretch it to the whole card) */
 .wf-sub > :is(button, .wf-btn, .v-btn) { align-self: flex-start; }
-.wf-index { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 2px solid var(--wf-sec-now); border-radius: 50%; color: var(--wf-sec-now); font-size: 12px; font-weight: 700; }
 
 /* ================= color input (A3): a swatch with the family border, the same everywhere (workshopColorEl in 19-help-dom.js) ================= */
 .wf-color { box-sizing: border-box; width: 44px; height: 44px; padding: 2px; border: 1px solid var(--wf-control-line); border-radius: 6px; background: transparent; cursor: pointer; }
@@ -206,7 +202,7 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .workshop-theme .v-btn .v-icon { color: inherit; }
 
 /* ================= chips and states: a neutral outline; a state shows as a colored dot + the word ================= */
-.workshop-theme .v-chip { --wf-dotd: none; --wf-dotc: transparent; background: transparent !important; color: inherit !important; border: 1px solid rgba(128, 128, 128, 0.4) !important; font-weight: 500; box-shadow: none; }
+.workshop-theme .v-chip.v-chip { --wf-dotd: none; --wf-dotc: transparent; background: transparent !important; color: inherit !important; border: 1px solid rgba(128, 128, 128, 0.4) !important; font-weight: 500; box-shadow: none; }
 .workshop-theme .v-chip :is(.v-chip__underlay, .v-chip__overlay) { display: none; }
 .workshop-theme .v-chip::before { opacity: 1 !important; background: transparent; }
 .workshop-theme .v-chip :is(.v-chip__content, .v-icon) { color: inherit !important; }
@@ -217,10 +213,7 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .workshop-theme .v-chip .v-chip__content::before { content: ''; display: var(--wf-dotd, none); flex: none; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--wf-dotc); }
 /* a state chip with an icon: the ICON carries the state color and there is no dot (dot + icon said the same thing twice) */
 .workshop-theme .v-chip:is(.bg-success, .text-success, .success, .success--text, .bg-warning, .text-warning, .warning, .warning--text, .bg-error, .text-error, .error, .error--text, .bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text):has(.v-icon) .v-chip__content::before { display: none; }
-.workshop-theme .v-chip:is(.bg-success, .text-success, .success, .success--text):has(.v-icon) .v-icon { color: var(--wf-ok) !important; }
-.workshop-theme .v-chip:is(.bg-warning, .text-warning, .warning, .warning--text):has(.v-icon) .v-icon { color: var(--wf-warn) !important; }
-.workshop-theme .v-chip:is(.bg-error, .text-error, .error, .error--text):has(.v-icon) .v-icon { color: var(--wf-err) !important; }
-.workshop-theme .v-chip:is(.bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text):has(.v-icon) .v-icon { color: var(--wf-info) !important; }
+.workshop-theme .v-chip:is(.bg-success, .text-success, .success, .success--text, .bg-warning, .text-warning, .warning, .warning--text, .bg-error, .text-error, .error, .error--text, .bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text):has(.v-icon) .v-icon { color: var(--wf-dotc) !important; }
 .workshop-theme .v-chip:is(.v-chip--active, .wf-on) { border-color: var(--wf-icon) !important; background: rgba(25, 118, 210, 0.2) !important; font-weight: 600; }
 /* in the page bar a state has no border (dot + word); a chip with no state stays a data pill with its border. A chip whose state has a color of
    its own (the dot through --wf-dotc / --wf-dotd, e.g. the light state of Lights) says so with .wf-state-chip: it is a state too */
@@ -363,9 +356,12 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .wf-btn.wf-danger { color: var(--wf-err); border-color: var(--wf-err); }
 .wf-btn.wf-danger.wf-fill { background: #c62828; color: #fff; border-color: #c62828; } /* white on #c62828 is 5.6:1; --wf-err (#e53935) gives 4.2:1 and stays the token of lines and icons */
 .wf-act[aria-busy='true'] .wf-act-stack, .wf-zone-refresh[aria-busy='true'] .wf-act-stack { visibility: hidden; }
-.wf-act[aria-busy='true']::before, .wf-zone-refresh[aria-busy='true']::before { content: ''; position: absolute; left: 50%; top: 50%; box-sizing: border-box; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; opacity: 0; animation: wf-spin 0.8s linear infinite, wf-spin-in 0.01s linear 0.4s forwards; }
+.wf-act[aria-busy='true']::before, .wf-zone-refresh[aria-busy='true']::before { content: ''; position: absolute; left: 50%; top: 50%; box-sizing: border-box; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; opacity: 0; animation: wf-spin 1.5s linear infinite, wf-spin-in 0.01s linear 0.4s forwards; }
 @keyframes wf-spin { to { transform: rotate(360deg); } }
 @keyframes wf-spin-in { to { opacity: 1; } }
+@keyframes wf-spin-out { to { opacity: 0; } }
+.workshop-theme .v-btn--loading .v-btn__content { opacity: 1; animation: wf-spin-out 0.3s linear 0.3s forwards; }
+.workshop-theme .v-btn--loading .v-btn__loader { animation: wf-spin-out 0.3s linear 0.3s reverse backwards; }
 /* the result of a write: a gray icon whose shape says the state + the word + the sentence; its live region stays in the page (0 px when empty) */
 .wf-result { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; min-height: 0; font-size: 13px; line-height: 1.4; }
 .wf-result.is-empty { height: 0; overflow: hidden; }
@@ -410,15 +406,7 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .wf-check[aria-checked='true'] .wf-check-box { color: var(--wf-accent); }
 /* ================= end FASE2 ================= */
 /* ===== FASE3 BEGIN (unification of styles, 2026-11-21): compact bar, the two helps, the role tag. Additive: nothing above is edited. ===== */
-/* the compact bar: 48 px, badge 32, title 16, no lead line (PageHeader prop `compact`; the lead becomes the tooltip of the title) */
-.page-header.page-header--compact { gap: 8px 12px; min-height: 48px; margin-bottom: 8px; padding: 0 12px; box-sizing: border-box; }
-.page-header--compact .wf-bar-right { align-self: center; }
-.page-header--compact .wf-badge { width: 32px; height: 32px; border-radius: 8px; }
-.page-header--compact .wf-bar-txt { flex-basis: 160px; }
-.page-header--compact .wf-title { font-size: 16px !important; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.page-header--compact .wf-lead { display: none; }
-/* the lead sentence of the compact bar: the short help of the page, in line under the bar */
-.page-header-wrap > .page-header-lead.wf-help-line { margin: -4px 2px 8px; }
+/* the bar of the family: see the section "page bar" above (the compact variant was folded into it on 2026-11-22) */
 /* help 1 of 2, the fold "What it is and how to use it": a link with a "?" icon that opens in place and stays open (the 44 px of the summary is the touch box, always) */
 .wf-help-fold { margin-top: 8px; font-size: 13px; }
 .wf-help-fold > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0; border-radius: 6px; color: var(--wf-c-info-text); cursor: pointer; list-style: none; font-weight: 500; }
@@ -446,7 +434,8 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
    - nothing below 12 px (tests/family-floor.test.js lists the documented exceptions). */
 /* the focus ring: every control of the family and of the Vuetify pages */
 :is(.wf-btn, .wf-tab, .wf-nav-item, .wf-session-chip, .wf-cat, .wf-color, .help-tip, .wf-guide > summary, .sidetabs .st-item, .sidetabs .st-fold):focus-visible,
-.workshop-theme :is(a, button, input, select, textarea, summary, [tabindex]:not([tabindex='-1']), .v-btn, .v-chip--clickable, .v-tab, .v-input--selection-controls__input):focus-visible { outline: 2px solid var(--wf-focus); outline-offset: 2px; }
+.workshop-theme :is(a, button, summary, [tabindex]:not([tabindex='-1']), .v-btn, .v-chip--clickable, .v-tab, .v-input--selection-controls__input):focus-visible,
+.workshop-theme :is(input, select, textarea):not(.v-input:not(.v-input--selection-controls) *):focus-visible { outline: 2px solid var(--wf-focus); outline-offset: 2px; }
 /* what is touched: 44 px */
 .wf-guide > summary { display: flex; align-items: center; }
 /* an icon button looks as small as its place needs and is touched over 44 px */
@@ -491,6 +480,7 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .workshop-theme .v-input.v-input--dense.v-text-field:not(.v-textarea):not(.v-text-field--filled):not(.v-text-field--solo) > .v-input__control > .v-input__slot { min-height: 44px; }
 .workshop-theme .v-input.v-input--dense.v-text-field--outlined:not(.v-textarea) > .v-input__control > .v-input__slot .v-label:not(.v-label--active) { top: 12px; }
 .workshop-theme .v-input.v-text-field:not(.v-input--dense):not(.v-text-field--enclosed):not(.v-textarea) > .v-input__control > .v-input__slot { min-height: 44px; }
+.workshop-theme .v-input.v-select.v-text-field:not(.v-select--chips) .v-select__selections { padding-top: 0; padding-bottom: 0; }
 /* QA r2 M-04: the typing area is the whole 44 px box (Vuetify 2 leaves a 26 to 32 px INPUT inside it, and the area a finger or the auditor sees is the INPUT). */
 .workshop-theme .v-text-field:not(.v-textarea) > .v-input__control > .v-input__slot > .v-text-field__slot { align-self: stretch; }
 .workshop-theme .v-text-field:not(.v-textarea) > .v-input__control > .v-input__slot > .v-text-field__slot > input { max-height: none; min-height: 44px; padding-top: 0; padding-bottom: 0; }

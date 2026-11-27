@@ -278,6 +278,8 @@
     "machine_tune.py",
     "machine_verify.py",
     "machine_workarea.py",
+    "macros_catalog.py",
+    "macros_ops.py",
     "main.py",
     "messages.py",
     "meters.py",
@@ -358,17 +360,17 @@
     "RELEASE.json"
   ],
   "dwcFiles": [
-    "css/WorkshopService.1a359150.css",
-    "css/WorkshopService.1a359150.css.gz",
-    "js/WorkshopService.b6d39fec.js",
-    "js/WorkshopService.b6d39fec.js.gz"
+    "css/WorkshopService.44fff753.css",
+    "css/WorkshopService.44fff753.css.gz",
+    "js/WorkshopService.73244ff7.js",
+    "js/WorkshopService.73244ff7.js.gz"
   ],
   "sdFiles": [],
   "pid": -1,
   "id": "WorkshopService",
   "name": "Workshop Service",
   "author": "jhonf441",
-  "version": "2.62.0",
+  "version": "2.65.1",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopService",
   "tags": [

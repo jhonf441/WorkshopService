@@ -166,6 +166,8 @@ def in_schedule(cfg, current_time=None):
 def plan_sending(cfg, type_name, current_time=None):
     """What to do with an event: None (not sent) or {priority, attachment, schedule}.
     It looks at neither the network nor the camera: it can be tested without the machine."""
+    if cfg.get("channel") == "device":
+        return None  # only the browsers of this device announce it (the page reads the history); nothing leaves the machine
     if not cfg["active"] or not cfg["topic"] or not cfg["kinds"].get(type_name) or muted(cfg, current_time):
         return None
     o = cfg["options"].get(type_name) or options_default(type_name)
@@ -203,12 +205,23 @@ def init(bridge, config):
     publish()
 
 
+CHANNELS = ("phone", "device", "both")  # where an event is announced: the phone (ntfy, sent here), this device (the browser shows it) or both
+
+
+def channel_valid(v):
+    c = str(v or "").strip().lower()
+    return c if c in CHANNELS else None
+
+
 def get_cfg(config):
     n = config.get("notifications") or {}
     kinds = {t[0]: t[2] for t in KINDS}
     kinds.update({k: bool(v) for k, v in (n.get("kinds") or {}).items()})
     return {
         "active": bool(n.get("active", False)),  # off by default: the events (and photos) go to a third-party server
+        # Where the events are announced. Nothing saved: an installation that already sends to the phone keeps doing it ("phone"); a new one
+        # announces only on the device ("device"), which sends nothing out of the machine.
+        "channel": channel_valid(n.get("channel")) or ("phone" if n.get("active") else "device"),
         "server": str(n.get("server") or SERVER_DEFAULT),
         # Before, the topic was in config["ntfy_topic"] (handlers/ntfy.py) and
         # in the duet-notify .service -- it is inherited from there the first time.
@@ -240,6 +253,7 @@ def _only_changes(options):
 def set_cfg(config, cfg):
     config["notifications"] = {
         "active": cfg["active"],
+        "channel": channel_valid(cfg.get("channel")) or "device",
         "server": cfg["server"],
         "topic": cfg["topic"],
         "kinds": cfg["kinds"],

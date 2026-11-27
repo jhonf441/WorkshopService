@@ -1,4 +1,4 @@
-@import './family.css'; /* THE design family (design/family.css, copied by tools/build-family.js): bar, menu, tabs, cards, buttons, chips */
+@import './family.css'; /* THE design family (design/family.css, copied by tools/build-family.js): core: bar, cards, buttons, chips, notes */
 /* Tema claro / oscuro de DWC (2026-10-10, pedido: "revisar si los plugins son
  * compatibles con el boton de DWC Tema oscuro"). Los textos tenues y el ambar
  * se escribieron para fondo oscuro; con el tema claro quedaban casi invisibles

@@ -11,7 +11,7 @@ export const KIT_KEYS = Object.freeze([
 	'sign_in',
 	'close', 'session_closed',
 	'view_went_one', 'view_went_many', 'view_loading', 'view_slow', 'view_tools', 'view_search', 'view_prev', 'view_next', 'view_hits', 'view_no_hits', 'view_wrap', 'view_wrap_help', 'view_copy', 'view_download', 'view_more', 'copy', 'copied',
-	'unsaved_mark', 'unsaved_title', 'unsaved_text', 'unsaved_keep', 'unsaved_save', 'unsaved_discard', 'unsaved_failed'
+	'unsaved_mark', 'unsaved_title', 'unsaved_text', 'unsaved_keep', 'unsaved_save', 'unsaved_discard', 'unsaved_failed', 'unsaved_where'
 ])
 
 export const svTextMixin = {

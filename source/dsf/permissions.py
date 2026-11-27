@@ -81,7 +81,7 @@ OP_ROLES = {
     "state.get": VIEWER, "motion.state": VIEWER, "motion.ask": VIEWER, "frame.status": VIEWER, "view.heartbeat": VIEWER,
     "job.get": VIEWER, "risk.list": VIEWER, "pid.status": VIEWER, "pid.trace": VIEWER, "blackbox.status": VIEWER, "config.guard": VIEWER,
     "lights.get": VIEWER, "motors.reread": VIEWER, "activity.list": VIEWER, "activity.summary": VIEWER,
-    "health.history": VIEWER, "journal.read": ADMIN, "energy.history": VIEWER, "energy.period": VIEWER, "energy.rate_get": VIEWER, "db.status": VIEWER,
+    "health.history": VIEWER, "journal.read": ADMIN, "macros.catalog": OPERATOR, "energy.history": VIEWER, "energy.period": VIEWER, "energy.rate_get": VIEWER, "db.status": VIEWER,
     # -- camera and Vision answers (viewer only with camera_for_viewer, see CAMERA_OPS) --
     "camera.status": OPERATOR, "camera.token": OPERATOR, "vision.get": OPERATOR,
     # -- operator: move, run jobs, work lights, camera, captures --

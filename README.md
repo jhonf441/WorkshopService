@@ -10,7 +10,7 @@
 
 WorkshopService is the base of every other workshop plugin. It has two parts: a Python backend that runs on the Raspberry Pi under DSF (central API, database, status LEDs, safety monitors, G-code bridge) and one DWC page, "System service" (`/Plugins/WorkshopService`). Every other plugin depends on it and is installed after it.
 
-Version documented: 2.21.x on DWC 3.6.3.
+Version documented: 2.65.x on DWC 3.6.3.
 
 ## 1. Requirements
 
@@ -26,138 +26,135 @@ Version documented: 2.21.x on DWC 3.6.3.
 3. Wait until the machine is idle (the service is down for some seconds: jog, lights and safety monitors rest).
 4. Run the same command without `--dry-run`. On a first install it runs DSF's `PluginManager install`, starts the service and puts `WorkshopService` first in `machine.enabledPlugins`.
 5. Reload every DWC tab (and the kiosk). Open *Plugins > System service*.
-6. Check the page (picture 1): the header chip "All fine" or the count of problems is plausible, and "Backend started on ..." shows the new time.
+6. Check the page: the header chip ("Attention: N") is plausible and Home shows the new version and the new "Running since ..." time.
 
 Full details: `WorkshopService/docs/INSTALL.md`. Alternative: Settings > Plugins > Install (upload the zip) and then Start; the script is preferred because it also gives owner and execute bit.
 
 ## 3. Functions
 
-The page is "System service" (side menu: Plugins > WorkshopService). Its side bar has nine entries: Summary, Processes and automations, G-code bridge, Received commands, Database, Users, Audit, API and keys, DWC password (icons only when collapsed with the double arrow). Red rectangles mark the control described. Addresses, key fragments and device codes are blurred.
+The page is "System service" (side menu: Plugins > System service). Its side bar has eight sections: Home, Control, Diagnostics, Connections, Data and backups, Machine setup, Access and Security. A section with tabs shows them under the side bar title. Access and Security are for administrators; anyone else sees one locked entry, "Administration". Red rectangles mark the control described. Addresses are blurred and every name, key and value in the pictures is an example.
 
 ### Page header and banner
 
 #### Health chip
-- What: the overall state of the service ("With problems: 1" here).
-- Where: top right of the page header (any picture).
-- How: read only; open the Summary to see what is pending.
+- What: the overall state of the service ("Attention: 1" here; it counts what needs a look).
+- Where: top right of the page header (any picture), next to the chip of your own session ("No roles" while nobody has been created).
+- How: read only; open Home to see what is pending.
 
-#### Banner "Users switched off" and Switch users on
-- What: warns that anyone with access to DWC is an administrator while users are off, and offers "Switch users on".
-- Where: orange banner under the header (red rectangle, picture 1).
-- How: 1. Press "Switch users on". 2. Create the first administrator and give a PIN. 3. Confirm.
-- Watch out: it turns the roles on for everybody; you must have a PIN ready. the owner creates users and PINs.
+#### Open mode banner
+- What: the orange banner "Open mode. No people were created: everybody can do everything." It warns that anyone with access to DWC is an administrator while no people exist.
+- Where: under the header (any picture).
+- How: go to Access > People and create the first administrator (see "People" below).
+- Watch out: creating the first administrator turns the roles on for everybody; have a PIN ready. The owner creates users and PINs.
 
-### Summary
+### Home
 
-![Summary](img/01-summary-start-up-checklist.png)
+- What: the first thing you see: a state band ("Attention: N", version and uptime), the card "Needs attention" with each notice and a link to where it is solved, the card "Now" (machine state, movement, job in progress, programs connected through the bridge, who you are) and the card "Actions of today" with the main automations (power everything off when the job ends, power off in a while, close the live job, automatic air with the laser).
+- Where: Home (not pictured: its values change all the time).
+- How: read it; press the link of a notice to go where it is solved.
 
-Picture 1: process chips, the card "Machine setup" with "Refresh" and the first pending row with "Create administrator" (red rectangles).
+### Machine setup
 
-#### Process chips
-- What: "Up to date: N" and "Stopped: N" count the internal processes, and "Backend started on ..." gives the start time. The backend runs those processes in the background; each one sends a heartbeat on every loop and restarts by itself if it crashes.
-- Where: first card of Summary (picture 1).
+![Machine setup, Status tab](img/01-summary-start-up-checklist.png)
+
+Picture 1: the Status tab with the verdict band, the card "What each plugin said the last time", "Refresh" and the first row, "First administrator", with "Create administrator" (red rectangles).
+
+#### Verdict band and colour legend
+- What: the band counts what is left ("5 things to do": plugins ready, plugins with steps left, changes to apply, files to review). The legend says what Green, Yellow, Red and Grey mean.
+- Where: top of Machine setup > Status (picture 1).
 - How: read only.
 
-#### Machine setup: Refresh, Pending and Ready
-- What: shows what each installed plugin still needs to be ready. Each plugin checks its own start-up card; here you see the result ("1 of 8 steps pending") and where to go.
-- Where: card "Machine setup" (picture 1); "Refresh" at its top right.
-- How: 1. Press "Refresh". 2. Read the list "Pending (N)". 3. Press the button of a row to go to its card.
+#### Refresh
+- What: asks every plugin for its start-up summary again.
+- Where: top right of the card (red rectangle, picture 1).
+- How: press "Refresh", then read the list.
 
 #### Create administrator
-- What: the first row ("First administrator") says there are no users yet and offers "Create administrator" (the first user becomes the administrator and turns the roles on).
-- Where: first pending row (red rectangle, picture 1).
-- How: press it and follow the dialog.
+- What: the first row says nobody exists yet and offers "Create administrator"; the first user becomes the administrator and turns the roles on.
+- Where: first row of the list (red rectangle, picture 1).
+- How: press it and follow the dialog, or use Access > People.
 
-![Ready list](img/02-summary-ready-list.png)
+![Plugin rows](img/02-summary-ready-list.png)
 
-Picture 2: the rest of the list: pending rows with "Open" and the "Ready" group.
+Picture 2: the rest of the list: one row per installed plugin with its state ("Ready" or "N of M steps pending") and the link "What it is and how to use it" (red rectangles).
 
-#### Plugin rows: Open or "It is in the side bar"
-- What: one row per installed plugin with its progress bar and a button "Open" that goes to the page of that plugin's start-up card; Control bar, Jog and Camera say "It is in the side bar" because their card is in the floating panels.
+#### Plugin rows
+- What: one row per installed plugin: its name, what it does and its state: "Ready", "N of M steps pending" or "not known yet" when it never reported. Each plugin keeps its own start-up card on its page; here you see the result and where to go.
 - Where: picture 2.
-- How: press "Open" (red rectangle).
+- How: read the state; press "What it is and how to use it" to unfold the explanation of that row.
 
-#### Black box notice and Communication with the Duet
-- What: below the list: the black box notice ("The system shut down without closing") when the last shutdown was not clean, with the last data saved, the most probable cause, the last minutes of CPU / memory / temperature, a "Download" button and "Hide" (it stays until you press Hide). The card "Communication with the Duet" shows which Duet channel each kind of code uses (service codes: automatic Aux2 / Aux / SBC, the first free; Jog: SBC or other); channels that belong to the firmware (HTTP, Telnet, File, Daemon...) show "Cannot be chosen".
-- Where: bottom of Summary (appear only when they apply; not in the pictures).
-- How: press "Download" to save the report, "Hide" to remove the notice.
+#### Files, Changes and Package
+- What: the other tabs of Machine setup. Files: the files each plugin keeps on the machine. Changes: changes waiting to be applied. Package: export and import the settings package (page settings, work zones, macros and machine modes); it never includes users, PINs, keys or the database, and imported machine modes go to `sys/workshop/imported/` to be read, never applied.
+- Where: tab row of Machine setup (not pictured).
+- How: open the tab; Export downloads a file.
 
-### Processes and automations
+### Control
 
-![Processes](img/03-processes-and-automations.png)
+![Automations](img/03-processes-and-automations.png)
 
-Picture 3: "Internal processes" at the left and "Automations" at the right (red rectangles on the M5 times and the two switches).
+Picture 3: Control > Automations: "When a job ends" and "Only while the laser works" (red rectangles on the shutdown switch, the air switch and the air delay).
 
-#### Internal processes
-- What: the main process (version, PID, uptime, memory, CPU, threads) with cards Service, Service CPU, Memory and Processes (relaunched / errors / protections with small charts), and below one row per internal process with its state, last heartbeat and restarts. A process that falls is restarted by itself.
-- Where: left card (picture 3).
-- How: read only. A module rests when the plugin that needs it is stopped; each process has a mode Auto / Always / Never (safety modules ignore Auto rest: only an explicit Never stops them).
+#### Automations
+- What: everything the machine does by itself, in cards. "When a job ends": power everything off when the job ends (default NOT armed) and close the live job after a while without activity (15 s, 30 s, 1 min or Never). "Who may move the machine": movement of the machine, with "Advanced / Release time". "Only while the laser works": automatic air with the laser and the air delay when it stops (0 s, 2 s, 5 s, 10 s, 20 s or any value from 0 to 60 s, default 2 s). "Protections": the protection guard, what it does when a protection falls, what it watches and its tolerances. "What the service does by itself": automatic status lights, bed by zones and the camera relay. "Live job". Each row has its switch or buttons and a link "What it is and how to use it".
+- Where: Control > Automations (picture 3).
+- How: press the switch or choose a value; read "What it is and how to use it" before changing a row.
+- Watch out: if "Power everything off when the job ends" is armed, the machine powers off at the end of the next job. The air needs the air macros of the Control bar.
 
-#### Automatic air with the laser
-- What: turns the air on with M3/M4 and off a few seconds after M5; "Turn off after M5" chooses 0 s, 2 s, 5 s, 10 s or 30 s (default 2 s). The chip shows the state of the air now ("AIR OFF").
-- Where: first automation (red rectangle, picture 3).
-- How: 1. Press the switch. 2. Choose the delay.
-- Watch out: it needs the air macros of the Control bar. "More detail" unfolds the explanation.
+#### Communication with the Duet
+- What: through which channel of the Duet the Pi sends its orders (service codes: automatic Aux2 / Aux / SBC, the first free; Jog: SBC or other). The channels that belong to the firmware (HTTP, Telnet, File, Daemon...) cannot be chosen. Normally it is left on automatic.
+- Where: Control > Communication with the Duet (not pictured).
+- How: change a channel only if a busy channel delays lights and reads; the page asks to confirm.
 
-#### Status lights (automatic) and link to Lights
-- What: shows whether the automatic status lights are on (here "Off": the lighting uses those LEDs) and the link "Open Lights and status".
-- Where: second automation (picture 3).
-- How: press the link to change it in Lights.
+### Diagnostics
 
-#### Shut everything down when done
-- What: when the job ends, shuts the machine down and cuts the power. Default NO.
-- Where: third automation, with its switch (red rectangle, picture 3).
-- How: press the switch to arm it.
-- Watch out: if you leave it on, the machine powers off at the end of the next job.
+#### Processes
+- What: "Processes of the service": counters On time, With a notice, Stopped and Resting, a filter (All, Need attention, Stopped) with a search, and the processes grouped (Safety, Machine control, Data and history, Support). Open a group to see each process with its state, last heartbeat and restarts. A process that falls is restarted by itself; a module rests when the plugin that needs it is stopped.
+- Where: Diagnostics > Processes (not pictured).
+- How: read only; each process has a mode Auto / Always / Never (safety modules ignore Auto rest: only an explicit Never stops them).
 
-#### Machine movement
-- What: the fourth automation, a switch about the movement of the machine (see its "More detail").
-- Where: right card, below the shut down switch (scroll down).
-- How: press "More detail" to read what it does before changing it.
+#### Load on the board and Unclean shutdowns
+- What: "Load on the board" shows how much the service asks of the Duet. "Unclean shutdowns" shows the black box notice when the last shutdown was not clean: the last data saved, the most probable cause and the last minutes of CPU / memory / temperature, with a way to download the report and to hide the notice.
+- Where: the other two tabs of Diagnostics (not pictured; the notice appears only when it applies).
+- How: open the tab.
 
-### G-code bridge
+### Connections: G-code bridge
 
 ![Bridge status](img/04-gcode-bridge-status.png)
 
-Picture 4: the bridge title, chips, "Bridge running on this Pi" and "Machine control" with "Release control" (red rectangles). The address is blurred.
+Picture 4: the state band, the card "G-code bridge (Telnet)" and "Machine control" with "Release control" (red rectangle). The address is blurred.
 
-#### Bridge status chips
-- What: "Local network - no key" (or key required), version and uptime, "Up to date", a restart icon and a help icon. The bridge is for programs that send live G-code over the network (laser / CNC programs, scripts, an ESP32); the title shows the address of the Pi and port 23.
-- Where: top of the card (picture 4).
-- How: the help icon opens the explanation.
-
-#### Bridge running on this Pi
-- What: starts or stops the bridge; it starts by itself but "will not start by itself after a power cut" when it is shown that way.
-- Where: switch under the chips (red rectangle, picture 4).
-- How: press the switch.
-- Watch out: stopping it cuts every connected program.
+#### Bridge state
+- What: the bridge is for programs that send live G-code over the network (laser / CNC programs, scripts, an ESP32). The state band says "Up to date", the version, the uptime and whether the network needs a key ("Local network - no key"); "Contract" shows the contract the bridge was written for. The card shows the address of the Pi and port 23 and "Restart the bridge" (it cuts the connections; they come back by themselves). When the bridge unit is installed on the Pi, a switch "Bridge running on this Pi" starts or stops it.
+- Where: top of Connections > G-code bridge (picture 4).
+- How: "What it is and how to use it" opens the explanation.
+- Watch out: stopping or restarting the bridge cuts every connected program.
 
 #### Machine control and Release control
 - What: only one connection has control (the first that sends an order keeps it); the others only query. The card shows who has it and for how long; "Release control" lets go.
-- Where: green card "MACHINE CONTROL" (red rectangle, picture 4).
+- Where: card "Machine control" (red rectangle, picture 4).
 - How: press "Release control" to free it.
 - Watch out: it can cut a program in use.
 
 #### Counters and last hour chart
-- What: Connected (n / max), Commands, Rejected, Machine response, Traffic, Errors; below, the chart "Last hour (per minute)" of commands, queries and rejections.
-- Where: tiles right of the control card (picture 4) and the chart at the top of picture 5.
+- What: Connected (n / max), Commands, Rejected, Machine response, Traffic, Material lines skipped and Errors; below, the chart "Last hour (per minute)" of queries, orders and rejections (touch a bar to see its minute).
+- Where: tiles under the control card and the chart (picture 4).
 
 ![Bridge connections](img/05-gcode-bridge-connections.png)
 
-Picture 5: the tabs Connections, Activity, Commands, Security and key, Configuration (red rectangle) and the buttons of each connection (second red rectangle). Addresses are blurred.
+Picture 5: "Connections (4)": one row per program with its buttons (red rectangles). Addresses are blurred.
 
-#### Connections: Give it control, Release, Trust this IP, Kick, Block
-- What: one row per program: name (the pencil renames it), address, time connected, counters and the last command; the badge "Has control" or "Listening". Buttons: "Release" / "Give it control" moves the control; "Trust this IP" puts the address in the trusted list; "Kick" disconnects it; "Block" refuses it.
-- Where: tab "Connections" (picture 5).
+#### Connections: Give it control, Release, Trust this IP, Remove trust, Kick, Block
+- What: one row per program: name (the pencil renames it), time connected, counters and the last command; the badges "Has control" or "Listening", "Trusted" and "saved name". Buttons: "Release" / "Give it control" moves the control; "Trust this IP" puts the address in the trusted list and "Remove trust" takes it out; "Kick" disconnects it; "Block" refuses it.
+- Where: section "Connections" (picture 5).
 - How: press the button of the row.
 - Watch out: Block and Kick cut a working program.
 
-#### Tabs Activity, Commands, Security and key, Configuration
-- What: Activity: the log of connections; Commands: the commands received; Security and key: trusted IPs and the key (`BRIDGE KEY <key>`); Configuration: maximum connections (default 8), a single connection with control (exclusive), wait for the board to accept a line, "queries in job", the welcome with help and the lines to paste in the program's device settings.
-- Where: tab row (red rectangle, picture 5). They are not in the pictures because they show addresses and the key.
-- How: press a tab.
+#### Security and key, Configuration, Activity, Commands and Debug
+- What: folded sections below the connections. Security and key: trusted IPs and the key (`BRIDGE KEY <key>`). Configuration: maximum connections (default 8), a single connection with control (exclusive), wait for the board to accept a line, "queries in job", the welcome with help and the lines to paste in the program's device settings. Activity: the log of events. Commands: the commands the bridge received. Debug: the debug log.
+- Where: below picture 5 (not pictured: they show addresses and the key).
+- How: press the title of a section to unfold it.
 
-### Received commands
+### Connections: Received commands
 
 ![Received commands](img/06-received-commands.png)
 
@@ -165,119 +162,119 @@ Picture 6: the live log header, counters, period buttons and filters (red rectan
 
 #### Live log: Pause and Refresh
 - What: a live record of every API call; "Pause" freezes it and "Refresh" reads it again.
-- Where: top right of the card (red rectangle, picture 6).
+- Where: top right of the card (red rectangles, picture 6).
 - How: press Pause or Refresh.
 
-#### Counters and origins
-- What: change something, reads, with error and average time; "Last hour" origins (Page, External program, local).
-- Where: tiles under the title (picture 6).
+#### Counters and period
+- What: change something, reads, with error and average time; the periods Today, Yesterday, 7 days, 30 days and a date range.
+- Where: tiles under the title and the first red rectangle (picture 6).
 
-#### Period and filters
-- What: Today, Yesterday, 7 days, 30 days, Pick dates; filters "Change something", "Readings", "All", Command, Came through, Channel, Origin, Plugin or page, Result; search "Find" and the switch "Errors only".
-- Where: red rectangles in picture 6.
-- How: press a period, choose the filters and type in "Find".
+#### Filters
+- What: the buttons "Change something", "Readings" and "All" and, under "More filters", the filters by command, how it came through, channel, origin, plugin or page and result, a search and the switch "Errors only".
+- Where: second red rectangle and "More filters" (picture 6).
+- How: press a button, open "More filters" and choose.
 
 #### Command rows
-- What: each row shows the time, the operation, its parameters, who made it (user and role) and the duration; the arrow opens the detail.
+- What: each row shows the time, who made it (page, external program, local), the operation, its parameters, the result and the duration.
 - Where: list under the filters (bottom of picture 6).
 
-### Database
-
-![Database](img/07-database-and-backups.png)
-
-Picture 7: state chips, "Refresh", "Back up now" and the "Keep" buttons (red rectangles).
-
-#### Database state and tables
-- What: the SQLite file `/opt/dsf/sd/sys/workshop/duet.db` (chips "healthy" and "backups on"): size, rows, last write, and the table list (Activity, audit, Received commands, consumption, health) with rows and first date.
-- Where: left column of the card (picture 7; the table list is below).
-- How: read it; "Refresh" reads again.
-
-#### Automatic backups and Back up now
-- What: one compressed, verified copy each day; 7 daily and 4 weekly copies are kept (the oldest are deleted by age). The card shows the last, the next, the number of copies, their size and the free space. "Back up now" makes one at once. It does not include the camera photos or videos nor the keys (meter, alerts): those are entered again by hand.
-- Where: right column and the blue button at the top right (picture 7).
-- How: press "Back up now".
-- Watch out: The note "The database and its backups are on the same card" means that if the card fails both are lost: connect a USB drive to copy them.
-
-#### Keep a backup that will be deleted
-- What: the orange warning lists the backups that will be deleted automatically and when; "Keep" protects one: kept copies are never deleted automatically.
-- Where: orange box (red rectangles, picture 7).
-- How: press "Keep" beside the copy you want to save.
-
-#### Configuration package: Export and Import
-- What: exports the page settings, work zones, macros and machine modes to a file; imports one. It never includes users, PINs, keys or the database. Imported machine modes go to `sys/workshop/imported/` to be read, never applied.
-- Where: lower in the Database section (scroll down; not in the picture).
-- How: 1. Press Export to save a file. 2. Press Import and choose a file to load it.
-- Watch out: Export downloads a file.
-
-### Users
-
-![Users](img/08-users-switched-off.png)
-
-Picture 8: the card "Users switched off" with "Switch users on" (red rectangle).
-
-#### Switch users on
-- What: with users off the people are still saved but nobody has to identify: everybody is administrator and the camera and Vision stay open on the network. "Switch users on" asks for a PIN.
-- Where: Users, the card (picture 8).
-- How: press the button and follow the dialog.
-- Watch out: same as the banner.
-
-#### People, roles and PINs (with users on)
-- What: with users on the card lists the people (name, role, PIN of 4 or more digits, reset PIN, close sessions), the modes an operator may use (default laser only), camera for viewers, "anonymous viewer" for the touch screen (view only) and the session length (never expires, or limits).
-- Where: Users, when users are on (not in the pictures: they show names and PINs).
-- How: choose a person and use the buttons of its row.
-- Watch out: administrator only.
-
-### Audit
-
-![Audit](img/09-audit.png)
-
-Picture 9: the audit list with the filters (red rectangles); the device column is blurred.
-
-#### Audit list and filters
-- What: who did what, from which device: changes, refused attempts and logins. Filters: From, To, Person, Operation and the tick "Only refused or failed"; "Refresh" reads again. Read only: nobody can delete it from here, it only cleans itself by age.
-- Where: Audit (picture 9).
-- How: choose the dates and filters.
-
-### API and keys
-
-![API and keys](img/10-api-and-keys.png)
-
-Picture 10: "Access keys (external services)" with "New key" (red rectangle); the key text is blurred.
-
-#### Access keys: New key, edit, switch and delete
-- What: a key lets an external program (an app, a phone, another computer) use the API with the permissions you choose, without giving it the DWC password. Each service has its own and can be switched off or deleted. The list shows the service, what it allows (classes Read, Change, Move, Stop, Energy, Power), the last use, the expiry (an expired key does not work even if it is on) and the Active switch; the pencil edits and the bin deletes.
-- Where: card "Access keys" (picture 10).
-- How: 1. Press "New key". 2. Name the service, choose the classes and the expiry. 3. Save and copy the key now.
-- Watch out: A key is like a password; do not share it or its pictures.
-
-#### API operations reference
-- What: the list of every API operation by category (here 226 operations), with the operations patterns used by the keys.
-- Where: card "API operations" below the keys (bottom of picture 10).
+### Connections: API reference
+- What: lists every API operation by category (333 operations in this build), described by the service itself, with a search and the buttons All / Only read / Change something.
+- Where: Connections > API reference (not pictured).
 - How: open a category to read its operations.
 
-### DWC password
+### Data and backups
+
+![Backups](img/07-database-and-backups.png)
+
+Picture 7: the Backups tab: "Refresh" and "Back up now" (red rectangles).
+
+#### Database
+- What: the SQLite file `/opt/dsf/sd/sys/workshop/duet.db`: size, rows, last write, free space on the card and the table list (Activity, Audit log, Received commands, consumption, health...) with rows and first and last date; the chip "Check passed" says the integrity check was good.
+- Where: Data and backups > Database (not pictured).
+- How: read it; "Refresh" reads again.
+
+#### Backups and Back up now
+- What: one compressed, verified copy each day; the daily and weekly copies kept are set in "Backup settings" (default 7 daily and 4 weekly; the oldest are deleted by age, with a phone warning 7 days before). The tab shows the last backup, the next one, the number of copies with their size and the free space. "Back up now" makes one at once. It does not include the camera photos or videos nor the keys (meter, alerts): those are entered again by hand.
+- Where: Data and backups > Backups (picture 7).
+- How: press "Back up now".
+- Watch out: the note "The database and its backups are on the same card" means that if the card fails both are lost: connect a USB drive and choose "Copy in another place".
+
+#### Backup settings, saved backups and folder
+- What: below the card: Automatic backups (switch), Daily and Weekly backups kept, "Copy in another place" (automatic: the USB drive that is connected), "Save the settings" (nothing is saved until you touch it), the list "Saved backups" (a copy you keep is never deleted automatically) and "Where they are kept" with "Change folder".
+- Where: below picture 7.
+
+### Access
+
+#### How access works
+- What: the diagram on top of every tab of Access: person (name and PIN), base role, profiles, ceiling and result. "Stopping is always allowed", "What nothing allows is denied" and "If something denies, the denial wins"; only the Administrator role administers access.
+- Where: top of Access (pictures 8, 10 and 11).
+
+#### People
+
+![People](img/08-users-switched-off.png)
+
+Picture 8: Access > People with no people yet: "There are no people yet", the name and PIN fields and "Create administrator" (red rectangles).
+
+- What: with no people the service is in open mode: nobody has to identify, everybody is administrator and the camera and Vision are open on the network. The card asks for a name, a PIN and the PIN again, and shows the PIN rules; "Create administrator" creates the first person and turns the roles on. With people, the card "People and groups" lists them (name, role, PIN, reset PIN, close sessions), with a search and the switch People / Groups.
+- Where: Access > People (picture 8; the list of people is not pictured: it shows names).
+- How: type the name and the PIN twice and press "Create administrator".
+- Watch out: write the PIN down: if it is forgotten the users file has to be deleted on the Raspberry to start over. Administrator only.
+
+#### Profiles, Templates and Who can do what
+- What: Profiles are named sets of rules (allow or deny) that can be given to people and groups; Templates start a profile from a model; "Who can do what" shows what a person really can do and lets you try a case.
+- Where: tabs of Access (not pictured).
+- How: open the tab.
+
+#### Keys
+
+![Access keys](img/10-api-and-keys.png)
+
+Picture 10: Access > Keys: "Access keys" with "Refresh" and "New key" (red rectangle) and two example keys.
+
+- What: a key lets an external program (an app, a phone, another computer) use the API with the permissions you choose, without giving it the DWC password. Each service has its own and can be switched off or deleted. The list shows the name, the state, what it can do (for example "Read, Power: 115 operations"), the last use, the expiry (an expired key does not work even if it is on), the creation date and the On switch; "Open" shows the detail, the pencil edits and the bin deletes.
+- Where: Access > Keys (picture 10).
+- How: 1. Press "New key". 2. Name the service, choose what it may do and the expiry. 3. Save and copy the key now.
+- Watch out: a key is like a password; do not share it or its pictures.
+
+#### Settings: DWC password
 
 ![DWC password](img/11-dwc-password.png)
 
-Picture 11: the two password fields and "Set" (red rectangles).
+Picture 11: Access > Settings: the two password fields and "Set" (red rectangles).
 
-#### Set the DWC password
-- What: shows whether DWC has a password (M551); with one, DWC asks for it when connecting from any screen and the service rejects page requests without a valid session. It is saved in `sys/config.g` as an `M551 P"..."` line (that is how RepRapFirmware keeps it: there is no other place) and applies at once. Before every change the service copies `config.g` to `config.g.bak-password-<date>` WITHOUT the password (the M551 line is commented out in the copy), so the backups do not pile up old passwords; restoring such a copy leaves DWC without a password.
-- Where: DWC password (picture 11).
+- What: shows whether DWC has a password (M551); with one, DWC asks for it when connecting from any screen and the service rejects page requests without a valid session. It is saved in `sys/config.g` as an `M551 P"..."` line (that is how RepRapFirmware keeps it: there is no other place) and applies at once. Before every change the service copies `config.g` to `config.g.bak-password-<date>` WITHOUT the password (the M551 line is commented out in the copy), so the backups do not pile up old passwords; restoring such a copy leaves DWC without a password. The card checks the new password as you type (10 to 60 characters, no quotes, semicolons, braces or backslashes, not only letters or digits, not common, both entries match). Only an administrator can set or remove it.
+- Where: Access > Settings (picture 11).
 - How: 1. Type the password twice. 2. Press "Set".
 - Watch out: if you forget it DWC will not let you in: log into the system over SSH and delete the M551 line from `/opt/dsf/sd/sys/config.g`. Without a password anyone on the network controls the machine. The DWC password is a door for casual visitors, not strong security: it is stored as plain text in `config.g` (readable by whoever can read the SD card or the file area of DWC once logged in) and travels unencrypted over plain HTTP on your network. For real control use the users with PIN of this page (the PIN is stored only as a hash and the roles are applied in the server).
+
+### Security
+
+![Audit](img/09-audit.png)
+
+Picture 9: Security > Recorded activity: the period and result filters and the list (red rectangles).
+
+#### Recorded activity
+- What: who did what, from which device: changes, refused attempts and logins. The card shows the verification chain ("Verify now" checks that no row was edited), the recent alerts of the last 30 days (it warns when somebody is refused 8 or more times in 60 s) with a link "See the refusals", and the list with the buttons for the period, "Refused by permission", "Refused or failed" and "Detail", "More filters" (person, group, operation, target, result) and "View" for each row. Read only: nobody can delete it from here, it only cleans itself by age; "Export" saves the range and "Activity settings" sets how long rows are kept.
+- Where: Security > Recorded activity (picture 9).
+- How: choose the period and the filters.
+
+#### Review and Report
+- What: Review checks the access settings (people, keys, profiles) and lists what to fix; Report summarises it to read or save.
+- Where: tabs Review and Report of Security (not pictured).
+- How: open the tab.
 
 ## 4. Settings
 
 | Setting | Where | What for | Default | If wrong |
 |---|---|---|---|---|
-| Air auto with laser, "turn off after M5" | Processes | Air assist follows M3/M4 and stops after M5 | on, 2 s | 0 s cuts air at once; too long wastes air |
-| Shutdown after job | Processes | Powers the machine off at the end | off (NO) | on by mistake powers off after every job |
-| Process mode Auto/Always/Never | Processes | Force a module on or off | Auto | Never on a safety module removes protection |
-| Bridge active, key, trusted IPs, max connections, exclusive | Bridge | Live G-code over Telnet | active, no key, 8, exclusive | see 3.3 |
-| Backups | Database | Daily backup, retention | on | Without it a card failure loses history |
-| Users / roles | Users | PIN login | off | off = everybody admin |
-| Duet channel for service codes / Jog | Summary | Which channel carries service G-code | automatic | A busy channel delays lights and reads |
+| Air auto with laser, "turn off after M5" | Control > Automations | Air assist follows M3/M4 and stops after M5 | on, 2 s | 0 s cuts air at once; too long wastes air |
+| Shutdown after job | Control > Automations | Powers the machine off at the end | off (NO) | on by mistake powers off after every job |
+| Process mode Auto/Always/Never | Diagnostics > Processes | Force a module on or off | Auto | Never on a safety module removes protection |
+| Bridge active, key, trusted IPs, max connections, exclusive | Connections > G-code bridge | Live G-code over Telnet | active, no key, 8, exclusive | see the G-code bridge functions above |
+| Backups | Data and backups > Backups | Daily backup, retention | on | Without it a card failure loses history |
+| Users / roles | Access > People | PIN login | off | off = everybody admin |
+| Duet channel for service codes / Jog | Control > Communication with the Duet | Which channel carries service G-code | automatic | A busy channel delays lights and reads |
 
 Settings live outside the plugin folder: `0:/sys/workshop/config/service.json`, `/opt/dsf/conf/workshop-secrets.json`, `/opt/dsf/conf/workshop-users.json` (mode 600). Uninstalling the plugin does not delete them.
 

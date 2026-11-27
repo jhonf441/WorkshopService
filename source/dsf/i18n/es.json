@@ -519,6 +519,7 @@
  "notifications_server_must_start_with_http": "El servidor tiene que empezar con http:// o https://",
  "notifications_unknown_type": "Tipo desconocido: {type}",
  "notifications_attachment_none_photo_video": "Adjunto: nada, foto o video",
+ "notifications_channel_values": "Canal: celular, este equipo o ambos",
  "notifications_priority_values": "Prioridad: min, low, default, high o urgent",
  "notifications_time_must_be_hh_mm": "La hora tiene que ser HH:MM (por ejemplo 22:00)",
  "notifications_schedule_mode_values": "Modo del horario: callar o suave",

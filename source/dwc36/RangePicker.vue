@@ -284,7 +284,7 @@ export default {
 .range-cals { display: grid; grid-template-columns: repeat(var(--range-months, 1), minmax(0, 1fr)); gap: 0 16px; }
 .range-cals[data-months='2'] { --range-months: 2; }
 .range-cal-bar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
-.range-cal-title { flex: 1; text-align: center; font-weight: 600; text-transform: capitalize; }
+.range-cal-title { flex: 1; min-width: 0; text-align: center; font-weight: 600; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .range-nav, .range-nav-gap { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
 .range-nav:hover, .range-day:hover { background: rgba(128, 128, 128, 0.2); }
 .range-cal-head, .range-cal-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }

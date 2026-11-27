@@ -30,7 +30,7 @@ HARDWARE_PARAMS = "machine.hardware_params"
 NOT_DELEGABLE = ("users.*", "roles.*", "access.*", "keys.*", "password.*", "auth.resolve", "package.apply", "profile.set", "config.restore",
                  "power.full_reset", "comms.set", "guard.set", "db.folder", "db.delete_previous", "activity.delete", "activity.clear",
                  "history.delete", "audit.verify", "audit.export", "audit.settings", "lights.apply_m950", "machine.history.restore", "startup.integrity.restore*", "startup.apply",
-                 "journal.read")  # the system log shows internals of the machine: administrator only, never a grant (owner's decision, 2026-11-22)
+                 "journal.read")  # the system log shows internals of the machine: administrator only, never a grant (project decision, 2026-11-22)
 
 
 def _c(category, klass, risk, *ops):
@@ -44,7 +44,7 @@ CAPABILITIES = {
                        "motors.reread", "safety.status", "guard.status", "bedzones.get", "bedcal.status", "pelletlayers.list", "pelletlayers.get", "pelletlayers.status", "layerrecipes.list", "layerrecipes.get", "layerrecipes.preview", "layerrecipes.status", "bedestimates.get", "readiness.list", "workstate.get", "machine.overview",
                        "machine.state", "machine.runs", "machine.layout", "machine.limits.get", "machine.power.get", "machine.offsets.get",
                        "machine.tool.get", "machine.beds.get", "machine.led.get", "machine.motion.get", "machine.shaping.get", "machine.workarea.get",
-                       "machine.workarea.positions", "machine.mesh.list", "machine.mesh.get", "machine.maintenance.get", "machine.height.get"),
+                       "machine.workarea.positions", "machine.mesh.list", "machine.mesh.get", "machine.maintenance.get", "machine.height.get", "macros.catalog"),
     "machine.stop": _c("machine", "stop", 1, "jog.stop_xy", "jog.stop_z", "jog.stop_axis", "frame.stop", "pid.cancel", "bedzones.off", "bedcal.stop", "pelletlayers.disarm", "layerrecipes.disarm", "machine.stop",
                        "livejob.stop_safe"),
     "machine.move": _c("machine", "motion", 2, "jog.xy", "jog.z", "jog.axis", "jog.free", "frame.start", "motion.reserve", "motion.renew",

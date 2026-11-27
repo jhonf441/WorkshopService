@@ -28,7 +28,8 @@ def build(ctx):
 
     def option(args, c):
         return nc.set_option(ctx["bridge"], ctx["config"], type=args.get("type"), attachment=args.get("attachment"), priority=args.get("priority"),
-                             quiet_hours=args.get("quiet_hours"), camera=args.get("camera"), default_camera=args.get("default_camera"))
+                             quiet_hours=args.get("quiet_hours"), camera=args.get("camera"), default_camera=args.get("default_camera"),
+                             channel=args.get("channel"))
 
     def quiet_hours(args, c):
         return nc.set_quiet_hours(ctx["bridge"], ctx["config"], on=args.get("on"), since=args.get("from"), until=args.get("to"), mode=args.get("mode"))
@@ -66,9 +67,10 @@ def build(ctx):
             "priority": a(S, choices=("min", "low", "default", "high", "urgent", "auto"), desc="ntfy priority; auto goes back to the default of the type."),
             "quiet_hours": a(B, desc="Whether the quiet hours apply to this type."),
             "camera": a(S, desc="Camera of the photo or video of this type: a camera id, or \"auto\" / \"\" for the default camera of the notices."),
-            "default_camera": a(S, desc="Without type: the camera of the photo or video of every type that does not choose its own: a camera id, or \"auto\" for the main one.")},
-           "Changes the options of one event type (attachment, priority, quiet hours, camera); only the arguments given change. Without type, default_camera sets the camera "
-           "the notices use unless their type chooses another. Whether a notice carries a photo or a video is decided here (the attachment of each type), not by the camera service. Saved."),
+            "default_camera": a(S, desc="Without type: the camera of the photo or video of every type that does not choose its own: a camera id, or \"auto\" for the main one."),
+            "channel": a(S, choices=("phone", "device", "both"), desc="Without type: where the events are announced: phone (ntfy, sent by the service), device (the browsers show a notice, nothing leaves the machine) or both.")},
+           "Changes the options of one event type (attachment, priority, quiet hours, camera); only the arguments given change. Without type, channel sets where the events are announced "
+           "and default_camera sets the camera the notices use unless their type chooses another. Whether a notice carries a photo or a video is decided here (the attachment of each type), not by the camera service. Saved."),
         Op("notifications.quiet_hours", quiet_hours, WRITE,
            {"on": a(B, desc="Quiet hours on or off."), "from": a(S, desc="Start time HH:MM, for example 22:00."),
             "to": a(S, desc="End time HH:MM, for example 07:00."),

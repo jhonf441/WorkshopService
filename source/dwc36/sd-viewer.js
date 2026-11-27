@@ -31,7 +31,9 @@ export function sentence(item, t, tc) {
 	const p = params(item, t)
 	if (item.key === 'edited_lines') {
 		const lost = p.removed > 0 ? tc('view_sum_edited_removed', p.removed, { removed: p.removed }) : ''
-		return p.ranges ? [t('view_sum_edited_lines', p), lost].filter(Boolean).join(' ') : lost
+		// the numbers of the lines live in ONE place, the row of jump chips under the legend; the headline only counts the changes
+		const n = Array.isArray(item.params && item.params.ranges) ? item.params.ranges.length : 0
+		return n ? [tc('view_sum_edited_count', n, { n }), lost].filter(Boolean).join(' ') : lost
 	}
 	return COUNTED[item.key] ? tc('view_sum_' + item.key, p[COUNTED[item.key]], p) : t('view_sum_' + item.key, p)
 }

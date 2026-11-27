@@ -4,6 +4,45 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.65.1 -- 2026-11-23 (optional files are not requested when absent)
+
+- The page copy of safe-saving.js now equals the shared one: an optional file of 0:/sys/ that is not in the folder list is never requested from DSF, so DuetWebServer no longer logs "Could not find file" for it; a file that appears later is read as soon as the folder list shows it.
+- The journal noise list names the optional-file and page-address warnings of DuetWebServer, so the health view does not show them as pending.
+
+## 2.65.0 -- 2026-11-22 (lighter style sheet)
+
+- The shared style sheet is split in a core and a part for the plugins. The service page loads only the core: toast, side tabs and navigation, tabs, popover, state dots and the guide fold (66 rules, about 7.4 KB of CSS) are no longer in its bundle. Its `theme.css` no longer imports the plugins part. The copy for DWC 3.7 is untouched.
+- The weight budget of the CSS is lowered from 117 598 B to 109 958 B (compiled 2.65.0 measured 107 802 B, plus 2 percent; 2.64.0 measured 115 126 B). The JS budget stays at 2 034 091 B (compiled 2.65.0: 1 998 013 B). The source cap of `tests/css-cap.test.js` follows (bundle cap 109 958 B).
+
+## 2.64.1 -- 2026-11-22 (unsaved-changes dialog, focus ring of the fields, arrow of the select buttons)
+
+- Unsaved changes: choosing "Keep editing" now leaves the page where it was. Before, the section or tab changed on screen at once and only the address stayed (the place was written before the guard of the page answered); now it is written when the route really changes. A second way out while the dialog is open (the Back button, another click) is refused at once instead of waiting for ever, so the dialog never stacks. The dialog names WHERE the changes are (section and tab of each editor that holds some, also an editor kept alive behind another section), and "Keep editing" takes the person back to that editor (a replace step, no new question) and rings it for two seconds.
+
+- Focus of the fields: a text field of the page drew two rings, the box and a smaller square of the input inside it (the family ring on inputs weighed more than the rule that cancels it since 2.64.0). The input inside a field draws none again; the check boxes and radios keep their ring inside their 44 px target. Test `tests/field-ring.test.js` compares the weights of the rules.
+
+- Select buttons: the arrow of a list button sat in the middle of a wide button (the shared button centers its content and comes later in the sheet); it is now at the right edge, with the text cut by an ellipsis before it.
+
+## 2.64.0 -- 2026-11-22 (UI review round: macro catalogue, notice destination, shared texts, viewer and dialogs)
+
+- Where the events are announced: new setting `notifications.channel`: `phone` (ntfy, sent by the service), `device` (the browsers show a notice; nothing leaves the machine) or `both`. It is set with `notifications.option` without a type (`channel`), published in `notifications.get` and in the plugin data, and `plan_sending` sends nothing to the phone when it is `device`. Nothing saved: an installation that already sent to the phone keeps `phone`, a new one starts on `device`. The notices of this device are shown by the Activity page from the history (`activity.list`), so the service sends no extra data for them.
+
+- Macro catalogue: new read-only operation `macros.catalog` (`dsf/macros_catalog.py`, registered by `dsf/macros_ops.py`, role operator, capability `machine.view`): the macros a person may pick for a button, in two groups. `mine` is every `.g` under `0:/macros`. `plugins` is only what a plugin manifest (`sys/workshop/macros/macros.<PluginId>.json`) declares `audience: user` and whose file exists; the helpers only the plugins call are never listed, and anything not declared is internal (the unknown is denied). Technicians and administrators receive the plugins group; the other roles get `plugins_hidden: true`. Pure reading, nothing is written. Install the service BEFORE the control bar and the jog that use it.
+
+- Shared texts: the 24 `wf_*` texts of the shared pieces (refresh, updated at, no session, loading, retry, sign in...) are now in both catalogs of the service page, so no raw key such as `plugins.WorkshopService.shared.wf_updated_at` is shown; `tests/service-shared-keys.test.js` checks that every key used exists in Spanish and English.
+
+- File viewer: the text rows are a grid again (long lines wrap inside the text column, numbers are tabular and aligned), the edited ranges are one row of chips with previous / next and a counter, the jump to a line is marked with a bar and a ring that shows on added, changed and factory lines, and "never applied" now reads "The start-up assistant has not touched this file".
+
+- Dialogs and lists: the unsaved-changes dialog has three equal 44 px buttons in a column (discard, save and leave, keep editing); the profile versions are one column of rows with equal buttons; the person selectors keep a minimum width.
+
+- Style sheet: field focus is drawn on the rounded border (no inner square), fields and selects are 44 px, spinners turn once per 1.5 s and wait before showing, the page bar is one common size (48 px, title 18 px, one line of 13 px), and chips keep a neutral outline. Install the service BEFORE the plugins that use the new operations.
+
+## 2.63.0 -- 2026-11-22 (weight budget of the service page)
+
+- The weight of the page is now capped and watched: `tools/bundle-budget.json` holds the only two numbers (compiled CSS and JS, without .gz and .map). `tools/build_release.py` fails a release that goes over them and `tests/bundle-budget.test.js` checks the newest compiled zip (it skips with a message when there is none). First values: CSS 117 598 B and JS 2 034 091 B (compiled 2.63.0 measured 115 292 B and 1 994 206 B, plus 2 percent). The rule to raise a number is in `docs/BUNDLE-BUDGET.md`: only by a project decision, with the reason written in this file.
+- 21 unused texts removed from both catalogs (13 earlier ones plus 8 more of the old automations and setup blocks).
+- Shared style sheet: the unused `.wf-index` rule is gone (service copy and canonical copy stay identical).
+- Not removed on purpose: about 9 KB of shared style rules that the service page does not use but other plugins do (toasts, side tabs, tabs, categories). They stay until the shared sheet is split.
+
 ## 2.62.0 -- 2026-11-22 (visual review round: one hover, 44 px rows)
 
 - One hover for every control of the family: buttons, tabs, menu items and chips get the same quiet gray layer; fields change their border line (same 1 px, no jump) and keep the blue ring for focus, so hover and focus never look alike. Switches, checkboxes and radios take the hover on their round halo. Only where the pointer can hover; none with reduced motion.

@@ -4733,6 +4733,15 @@
    "motion": "sequence",
    "role": "technician"
   },
+  "macros.catalog": {
+   "args": {},
+   "capability": "machine.view",
+   "desc": "Lists the macros a person may pick for a button, in two groups. mine: the paths (relative to 0:/macros) of every .g the person has there. plugins: the macros the workshop plugins ship for the person to call, [{action: 'plugin:<path>', plugin, file, title, description}], only the ones their manifest (sys/workshop/macros/macros.<PluginId>.json) declares audience user; the helpers only the plugins call are never listed. Only technicians and administrators receive the plugins group (plugins_hidden: true for the rest). Read-only.",
+   "exclusive": false,
+   "kind": "read",
+   "log": false,
+   "role": "operator"
+  },
   "meter.forget": {
    "args": {
     "meter": {
@@ -5207,6 +5216,15 @@
      "desc": "Camera of the photo or video of this type: a camera id, or \"auto\" / \"\" for the default camera of the notices.",
      "type": "str"
     },
+    "channel": {
+     "choices": [
+      "phone",
+      "device",
+      "both"
+     ],
+     "desc": "Without type: where the events are announced: phone (ntfy, sent by the service), device (the browsers show a notice, nothing leaves the machine) or both.",
+     "type": "str"
+    },
     "default_camera": {
      "desc": "Without type: the camera of the photo or video of every type that does not choose its own: a camera id, or \"auto\" for the main one.",
      "type": "str"
@@ -5233,7 +5251,7 @@
     }
    },
    "capability": "activity.settings",
-   "desc": "Changes the options of one event type (attachment, priority, quiet hours, camera); only the arguments given change. Without type, default_camera sets the camera the notices use unless their type chooses another. Whether a notice carries a photo or a video is decided here (the attachment of each type), not by the camera service. Saved.",
+   "desc": "Changes the options of one event type (attachment, priority, quiet hours, camera); only the arguments given change. Without type, channel sets where the events are announced and default_camera sets the camera the notices use unless their type chooses another. Whether a notice carries a photo or a video is decided here (the attachment of each type), not by the camera service. Saved.",
    "exclusive": true,
    "kind": "write",
    "log": true,

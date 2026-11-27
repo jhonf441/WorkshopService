@@ -12,6 +12,11 @@
 //                               'later' from save(): the editor opened its own review (a before / after dialog) and calls resumeLeave() when it saved, or dropLeave() if the person cancelled it
 //   routeGuard(to, from, next)  the in-component guard of the page (vue-router: beforeRouteUpdate / beforeRouteLeave): a change of section or tab, the Back button and DWC's own menu
 //                               ask first; an anchor inside the same tab does not
+//   setPlaceHooks(h)            the page tells the guard where the person is ({ place(), go(place), name(place) }): a guard remembers the place where its editor got dirty,
+//                               the dialog names it, and "Keep editing" takes the person back to it (ui/ never imports the shell)
+//   passNextRoute()             the next route change (within a second) is not asked about: the step back to the editor after "Keep editing"
+//   dirtyEditors()              [{ where, name }] one per place that holds unsaved changes, for the dialog
+//   While the dialog is open, a second way out (the Back button, another click) is refused at once (its stay() runs): nothing is left waiting and the dialog never stacks
 //   The state of the dialog is `unsaved` (reactive). beforeunload (reload, close the tab) is the browser's own message while something is unsaved.
 
 import Vue from 'vue'
@@ -59,6 +64,36 @@ export function saveWithAction(action, start) {
 	})
 }
 
+// the shell fills these in (app/url-sync.js); without it a guard has no place and the dialog names none
+let hooks = { place: () => null, go: () => {}, name: () => '' }
+
+export function setPlaceHooks(h) {
+	hooks = Object.assign({ place: () => null, go: () => {}, name: () => '' }, h || {})
+}
+
+export function currentSpot() {
+	try { return hooks.place() } catch (e) { return null }
+}
+
+const spotKey = w => (w ? [w.s, w.t || '', w.a || ''].join('|') : '')
+
+// one entry per place with unsaved changes (the dialog says WHERE, an editor kept alive behind another section is not a mystery)
+export function dirtyEditors() {
+	const seen = {}
+	const out = []
+	dirtyGuards().forEach(g => {
+		let where = null
+		try { where = typeof g.where === 'function' ? g.where() : null } catch (e) { where = null }
+		const k = spotKey(where)
+		if (seen[k]) return
+		seen[k] = true
+		let name = ''
+		try { name = where ? hooks.name(where) : '' } catch (e) { name = '' }
+		out.push({ where, name })
+	})
+	return out
+}
+
 export function registerGuard(g) {
 	unsaved.list.push(g)
 	return () => {
@@ -81,10 +116,25 @@ export function confirmLeave(go, stay) {
 		go()
 		return false
 	}
+	// the dialog is already open (or an editor runs its own review): this second way out is refused, so it cannot stack a dialog or leave a navigation waiting for ever
+	if (unsaved.pending) {
+		try { if (stay) stay() } catch (e) { /* the refusal is all it needs */ }
+		return true
+	}
 	unsaved.error = ''
 	unsaved.waiting = false
 	unsaved.pending = { go, stay: stay || (() => {}) }
 	return true
+}
+
+// after "Keep editing": back to the place of the first editor with changes (a step that replaces, the history gets nothing), and that editor is shown
+function revealDirty() {
+	const g = dirtyGuards().find(x => typeof x.where === 'function' && x.where())
+	if (!g) return
+	const w = g.where()
+	const here = currentSpot()
+	if (!here || spotKey(here) !== spotKey(w)) { try { hooks.go(w) } catch (e) { /* stays where it is */ } }
+	if (typeof g.focus === 'function') Vue.nextTick(() => { try { g.focus() } catch (e) { /* the place is enough */ } })
 }
 
 export function keepEditing() {
@@ -93,6 +143,7 @@ export function keepEditing() {
 	unsaved.waiting = false
 	unsaved.error = ''
 	if (p) p.stay()
+	if (p) revealDirty()
 }
 
 function finish() {
@@ -137,8 +188,17 @@ export function dropLeave() {
 	if (unsaved.pending && unsaved.waiting) keepEditing()
 }
 
+// "Keep editing" takes the person back to the editor: that one step must not ask again (it lasts a second at most, and a use clears it)
+let passUntil = 0
+
+export function passNextRoute() {
+	passUntil = Date.now() + 1000
+}
+
 // vue-router: to / from are routes; only a different section or tab leaves an editor
 export function routeGuard(to, from, next) {
+	if (passUntil && Date.now() < passUntil) { passUntil = 0; return next() }
+	passUntil = 0
 	const q = r => (r && r.query) || {}
 	const same = to && from && to.path === from.path && String(q(to).s || '') === String(q(from).s || '') && String(q(to).t || '') === String(q(from).t || '')
 	if (same || !anyDirty()) return next()

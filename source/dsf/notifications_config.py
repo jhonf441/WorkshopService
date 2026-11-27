@@ -71,9 +71,17 @@ def set_kind(bridge, config, *, type, on):
     return _commit(bridge, config, cfg)
 
 
-def set_option(bridge, config, *, type=None, attachment=None, priority=None, quiet_hours=None, camera=None, default_camera=None):
-    """Options of one event type (only what is given changes); without a type, only default_camera ("auto" = the main camera)."""
+def set_option(bridge, config, *, type=None, attachment=None, priority=None, quiet_hours=None, camera=None, default_camera=None, channel=None):
+    """Options of one event type (only what is given changes); without a type, only channel (where the events are announced) and
+    default_camera ("auto" = the main camera)."""
     cfg = notifier.get_cfg(config)
+    if channel not in (None, ""):
+        c = notifier.channel_valid(channel)
+        if not c:
+            return {"error": M("notifications_channel_values")}
+        cfg["channel"] = c
+        if default_camera is None and not str(type if type is not None else "").strip():
+            return _commit(bridge, config, cfg)
     type_name = str(type if type is not None else "").strip()
     if not type_name and default_camera is not None:
         z = str(default_camera).strip()

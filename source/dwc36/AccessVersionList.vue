@@ -4,7 +4,7 @@
 		<div v-if="base" class="wf-help">{{ $t('plugins.WorkshopService.access.versions_base_none') }}</div>
 		<template v-else>
 			<div class="access-h">{{ $t('plugins.WorkshopService.access.versions_title', { name, max }) }}</div>
-			<ul class="access-version-rows sv-cols-xl">
+			<ul class="access-version-rows">
 				<li v-for="v in versions" :key="v.n" class="access-version-row">
 					<strong>v{{ v.n }}</strong>
 					<v-chip v-if="v.active" small outlined label color="success">{{ $t('plugins.WorkshopService.access.versions_active') }}</v-chip>
@@ -12,7 +12,7 @@
 					<span v-if="v.by" class="access-version-by">{{ $t('plugins.WorkshopService.access.versions_by', { who: v.by }) }}</span>
 					<v-spacer />
 					<v-btn small outlined class="access-touch" :disabled="viewing === v.n" @click="$emit('view', v.n)">{{ $t('plugins.WorkshopService.access.common_view') }}</v-btn>
-					<v-btn v-if="editable && !v.active" small outlined class="access-touch" @click="$emit('compare', v.n)">{{ $t('plugins.WorkshopService.access.versions_compare') }}</v-btn>
+					<v-btn v-if="editable && !v.active" small outlined class="access-touch" :title="$t('plugins.WorkshopService.access.versions_compare_title', { n: v.n, m: (versions.find(x => x.active) || {}).n })" @click="$emit('compare', v.n)">{{ $t('plugins.WorkshopService.access.versions_compare') }}</v-btn>
 					<v-btn v-if="editable && !v.active" small outlined class="access-touch" :disabled="locked" @click="$emit('rollback', v.n)">{{ $t('plugins.WorkshopService.access.versions_rollback') }}</v-btn>
 				</li>
 			</ul>
@@ -43,5 +43,6 @@ export default {
 
 <style>
 .access-version-rows { list-style: none; margin: 0; padding: 0; }
+.access-version-row .access-touch { flex: none; min-width: 136px; }  /* the three buttons of a row (and of every row) are as wide as each other */
 .access-version-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; min-height: 44px; border-bottom: 1px solid var(--wf-line); font-size: 13px; }
 </style>

@@ -1,0 +1,6 @@
+{
+  "note": "The only place where the weight of the service page is capped. Measured on the compiled zip (dwc/css/*.css and dwc/js/*.js, without .gz and .map). Lowering a number is free; RAISING one needs a decision of the project lead: see docs/BUNDLE-BUDGET.md.",
+  "line": "3.6",
+  "css_bytes": 109958,
+  "js_bytes": 2034091
+}

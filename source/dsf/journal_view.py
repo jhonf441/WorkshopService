@@ -39,10 +39,16 @@ PRIORITY_NAMES = {0: "emerg", 1: "alert", 2: "crit", 3: "err", 4: "warning", 5: 
 #   brcmf ... Unknown Frame            the Wi-Fi chip's driver, a frame type it does not know (kernel, priority err, repeated)
 #   ... wireless extensions ... Wi-Fi 7  a .NET thread uses an old Wi-Fi interface the kernel warns about (kernel, priority warning)
 #   apparmor="STATUS" ... profile_*    the profiles loaded at boot, announced as audit records (kernel, priority notice); DENIED lines are NOT here
+#   Could not find file 0:/sys/workshop/... or one of the five old mode files   DuetWebServer: a page asked for an optional file of the workshop that
+#                                       was never created (the pages now check the folder first; the lines of before stay in the journal). Other files, such as
+#                                       0:/sys/config.g or a macro, are NOT here.
+#   Could not find resource /Plugins/..., serving index file   DuetWebServer: a page address opened directly; the index is served and DWC routes it
 NOISE = (
     re.compile(r"brcmf_\w+: Unknown Frame"),
     re.compile(r"uses wireless extensions which will stop working for Wi-Fi 7"),
     re.compile(r'apparmor="STATUS" operation="profile_(?:load|replace|remove)"'),
+    re.compile(r"Could not find file 0:/sys/(?:workshop/\S+|(?:automodeselect|modefff|modelaser|modecnc|modestate)\.g) \(resolved to "),
+    re.compile(r"Could not find resource /\S+, serving index file"),
 )
 NOISE_MODES = ("hide", "show")
 

@@ -1,7 +1,11 @@
-/* THE design family of the workshop plugins (2026-10-28). ONE canonical file: tools/build-family.js copies it, byte for byte, to
-   vue/_shared/family.css, vue/_shared36/family.css, WorkshopService/dwc-src/family.css, WorkshopService/dwc36/family.css and wraps it in
-   src/_shared/05-family-css.js (the JS pages). Never edit a copy: edit this file and run `node tools/build-family.js`.
-   Rules: DESIGN.md section 3. tests/family-design.test.js keeps the copies equal and the plugins from redeclaring any of this.
+/* THE design family of the workshop plugins (2026-10-28), CORE part: what the service page also draws. TWO canonical files: this one and
+   design/family-plugins.css (the rules that only the plugins use: side menu, second level tabs, category filter, color input, state dot,
+   toast, popover, guide, compact bar). tools/build-family.js copies this file, byte for byte, to vue/_shared36/family.css and
+   WorkshopService/dwc36/family.css, the plugins file to vue/_shared36/family-plugins.css (the service does NOT get it: it is not in its CSS),
+   and wraps both in src/_shared/05-family-css.js (the JS pages). Never edit a copy: edit these files and run `node tools/build-family.js`.
+   Rules: DESIGN.md section 3. tests/family-design.test.js keeps the copies equal and the plugins from redeclaring any of this;
+   tests/family-split.test.js keeps the service from using a class that lives only in the plugins file.
+   A rule goes to the plugins file when no file of WorkshopService/dwc36 uses its class; the day the service needs it, it moves back here.
 
    How a plugin uses it: its page root carries the class `workshop-theme` (Vue) and declares only two variables:
      --wf-badge  the color of the plugin (vue/_shared/plugin-colors.js), the badge of the page bar
@@ -51,9 +55,7 @@
 	--wf-n-error: var(--wf-c-error); --wf-n-error-text: var(--wf-c-error-text); --wf-n-error-bg: var(--wf-c-error-bg);
 }
 .theme--light.v-application, .theme--light .workshop-theme, .theme--light .wf-bar { --wf-surface: #fff; --wf-text: #212121; }
-html:has(.theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; }
 .v-theme--light.v-application { --wf-surface: rgb(var(--v-theme-surface, 255, 255, 255)); --wf-text: rgb(var(--v-theme-on-surface, 33, 33, 33)); }
-html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; }
 .v-theme--dark.v-application { --wf-surface: rgb(var(--v-theme-surface, 30, 30, 30)); --wf-text: rgb(var(--v-theme-on-surface, 236, 239, 241)); }
 /* tokens of the light theme; html:has() reaches what hangs from <body> (toast, PIN dialog) */
 .theme--light.v-application, .theme--light .workshop-theme, .theme--light .wf-bar, .v-theme--light.v-application, html:has(.theme--light), html:has(.v-theme--light) {
@@ -72,78 +74,19 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .workshop-theme, .wf-bar, .sidetabs, .wf-nav, .wf-tabs, .wf-card, .st-layout, .st-body, .workshop-theme .v-card { --wf-sec-now: var(--wf-sec, var(--sec, var(--wf-badge))); }
 
 /* ================= page bar (ONE per page, always visible, outside the sections) ================= */
-.wf-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 0 0 12px; padding: 12px 14px; border: 1px solid var(--wf-line); border-radius: 12px; background: var(--wf-surface); background-image: none; box-shadow: none; color: inherit; }
-.wf-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin: 0; border-radius: 10px; background: var(--wf-badge); color: #fff; }
+/* THE bar of the family (2026-11-22, one variant for every plugin): 48 px, badge 32, title 18/600 and ONE lead line of 13 px; text that does not fit is cut with an ellipsis (the full text is the title attribute). No vertical padding: a 44 px session chip keeps the bar at 48 px. */
+.wf-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; box-sizing: border-box; min-height: 48px; margin: 0 0 12px; padding: 0 12px; border: 1px solid var(--wf-line); border-radius: 12px; background: var(--wf-surface); background-image: none; box-shadow: none; color: inherit; }
+.wf-badge { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin: 0; border-radius: 8px; background: var(--wf-badge); color: #fff; }
 /* the badge icon is ALWAYS white: the long selector and the !important are there so no other rule can repaint it */
 .wf-bar.wf-bar .wf-badge.wf-badge :is(.v-icon, .mdi, i, svg, .wf-badge-icon) { color: #fff !important; caret-color: #fff !important; fill: #fff; font-size: 22px; width: auto; height: auto; line-height: 1; opacity: 1; margin: 0; }
-.wf-bar-txt { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.wf-bar .wf-title { margin: 0; font-size: 18px !important; font-weight: 600; line-height: 1.3; letter-spacing: 0; text-transform: none; color: inherit; }
-.wf-bar .wf-lead { margin: 0; max-width: 80ch; font-size: 13px; font-weight: 400; line-height: 1.4; letter-spacing: 0; opacity: 0.7; }
+.wf-bar-txt { flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.wf-bar .wf-title { margin: 0; font-size: 18px !important; font-weight: 600; line-height: 22px; letter-spacing: 0; text-transform: none; color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wf-bar .wf-lead { margin: 0; font-size: 13px; font-weight: 400; line-height: 18px; letter-spacing: 0; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wf-bar-right { margin-left: auto; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-/* state = a dot + the word, no border; a data pill (counter, "T1") = a 1 px border */
-.wf-state { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
-.wf-state::before, .wf-dot { content: ''; flex: none; width: 8px; height: 8px; border-radius: 50%; background: rgba(128, 128, 128, 0.6); }
-.wf-dot { display: inline-block; }
-.wf-state.ok::before, .wf-dot.ok { background: var(--wf-ok); }
-.wf-state.warn::before, .wf-dot.warn { background: var(--wf-warn); }
-.wf-state.err::before, .wf-dot.err { background: var(--wf-err); }
-.wf-state.info::before, .wf-dot.info { background: var(--wf-info); }
-.wf-state.info { background-color: transparent !important; border-color: transparent !important; }
 .wf-pill { display: inline-flex; align-items: center; gap: 6px; padding: 1px 10px; border: 1px solid var(--wf-line); border-radius: 999px; font-size: 12px; font-weight: 500; opacity: 0.85; }
 .wf-bar .page-health { cursor: pointer; }
 /* old pages that still draw the bar as a v-card: the same look, so a page being migrated does not jump */
 .workshop-theme .v-card.page-header { border: 1px solid var(--wf-line); border-radius: 12px; background: var(--wf-surface); background-image: none; box-shadow: none; }
-/* compact bar (PageHeader prop `compact`): the pages that sit under DWC's own panels and need the room; the height drops from about 76 px to about 48 px */
-.page-header--compact .wf-badge { border-radius: 8px; }
-.page-header--compact .wf-title { font-size: 16px !important; line-height: 1.2; }
-.page-header--compact .wf-lead { font-size: 12px; line-height: 1.25; }
-
-/* ================= section menu (side bar) ================= */
-:is(.sidetabs, .wf-nav) { border-right-color: var(--wf-line); }
-:is(.sidetabs, .wf-nav) :is(.st-group, .wf-nav-group) { margin-top: 6px; border-top: 1px solid var(--wf-line); color: inherit; opacity: 0.65; font-size: 12px; font-weight: 600; }
-:is(.sidetabs, .sidetabs .st-scroll, .wf-nav)::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.45); border-radius: 2px; }
-@supports not selector(::-webkit-scrollbar) { :is(.sidetabs, .sidetabs .st-scroll, .wf-nav) { scrollbar-color: rgba(128, 128, 128, 0.45) transparent; } }
-:is(.sidetabs, .wf-nav) .st-group[data-group='0'] { margin-top: 0; border-top: 0; }
-:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item) { min-height: 44px; color: inherit; opacity: 0.8; font-size: 13px; font-weight: 400; letter-spacing: 0; text-transform: none; border-left: 2px solid transparent; border-radius: 0; background: transparent; }
-:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item):hover { opacity: 1; background: var(--wf-hover-bg); }
-:is(.sidetabs, .wf-nav) :is(.st-icon, .wf-nav-icon) { color: var(--wf-icon) !important; font-size: 18px; }
-:is(.sidetabs, .wf-nav) :is(button.st-item, .wf-nav-item):is(.st-on, .on) { opacity: 1; font-weight: 600; background: transparent; border-left-color: var(--wf-sec-now); }
-:is(.sidetabs, .wf-nav) .st-item.st-off { opacity: 0.35; }
-/* a section above the person's role: stays in its place, dimmed, with a lock and the role that opens it (blue while nobody is signed in) */
-:is(.sidetabs, .wf-nav) .st-item.st-locked { opacity: 0.7; }
-:is(.sidetabs, .wf-nav) .st-lockmark { border-radius: 50%; background: var(--wf-surface); }
-/* the JS bars (Vision, Camera, zones) share the pieces of the Vue side bar: the icon box with the lock mark and the text column (name, and under it who may open it) */
-.wf-nav .st-iconbox { position: relative; flex: none; display: inline-flex; }
-.wf-nav .st-lockmark { position: absolute; right: -6px; bottom: -5px; font-size: 12px; line-height: 1; }
-.wf-nav .st-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-.wf-nav.collapsed .st-text { display: none; }
-:is(.sidetabs, .wf-nav) .st-item.st-locked .st-lockmark { color: var(--wf-n-role); }
-:is(.sidetabs, .wf-nav) .st-item.st-locked-session .st-lockmark { color: var(--wf-n-session); }
-.st-need { max-width: 100%; overflow: hidden; text-overflow: ellipsis; padding: 1px 8px; border: 1px solid color-mix(in srgb, var(--wf-n-role) 45%, transparent); border-radius: 10px; background: var(--wf-n-role-bg); color: var(--wf-n-role-text); font-size: 12px; line-height: 1.5; white-space: nowrap; }
-.st-locked-session .st-need { border-color: color-mix(in srgb, var(--wf-n-session) 45%, transparent); background: var(--wf-n-session-bg); color: var(--wf-n-session-text); }
-:is(.sidetabs, .wf-nav) .st-fold:hover { background: var(--wf-hover-bg); }
-:is(.sidetabs, .wf-nav) .st-pinned { color: inherit; opacity: 1; }
-:is(.sidetabs, .wf-nav) .st-badge { background: transparent; color: inherit; border: 1px solid var(--wf-line-strong); }
-:is(.sidetabs, .wf-nav).st-collapsed .st-group { border-top: 1px solid var(--wf-line); font-size: 12px; }
-/* the JS bars (.wf-nav) fold to a row by the width of the window; the Vue bar (.sidetabs) by the width of its layout (FASE4: @container, see SideTabs.vue) */
-@media (max-width: 900px) {
-	.wf-nav, .wf-nav.st-collapsed { gap: 0 14px; border-right: 0; border-bottom: 1px solid var(--wf-line); }
-	.wf-nav :is(button.st-item, .wf-nav-item), .wf-nav.st-collapsed :is(button.st-item, .wf-nav-item) { border-left: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 2px; }
-	.wf-nav :is(button.st-item, .wf-nav-item):is(.st-on, .on) { border-bottom-color: var(--wf-sec-now); }
-	.wf-nav.collapsed .st-text { display: flex; }
-}
-@container wf-sidetabs (max-width: 899.98px) {
-	.sidetabs, .sidetabs.st-collapsed { gap: 0 14px; border-right: 0; border-bottom: 1px solid var(--wf-line); }
-	.sidetabs :is(button.st-item, .wf-nav-item), .sidetabs.st-collapsed :is(button.st-item, .wf-nav-item) { border-left: 0; border-bottom: 2px solid transparent; border-radius: 0; padding: 6px 2px; }
-	.sidetabs :is(button.st-item, .wf-nav-item):is(.st-on, .on) { border-bottom-color: var(--wf-sec-now); }
-}
-
-/* ================= second level tabs: text, a thin line, the open one in 600 with a 2 px line; they wrap, never scroll ================= */
-.wf-tabs { display: flex; flex-wrap: wrap; gap: 0 18px; border-bottom: 1px solid var(--wf-line); }
-.wf-tab { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin-bottom: -1px; padding: 8px 2px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: inherit; opacity: 0.75; font: inherit; font-size: 14px; font-weight: 400; text-transform: none; letter-spacing: 0; cursor: pointer; }
-.wf-tab:hover { opacity: 1; }
-.wf-tab:is(.on, [aria-selected='true']) { opacity: 1; font-weight: 600; border-bottom-color: var(--wf-sec-now); }
-.wf-tab :is(.v-icon, .mdi) { color: var(--wf-icon); font-size: 16px; }
 .workshop-theme .v-tabs { height: auto !important; border-bottom: 1px solid var(--wf-line); background: transparent !important; }
 .workshop-theme .v-tabs :is(.v-slide-group__content, .v-tabs-bar__content) { flex-wrap: wrap; }
 .workshop-theme .v-tabs :is(.v-tabs-bar, .v-slide-group__wrapper) { color: inherit !important; caret-color: inherit !important; background: transparent !important; height: auto !important; }
@@ -170,16 +113,7 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .wf-sub { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--wf-line); }
 .wf-sub > :is(h4, .wf-subt) { margin: 0; font-size: 14px; font-weight: 600; }
 /* a button that is a direct child keeps its own width (a column would stretch it to the whole card) */
-.wf-sub > :is(button, .wf-btn, .v-btn) { align-self: flex-start; }
-.wf-index { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 2px solid var(--wf-sec-now); border-radius: 50%; color: var(--wf-sec-now); font-size: 12px; font-weight: 700; }
-
-/* ================= color input (A3): a swatch with the family border, the same everywhere (workshopColorEl in 19-help-dom.js) ================= */
-.wf-color { box-sizing: border-box; width: 44px; height: 44px; padding: 2px; border: 1px solid var(--wf-control-line); border-radius: 6px; background: transparent; cursor: pointer; }
-.wf-color::-webkit-color-swatch-wrapper { padding: 0; }
-.wf-color::-webkit-color-swatch { border: 0; border-radius: 4px; }
-.wf-color::-moz-color-swatch { border: 0; border-radius: 4px; }
-.wf-color:focus-visible { outline: 2px solid var(--wf-info); outline-offset: 2px; }
-.wf-color.is-compact { width: 44px; height: 44px; padding: 8px; } /* FASE4: the touch box is 44 px; the swatch inside is 28 px */
+.wf-sub > :is(button, .wf-btn, .v-btn) { align-self: flex-start; } /* FASE4: the touch box is 44 px; the swatch inside is 28 px */
 
 /* ================= buttons ================= */
 .workshop-theme .v-btn, .wf-btn { box-shadow: none !important; letter-spacing: 0; text-transform: none; }
@@ -206,7 +140,7 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .workshop-theme .v-btn .v-icon { color: inherit; }
 
 /* ================= chips and states: a neutral outline; a state shows as a colored dot + the word ================= */
-.workshop-theme .v-chip { --wf-dotd: none; --wf-dotc: transparent; background: transparent !important; color: inherit !important; border: 1px solid rgba(128, 128, 128, 0.4) !important; font-weight: 500; box-shadow: none; }
+.workshop-theme .v-chip.v-chip { --wf-dotd: none; --wf-dotc: transparent; background: transparent !important; color: inherit !important; border: 1px solid rgba(128, 128, 128, 0.4) !important; font-weight: 500; box-shadow: none; }
 .workshop-theme .v-chip :is(.v-chip__underlay, .v-chip__overlay) { display: none; }
 .workshop-theme .v-chip::before { opacity: 1 !important; background: transparent; }
 .workshop-theme .v-chip :is(.v-chip__content, .v-icon) { color: inherit !important; }
@@ -217,10 +151,7 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .workshop-theme .v-chip .v-chip__content::before { content: ''; display: var(--wf-dotd, none); flex: none; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--wf-dotc); }
 /* a state chip with an icon: the ICON carries the state color and there is no dot (dot + icon said the same thing twice) */
 .workshop-theme .v-chip:is(.bg-success, .text-success, .success, .success--text, .bg-warning, .text-warning, .warning, .warning--text, .bg-error, .text-error, .error, .error--text, .bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text):has(.v-icon) .v-chip__content::before { display: none; }
-.workshop-theme .v-chip:is(.bg-success, .text-success, .success, .success--text):has(.v-icon) .v-icon { color: var(--wf-ok) !important; }
-.workshop-theme .v-chip:is(.bg-warning, .text-warning, .warning, .warning--text):has(.v-icon) .v-icon { color: var(--wf-warn) !important; }
-.workshop-theme .v-chip:is(.bg-error, .text-error, .error, .error--text):has(.v-icon) .v-icon { color: var(--wf-err) !important; }
-.workshop-theme .v-chip:is(.bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text):has(.v-icon) .v-icon { color: var(--wf-info) !important; }
+.workshop-theme .v-chip:is(.bg-success, .text-success, .success, .success--text, .bg-warning, .text-warning, .warning, .warning--text, .bg-error, .text-error, .error, .error--text, .bg-info, .text-info, .info, .info--text, .bg-primary, .text-primary, .primary, .primary--text):has(.v-icon) .v-icon { color: var(--wf-dotc) !important; }
 .workshop-theme .v-chip:is(.v-chip--active, .wf-on) { border-color: var(--wf-icon) !important; background: rgba(25, 118, 210, 0.2) !important; font-weight: 600; }
 /* in the page bar a state has no border (dot + word); a chip with no state stays a data pill with its border. A chip whose state has a color of
    its own (the dot through --wf-dotc / --wf-dotd, e.g. the light state of Lights) says so with .wf-state-chip: it is a state too */
@@ -250,12 +181,6 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .workshop-theme :is(code, kbd, .v-code), .wf-mono { font-family: var(--tp-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 12px; }
 .workshop-theme table thead th, .wf-table th { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; }
 .workshop-theme :is(.v-table, .v-data-table) { background: transparent; }
-
-/* ================= the ONE colored label: quick filters by category (e.g. Service > API operations) =================
-   Tinted pill with a colored outline; solid in its color when chosen. Valid for any page that filters by category; nothing else is a colored label. */
-.wf-cat { --wf-cat: #1976d2; display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border: 1px solid color-mix(in srgb, var(--wf-cat) 55%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--wf-cat) 14%, transparent); color: inherit; font: inherit; font-size: 12px; font-weight: 500; cursor: pointer; }
-.wf-cat:hover { background: color-mix(in srgb, var(--wf-cat) 26%, transparent); }
-.wf-cat:is(.on, [aria-pressed='true'], [aria-selected='true']) { background: var(--wf-cat); border-color: var(--wf-cat); color: #fff; font-weight: 600; }
 
 /* ================= notices by cause (ESTANDAR 2.2): N1 chip, N2 note, N3 reason, N4 cover, N5 toast ================= */
 /* the cause sets three variables: --wf-n-c (border, icon), --wf-n-t (text), --wf-n-bg (background); nothing else paints a notice */
@@ -300,15 +225,6 @@ html:has(.v-theme--light) .wf-popover { --wf-surface: #fff; --wf-text: #212121; 
 .wf-cover-text { max-width: 48ch; font-size: 13px; color: var(--wf-n-t); }
 .wf-cover--empty { --wf-n-c: var(--wf-line-strong); --wf-n-t: inherit; --wf-n-bg: var(--wf-soft); }
 .wf-cover--empty .wf-cover-icon { color: var(--wf-icon); }
-/* N5 the card of a refusal: always a dark window (it hangs from <body>), so the cause colors are the dark ones */
-.wf-toast { position: fixed; left: 50%; transform: translateX(-50%); z-index: 2147483645; width: min(560px, 92vw); box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 12px; background: #1e272c; color: #eceff1; border: 1px solid rgba(255, 255, 255, 0.12); border-left: 4px solid var(--wf-n-c); border-radius: 8px; font: 12px/1.4 Roboto, Helvetica, Arial, sans-serif; box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5); }
-.wf-toast--session { --wf-n-c: #1e88e5; } .wf-toast--role { --wf-n-c: #90a4ae; } .wf-toast--down { --wf-n-c: #fb8c00; } .wf-toast--error { --wf-n-c: #e53935; }
-.wf-toast-icon { flex: none; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--wf-n-c) 18%, transparent); color: var(--wf-n-c); }
-.wf-toast-body { flex: 1 1 auto; min-width: 0; }
-.wf-toast-title { font: 600 13px/1.3 Roboto, Helvetica, Arial, sans-serif; color: #fff; }
-.wf-toast-desc { color: #cfd8dc; overflow-wrap: anywhere; }
-.wf-toast-close { flex: none; width: 44px; height: 44px; border: 0; background: transparent; color: #cfd8dc; font: 400 20px/1 Roboto, Arial, sans-serif; cursor: pointer; }
-.wf-toast .wf-btn { min-height: 44px; font-weight: 600; font-size: 12px; }
 /* a refusal printed by a page (marked by workshopPermissionMark): the role one is a calm note, the session one only while nobody is signed in */
 [data-workshop-permission='role'] { --wf-n-c: var(--wf-n-role); --wf-n-t: var(--wf-n-role-text); --wf-n-bg: var(--wf-n-role-bg); }
 html[data-workshop-signed-out] [data-workshop-permission='session'] { --wf-n-c: var(--wf-n-session); --wf-n-t: var(--wf-n-session-text); --wf-n-bg: var(--wf-n-session-bg); }
@@ -327,7 +243,6 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .help-tip-card, .wf-popover { max-width: min(380px, calc(100vw - 16px)); }
 /* ONE session reason or note per block (2026-11-21: the same "your session ended" three times in one card): inside a parent only the first one that is shown draws */
 .wf-reason--session:not([hidden]) ~ .wf-reason--session, .wf-notice--session:not([hidden]) ~ .wf-notice--session { display: none !important; }
-.wf-popover { position: fixed; z-index: 9999; box-sizing: border-box; padding: 12px 16px; border: 1px solid var(--wf-line); border-radius: 8px; background: var(--wf-surface); color: var(--wf-text); font: 13px/1.4 Roboto, Helvetica, Arial, sans-serif; overflow-wrap: anywhere; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); }
 .help-tip-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
 .help-tip-list { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 12px; margin: 6px 0 0; font-size: 13px; }
 .help-tip-list dt { font-weight: 600; }
@@ -345,9 +260,6 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .wf-field-msg { font-size: 12px; line-height: 1.4; }
 .wf-field-msg.is-hint { opacity: 0.75; }
 .wf-field-msg.is-error { color: var(--wf-n-error-text); }
-.wf-guide { margin-top: 8px; font-size: 13px; }
-.wf-guide > summary { cursor: pointer; font-size: 13px; font-weight: 600; opacity: 0.85; min-height: 44px; }
-.wf-guide[open] > summary { margin-bottom: 6px; }
 .workshop-theme .wf-note, .wf-note { display: flex; align-items: flex-start; gap: 8px; margin-top: 4px; font-size: 13px; line-height: 1.4; opacity: 1; }
 .wf-note-icon { flex: none; width: 16px; height: 16px; font-size: 16px; color: var(--wf-info); }
 .wf-note.is-warn { padding-left: 8px; border-left: 3px solid var(--wf-warn); }
@@ -363,9 +275,12 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .wf-btn.wf-danger { color: var(--wf-err); border-color: var(--wf-err); }
 .wf-btn.wf-danger.wf-fill { background: #c62828; color: #fff; border-color: #c62828; } /* white on #c62828 is 5.6:1; --wf-err (#e53935) gives 4.2:1 and stays the token of lines and icons */
 .wf-act[aria-busy='true'] .wf-act-stack, .wf-zone-refresh[aria-busy='true'] .wf-act-stack { visibility: hidden; }
-.wf-act[aria-busy='true']::before, .wf-zone-refresh[aria-busy='true']::before { content: ''; position: absolute; left: 50%; top: 50%; box-sizing: border-box; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; opacity: 0; animation: wf-spin 0.8s linear infinite, wf-spin-in 0.01s linear 0.4s forwards; }
+.wf-act[aria-busy='true']::before, .wf-zone-refresh[aria-busy='true']::before { content: ''; position: absolute; left: 50%; top: 50%; box-sizing: border-box; width: 16px; height: 16px; margin: -8px 0 0 -8px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; opacity: 0; animation: wf-spin 1.5s linear infinite, wf-spin-in 0.01s linear 0.4s forwards; }
 @keyframes wf-spin { to { transform: rotate(360deg); } }
 @keyframes wf-spin-in { to { opacity: 1; } }
+@keyframes wf-spin-out { to { opacity: 0; } }
+.workshop-theme .v-btn--loading .v-btn__content { opacity: 1; animation: wf-spin-out 0.3s linear 0.3s forwards; }
+.workshop-theme .v-btn--loading .v-btn__loader { animation: wf-spin-out 0.3s linear 0.3s reverse backwards; }
 /* the result of a write: a gray icon whose shape says the state + the word + the sentence; its live region stays in the page (0 px when empty) */
 .wf-result { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; min-height: 0; font-size: 13px; line-height: 1.4; }
 .wf-result.is-empty { height: 0; overflow: hidden; }
@@ -410,15 +325,7 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .wf-check[aria-checked='true'] .wf-check-box { color: var(--wf-accent); }
 /* ================= end FASE2 ================= */
 /* ===== FASE3 BEGIN (unification of styles, 2026-11-21): compact bar, the two helps, the role tag. Additive: nothing above is edited. ===== */
-/* the compact bar: 48 px, badge 32, title 16, no lead line (PageHeader prop `compact`; the lead becomes the tooltip of the title) */
-.page-header.page-header--compact { gap: 8px 12px; min-height: 48px; margin-bottom: 8px; padding: 0 12px; box-sizing: border-box; }
-.page-header--compact .wf-bar-right { align-self: center; }
-.page-header--compact .wf-badge { width: 32px; height: 32px; border-radius: 8px; }
-.page-header--compact .wf-bar-txt { flex-basis: 160px; }
-.page-header--compact .wf-title { font-size: 16px !important; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.page-header--compact .wf-lead { display: none; }
-/* the lead sentence of the compact bar: the short help of the page, in line under the bar */
-.page-header-wrap > .page-header-lead.wf-help-line { margin: -4px 2px 8px; }
+/* the bar of the family: see the section "page bar" above (the compact variant was folded into it on 2026-11-22) */
 /* help 1 of 2, the fold "What it is and how to use it": a link with a "?" icon that opens in place and stays open (the 44 px of the summary is the touch box, always) */
 .wf-help-fold { margin-top: 8px; font-size: 13px; }
 .wf-help-fold > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0; border-radius: 6px; color: var(--wf-c-info-text); cursor: pointer; list-style: none; font-weight: 500; }
@@ -446,9 +353,8 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
    - nothing below 12 px (tests/family-floor.test.js lists the documented exceptions). */
 /* the focus ring: every control of the family and of the Vuetify pages */
 :is(.wf-btn, .wf-tab, .wf-nav-item, .wf-session-chip, .wf-cat, .wf-color, .help-tip, .wf-guide > summary, .sidetabs .st-item, .sidetabs .st-fold):focus-visible,
-.workshop-theme :is(a, button, input, select, textarea, summary, [tabindex]:not([tabindex='-1']), .v-btn, .v-chip--clickable, .v-tab, .v-input--selection-controls__input):focus-visible { outline: 2px solid var(--wf-focus); outline-offset: 2px; }
-/* what is touched: 44 px */
-.wf-guide > summary { display: flex; align-items: center; }
+.workshop-theme :is(a, button, summary, [tabindex]:not([tabindex='-1']), .v-btn, .v-chip--clickable, .v-tab, .v-input--selection-controls__input):focus-visible,
+.workshop-theme :is(input, select, textarea):not(.v-input:not(.v-input--selection-controls) *):focus-visible { outline: 2px solid var(--wf-focus); outline-offset: 2px; }
 /* an icon button looks as small as its place needs and is touched over 44 px */
 .workshop-theme :is(.v-btn--icon, .v-btn--fab)::after { content: ''; position: absolute; inset: min(0px, calc(50% - 22px)); }
 /* F4-02: the extra area is (44 px - the button) / 2 on every side and it NEVER reaches a neighbour: icon buttons that follow each other are
@@ -491,6 +397,7 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .workshop-theme .v-input.v-input--dense.v-text-field:not(.v-textarea):not(.v-text-field--filled):not(.v-text-field--solo) > .v-input__control > .v-input__slot { min-height: 44px; }
 .workshop-theme .v-input.v-input--dense.v-text-field--outlined:not(.v-textarea) > .v-input__control > .v-input__slot .v-label:not(.v-label--active) { top: 12px; }
 .workshop-theme .v-input.v-text-field:not(.v-input--dense):not(.v-text-field--enclosed):not(.v-textarea) > .v-input__control > .v-input__slot { min-height: 44px; }
+.workshop-theme .v-input.v-select.v-text-field:not(.v-select--chips) .v-select__selections { padding-top: 0; padding-bottom: 0; }
 /* QA r2 M-04: the typing area is the whole 44 px box (Vuetify 2 leaves a 26 to 32 px INPUT inside it, and the area a finger or the auditor sees is the INPUT). */
 .workshop-theme .v-text-field:not(.v-textarea) > .v-input__control > .v-input__slot > .v-text-field__slot { align-self: stretch; }
 .workshop-theme .v-text-field:not(.v-textarea) > .v-input__control > .v-input__slot > .v-text-field__slot > input { max-height: none; min-height: 44px; padding-top: 0; padding-bottom: 0; }

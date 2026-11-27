@@ -27,7 +27,7 @@ _LAYERS = {
     "L1": (
         "publisher", "machine_state", "listener_channel", "communication", "db", "db_dates", "db_schema", "db_conn", "audit_chain", "audit_store", "audit_settings", "config_store", "settings_store", "service_settings", "users", "role_store", "api_keys",
         "bridge_contract", "real_mode", "cpu_meter", "capabilities", "capabilities_io", "machine_profile", "work_state",
-        "sd_manifest", "native_merge", "health_history", "journal_view", "log_sources", "process_meter", "install_log", "published_texts", "gcode_temps", "tuya_meter",
+        "sd_manifest", "native_merge", "health_history", "journal_view", "macros_catalog", "log_sources", "process_meter", "install_log", "published_texts", "gcode_temps", "tuya_meter",
         "bed_zones_mirror", "laser_correction", "focus_geometry", "lights_config", "gcodelib_files", "gcodelib_kind", "gcodelib_thumb",
     ),
     "L2": (
@@ -84,7 +84,7 @@ _LAYERS = {
     ),
     "L5": (
         "workshop_api", "identity", "permissions", "permission_caps", "access_profile", "access_base", "access_eval", "access_store", "access_person", "access_targets", "access_context", "access_admin", "access_ops", "access_plugin_files", "access_plugin_manifest", "access_report", "access_review", "access_usage", "audit", "audit_alarms", "audit_reads", "audit_ops", "api_macros", "api_ops", "api_users", "handler_refusal",
-        "roles_ops", "journal_ops", "settings_ops", "profile_ops", "startup_ops", "bed_zones_ops", "bed_calibration_ops", "layer_recipes_ops", "gcodelib_ops",
+        "roles_ops", "journal_ops", "macros_ops", "settings_ops", "profile_ops", "startup_ops", "bed_zones_ops", "bed_calibration_ops", "layer_recipes_ops", "gcodelib_ops",
         "pellet_layers_ops", "guard_api", "activity_ops", "energy_ops", "notifications_ops", "service_ops", "jobs_ops", "lights_ops", "power_ops",
     ),
     "L6": ("main", "bootstrap"),

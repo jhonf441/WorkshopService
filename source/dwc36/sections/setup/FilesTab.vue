@@ -87,9 +87,15 @@
 					</p>
 					<p v-else class="sv-quiet sv-tv-legend" data-part="no-factory">{{ t('sd_files.key_no_factory') }}</p>
 					<help-fold v-if="comparison" :what="t('sd_files.legend_help_what')" :why="t('sd_files.legend_help_why')" :if-missing="t('sd_files.legend_help_missing')" :how="t('sd_files.legend_help_how')" />
-					<div v-if="comparison && editedRanges.length" class="sv-chips" data-part="edited-chips">
-						<span class="sv-quiet">{{ t('sd_files.edited_chips') }}</span>
+					<!-- ONE row for the places of the changes: the label, a chip for each stretch, previous / next and "2 of 4" (a fixed box, so the row never moves) -->
+					<div v-if="comparison && editedRanges.length" class="sv-jump" data-part="edited-chips">
+						<span class="sv-quiet sv-jump-label">{{ t('sd_files.edited_chips') }}</span>
 						<button v-for="r in editedRanges" :key="r[0]" type="button" class="wf-btn sv-btn" :class="{ 'sv-on': activeLine === r[0] }" :aria-pressed="activeLine === r[0] ? 'true' : 'false'" :data-line="r[0]" @click="goTo(r)">{{ rangeLabel(r) }}</button>
+						<span class="sv-seg" role="group" :aria-label="t('sd_files.edited_chips')">
+							<button type="button" data-act="jump-prev" :aria-label="t('sd_files.jump_prev')" :title="t('sd_files.jump_prev')" @click="stepJump(-1)"><span class="mdi mdi-chevron-left sv-ico" aria-hidden="true" /></button>
+							<button type="button" data-act="jump-next" :aria-label="t('sd_files.jump_next')" :title="t('sd_files.jump_next')" @click="stepJump(1)"><span class="mdi mdi-chevron-right sv-ico" aria-hidden="true" /></button>
+						</span>
+						<span class="sv-quiet sv-tv-hits" data-part="jump-count" role="status">{{ jumpCount }}</span>
 					</div>
 				</div>
 			</template>
@@ -187,6 +193,11 @@ export default {
 		editedRanges() {
 			return sv.changedRanges(this.viewer.view)
 		},
+		// "2 of 4": which stretch the person is at (empty until one was touched; the box keeps its width)
+		jumpCount() {
+			const at = this.editedRanges.findIndex(r => r[0] === this.activeLine)
+			return at < 0 ? '' : this.t('sd_files.jump_count', { at: at + 1, n: this.editedRanges.length })
+		},
 		shownRows() {
 			return sv.visibleRows(sv.markBlocks(sv.rows(this.viewer.view)), this.viewer.only && this.comparison).map(r => (r.gap ? { flag: 'gap', count: r.count, n: null, text: '' } : r))
 		}
@@ -210,6 +221,14 @@ export default {
 				await this.$nextTick()
 			}
 			this.$refs.reader.jumpToRange(r[0], r[1])
+		},
+		// previous / next stretch (round the ends); from nowhere, next is the first and previous the last
+		stepJump(dir) {
+			const list = this.editedRanges
+			if (!list.length) return
+			const at = list.findIndex(r => r[0] === this.activeLine)
+			const to = at < 0 ? (dir > 0 ? 0 : list.length - 1) : (at + dir + list.length) % list.length
+			return this.goTo(list[to])
 		},
 		rangeLabel(r) {
 			return this.tt(r[0] === r[1] ? 'range_one' : 'range_many', { n: r[0], from: r[0], to: r[1] })

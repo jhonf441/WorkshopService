@@ -13,7 +13,7 @@
 //   machineStatus()             state.status of the board ('idle', 'processing' ...), or ''
 //   machineMode()               state.machineMode of the board ('FFF', 'Laser', 'CNC'), or ''
 //   darkTheme()                 the theme DWC is drawn in
-//   query() / setQuery(q, push) the query of the address (?s=&t=&a=): read, and write (push = a step of the history, else replace)
+//   query() / setQuery(q, push) the query of the address (?s=&t=&a=): read, and write (push = a step of the history, else replace; returns the router's promise)
 //   notify(type, title, text)   a notification of DWC ('success' | 'info' | 'warning' | 'error'); false when DWC has none
 //   pathExists(path) / goPath(path)   another page of DWC: is it registered, and go to it
 //   readFile(path)              the text of a file of the machine (DWC's file API), or null
@@ -110,6 +110,7 @@ export function setQuery(next, push) {
 	const to = { path: router.currentRoute.path, query: clean }
 	const done = push ? router.push(to) : router.replace(to)
 	if (done && typeof done.catch === 'function') done.catch(() => {}) // the router rejects a navigation to where it already is
+	return done // settles when the route changed; rejects when a guard refused it (the caller may wait for the answer)
 }
 
 export function notify(type, title, text) {

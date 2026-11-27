@@ -10,8 +10,9 @@
 //
 // Back and forward work because the shell calls readPlace() whenever the query of the route changes.
 
-import { query, setQuery } from '../core/dwc.js'
+import { query, setQuery, t, te } from '../core/dwc.js'
 import { pageState } from '../core/page-state.js'
+import { anyDirty, passNextRoute, setPlaceHooks } from '../ui/unsaved-guard.js'
 import { placeOf, queryOf, samePlace } from './places.js'
 
 export const PATH = '/Plugins/WorkshopService'
@@ -42,9 +43,30 @@ export function go(to, opts) {
 	const place = placeOf(queryOf(to))
 	const before = currentPlace()
 	if (samePlace(place, before)) return place
-	setQuery(queryOf(place), !(opts && opts.replace) && place.s !== before.s)
+	// the guard of the page asks before a change of section or tab when an editor holds changes (unsaved-guard.js routeGuard): then the place
+	// is written only when the route really changed, never before the answer (to "Keep editing" the page must stay where it is)
+	const asks = anyDirty() && !(opts && opts.pass) && (place.s !== before.s || String(place.t || '') !== String(before.t || ''))
+	if (opts && opts.pass) passNextRoute()
+	const done = setQuery(queryOf(place), !(opts && opts.replace) && place.s !== before.s)
+	if (asks && done && typeof done.then === 'function') {
+		done.then(() => apply(place), () => {})
+		return place
+	}
 	return apply(place)
 }
+
+// the place of the page for the guard: where an editor got dirty, how a person reads it, and the way back to it
+setPlaceHooks({
+	place: currentPlace,
+	go: place => go(place, { replace: true, pass: true }),
+	name: place => {
+		const s = place && place.s
+		if (!s) return ''
+		const section = te('shell.nav_' + s) ? t('shell.nav_' + s) : ''
+		const tab = place.t && te('shell.tab_' + s + '_' + place.t) ? t('shell.tab_' + s + '_' + place.t) : ''
+		return [section, tab].filter(Boolean).join(' / ')
+	}
+})
 
 export function hrefOf(place) {
 	const q = queryOf(place)
