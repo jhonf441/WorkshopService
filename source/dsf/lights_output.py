@@ -271,7 +271,7 @@ def power_off_state(bridge, illum, config):
         log_file(f"idle: could not turn the status zone off ({e})")
     publish_strip_state(bridge, None)
     for k, v in (("statusLightSecs", []), ("statusLightActive", []), ("statusLightModes", {}),
-                 ("statusIndicator", None), ("lightsInfo", None),
+                 ("statusIndicator", None), ("lightsInfo", None), ("lightsView", None),
                  ("statusLightColor", "#616161"), ("statusLightPiActive", False),
                  ("statusLightText", "")):
         try:

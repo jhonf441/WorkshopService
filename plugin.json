@@ -223,6 +223,7 @@
     "lights_probe.py",
     "lights_profile.py",
     "lights_runtime.py",
+    "lights_view.py",
     "listener_channel.py",
     "live_job.py",
     "live_job_stop.py",
@@ -360,17 +361,17 @@
     "RELEASE.json"
   ],
   "dwcFiles": [
-    "css/WorkshopService.44fff753.css",
-    "css/WorkshopService.44fff753.css.gz",
-    "js/WorkshopService.73244ff7.js",
-    "js/WorkshopService.73244ff7.js.gz"
+    "css/WorkshopService.eaf59036.css",
+    "css/WorkshopService.eaf59036.css.gz",
+    "js/WorkshopService.dd793a1e.js",
+    "js/WorkshopService.dd793a1e.js.gz"
   ],
   "sdFiles": [],
   "pid": -1,
   "id": "WorkshopService",
   "name": "Workshop Service",
   "author": "jhonf441",
-  "version": "2.65.1",
+  "version": "2.66.0",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopService",
   "tags": [
@@ -447,6 +448,7 @@
     "jogBlock": null,
     "statusIndicator": null,
     "lightsInfo": null,
+    "lightsView": null,
     "motion": null,
     "machine": null
   },

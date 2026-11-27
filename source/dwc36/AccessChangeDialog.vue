@@ -10,11 +10,11 @@
 			<v-card-text>
 				<div class="access-change-cols">
 					<section class="access-change-col">
-						<div class="text-caption">{{ $t('plugins.WorkshopService.access.diff_before') }}</div>
+						<div class="text-caption">{{ beforeLabel || $t('plugins.WorkshopService.access.diff_before') }}</div>
 						<slot name="before" />
 					</section>
 					<section class="access-change-col">
-						<div class="text-caption">{{ $t('plugins.WorkshopService.access.diff_after') }}</div>
+						<div class="text-caption">{{ afterLabel || $t('plugins.WorkshopService.access.diff_after') }}</div>
 						<slot name="after" />
 					</section>
 				</div>
@@ -43,6 +43,9 @@ export default {
 		confirmLabel: { type: String, default: '' },
 		risk4: { type: Boolean, default: false },
 		viewOnly: { type: Boolean, default: false }, // a comparison: no checkbox and no verb, only Close
+		// the names of the two columns when Before / After does not say which is which (a version against the active one, note 5 of 2026-11-23)
+		beforeLabel: { type: String, default: '' },
+		afterLabel: { type: String, default: '' },
 		busy: { type: Boolean, default: false },
 		error: { type: String, default: '' }
 	},

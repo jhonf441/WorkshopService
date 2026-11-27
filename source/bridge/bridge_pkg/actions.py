@@ -212,7 +212,7 @@ class ActionsMixin:
                 new = str(self._field(a, "name", "name") or "").strip()[:40]
                 if not new:
                     raise ValueError("the name is missing")
-                client.name = new
+                client.alias = new
                 self.event("info", "renamed_from_page", f"{client.ip} is now called '{new}' (from the page)", ip=client.ip, name=new)
                 given = self._field(a, "remember", "remember")
                 remember = True if given is None else bool(given)
@@ -232,7 +232,7 @@ class ActionsMixin:
                 client.send_raw("Error: the workshop page closed this connection.\r\n")
                 client.shutdown()
         if kind == "rename" and remember:
-            ip, new = client.ip, client.name
+            ip, new = client.ip, client.alias
             s.modify(lambda d: d.setdefault("names", {}).update({ip: new}))
         return "done", "Done."
 

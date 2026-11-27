@@ -39,7 +39,7 @@
 					<div v-if="r.flag === 'gap'" :key="i" class="sv-tv-gap" :data-row="i">{{ gapText ? gapText(r.count) : r.count }}</div>
 					<template v-else>
 						<div v-if="r.blockStart" :key="'b' + i" class="sv-tv-block-label" data-part="block-label"><span class="mdi mdi-lock-outline sv-ico sv-ico-s" aria-hidden="true" />{{ blockText ? blockText(r.block) : r.block }}</div>
-						<div :key="i" class="sv-tv-row" :class="['d-' + r.flag, { 'sv-hit': isHit(i), 'sv-cur': hits[cur] === i, 'sv-flash': isFlash(i), 'sv-managed': !!r.block, 'sv-comment': !r.block && r.comment }]" :data-row="i" :data-block="r.block || null"><span class="sv-tv-n" :data-mark="MARKS[r.flag] || null" :title="MARKS[r.flag] ? markTitles[r.flag] || null : null" aria-hidden="true">{{ r.n === null ? '' : r.n }}</span><span class="sv-tv-t">{{ r.text }}</span></div>
+						<div :key="i" class="sv-tv-row" :class="['d-' + r.flag, { 'sv-hit': isHit(i), 'sv-cur': hits[cur] === i, 'sv-flash': isFlash(i), 'sv-flash-first': i === flash[0], 'sv-flash-last': i === flash[1], 'sv-managed': !!r.block, 'sv-comment': !r.block && r.comment }]" :data-row="i" :data-block="r.block || null"><span class="sv-tv-n" :data-mark="MARKS[r.flag] || null" :title="MARKS[r.flag] ? markTitles[r.flag] || null : null" aria-hidden="true">{{ r.n === null ? '' : r.n }}</span><span class="sv-tv-t">{{ r.text }}</span></div>
 					</template>
 				</template>
 				<p v-if="shown.length < rows.length" class="sv-quiet sv-tv-more" role="status">{{ kt('view_more', { shown: shown.length, total: rows.length }) }}</p>

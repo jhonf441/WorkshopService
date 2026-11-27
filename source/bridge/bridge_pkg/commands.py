@@ -100,7 +100,7 @@ class CommandsMixin:
                 return f"Wrong password ({n}/{limit}).", False
             if sub == "NAME" and arg:
                 arg = arg[:40]
-                client.name = arg
+                client.alias = arg
                 self.event("info", "renamed", f"{client.ip} is now called '{arg}'", ip=client.ip, name=arg)
                 return f"Name set: {arg}", False
             if sub == "NAME":

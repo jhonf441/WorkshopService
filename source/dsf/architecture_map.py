@@ -42,7 +42,7 @@ _LAYERS = {
         # jog
         "jog_move", "jog_pure", "frame_ops", "big_piece", "modes_move", "handlers/jog", "handlers/big_piece",
         # lights and status
-        "lights_runtime", "status_light", "lights_decide", "lights_board", "lights_frame", "lights_output", "lights_loop", "pi_leds", "lights_macros", "lights_profile", "lights_edit", "lights_probe",
+        "lights_runtime", "status_light", "lights_decide", "lights_board", "lights_frame", "lights_output", "lights_loop", "pi_leds", "lights_macros", "lights_profile", "lights_view", "lights_edit", "lights_probe",
         "handlers/airassist",
         # camera
         "camera_relay", "camera_access", "camera_assembly", "camera_captures", "camera_config", "camera_context",
@@ -93,7 +93,7 @@ _LAYERS = {
 # L4 module -> feature (the groups of the comments above)
 _FEATURES = {
     "jog": ("jog_move", "jog_pure", "frame_ops", "big_piece", "modes_move", "handlers/jog", "handlers/big_piece"),
-    "lights": ("lights_runtime", "status_light", "lights_decide", "lights_board", "lights_frame", "lights_output", "lights_loop", "pi_leds", "lights_macros", "lights_profile", "lights_edit", "lights_probe",
+    "lights": ("lights_runtime", "status_light", "lights_decide", "lights_board", "lights_frame", "lights_output", "lights_loop", "pi_leds", "lights_macros", "lights_profile", "lights_view", "lights_edit", "lights_probe",
                "handlers/airassist"),
     "camera": ("camera_relay", "camera_access", "camera_assembly", "camera_captures", "camera_config", "camera_context",
                "camera_control", "camera_http", "camera_image", "camera_key", "camera_limits", "camera_load", "camera_notice",

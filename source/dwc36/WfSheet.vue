@@ -4,7 +4,7 @@
 	     'alertdialog'), describedby. Slots: default (body), foot (buttons). Event: close (Escape, a touch outside, its close button: a sheet has one, a dialog
 	     is closed by its own buttons). While it is open the page behind does not scroll. Focus: on opening it goes to [data-wf-autofocus] (else the first
 	     element of the body); Tab stays inside; on closing it goes back to where it was. -->
-	<div v-if="open" class="wf-veil" @mousedown.self="$emit('close')" @keydown.esc.stop.prevent="$emit('close')" @keydown.tab="trap">
+	<div v-if="open" class="wf-veil" :style="clear" data-wf-veil-clear="1" @mousedown.self="$emit('close')" @keydown.esc.stop.prevent="$emit('close')" @keydown.tab="trap">
 		<div ref="box" class="wf-sheet" :class="{ 'wf-dialog': !!level, 'wf-sheet-wide': wide }" :data-level="level || null" :role="role" aria-modal="true" :aria-labelledby="titleId" :aria-describedby="describedby || null">
 			<div class="wf-sheet-head">
 				<h2 :id="titleId" class="wf-sheet-title">{{ title }}</h2>
@@ -30,6 +30,20 @@ function focusables(root) {
 	return Array.prototype.filter.call(root.querySelectorAll(FOCUSABLE), el => !el.hidden)
 }
 
+// The veil never covers an emergency stop (owner's safety rule, 2026-11-23; twin of workshopVeilClear, src/_shared/45-layers.js): it starts under
+// DWC's top bar (its Emergency stop) and ends left of the control bar (its STOP; the bar publishes its width to the notices center, getInset).
+function veilClear() {
+	let top = 0
+	if (typeof document !== 'undefined' && typeof document.querySelector === 'function') {
+		const bar = document.querySelector('header.v-app-bar') || document.querySelector('.v-app-bar')
+		const r = bar && typeof bar.getBoundingClientRect === 'function' ? bar.getBoundingClientRect() : null
+		if (r && r.height > 0 && r.bottom > 0) top = Math.ceil(r.bottom)
+	}
+	const c = typeof window !== 'undefined' ? window.__workshopNotices : null
+	const right = c && typeof c.getInset === 'function' ? Number(c.getInset('right')) || 0 : 0
+	return { top: top + 'px', right: right + 'px' }
+}
+
 export default {
 	name: 'WfSheet',
 	props: {
@@ -42,7 +56,7 @@ export default {
 	},
 	data() {
 		serial += 1
-		return { titleId: 'wf-sheet-title-' + serial, opener: null, locked: false }
+		return { titleId: 'wf-sheet-title-' + serial, opener: null, locked: false, clear: null }
 	},
 	watch: {
 		open(now) {
@@ -59,6 +73,7 @@ export default {
 	methods: {
 		ts,
 		onOpen() {
+			this.clear = veilClear()
 			this.opener = typeof document !== 'undefined' ? document.activeElement : null
 			const root = typeof document !== 'undefined' ? document.documentElement : null
 			if (root && root.classList && !root.classList.contains(LOCK)) { root.classList.add(LOCK); this.locked = true }

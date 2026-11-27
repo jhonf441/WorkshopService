@@ -67,6 +67,6 @@
 	--v-error-base: #ff7676;
 }
 
-/* Touch targets (FASE4, decision 2026-11-21): 44 px ALWAYS, on any pointer (the kiosk may report a fine one). An icon button looks small and is
- * touched over 44 px by the invisible area family.css draws (::after), so only the min-height of text buttons and links is set here. */
-:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) :is(.v-btn:not(.v-btn--icon), .v-chip--link, .st-item) { min-height: 44px; }
+/* Touch targets (the scale, owner 2026-11-23, FAMILIA-REDISENO.md 2): a button, a link chip or a menu entry is seen s 32 px and touched 40 px through
+ * the invisible area of family.css (::after), on any pointer (the kiosk may report a fine one); this sets only their seen height. */
+:is(.workshop-theme, .consumption-page, .rs485-page, .motors-page, .lights-page, .machine-page, .impresion-page) :is(.v-btn:not(.v-btn--icon), .v-chip--link, .st-item) { min-height: var(--wf-size-s); }

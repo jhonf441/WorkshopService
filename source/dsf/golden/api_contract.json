@@ -6676,6 +6676,7 @@
   "ledStrip": null,
   "lightOn": false,
   "lightsInfo": null,
+  "lightsView": null,
   "liveJob": null,
   "machine": null,
   "motion": null,

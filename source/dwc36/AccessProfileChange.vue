@@ -3,7 +3,7 @@
 	     document, what changes in practice, the warnings of the dry run and the risk 4 box. The only way a profile changes. The service is told "confirmed"
 	     by the parent (confirm: true) after the "Understood" box and the verb of this dialog, so there is one window, not two.
 	       <access-profile-change v-model="open" :title="..." :confirm-label="..." :diff="diff" :attached="{ users, groups }" :warnings="[...]" :risk4="false" :drop="null" :busy :error @confirm="..." /> -->
-	<access-change-dialog :value="value" :title="title" :confirm-label="confirmLabel" :risk4="risk4" :view-only="viewOnly" :busy="busy" :error="error" @input="v => $emit('input', v)" @confirm="$emit('confirm')">
+	<access-change-dialog :value="value" :title="title" :confirm-label="confirmLabel" :risk4="risk4" :view-only="viewOnly" :before-label="beforeLabel" :after-label="afterLabel" :busy="busy" :error="error" @input="v => $emit('input', v)" @confirm="$emit('confirm')">
 		<template #before><access-profile-diff :diff="diff" side="before" :is-new="isNew" /></template>
 		<template #after><access-profile-diff :diff="diff" side="after" /></template>
 		<template #summary>
@@ -39,6 +39,8 @@ export default {
 		isNew: { type: Boolean, default: false },
 		removing: { type: Boolean, default: false },
 		viewOnly: { type: Boolean, default: false },
+		beforeLabel: { type: String, default: '' },
+		afterLabel: { type: String, default: '' },
 		busy: { type: Boolean, default: false },
 		error: { type: String, default: '' }
 	},

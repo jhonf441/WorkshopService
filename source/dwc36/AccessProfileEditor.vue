@@ -44,7 +44,7 @@
 				</template>
 			</template>
 		</access-state>
-		<access-profile-change v-if="dialog" :value="true" :title="dialogTitle" :confirm-label="dialogVerb" :diff="dialogDiff" :attached="attached" :warnings="dialog.kind === 'save' ? warnings : []" :risk4="risk4" :drop="dialog.kind === 'save' ? next.drops : null" :is-new="dialog.kind === 'save' && fresh" :view-only="dialog.kind === 'compare'" :busy="busy" :error="dialogError" @input="closeDialog" @confirm="confirm" />
+		<access-profile-change v-if="dialog" :value="true" :title="dialogTitle" :confirm-label="dialogVerb" :diff="dialogDiff" :attached="attached" :warnings="dialog.kind === 'save' ? warnings : []" :risk4="risk4" :drop="dialog.kind === 'save' ? next.drops : null" :is-new="dialog.kind === 'save' && fresh" :view-only="dialog.kind === 'compare'" :before-label="dialogSides.before" :after-label="dialogSides.after" :busy="busy" :error="dialogError" @input="closeDialog" @confirm="confirm" />
 	</div>
 </template>
 
@@ -156,6 +156,17 @@ export default {
 			const active = this.got ? this.got.document : null
 			if (d.kind === 'save') return diffProfile(this.fresh ? null : active, this.draft, { riskOf: riskOf(this.ctx) })
 			return diffProfile(active, this.versionDoc, { riskOf: riskOf(this.ctx) })
+		},
+		// the columns of a version against the active one say which is which (note 5, 2026-11-23: "Before" was the active one and "After" the old version)
+		dialogSides() {
+			const d = this.dialog
+			if (!d || d.kind === 'save') return { before: '', after: '' }
+			const act = this.versions.find(x => x.active)
+			const t = (k, p) => this.$t('plugins.WorkshopService.access.' + k, p)
+			return {
+				before: act ? t('diff_side_active_n', { n: act.n }) : t('diff_side_active'),
+				after: t(d.kind === 'rollback' ? 'diff_side_version_back' : 'diff_side_version', { n: d.n })
+			}
 		},
 		dialogTitle() {
 			const d = this.dialog

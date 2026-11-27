@@ -6,6 +6,8 @@ import time
 import types
 import heartbeats
 import lights_config as lc
+import lights_profile
+import lights_view
 import lights_runtime as lr
 import lights_output
 import pi_leds
@@ -130,7 +132,7 @@ class Painter:
         self.last_key = None
         self.keys_extra.clear()
         self.announced = False
-        self.pub["indicator"] = self.pub["info"] = self.pub["light"] = None
+        self.pub["indicator"] = self.pub["info"] = self.pub["light"] = self.pub["view_src"] = None
 
     def _light_of_job(self, turn_on):
         """The work light switches on / off by itself with a job: same as lights_macros.work_light. status_light.py supplies it (it starts the thread)."""
@@ -142,6 +144,7 @@ class Painter:
         illum = read_input(om)[2]
         real = self.bridge_real
         pi_leds.power_off_all()
+        self.pub["view_src"] = None  # power_off_state empties lightsView: publish it again when the module runs again
         power_off_state(WithoutM150(real) if not lc.has_strip(cfg.get("status_light") or {}) else real, illum, cfg)
 
     def tick(self, om, mono=None, wall=None, minutes=None):
@@ -483,6 +486,15 @@ class Painter:
         if k_inf != self.pub["info"]:
             self.pub["info"] = k_inf
             c.bridge.set_status("lightsInfo", info_pub)
+        self._publish_view(c)
+
+    def _publish_view(self, c):
+        """lightsView: the public read-only view of the configuration (lights_view.py, note 8), built again only when the saved settings change."""
+        k_src = repr(c.slc)
+        if c.trial or k_src == self.pub.get("view_src"):  # a simulation of unsaved settings is not the saved view
+            return
+        self.pub["view_src"] = k_src
+        c.bridge.set_status("lightsView", lights_view.view(lights_profile.clean({"status_light": c.slc})))
 
     def _wait(self, c):
         """Seconds to the next tick. Animations are the only reason to wake up on a timer (no IPC):

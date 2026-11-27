@@ -30,7 +30,10 @@
 	--wf-err: #e53935;
 	--wf-info: #1e88e5;
 	--wf-armed: #ff8f00;
-	--wf-family-rev: 'f4-20261121'; --wf-touch: 44px; --wf-control-line: #8c8c8c; --wf-focus: #90caf9; --wf-hover-line: #bdbdbd; --wf-hover-bg: rgba(128, 128, 128, 0.1); /* FASE4, HOVER */
+	--wf-family-rev: 'f5-20261123'; --wf-touch: var(--wf-hit);
+	/* THE scale (FAMILIA-REDISENO.md 2): seen xs 24 / s 32 / m 36 / l 48 (critical only), touched 40 (.wf-hit); a field is 40 seen and touched */
+	--wf-hit: 40px; --wf-hit-critical: 48px; --wf-size-xs: 24px; --wf-size-s: 32px; --wf-size-m: 36px; --wf-size-l: 48px; --wf-gap-hit: 8px;
+	--wf-field-h: 40px; --wf-radius-control: 6px; --wf-row: 48px; --wf-icon-s: 16px; --wf-icon-m: 18px; --wf-icon-l: 20px; --wf-control-line: #8c8c8c; --wf-focus: #90caf9; --wf-hover-line: #bdbdbd; --wf-hover-bg: rgba(128, 128, 128, 0.1); /* FASE4, HOVER */
 	/* semantic colors of every notice (ESTANDAR 2.1): ONE color per meaning; --wf-c-<meaning> (border, icon), -text, -bg.
 	   info = needs the person to sign in (blue); neutral = no permission for the role / nothing to say (gray); warning = waiting, locked, service down (orange);
 	   error = a real failure (red); success = done / all fine (green). Nothing is red while the session is still being resolved. */
@@ -87,13 +90,6 @@
 .wf-bar .page-health { cursor: pointer; }
 /* old pages that still draw the bar as a v-card: the same look, so a page being migrated does not jump */
 .workshop-theme .v-card.page-header { border: 1px solid var(--wf-line); border-radius: 12px; background: var(--wf-surface); background-image: none; box-shadow: none; }
-.workshop-theme .v-tabs { height: auto !important; border-bottom: 1px solid var(--wf-line); background: transparent !important; }
-.workshop-theme .v-tabs :is(.v-slide-group__content, .v-tabs-bar__content) { flex-wrap: wrap; }
-.workshop-theme .v-tabs :is(.v-tabs-bar, .v-slide-group__wrapper) { color: inherit !important; caret-color: inherit !important; background: transparent !important; height: auto !important; }
-.workshop-theme .v-tabs :is(.v-slide-group__prev, .v-slide-group__next, .v-tabs-slider-wrapper, .v-tab__slider) { display: none !important; }
-.workshop-theme .v-tabs .v-tab { min-height: 44px; padding: 8px 2px; margin-right: 18px; border-bottom: 2px solid transparent; border-radius: 0; text-transform: none; letter-spacing: 0; font-size: 14px; font-weight: 400; opacity: 0.75; color: inherit !important; }
-.workshop-theme .v-tabs .v-tab .v-icon:not(.text-error):not(.error--text) { color: var(--wf-icon) !important; font-size: 16px; }
-.workshop-theme .v-tabs .v-tab:is(.v-tab--selected, .v-tab--active) { opacity: 1; font-weight: 600; border-bottom-color: var(--wf-sec-now); }
 
 /* ================= cards ================= */
 /* a top level card: neutral, 1 px border, ONE 2 px line of the section color on top, no shadow */
@@ -117,7 +113,7 @@
 
 /* ================= buttons ================= */
 .workshop-theme .v-btn, .wf-btn { box-shadow: none !important; letter-spacing: 0; text-transform: none; }
-.workshop-theme .v-btn:not(.v-btn--icon):not(.v-btn--fab), .wf-btn { min-height: 44px; border-radius: 6px; font-size: 13px; font-weight: 500; }
+.workshop-theme .v-btn:not(.v-btn--icon):not(.v-btn--fab), .wf-btn { position: relative; min-height: var(--wf-size-s); border-radius: var(--wf-radius-control); font-size: 13px; font-weight: 500; }
 .wf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; position: relative; padding: 0 14px; border: 1px solid var(--wf-control-line); background: transparent; color: inherit; font-family: inherit; cursor: pointer; }
 .wf-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 /* secondary: a gray outline (any filled button that is not the main one, danger or armed) */
@@ -179,8 +175,7 @@
 .workshop-theme :is(.text-title-small, .text-title-medium, .text-subtitle-2, .text-subtitle-1) { font-size: 14px !important; letter-spacing: 0; }
 .workshop-theme :is(.text-title-large, .text-h6) { font-size: 16px !important; letter-spacing: 0; }
 .workshop-theme :is(code, kbd, .v-code), .wf-mono { font-family: var(--tp-font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); font-size: 12px; }
-.workshop-theme table thead th, .wf-table th { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.85; }
-.workshop-theme :is(.v-table, .v-data-table) { background: transparent; }
+.workshop-theme table thead th, .wf-table th { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 0.85; }
 
 /* ================= notices by cause (ESTANDAR 2.2): N1 chip, N2 note, N3 reason, N4 cover, N5 toast ================= */
 /* the cause sets three variables: --wf-n-c (border, icon), --wf-n-t (text), --wf-n-bg (background); nothing else paints a notice */
@@ -191,10 +186,12 @@
 .wf-notice--success, .wf-reason--success, .wf-cover--success, .wf-toast--success { --wf-n-c: var(--wf-c-success); --wf-n-t: var(--wf-c-success-text); --wf-n-bg: var(--wf-c-success-bg); }
 .wf-notice--error, .wf-reason--error, .wf-cover--error, .wf-toast--error { --wf-n-c: var(--wf-n-error); --wf-n-t: var(--wf-n-error-text); --wf-n-bg: var(--wf-n-error-bg); }
 /* N1 the session chip of the page bar */
-.wf-session-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 1px solid var(--wf-n-session); border-radius: 14px; background: var(--wf-n-session-bg); color: var(--wf-n-session-text); font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1; cursor: pointer; }
+.wf-session-chip { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 12px; border: 1px solid var(--wf-n-session); border-radius: 14px; background: var(--wf-n-session-bg); color: var(--wf-n-session-text); font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1; cursor: pointer; }
 @keyframes wf-attention { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 35% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--wf-n-session) 60%, transparent); } }
 .is-attention { animation: wf-attention 0.9s ease-out 1; }
 @media (prefers-reduced-motion: reduce) { .is-attention { animation: none; outline: 2px solid var(--wf-n-session); outline-offset: 2px; } }
+/* C6: 32 px drawn, 44 touched */
+.wf-session-chip::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: max(100%, var(--wf-hit)); transform: translateY(-50%); }
 .wf-session-chip.is-role { border-color: var(--wf-n-role); background: var(--wf-n-role-bg); color: inherit; }
 .wf-session-chip-icon { flex: none; width: 16px; height: 16px; font-size: 16px; color: var(--wf-n-session); }
 .wf-session-chip.is-role .wf-session-chip-icon { color: var(--wf-n-role); }
@@ -208,8 +205,8 @@
 .wf-notice-text { color: var(--wf-n-t); overflow-wrap: anywhere; }
 .wf-notice-icon { grid-column: 1; grid-row: 1; }
 .wf-notice-body { grid-column: 2; grid-row: 1; }
-/* narrow (a side panel): icon + text on top, the button below at full width (44px); wide: text and button on one row */
-.wf-notice .wf-notice-action { grid-column: 1 / -1; grid-row: 2; width: 100%; min-height: 44px; justify-content: center; }
+/* narrow (a side panel): icon + text on top, the button below at full width; wide: text and button on one row */
+.wf-notice .wf-notice-action { grid-column: 1 / -1; grid-row: 2; width: 100%; min-height: var(--wf-size-s); justify-content: center; }
 @container (min-width: 420px) { .wf-notice .wf-notice-action { grid-column: 3; grid-row: 1; width: auto; align-self: center; } }
 .wf-btn-icon { flex: none; width: 16px; height: 16px; font-size: 16px; line-height: 16px; margin-right: 6px; }
 .wf-notice .wf-btn, .wf-cover .wf-btn, .wf-reason .wf-btn { width: auto; flex: none; align-self: center; }
@@ -235,12 +232,12 @@ html:not([data-workshop-signed-out]) [data-workshop-permission='session'] { disp
 /* ================= help: the "?" (H1), the field with its label outside, the guide (H3), the note (H4) ================= */
 button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height: 24px; min-width: 24px; min-height: 24px; }
 /* FASE4: the "?" looks 24 px and is touched over 44 px (an invisible area, no layout cost) */
-.help-tip::after { content: ''; position: absolute; top: -12px; bottom: -8px; left: -10px; right: -10px; } /* 44 px high: up into the gap above, down to the edge of the field (the gap of .wf-field is 8 px), never into the field */
+.help-tip::after { content: ''; position: absolute; top: -8px; bottom: -8px; left: -8px; right: -8px; } /* 40 px (--wf-hit) around the 24 px button: down to the edge of the field (the gap of .wf-field is 8 px), never into the field */
 .help-tip { display: inline-flex; align-items: center; justify-content: center; flex: none; margin: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--wf-icon); cursor: pointer; opacity: 1; font: inherit; }
 .help-tip :is(.v-icon, .mdi), .help-tip svg { color: var(--wf-icon); font-size: 18px; line-height: 1; opacity: 1; }
 .help-tip svg { width: 18px; height: 18px; fill: currentColor; }
 .wf-section-head .help-tip { margin: 0; }
-.help-tip-card, .wf-popover { max-width: min(380px, calc(100vw - 16px)); }
+.help-tip-card, .wf-popover { max-width: min(380px, calc(100vw - 16px)); max-height: min(420px, 60vh); overflow-y: auto; overscroll-behavior: contain; }
 /* ONE session reason or note per block (2026-11-21: the same "your session ended" three times in one card): inside a parent only the first one that is shown draws */
 .wf-reason--session:not([hidden]) ~ .wf-reason--session, .wf-notice--session:not([hidden]) ~ .wf-notice--session { display: none !important; }
 .help-tip-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
@@ -252,7 +249,6 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 /* a switch or a checkbox next to its "?": Vuetify 2 gives .v-input--selection-controls a form margin (16 px on top + 4 px padding) that pushes its
    text below the centre of the row and leaves the "?" looking raised (Model capture 3, 2026-11-06); the row centres, so the control carries none.
    (Vuetify 3 has no such class: the rule is inert in the 3.7 line.) A plugin never adds mt-* to the control: the spacing goes on the row. */
-.help-tip-row > .v-input--selection-controls { margin-top: 0; padding-top: 0; }
 .wf-field { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .wf-field-label { display: flex; align-items: center; gap: 2px; min-height: 24px; font-size: 13px; font-weight: 500; line-height: 1.3; }
 .wf-field-label > label { min-width: 0; overflow-wrap: anywhere; }
@@ -268,7 +264,7 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 
 /* ================= FASE2 (unification plan 2026-11-21): write state, result, zone, sheet. Additive; promoted from the service kit ================= */
 /* the button of a write keeps ONE size: the longest of its texts sets the width; a wait is a spinner over the text after 400 ms */
-.wf-act { min-height: 44px; position: relative; }
+.wf-act { min-height: var(--wf-size-s); position: relative; }
 .wf-act-stack { display: inline-flex; flex-direction: column; align-items: center; }
 .wf-act-stack::after { content: attr(data-alt); height: 0; overflow: hidden; visibility: hidden; white-space: nowrap; }
 .wf-act-ico { font-size: 16px; line-height: 1; }
@@ -288,13 +284,13 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .wf-result-word { font-size: 12px; font-weight: 600; }
 .wf-result-text { min-width: 0; overflow-wrap: anywhere; }
 .wf-result-code { display: inline-block; margin-left: 6px; font-size: 12px; opacity: 0.85; }
-.wf-result .wf-btn { min-height: 44px; }
+.wf-result .wf-btn { min-height: var(--wf-size-s); }
 /* the zone: skeleton, meta line (time of the read, old data), content */
 .wf-zone-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 8px; font-size: 12px; }
 .wf-zone-age, .wf-zone-stale { display: inline-flex; align-items: center; gap: 6px; opacity: 0.85; }
 .wf-zone-age.is-old, .wf-zone-stale { color: var(--wf-c-warning-text); font-weight: 500; opacity: 1; }
 .wf-zone-ico { font-size: 14px; line-height: 1; color: var(--wf-icon); }
-.wf-zone .wf-btn { min-height: 44px; }
+.wf-zone .wf-btn { min-height: var(--wf-size-s); }
 .wf-zone .is-stale { opacity: 0.6; }
 .wf-vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .wf-skel { display: grid; gap: 10px; opacity: 0; animation: wf-late 1ms linear 400ms forwards; }
@@ -311,7 +307,7 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .wf-sheet-title { margin: 0; font-size: 18px; font-weight: 600; }
 .wf-sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 12px 16px; }
 .wf-sheet-foot { flex: none; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--wf-line); }
-.wf-sheet .wf-btn, .wf-sheet-close { min-height: 44px; min-width: 44px; }
+.wf-sheet .wf-btn, .wf-sheet-close { min-height: var(--wf-size-s); min-width: var(--wf-size-s); }
 .wf-dialog[data-level='3'] { border-top: 3px solid var(--wf-c-warning); }
 .wf-dialog[data-level='4'] { border-top: 3px solid var(--wf-c-error); }
 .wf-dialog-text { margin: 0 0 12px; }
@@ -319,7 +315,7 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .wf-dialog-object b, .wf-dialog-object span { display: block; }
 .wf-dialog-object b { font-size: 14px; }
 .wf-effects { margin: 0 0 12px; padding-left: 18px; list-style: disc; font-size: 13px; }
-.wf-check { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.wf-check { display: flex; align-items: center; gap: 10px; min-height: var(--wf-size-m); padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .wf-check:focus-visible { outline: 2px solid var(--wf-info); outline-offset: 2px; border-radius: 6px; }
 .wf-check-box { flex: none; font-size: 24px; line-height: 1; color: var(--wf-icon); }
 .wf-check[aria-checked='true'] .wf-check-box { color: var(--wf-accent); }
@@ -328,12 +324,12 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 /* the bar of the family: see the section "page bar" above (the compact variant was folded into it on 2026-11-22) */
 /* help 1 of 2, the fold "What it is and how to use it": a link with a "?" icon that opens in place and stays open (the 44 px of the summary is the touch box, always) */
 .wf-help-fold { margin-top: 8px; font-size: 13px; }
-.wf-help-fold > summary { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0; border-radius: 6px; color: var(--wf-c-info-text); cursor: pointer; list-style: none; font-weight: 500; }
+.wf-help-fold > summary { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: var(--wf-size-s); padding: 0; border-radius: 6px; color: var(--wf-c-info-text); cursor: pointer; list-style: none; font-weight: 500; }
 .wf-help-fold > summary::-webkit-details-marker { display: none; }
 .wf-help-fold > summary:focus-visible { outline: 2px solid var(--wf-c-info); outline-offset: 2px; }
 .wf-help-fold > summary > span:not(.wf-help-fold-icon) { text-decoration: underline; text-underline-offset: 3px; }
 .wf-help-fold .wf-help-fold-icon { flex: none; width: 16px; height: 16px; font-size: 16px; color: var(--wf-c-info); }
-.wf-help-fold-body { margin: 0 0 4px; padding: 8px 12px; border-radius: 8px; background: var(--wf-soft); }
+.wf-help-fold-body { margin: 0 0 4px; padding: 8px 12px; border-radius: 8px; background: var(--wf-soft); max-height: min(240px, 40vh); overflow-y: auto; overscroll-behavior: contain; }
 .wf-help-fold-body > .help-tip-list:first-child { margin-top: 0; }
 .wf-help-fold-item + .wf-help-fold-item { margin-top: 12px; }
 /* help 2 of 2, the line: one or two sentences, gray, in line (no link, no fold) */
@@ -356,33 +352,33 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 .workshop-theme :is(a, button, summary, [tabindex]:not([tabindex='-1']), .v-btn, .v-chip--clickable, .v-tab, .v-input--selection-controls__input):focus-visible,
 .workshop-theme :is(input, select, textarea):not(.v-input:not(.v-input--selection-controls) *):focus-visible { outline: 2px solid var(--wf-focus); outline-offset: 2px; }
 /* an icon button looks as small as its place needs and is touched over 44 px */
-.workshop-theme :is(.v-btn--icon, .v-btn--fab)::after { content: ''; position: absolute; inset: min(0px, calc(50% - 22px)); }
+.workshop-theme :is(.v-btn--icon, .v-btn--fab)::after { content: ''; position: absolute; inset: min(0px, calc(50% - var(--wf-hit) / 2)); }
 /* F4-02: the extra area is (44 px - the button) / 2 on every side and it NEVER reaches a neighbour: icon buttons that follow each other are
    spaced so that the areas tile (button + gap = 44 px: 36 px + 8, small 28 px + 16, x-small 20 px + 24) and the sides that face each other get no extension */
-.workshop-theme .v-btn--icon + .v-btn--icon { margin-left: 8px; }
-.workshop-theme .v-btn--icon.v-size--small + .v-btn--icon { margin-left: 16px; }
-.workshop-theme .v-btn--icon.v-size--x-small + .v-btn--icon { margin-left: 24px; }
+.workshop-theme .v-btn--icon + .v-btn--icon { margin-left: 4px; }
+.workshop-theme .v-btn--icon.v-size--small + .v-btn--icon { margin-left: 12px; }
+.workshop-theme .v-btn--icon.v-size--x-small + .v-btn--icon { margin-left: 20px; }
 /* a dense table: the buttons keep a small look, the touch area stays 44 px */
 .workshop-theme :is(table, .v-data-table, .v-table) :is(.v-btn:not(.v-btn--icon), .wf-btn) { min-height: 32px; }
-.workshop-theme :is(table, .v-data-table, .v-table) :is(.v-btn:not(.v-btn--icon), .wf-btn)::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.workshop-theme :is(table, .v-data-table, .v-table) :is(.v-btn:not(.v-btn--icon), .wf-btn)::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--wf-hit); transform: translateY(-50%); }
 /* fields (Vuetify 2): 44 px high, and their line reaches 3:1 (the DWC 3.7 line is paused: its .v-field twin is not written) */
-.workshop-theme .v-text-field.v-input--dense .v-input__slot { min-height: 44px; }
+.workshop-theme .v-text-field.v-input--dense .v-input__slot { min-height: var(--wf-field-h); }
 .workshop-theme .v-input.v-text-field--outlined fieldset { border-color: var(--wf-control-line); }
 /* the 12 px floor: x-small chips and buttons */
 .workshop-theme :is(.v-chip--size-x-small, .v-chip.v-size--x-small, .v-btn--size-x-small, .v-btn.v-size--x-small) { font-size: 12px; }
 /* ===== FASE5-PIEZAS BEGIN (2026-11-21): the two compact variants of WfActionButton (variant 'icon' and 'text'). Additive: nothing above is edited. =====
    They look small and are touched over 44 px (an invisible ::after, decision 44 px always). `:not(.wf-x)` only lifts the specificity to the level of the dense-table rule of FASE4 (it would reset them). */
 .wf-btn.wf-act.wf-act--icon:not(.wf-x) { width: 28px; min-width: 28px; height: 28px; min-height: 28px; padding: 0; border: 0; border-radius: 6px; }
-.wf-btn.wf-act.wf-act--icon:not(.wf-x)::after { content: ''; position: absolute; inset: -8px; height: auto; transform: none; } /* (44 - 28) / 2 per side: it reaches a neighbour only if the page spaces them under 16 px */
-.wf-act--icon + .wf-act--icon { margin-left: 16px; } /* the areas tile: 28 + 16 = 44 */
+.wf-btn.wf-act.wf-act--icon:not(.wf-x)::after { content: ''; position: absolute; inset: -6px; height: auto; transform: none; } /* (40 - 28) / 2 per side: it reaches a neighbour only if the page spaces them under 16 px */
+.wf-act--icon + .wf-act--icon { margin-left: 12px; } /* the areas tile: 28 + 12 = 40 */
 .wf-act--icon .wf-act-ico { font-size: 20px; }
 .wf-btn.wf-act.wf-act--text:not(.wf-x) { min-height: 24px; padding: 0 4px; border: 0; background: transparent; text-decoration: underline; text-underline-offset: 3px; }
-.wf-btn.wf-act.wf-act--text:not(.wf-x)::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); } /* full width, 44 px high, as the dense-table buttons */
+.wf-btn.wf-act.wf-act--text:not(.wf-x)::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--wf-hit); transform: translateY(-50%); } /* full width, 44 px high, as the dense-table buttons */
 .wf-act--text.wf-danger { color: var(--wf-c-error-text); border-color: transparent; } /* the text color reaches 4.5:1 on both themes (--wf-err stays for lines and glyphs) */
 /* Click-area helper [data-wf-hit] (DOM and Vue): the thing keeps its small look and is touched over 44 px by an invisible ::after centered on it. It never grows past 44 px, so a neighbour spaced 44 px
    center to center keeps its own area; data-wf-hit="x" grows only sideways, "y" only up and down (a mark in a row of marks). */
 [data-wf-hit] { position: relative; }
-[data-wf-hit]::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+[data-wf-hit]::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, var(--wf-hit)); height: max(100%, var(--wf-hit)); transform: translate(-50%, -50%); }
 [data-wf-hit="x"]::after { height: 100%; }
 [data-wf-hit="y"]::after { width: 100%; }
 /* ===== FASE5-PIEZAS END ===== */
@@ -391,24 +387,22 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
    is spaced by its gap, so the areas never meet sideways). Vuetify clips a chip (overflow: hidden): a clickable one does not clip, it has no ripple here (the underlay is off, FASE2).
    A chip that is not clickable (state "All fine" of the health chip, info chips) is information, not a control: it has no area. */
 .workshop-theme .v-chip.v-chip--clickable { position: relative; overflow: visible; }
-.workshop-theme .v-chip.v-chip--clickable::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.workshop-theme .v-chip.v-chip--clickable::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--wf-hit); transform: translateY(-50%); }
 /* H-07: a single-line field is 44 px high: the dense ones of Vuetify 2 are 40 px (their rule is more specific than the one of FASE4, hence the longer selector); the label that sits in
    the field follows the centre (+2 px), the one that floats on the border does not move. Filled, solo and multi-line fields have their own height. */
-.workshop-theme .v-input.v-input--dense.v-text-field:not(.v-textarea):not(.v-text-field--filled):not(.v-text-field--solo) > .v-input__control > .v-input__slot { min-height: 44px; }
+.workshop-theme .v-input.v-input--dense.v-text-field:not(.v-textarea):not(.v-text-field--filled):not(.v-text-field--solo) > .v-input__control > .v-input__slot { min-height: var(--wf-field-h); }
 .workshop-theme .v-input.v-input--dense.v-text-field--outlined:not(.v-textarea) > .v-input__control > .v-input__slot .v-label:not(.v-label--active) { top: 12px; }
-.workshop-theme .v-input.v-text-field:not(.v-input--dense):not(.v-text-field--enclosed):not(.v-textarea) > .v-input__control > .v-input__slot { min-height: 44px; }
+.workshop-theme .v-input.v-text-field:not(.v-input--dense):not(.v-text-field--enclosed):not(.v-textarea) > .v-input__control > .v-input__slot { min-height: var(--wf-field-h); }
 .workshop-theme .v-input.v-select.v-text-field:not(.v-select--chips) .v-select__selections { padding-top: 0; padding-bottom: 0; }
 /* QA r2 M-04: the typing area is the whole 44 px box (Vuetify 2 leaves a 26 to 32 px INPUT inside it, and the area a finger or the auditor sees is the INPUT). */
 .workshop-theme .v-text-field:not(.v-textarea) > .v-input__control > .v-input__slot > .v-text-field__slot { align-self: stretch; }
-.workshop-theme .v-text-field:not(.v-textarea) > .v-input__control > .v-input__slot > .v-text-field__slot > input { max-height: none; min-height: 44px; padding-top: 0; padding-bottom: 0; }
-.workshop-theme .v-text-field:not(.v-textarea) > .v-input__control > .v-input__slot .v-select__selections > input { max-height: none; min-height: 44px; padding-top: 0; padding-bottom: 0; }
+.workshop-theme .v-text-field:not(.v-textarea) > .v-input__control > .v-input__slot > .v-text-field__slot > input { max-height: none; min-height: var(--wf-field-h); padding-top: 0; padding-bottom: 0; }
+.workshop-theme .v-text-field:not(.v-textarea) > .v-input__control > .v-input__slot .v-select__selections > input { max-height: none; min-height: var(--wf-field-h); padding-top: 0; padding-bottom: 0; }
 /* ===== FASE5-FAMILIA END ===== */
 /* ===== FASE6-VISUAL BEGIN (2026-11-22, visual review in the Pi, report 12): switches and checkboxes touched over 44 px. Additive. ===== */
 /* A Vuetify 2 switch or checkbox is a 38 x 24 (24 x 24) control and its row 28 px high (the reviews of the Pi and of the simulator measured them). The whole row
    answers the touch (the slot and the label toggle it), so the row is 44 px high and the label fills it. A row inside a form row of the family keeps
    its own margins (.help-tip-row zeroes them above). */
-.workshop-theme .v-input--selection-controls .v-input__slot { min-height: 44px; align-items: center; }
-.workshop-theme .v-input--selection-controls .v-input__slot > .v-label { min-height: 44px; }
 /* ===== FASE6-VISUAL END ===== */
 /* ===== HOVER BEGIN (2026-11-22): ONE hover for every control. Hover = a quieter hint than the focus ring, never a shape change.
    - a button, tab, menu item, chip: a --wf-hover-bg layer (10% gray) over it (Vuetify buttons: its ::before layer, so no !important war); the filled main button darkens 8%
@@ -425,3 +419,9 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
 }
 @media (prefers-reduced-motion: no-preference) { .workshop-theme fieldset, .wf-btn, .sv-field { transition: border-color 0.12s, background-color 0.12s; } }
 /* ===== HOVER END ===== */
+/* FASE5 the scale: main m, critical l; the 40 px area is an invisible ::after (.wf-hit) */
+.wf-btn.wf-btn--main { min-height: var(--wf-size-m); }
+.wf-btn.wf-btn--crit { min-height: var(--wf-size-l); min-width: var(--wf-size-l); font-weight: 600; }
+.wf-hit { position: relative; }
+.wf-hit::after, .wf-btn:not(.wf-act)::after, .wf-help-fold > summary::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, var(--wf-hit)); height: max(100%, var(--wf-hit)); transform: translate(-50%, -50%); }
+.wf-btn.wf-btn--crit::after { width: max(100%, var(--wf-hit-critical)); height: max(100%, var(--wf-hit-critical)); }

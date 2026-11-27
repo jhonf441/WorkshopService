@@ -17,19 +17,19 @@
    "sha256": "dccb3e32552d0b6427413f4bcb7e579a2522c45046dda189b25ab048084d0321"
   },
   "bridge_pkg/actions.py": {
-   "sha256": "8ff147978a26fa3099d5d2e263d6c6e0e9aa4bc042ec555d8fd5f019f2885bb5"
+   "sha256": "3a6bb73dc8ce7fb04eac97e507d3dcfd463b3b15b019b41beddb4259e9f8c57a"
   },
   "bridge_pkg/bridge.py": {
-   "sha256": "cc5048436c6c539e9d0418cdf113d2dd7cdbb257159cff392c7a42c266d98668"
+   "sha256": "c2125235831752395a3237bd064cb382e6dfe1ea00dde5b8c8c2f46af6612893"
   },
   "bridge_pkg/client.py": {
-   "sha256": "c38a7c1ae2d7d5621a9d68a863502a113a6d9b1effc98229def0f831740f73b8"
+   "sha256": "4dc3d704e47a1cb4501647d2581af84390f16edcd703981a7f9a266f879edaee"
   },
   "bridge_pkg/clock.py": {
    "sha256": "dcc589aeb79fd8aa815f2d819a59194507054a5356a773622804970e3c1f0359"
   },
   "bridge_pkg/commands.py": {
-   "sha256": "84aa481ed0ebcb4d0f982e0004d578a157d47f78c71095dfb0098f30259488ed"
+   "sha256": "3bc824f821451501e208e93a7fc117a8fc2f66797dfe44a7bf99145e8236386e"
   },
   "bridge_pkg/debug.py": {
    "sha256": "b1aaf67b6fdf4ed1088fbee333b64f1b5af43bc79c5f6f78a1b6ec5ca8459a84"

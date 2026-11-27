@@ -34,7 +34,8 @@ class Client:
         self.ip = addr[0]
         self.id = f"{addr[0]}:{addr[1]}"
         clock = bridge.clock
-        self.name = bridge.settings.get("names").get(addr[0]) or bridge.auto_name(addr[0])
+        self.name = bridge.auto_name(addr[0])                    # automatic, fixed per IP: the control identity
+        self.alias = bridge.settings.get("names").get(addr[0]) or ""   # assigned name: shown next to it
         self.since = clock.wall()
         self.last_rx = clock.wall()
         self.lines = self.orders = self.queries = self.rejects = 0
@@ -422,7 +423,7 @@ class Client:
     def info(self, now_wall):
         b = self.bridge
         return {
-            "id": self.id, "name": self.name, "ip": self.ip, "port": self.addr[1],
+            "id": self.id, "name": self.name, "alias": self.alias, "ip": self.ip, "port": self.addr[1],
             "connected_s": round(now_wall - self.since), "idle_s": round(now_wall - self.last_rx),
             "lines": self.lines, "orders": self.orders, "queries": self.queries, "rejects": self.rejects,
             "cache_hits": self.cache_hits, "coalesced": self.coalesced, "stale_served": self.stale_served,

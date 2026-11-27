@@ -18,6 +18,7 @@
     "lights_loop.py",
     "lights_macros.py",
     "lights_profile.py",
+    "lights_view.py",
     "lights_edit.py",
     "lights_probe.py",
     "lights_ops.py",
@@ -365,7 +366,7 @@
   "id": "WorkshopService",
   "name": "Workshop Service",
   "author": "jhonf441",
-  "version": "2.65.1",
+  "version": "2.66.0",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/jhonf441/WorkshopService",
   "tags": ["laser", "cnc", "automation", "api", "workshop"],
@@ -436,6 +437,7 @@
     "jogBlock": null,
     "statusIndicator": null,
     "lightsInfo": null,
+    "lightsView": null,
     "motion": null,
     "machine": null
   }

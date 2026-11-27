@@ -26,7 +26,7 @@
 							<button type="button" class="wf-btn sv-btn sv-text" @click="editing = null">{{ tr('cancel') }}</button>
 						</div>
 						<template v-else>
-							<div class="sv-row-name">{{ cl.name }} <button type="button" class="wf-btn sv-btn sv-text" data-act="rename" :aria-label="t('links.bridge_rename') + ': ' + cl.name" :disabled="!mayOrder" @click="beginRename(cl)"><span class="mdi mdi-pencil-outline sv-ico sv-ico-s" aria-hidden="true" /></button></div>
+							<div class="sv-row-name">{{ cl.name }}<template v-if="cl.alias"> · {{ cl.alias }}</template> <button type="button" class="wf-btn sv-btn sv-text" data-act="rename" :aria-label="t('links.bridge_rename') + ': ' + cl.name" :disabled="!mayOrder" @click="beginRename(cl)"><span class="mdi mdi-pencil-outline sv-ico sv-ico-s" aria-hidden="true" /></button></div>
 							<div class="sv-row-desc">{{ cl.id }} · {{ tr('connected_for_t', { t: dur(cl.connected_s) }) }} · {{ cl.idle_s > 5 ? tr('idle_for_t', { t: dur(cl.idle_s) }) : tr('active_now') }}</div>
 						</template>
 					</div>
@@ -93,7 +93,7 @@ export default {
 		},
 		beginRename(cl) {
 			this.editing = cl.id
-			this.nameNew = cl.name
+			this.nameNew = cl.alias || ''
 			this.remember = true
 		},
 		rename(cl) {

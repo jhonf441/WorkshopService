@@ -115,10 +115,10 @@ class Bridge(SecurityMixin, LiveJobMixin, CommandsMixin, DebugMixin, ActionsMixi
 
     # -- names --
     def label(self, client):
-        return client.name if client is not None else "nobody"
+        return (f"{client.name} ({client.alias})" if client.alias else client.name) if client is not None else "nobody"
 
     def label_ip(self, client):
-        return f"{client.name} ({client.ip})" if client is not None else "nobody"
+        return f"{self.label(client)} ({client.ip})" if client is not None else "nobody"
 
     def new_link(self):
         """A private DSF connection (the safe stop uses its own, never a client's queue)."""
@@ -128,7 +128,7 @@ class Bridge(SecurityMixin, LiveJobMixin, CommandsMixin, DebugMixin, ActionsMixi
     def find(self, wanted):
         w = (wanted or "").strip().lower()
         for c in self.clients.values():
-            if c.name.lower() == w or c.id == w:
+            if c.name.lower() == w or (c.alias and c.alias.lower() == w) or c.id == w:
                 return c
         return None
     # -- client registry --

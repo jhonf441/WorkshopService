@@ -37,7 +37,7 @@ function icon(path, size, color) {
 function field(label, type, mode) {
 	const wrap = el('label', 'display:block;margin-top:12px;font-size:12px;font-weight:500;letter-spacing:0.4px;text-transform:uppercase;color:#b0bec5;')
 	wrap.appendChild(document.createTextNode(label))
-	const input = el('input', 'display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:8px 12px;font-size:16px;min-height:44px;' +
+	const input = el('input', 'display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:6px 12px;font-size:16px;min-height:var(--wf-field-h, 40px);' +
 		'background:#263238;color:#eceff1;border:1px solid rgba(255,255,255,0.23);border-radius:4px;outline:none;text-transform:none;letter-spacing:normal;font-family:inherit;')
 	input.type = type
 	if (mode) input.setAttribute('inputmode', mode)
@@ -124,11 +124,22 @@ function rememberName(n) {
 	}
 }
 
+// the veil never covers an emergency stop (owner's safety rule 2026-11-23; twin of workshopVeilClear, src/_shared/45-layers.js): it starts under
+// DWC's top bar (its Emergency stop) and ends left of the control bar (getInset of the notices center)
+function veilClear(back) {
+	const bar = document.querySelector('header.v-app-bar') || document.querySelector('.v-app-bar')
+	const r = bar && typeof bar.getBoundingClientRect === 'function' ? bar.getBoundingClientRect() : null
+	const c = window.__workshopNotices
+	back.style.top = (r && r.height > 0 && r.bottom > 0 ? Math.ceil(r.bottom) : 0) + 'px'
+	back.style.right = (c && typeof c.getInset === 'function' ? Number(c.getInset('right')) || 0 : 0) + 'px'
+	back.setAttribute('data-wf-veil-clear', '1')
+}
+
 export function pinDialog(login, t) {
 	return new Promise(resolve => {
 		const back = el('div', 'position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,0.55);display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow:auto;')
 		back.setAttribute('data-tp-panel', '1')
-		back.setAttribute('data-tp-pin', '1') // its own touches do not count as the person's action (workshop-auth.js)
+		back.setAttribute('data-tp-pin', '1'); veilClear(back) // its own touches are not the person's action (workshop-auth.js); never over a stop
 		const box = el('div', 'background:#1e272c;color:#eceff1;border:1px solid rgba(255,255,255,0.12);border-radius:8px;margin:auto 0;font-family:Roboto,Helvetica,Arial,sans-serif;' +
 			'max-width:360px;width:100%;padding:16px 18px 14px;font-size:13px;line-height:1.45;box-shadow:0 8px 30px rgba(0,0,0,0.5);')
 		box.setAttribute('role', 'dialog')
@@ -158,7 +169,7 @@ export function pinDialog(login, t) {
 		pn.input.setAttribute('enterkeyhint', 'go')
 		pn.input.style.paddingRight = '48px'
 		// Eye to see the PIN being typed (own PIN, own screen)
-		const eye = el('button', 'position:absolute;right:2px;bottom:0;width:44px;height:44px;background:transparent;border:0;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;')
+		const eye = el('button', 'position:absolute;right:2px;bottom:0;width:var(--wf-hit, 40px);height:var(--wf-hit, 40px);background:transparent;border:0;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;')
 		eye.type = 'button'
 		eye.setAttribute('tabindex', '-1')
 		eye.appendChild(icon(EYE, 20, '#b0bec5'))
@@ -182,9 +193,9 @@ export function pinDialog(login, t) {
 		}
 		const msg = el('div', 'min-height:20px;margin-top:10px;font-size:12px;color:#ef9a9a;')
 		const row = el('div', 'display:flex;gap:8px;justify-content:flex-end;margin-top:6px;')
-		const bc = el('button', 'background:transparent;color:#eceff1;border:0;border-radius:6px;padding:8px 16px;min-height:44px;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;font-family:inherit;', t('cancel'))
-		const bo = el('button', 'background:var(--wf-accent, #1976d2);color:#fff;border:0;border-radius:6px;padding:8px 20px;min-height:44px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;font-family:inherit;', t('pinEnter'))
-		bc.type = bo.type = 'button'
+		const bc = el('button', 'position:relative;background:transparent;color:#eceff1;border:0;border-radius:6px;padding:6px 16px;min-height:var(--wf-size-s, 32px);font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;font-family:inherit;', t('cancel'))
+		const bo = el('button', 'position:relative;background:var(--wf-accent, #1976d2);color:#fff;border:0;border-radius:6px;padding:6px 20px;min-height:var(--wf-size-m, 36px);font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;cursor:pointer;font-family:inherit;', t('pinEnter'))
+		bc.className = bo.className = 'wf-hit'; bc.type = bo.type = 'button' // seen s 32 / m 36, touched 40 (the scale, family.css .wf-hit)
 		const inputs = [nm.input, pn.input]
 		let busy = false
 		const end = v => {

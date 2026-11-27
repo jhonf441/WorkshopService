@@ -8,27 +8,26 @@
 			</v-btn>
 		</template>
 		<v-card class="pa-3 range-picker">
-			<v-btn v-if="clearable" small :outlined="!!value" :color="value ? undefined : 'primary'" class="mb-2" @click="pickAll">{{ ts('range_all') }}</v-btn>
-			<div class="text-subtitle-2">{{ ts('range_quick') }}</div>
-			<div class="d-flex flex-wrap mt-1" style="gap:6px">
-				<v-btn v-for="q in quick" :key="q.amount + q.unit" x-small :outlined="!isQuick(q)" :color="isQuick(q) ? 'primary' : undefined" @click="pickQuick(q)">
+			<button v-if="clearable" type="button" class="range-chip range-all" :class="{ on: !value }" :aria-pressed="!value ? 'true' : 'false'" @click="pickAll">{{ ts('range_all') }}</button>
+			<div class="range-title">{{ ts('range_quick') }}</div>
+			<div class="range-row">
+				<button v-for="q in quick" :key="q.amount + q.unit" type="button" class="range-chip" :class="{ on: isQuick(q) }" :aria-pressed="isQuick(q) ? 'true' : 'false'" @click="pickQuick(q)">
 					{{ tsc(word('range_short_', q.unit), q.amount, { n: q.amount }) }}
-				</v-btn>
+				</button>
 			</div>
 
-			<v-btn-toggle v-model="tab" mandatory dense color="primary" class="mt-3">
-				<v-btn small value="relative">{{ ts('range_relative') }}</v-btn>
-				<v-btn small value="absolute">{{ ts('range_absolute') }}</v-btn>
-			</v-btn-toggle>
+			<div class="range-row range-tabs" role="group">
+				<button v-for="t in TABS" :key="t" type="button" class="range-chip" :class="{ on: tab === t }" :aria-pressed="tab === t ? 'true' : 'false'" @click="tab = t">{{ ts(t === 'relative' ? 'range_relative' : 'range_absolute') }}</button>
+			</div>
 
-			<div v-if="tab === 'relative'" class="mt-3">
+			<div v-if="tab === 'relative'">
 				<div class="text-caption grey--text">{{ ts('range_relative_help') }}</div>
-				<div class="d-flex align-center flex-wrap mt-2" style="gap:8px">
+				<div class="range-row mt-2">
 					<input v-model.number="amount" type="number" min="1" :max="maxAmount" step="1" class="field amount" :aria-label="ts('range_amount')" />
-					<v-btn v-for="u in units" :key="u" x-small :outlined="unit !== u" :color="unit === u ? 'primary' : undefined" @click="unit = u">{{ ts(word('range_unit_', u)) }}</v-btn>
+					<button v-for="u in units" :key="u" type="button" class="range-chip" :class="{ on: unit === u }" :aria-pressed="unit === u ? 'true' : 'false'" @click="unit = u">{{ ts(word('range_unit_', u)) }}</button>
 				</div>
 			</div>
-			<div v-else class="mt-3 range-abs">
+			<div v-else class="range-abs">
 				<div class="text-caption grey--text">{{ ts('range_absolute_help') }} {{ ts('range_type_hint', { format: dayFormat }) }}</div>
 				<div class="range-fields">
 					<div v-for="side in SIDES" :key="side" class="range-field" :data-side="side">
@@ -61,10 +60,9 @@
 			<div v-if="problem" class="text-caption error--text mt-2">{{ ts(word('range_err_', problem)) }}</div>
 			<div v-else-if="preview" class="text-caption grey--text mt-2">{{ preview }}</div>
 
-			<div class="d-flex align-center mt-3" style="gap:8px">
-				<v-spacer />
-				<v-btn small text @click="open = false">{{ ts('range_cancel') }}</v-btn>
-				<v-btn small color="primary" :disabled="!!problem" @click="apply">{{ ts('range_apply') }}</v-btn>
+			<div class="range-foot">
+				<button type="button" class="range-chip" @click="open = false">{{ ts('range_cancel') }}</button>
+				<button type="button" class="range-chip on" :disabled="!!problem" @click="apply">{{ ts('range_apply') }}</button>
 			</div>
 		</v-card>
 	</v-menu>
@@ -85,6 +83,7 @@ import { QUICK, UNITS, MAX_AMOUNT, check, resolve, quickOf, relative, absolute, 
 // the text of a family of keys (range_unit_hours, range_err_order...): the key is built here
 const word = (family, id) => family + id
 const SIDES = ['from', 'to']
+const TABS = ['relative', 'absolute']
 const WIDE = 760   // a window this wide shows two months
 
 function lang() {
@@ -103,7 +102,7 @@ export default {
 	},
 	data() {
 		return {
-			SIDES, quick: QUICK, units: UNITS, maxAmount: MAX_AMOUNT,
+			SIDES, TABS, quick: QUICK, units: UNITS, maxAmount: MAX_AMOUNT,
 			open: false, tab: 'relative', amount: 1, unit: 'hours',
 			picking: { from: '', to: '', open: false },   // the days chosen on the calendar (open: the first touch was made and the last is waited for)
 			text: { from: '', to: '' },                    // what is written in the day fields
@@ -272,24 +271,37 @@ export default {
 </script>
 
 <style scoped>
-.field { padding: 2px 8px; min-height: 44px; box-sizing: border-box; border: 1px solid rgba(128, 128, 128, 0.45); border-radius: 4px; color: inherit; background: transparent; }
+.range-picker { font-size: 14px; }
+/* the chips look the same as the JS picker (src/_shared/04-range-picker.js, the one the owner chose on 2026-11-23): 44 px, 6 px radius, 13 px text, filled when chosen */
+.range-chip { position: relative; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; min-height: var(--wf-size-s, 32px); padding: 0 12px; border-radius: 6px; cursor: pointer; font: inherit; font-size: 13px; border: 1px solid rgba(128, 128, 128, 0.45); background: transparent; color: inherit; }
+.range-chip::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, var(--wf-hit, 40px)); height: max(100%, var(--wf-hit, 40px)); transform: translate(-50%, -50%); }
+.range-chip:hover { background: rgba(128, 128, 128, 0.12); }
+.range-chip.on { background: var(--v-primary-base, #1976d2); border-color: var(--v-primary-base, #1976d2); color: #fff; }
+.range-chip:disabled { opacity: 0.5; cursor: default; }
+.range-chip:focus-visible { outline: 2px solid var(--v-primary-base, #1976d2); outline-offset: 2px; }
+.range-all { margin-bottom: 8px; }
+.range-title { font-weight: 600; margin-bottom: 4px; }
+.range-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--wf-gap-hit, 8px); }
+.range-tabs { margin: 12px 0 8px; }
+.range-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.field { padding: 2px 8px; min-height: var(--wf-field-h, 40px); box-sizing: border-box; border: 1px solid rgba(128, 128, 128, 0.45); border-radius: 4px; color: inherit; background: transparent; }
 .field:focus { outline: 2px solid var(--v-primary-base, #1976d2); }
 .field.bad { border-color: var(--v-error-base, #d32f2f); }
 .field.amount { width: 72px; }
 .field.date { width: 118px; }
 .field.time { width: 64px; }
-.range-word { min-width: 44px; }
+.range-word { min-width: var(--wf-hit, 40px); }
 .range-fields { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 8px 0; }
 .range-field { display: flex; align-items: center; gap: 8px; }
 .range-cals { display: grid; grid-template-columns: repeat(var(--range-months, 1), minmax(0, 1fr)); gap: 0 16px; }
 .range-cals[data-months='2'] { --range-months: 2; }
-.range-cal-bar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
+.range-cal-bar { display: flex; align-items: center; justify-content: space-between; min-height: var(--wf-hit, 40px); }
 .range-cal-title { flex: 1; min-width: 0; text-align: center; font-weight: 600; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.range-nav, .range-nav-gap { width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
+.range-nav, .range-nav-gap { width: var(--wf-hit, 40px); height: var(--wf-hit, 40px); border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
 .range-nav:hover, .range-day:hover { background: rgba(128, 128, 128, 0.2); }
 .range-cal-head, .range-cal-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .range-cal-head span { text-align: center; font-size: 12px; opacity: 0.7; line-height: 24px; }
-.range-day { min-height: 44px; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.range-day { min-height: var(--wf-hit, 40px); border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .range-day.today { font-weight: 700; text-decoration: underline; }
 .range-day.kind-mid { background: rgba(128, 128, 128, 0.25); }
 .range-day.kind-edge { background: var(--v-primary-base, #1976d2); color: #fff; border-radius: 22px; }

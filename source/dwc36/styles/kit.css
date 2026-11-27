@@ -656,7 +656,10 @@ span.sv-chip { cursor: default; min-height: 28px; padding: 0 10px; }
 .sv-page[data-xl] { --sv-f-cap: 13px; --sv-f-2: 14px; --sv-f-body: 15px; --sv-f-title: 17px; --sv-f-page: 20px; }
 .sv-page :is(.sv-quiet, .sv-lead, .sv-row-desc) { max-width: 75ch; }
 .sv-toggle { display: inline-flex; align-items: center; gap: 12px; min-height: var(--sv-touch); }
-.sv-tv-row.sv-flash { box-shadow: inset 4px 0 var(--wf-focus), inset 0 0 0 2px var(--wf-focus); }   /* the line jumped to: a bar and a ring that show on green, orange and red lines, in both themes; no motion at all */
+.sv-tv-row.sv-flash { box-shadow: inset 4px 0 var(--wf-focus), inset -2px 0 var(--wf-focus); }   /* the lines jumped to: ONE block (note 18, 2026-11-23: a ring per line drew a stack of boxes): the bar and the sides on every row, */
+.sv-tv-row.sv-flash.sv-flash-first { box-shadow: inset 4px 0 var(--wf-focus), inset -2px 0 var(--wf-focus), inset 0 2px var(--wf-focus); }   /* the top edge only on the first row */
+.sv-tv-row.sv-flash.sv-flash-last { box-shadow: inset 4px 0 var(--wf-focus), inset -2px 0 var(--wf-focus), inset 0 -2px var(--wf-focus); }   /* the bottom edge only on the last */
+.sv-tv-row.sv-flash.sv-flash-first.sv-flash-last { box-shadow: inset 4px 0 var(--wf-focus), inset 0 0 0 2px var(--wf-focus); }   /* one line: the whole ring; shows on green, orange and red lines, both themes, no motion */
 @keyframes sv-flash { to { background: transparent; box-shadow: inset 4px 0 transparent; } }
 [data-reveal] { scroll-margin-top: 80px; }
 .sv-unsaved { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border: 1px solid var(--wf-c-warning); border-radius: 999px; font-size: 12px; font-weight: 600; }

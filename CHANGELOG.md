@@ -4,6 +4,11 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.66.0 -- 2026-11-25 (bridge connections: fixed automatic name plus alias)
+
+- Each bridge connection keeps its automatic name (`client1`, one per IP) as its identity, and the name you assign (page pencil or `BRIDGE NAME`) is saved apart as an alias and shown next to it (`client1 · Cutter`). Events and messages show both. `BRIDGE USE` accepts the name or the alias.
+- Service page: the family design of 23 Nov (scale 32/36 visible with a 40 touch area, fields 40, sentence-case table heads), the notices center with the new This screen section, the compare of access versions naming its columns, and the sanitized read-only lights view readable without a session.
+
 ## 2.65.1 -- 2026-11-23 (optional files are not requested when absent)
 
 - The page copy of safe-saving.js now equals the shared one: an optional file of 0:/sys/ that is not in the folder list is never requested from DSF, so DuetWebServer no longer logs "Could not find file" for it; a file that appears later is read as soon as the folder list shows it.
