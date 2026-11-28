@@ -25,7 +25,7 @@ DEFAULT_HOLD_MIN = 15
 MAX_ZONES = 16
 CAP_MARGIN_TUNE = 10.0           # C: a tuning target must be this far under the cap of the heater (the relay tuning swings above the setpoint)
 TOL_DEFAULT = 5.0                # C: a neighbour counts as "at temperature" within this
-MARGIN_COLD = 25.0               # C under the target the tuned zone must start from (RRF asks for 20)
+MARGIN_COLD = 22.0               # C under the target the tuned zone must start from (RRF asks for 20; 2 C of margin, not 5)
 OVER_TARGET = 40.0               # C over its target: something is wrong, everything is turned off
 
 REFUSALS = ("bad_param", "no_zone_config", "unknown_zone", "inactive_zone", "no_heater", "heater_shared", "heater_fault", "heater_tuning", "over_zone_max",

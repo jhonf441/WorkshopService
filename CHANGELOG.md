@@ -4,6 +4,10 @@ Workshop backend (central API, pollers, database)
 and its control page. Before 1.3.0 it was not versioned: versions
 1.0-1.2 were reconstructed by grouping the commits by day.
 
+## 2.66.1 -- 2026-11-28 (no framed shadow around buttons)
+
+- The service page no longer draws a framed shadow around buttons, chips and tabs: the invisible touch area was showing Vuetify's raise shadow.
+
 ## 2.66.0 -- 2026-11-25 (bridge connections: fixed automatic name plus alias)
 
 - Each bridge connection keeps its automatic name (`client1`, one per IP) as its identity, and the name you assign (page pencil or `BRIDGE NAME`) is saved apart as an alias and shown next to it (`client1 · Cutter`). Events and messages show both. `BRIDGE USE` accepts the name or the alias.

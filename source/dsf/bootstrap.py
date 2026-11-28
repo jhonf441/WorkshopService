@@ -113,6 +113,18 @@ def prepare_storage(ctx, w, load):
             ctx.log_file(f"could not apply the laser correction at start: {e}")
     spawn(apply_laser_correction, name="laser-correction-apply")
 
+    def bedcal_sweep():
+        # bed zones a calibration left hot (the service died with it) are turned off once the board answers, and the person is told
+        for _ in range(12):  # the board may not answer yet: tried for about a minute; the file stays when it never does
+            try:
+                sweep = load("machine_bedcal")
+                if not os.path.exists(sweep.LIVE_FILE) or sweep.sweep_at_start(w.bridge.send, ctx.log):
+                    return
+            except Exception as e:
+                ctx.log_file(f"could not turn off the bed zones a calibration left on: {e}")
+            time.sleep(5)
+    spawn(bedcal_sweep, name="bedcal-sweep")
+
 
 def start_api(ctx, w, load):
     """The registry of the API first; the endpoint and the macro mailbox come once the threads are running. Returns the api."""

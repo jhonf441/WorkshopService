@@ -6,6 +6,7 @@ own DWC, so two viewers with different languages each read their own. For that t
 keys: they keep a copy in the area "svc" of their catalogs:
 
     WorkshopService/dwc-src/i18n/{es,en}.json                     the service page (written by this module)
+    WorkshopService/dwc36/i18n/{es,en}.json                       the same area in the page of DWC 3.6 (written by this module too)
     TallerPlugins/src/_shared/i18n/{es,en}.json, vue/_shared/...  the other plugins (TallerPlugins tools/sync_service_texts.py
                                                                   copies the area from the service page)
 
@@ -25,6 +26,7 @@ import messages
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PAGE_I18N = os.path.join(os.path.dirname(HERE), "dwc-src", "i18n")
+PAGE_I18N_36 = os.path.join(os.path.dirname(HERE), "dwc36", "i18n")   # the page of DWC 3.6 keeps the same area
 AREA = "svc"
 
 # modules whose messages reach plugin data or the process details (servicesInternal), or that the pages render
@@ -35,7 +37,7 @@ MODULES = [
     "bed_zones_intercept.py", "health_poller.py", "heartbeats.py", "job_poller.py", "job_trace.py", "jog_move.py", "lights_config.py", "lights_decide.py", "lights_board.py", "lights_frame.py", "lights_output.py", "lights_loop.py",
     "lights_runtime.py", "live_job.py", "machine_state.py", "main.py", "motion_owner.py", "motor_poller.py",
     "motor_status.py", "tmc_decode.py", "notifier.py", "protection_guard.py", "risk_rules.py", "shutdown_method.py", "shutdown_timer.py", "status_light.py",
-    "lights_profile.py", "lights_edit.py", "lights_probe.py", "handlers/pid_zones.py",
+    "lights_profile.py", "lights_edit.py", "lights_probe.py", "handlers/pid_zones.py", "machine_bedcal.py", "gcodelib_indexer.py", "machine_maint_poller.py", "pid_trace.py", "pellet_layers_run.py",
 ]
 _LITERAL = re.compile(r"""["']([a-z0-9_]+)["']""")
 
@@ -56,33 +58,35 @@ def page_area(lang):
     return {k: messages.page_template(cat[k]) for k in keys()}
 
 
-def _path(lang):
-    return os.path.join(PAGE_I18N, lang + ".json")
+def _path(lang, folder=None):
+    return os.path.join(folder or PAGE_I18N, lang + ".json")
 
 
-def current(lang):
-    with open(_path(lang), encoding="utf-8") as f:
+def current(lang, folder=None):
+    with open(_path(lang, folder), encoding="utf-8") as f:
         return json.load(f).get(AREA)
 
 
 def write():
-    for lang in ("es", "en"):
-        p = _path(lang)
-        with open(p, encoding="utf-8") as f:
-            raw = f.read()
-        data = json.loads(raw)
-        data[AREA] = page_area(lang)
-        with open(p, "rb") as f:
-            crlf = b"\r\n" in f.read()
-        with open(p, "w", encoding="utf-8", newline="\r\n" if crlf else "\n") as f:  # keeps the line endings of the file
-            json.dump(data, f, ensure_ascii=False, indent="\t")
-            f.write("\n")
+    for folder in (PAGE_I18N, PAGE_I18N_36):
+        for lang in ("es", "en"):
+            p = _path(lang, folder)
+            with open(p, encoding="utf-8") as f:
+                raw = f.read()
+            data = json.loads(raw)
+            data[AREA] = page_area(lang)
+            with open(p, "rb") as f:
+                crlf = b"\r\n" in f.read()
+            with open(p, "w", encoding="utf-8", newline="\r\n" if crlf else "\n") as f:  # keeps the line endings of the file
+                json.dump(data, f, ensure_ascii=False, indent="\t")
+                f.write("\n")
 
 
 if __name__ == "__main__":
     if "--check" in sys.argv:
-        bad = [lang for lang in ("es", "en") if current(lang) != page_area(lang)]
+        bad = [lang + (" (3.6)" if folder == PAGE_I18N_36 else "") for folder in (PAGE_I18N, PAGE_I18N_36) for lang in ("es", "en")
+               if current(lang, folder) != page_area(lang)]
         print("out of date: " + ", ".join(bad) if bad else "up to date")
         sys.exit(1 if bad else 0)
     write()
-    print("%d keys written to %s" % (len(keys()), PAGE_I18N))
+    print("%d keys written to %s and %s" % (len(keys()), PAGE_I18N, PAGE_I18N_36))

@@ -388,6 +388,8 @@ button.help-tip.v-btn.v-btn, .help-tip { position: relative; width: 24px; height
    A chip that is not clickable (state "All fine" of the health chip, info chips) is information, not a control: it has no area. */
 .workshop-theme .v-chip.v-chip--clickable { position: relative; overflow: visible; }
 .workshop-theme .v-chip.v-chip--clickable::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: var(--wf-hit); transform: translateY(-50%); }
+/* The touch area is an INVISIBLE ::after. Vuetify's own ::after of a button, chip or tab carries its raise shadow (hover elevation): once the area gives it a content it draws a 40 px frame with a shadow around every button. 28-nov: no shadow, no fill on it. */
+.workshop-theme :is(.v-btn, .v-chip, .v-tab)::after, :is(.v-btn, .v-chip, .v-tab):is(.wf-hit, [data-wf-hit])::after { box-shadow: none !important; background: none !important; }
 /* H-07: a single-line field is 44 px high: the dense ones of Vuetify 2 are 40 px (their rule is more specific than the one of FASE4, hence the longer selector); the label that sits in
    the field follows the centre (+2 px), the one that floats on the border does not move. Filled, solo and multi-line fields have their own height. */
 .workshop-theme .v-input.v-input--dense.v-text-field:not(.v-textarea):not(.v-text-field--filled):not(.v-text-field--solo) > .v-input__control > .v-input__slot { min-height: var(--wf-field-h); }

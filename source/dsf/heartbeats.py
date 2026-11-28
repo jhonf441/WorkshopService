@@ -109,7 +109,8 @@ def detail(label, raw_text):
     """A status line of the process's own (shown in Services)."""
     d = _info.get(label)
     if d is not None:
-        d["detail"] = (str(raw_text) if raw_text is not None else None)
+        # a message of ours stays a message ({"key", "params"}: the page translates it); str() would make it plain Spanish text
+        d["detail"] = raw_text if isinstance(raw_text, messages.Msg) else (str(raw_text) if raw_text is not None else None)
 
 
 def last_beat(label):

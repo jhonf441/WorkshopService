@@ -35,6 +35,8 @@ import activity
 import bootstrap
 import db
 import live_job  # live job opened with job.start (closing and cut of the duration)
+import machine_bedcal  # the bed zones a calibration has hot are turned off when the service stops
+import machine_ops  # the run in progress is asked to stop when the service stops
 import heartbeats
 import laser_guard  # a laser power left set (M3 / M4 without M5) is turned off
 import focus_guard  # the laser focus was not set: laser and air off, file job cancelled, warning
@@ -475,6 +477,14 @@ def _clean_stop(why):
         bed_zones_intercept.release(log_file)
     except Exception:
         pass
+    try:
+        # a run of the machine (a bed calibration keeps zones hot) is asked to stop: its own turn-off runs; what is still on after a few seconds
+        # is turned off through the bridge connection, which still works now (a new connection would not)
+        machine_ops.stop()
+        machine_ops.wait_idle(6.0)
+        machine_bedcal.turn_off_live()
+    except Exception as e:
+        log_file(f"could not turn off the bed zones of a calibration before exiting: {e}")
     try:
         # Reuses the bridge connection already established -- opening a NEW
         # connection right here fails, because DCS is already closing the plugin's

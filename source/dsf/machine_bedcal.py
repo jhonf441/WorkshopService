@@ -21,16 +21,24 @@ bedcal.status read it. All the waits go through `ctx.wait`, so a test with a fak
 """
 import atexit
 import copy
+import json
+import os
+import time
 
+import fs_atomic
 import machine_bedcal_plan as plan
 import machine_gcode
+import paths
 from messages import M
 
 POLL_S = 1.0
 REACH_MAX_S = 30 * 60        # a preheat that has not arrived by then is turned off
 WAIT_MAX_S = 30 * 60         # neighbours to temperature + the tuned zone to cool, per zone
-STILL_WINDOW_S = 60
+STILL_WINDOW_S = 60          # the readings that decide "still" are the ones of this last window
+STILL_MIN_S = 30             # ... and they must cover at least this long (the first minute is no longer waited blindly)
 STILL_SPAN = 1.5
+SERIES_EVERY_S = 3           # the chart before the M303 (preparing and waiting): one point of every zone this often
+SERIES_MAX = 720
 STUCK_S = 180                # still but too hot for that long: it will not drop
 CALIBRATES_MAX_S = 60 * 60   # one M303
 TOTAL_MAX_S = 6 * 3600
@@ -39,6 +47,8 @@ MISS_MAX = 60                # polls in a row without a model
 JOB = ("processing", "simulating", "pausing", "paused", "resuming", "cancelling")
 STOP = ("halted", "off", "disconnected", "updating", "starting")
 RISK_ID = "bedcal_tune"
+RISK_PREHEAT_ID = "bedcal_preheat"
+LIVE_FILE = os.path.join(paths.DATA_DIR, "bedcal-live.json")   # the zones a run has hot: written at the start, removed when they are off
 
 # What machine_procedures.py hands over when it registers the procedures (register() below): its exception classes and risk_rules. This file imports
 # neither of them, so it stays out of the import cycle of the machine modules.
@@ -101,6 +111,61 @@ def _check(planner):
     return check
 
 
+# ---- the zones that are hot (the file a restart reads) ----
+
+def _live_write(beds):
+    """The zones this run turns on, kept in a file so a service that dies (killed, power cut) can turn them off at its next start. Never raises."""
+    try:
+        fs_atomic.write_json(LIVE_FILE, {"beds": list(beds), "since": int(time.time())})
+    except Exception:  # noqa: BLE001 - the run goes on: the turn-off at its end does not depend on this file
+        pass
+
+
+def _live_clear():
+    try:
+        os.remove(LIVE_FILE)
+    except OSError:
+        pass
+
+
+def _off_beds(ctx, beds):
+    """Turns the zones off through the connection of the run and, when that fails, through the bridge. Returns the list of {bed, error} that stayed on."""
+    errors = []
+    for bed in beds:
+        first = ""
+        try:
+            ctx.send("bed_off", bed=bed)
+            continue
+        except Exception as e:  # noqa: BLE001 - the next route is tried
+            first = str(e)[:80]
+        try:
+            ctx.bridge.send(machine_gcode.render("bed_off", bed=bed))
+        except Exception as e:  # noqa: BLE001 - reported in the result: the person is told it may still be on
+            errors.append({"bed": bed, "error": first + " / " + str(e)[:80]})
+    return errors
+
+
+def sweep_at_start(send, log):
+    """At the start of the service: zones a run left hot (the service died with it) are turned off, once, and the person is told.
+    `send` takes one line of G-code (the bridge); `log` takes a message. The file stays when a line fails, so the next start tries again."""
+    try:
+        with open(LIVE_FILE, encoding="utf-8") as f:
+            beds = [int(b) for b in (json.load(f).get("beds") or [])]
+    except (OSError, ValueError, TypeError):
+        return False
+    failed = []
+    for bed in beds:
+        try:
+            send(machine_gcode.render("bed_off", bed=bed))
+        except Exception as e:  # noqa: BLE001
+            failed.append(bed)
+    if failed:
+        return False
+    _live_clear()
+    log(M("bedcal_swept_at_start", beds=", ".join(str(b) for b in beds)))
+    return True
+
+
 # ---- the live state of a run ----
 
 class _Run:
@@ -108,18 +173,21 @@ class _Run:
 
     def __init__(self, ctx, p):
         self.ctx, self.p, self.t, self.misses, self.step = ctx, p, 0.0, 0, 0
-        self.result = {"kind": p["kind"], "phase": "preparing", "temp": p["temp"], "elapsed_s": 0, "off": False, "off_errors": [],
+        self._series_at = -SERIES_EVERY_S
+        self.result = {"kind": p["kind"], "phase": "preparing", "temp": p["temp"], "elapsed_s": 0, "off": False, "off_errors": [], "series": [],
                        "zones": [{"bed": z["bed"], "heater": z["heater"], "target": z["target"], "current": None, "state": None, "result": "pending",
-                                  "error": None, "model": None, "model_line": None} for z in p["zones"]]}
+                                  "error": None, "model": None, "model_line": None, "wait": None} for z in p["zones"]]}
         for z, rz in zip(p["zones"], self.result["zones"]):
             if z.get("tune") is False:
                 rz["result"] = "held"
         _live["ctx"], _live["beds"] = ctx, [z["bed"] for z in p["zones"]]
+        _live_write(_live["beds"])
 
     def publish(self, phase=None, step=None):
         if phase:
             self.result["phase"] = phase
         self.result["elapsed_s"] = int(self.t)
+        self.sample()
         self.ctx.set_result(copy.deepcopy(self.result))
         if step is not None:
             self.step = step
@@ -127,8 +195,20 @@ class _Run:
             self.ctx.progress(self.step, sum(1 for z in self.p["zones"] if z.get("tune", True)), self.result["phase"])
 
     def wait(self, seconds):
+        """The elapsed time is the clock's: a wait that lasted longer than asked (a slow board) counts what it lasted. A test context that returns at once counts the nominal seconds."""
+        before = time.monotonic()
         self.ctx.wait(seconds)
-        self.t += seconds
+        self.t += max(float(seconds), time.monotonic() - before)
+
+    def sample(self):
+        """One point of every zone for the chart before the tuning starts (the chart of the tuning itself is pid_trace.py): every SERIES_EVERY_S, at most SERIES_MAX points."""
+        if self.t - self._series_at < SERIES_EVERY_S:
+            return
+        self._series_at = self.t
+        series = self.result["series"]
+        series.append([int(self.t)] + [z["current"] for z in self.result["zones"]])
+        if len(series) > SERIES_MAX:
+            del series[:len(series) - SERIES_MAX]
 
     def read(self):
         """The object model now; the zones' readings are updated. Raises ProcedureFailed no_model after MISS_MAX polls without one."""
@@ -175,18 +255,9 @@ class _Run:
 
 def _all_off(run):
     """Every zone of the plan off. Through the connection of the run; when that fails, through the bridge. Never raises."""
-    errors = []
-    ctx = run.ctx
-    for z in run.p["zones"]:
-        try:
-            ctx.send("bed_off", bed=z["bed"])
-            continue
-        except Exception as e:  # noqa: BLE001 - the next route is tried
-            first = str(e)[:80]
-        try:
-            ctx.bridge.send(machine_gcode.render("bed_off", bed=z["bed"]))
-        except Exception as e:  # noqa: BLE001 - reported in the result: the person is told it may still be on
-            errors.append({"bed": z["bed"], "error": first + " / " + str(e)[:80]})
+    errors = _off_beds(run.ctx, [z["bed"] for z in run.p["zones"]])
+    if not errors:
+        _live_clear()
     run.result["off"] = not errors
     run.result["off_errors"] = errors
     _live["ctx"], _live["beds"] = None, []
@@ -205,17 +276,20 @@ def _mark_cut(run):
             z["result"] = "cut"
 
 
-def _at_exit():
-    """The service is stopping with zones on: turn them off with the connection of the run."""
+def turn_off_live():
+    """The service is stopping with a run that has zones on: they are turned off with the connection of the run and, when that fails, through the bridge.
+    Called by the clean stop (after the run was asked to stop) and at exit. The file of hot zones is removed only when all of them are off."""
     ctx, beds = _live["ctx"], list(_live["beds"])
-    for bed in beds:
-        try:
-            ctx.send("bed_off", bed=bed)
-        except Exception:  # noqa: BLE001
-            pass
+    if ctx is None or not beds:
+        return True
+    errors = _off_beds(ctx, beds)
+    if not errors:
+        _live_clear()
+        _live["ctx"], _live["beds"] = None, []
+    return not errors
 
 
-atexit.register(_at_exit)
+atexit.register(turn_off_live)
 
 
 def _start(ctx, planner, params):
@@ -236,6 +310,9 @@ def _arrived(run):
 def run_preheat(ctx, params):
     run = _start(ctx, plan.plan_preheat, params)
     try:
+        n = len(run.p["zones"])
+        risk = M("bedcal_risk_preheat_one", temp=int(run.p["temp"])) if n == 1 else M("bedcal_risk_preheat", zones=n, temp=int(run.p["temp"]))
+        _p["risk"].launch(RISK_PREHEAT_ID, risk, REACH_MAX_S + run.p["hold_s"] + n * run.p["stagger_s"] + 120)
         run.publish("staggering", 0)
         for k, z in enumerate(run.p["zones"]):
             if k > 0 and run.p["stagger_s"]:
@@ -243,17 +320,16 @@ def run_preheat(ctx, params):
             ctx.send("bed_set", bed=z["bed"], set_temp=z["target"])
             run.zone(z["bed"])["result"] = "heating"
             run.publish("staggering", k + 1)
-        waited = 0.0
+        t0 = run.t
         run.publish("reaching")
         while True:
             run.watch(run.read())
             if _arrived(run):
                 break
-            if waited >= REACH_MAX_S:
+            if run.t - t0 >= REACH_MAX_S:
                 raise _fail("not_reached")
             run.publish()
             run.wait(POLL_S)
-            waited += POLL_S
         for z in run.result["zones"]:
             z["result"] = "reached"
         run.publish("holding")
@@ -262,6 +338,7 @@ def run_preheat(ctx, params):
         _mark_cut(run)
         raise
     finally:
+        _p["risk"].finish(RISK_PREHEAT_ID)
         _all_off(run)
     run.publish("finished")
 
@@ -292,35 +369,51 @@ def _send_prepare(run, i):
             run.ctx.send("bed_set", bed=o["bed"], set_temp=p["temp"])
 
 
+def _wait_detail(run, expect, cur, cold_limit, hist, stuck):
+    """What the zone is waiting for, so the page can say it: the neighbours (bed, now, goal), the tuned zone (now, the limit it must go under),
+    how long it has been still and how long it needs, how long it has been stuck."""
+    p = run.p
+    still_s = int(run.t - hist[0][0]) if hist and max(h[1] for h in hist) - min(h[1] for h in hist) <= STILL_SPAN else 0
+    return {"neighbours": [[b, run.zone(b)["current"], p["temp"]] for b in expect], "zone_current": cur, "cold_limit": cold_limit,
+            "still_s": min(still_s, STILL_MIN_S), "still_need_s": STILL_MIN_S if expect else 0,
+            "stuck_s": int(run.t - stuck) if stuck is not None else 0, "stuck_max_s": STUCK_S}
+
+
 def _wait_ready(run, i):
-    """Neighbours at temperature (together) and the tuned zone cold and still. _SkipZone when it will not drop, ProcedureFailed when the neighbours never arrive."""
+    """Neighbours at temperature (together) and the tuned zone cold and still. _SkipZone when it will not drop, ProcedureFailed when the neighbours never arrive.
+    Still is asked only when there are neighbours held hot (alone, a cold zone is ready at once) and it needs STILL_MIN_S of readings, not a fixed minute."""
     p, z, bed = run.p, run.p["zones"][i], run.p["zones"][i]["bed"]
     expect = [o["bed"] for o in p["zones"] if o is not z and p["together"]]
-    hist, waited, stuck = [], 0.0, None
+    hist, stuck, t0 = [], None, run.t
+    cold_limit = p["temp"] - plan.MARGIN_COLD
     while True:
         om = run.read()
+        waited = run.t - t0
         run.watch(om, expect_on=expect if waited > 30 else ())
         cur = run.zone(bed)["current"]
         near = all(run.zone(b)["current"] is not None and abs(run.zone(b)["current"] - p["temp"]) <= p["tolerance"] for b in expect)
         if cur is not None:
             hist = [h for h in hist if run.t - h[0] <= STILL_WINDOW_S] + [(run.t, cur)]
-        still = bool(hist) and waited >= STILL_WINDOW_S and max(h[1] for h in hist) - min(h[1] for h in hist) <= STILL_SPAN
-        cold = cur is not None and cur <= p["temp"] - plan.MARGIN_COLD
-        if near and cold and (still or not p["together"]):
+        still = bool(hist) and run.t - hist[0][0] >= STILL_MIN_S and max(h[1] for h in hist) - min(h[1] for h in hist) <= STILL_SPAN
+        cold = cur is not None and cur <= cold_limit
+        run.zone(bed)["wait"] = _wait_detail(run, expect, cur, cold_limit, hist, stuck)
+        if near and cold and (still or not expect):
+            run.zone(bed)["wait"] = None
             return
-        if p["together"] and near and still and not cold:
+        if expect and near and still and not cold:
             stuck = run.t if stuck is None else stuck
             if run.t - stuck >= STUCK_S:
+                run.zone(bed)["wait"] = None
                 raise _SkipZone("not_cold")
         else:
             stuck = None
         if waited >= WAIT_MAX_S:
+            run.zone(bed)["wait"] = None
             if not near:
                 raise _fail("neighbours_not_ready")
             raise _SkipZone("not_cold")
         run.publish()
         run.wait(POLL_S)
-        waited += POLL_S
 
 
 def _is_error(reply):
@@ -328,13 +421,24 @@ def _is_error(reply):
     return "error" in t or "abort" in t
 
 
+def _send_zone(run, template, **numbers):
+    """A line of the tuning of one zone: a failure of the connection skips THIS zone (the next one goes on, and `watch` still ends the run for what is serious).
+    The refusals of the service itself (a code not in the list, a run that must end) go through."""
+    try:
+        return run.ctx.send(template, **numbers)
+    except (machine_gcode.ForbiddenCode, _p["procs"].ProcedureFailed, _p["procs"].BadParams):
+        raise
+    except Exception as e:  # noqa: BLE001
+        raise _SkipZone("send_failed") from e
+
+
 def _tune_one(run, i):
     p, z = run.p, run.p["zones"][i]
     res = run.zone(z["bed"])
-    reply = run.ctx.send("heater_tune", heater=z["heater"], tune_temp=z["target"])
+    reply = _send_zone(run, "heater_tune", heater=z["heater"], tune_temp=z["target"])
     if _is_error(reply):
         raise _SkipZone("rejected")
-    seen, waited = False, 0.0
+    seen, t0 = False, run.t
     expect = [o["bed"] for o in p["zones"] if o is not z and p["together"]]
     while True:
         om = run.read()
@@ -342,17 +446,16 @@ def _tune_one(run, i):
         st = res["state"]
         if st == "tuning":
             seen = True
-        elif om is not None and (seen or waited > UNSEEN_S):
+        elif om is not None and (seen or run.t - t0 > UNSEEN_S):
             break
-        if waited > CALIBRATES_MAX_S:
+        if run.t - t0 > CALIBRATES_MAX_S:
             raise _fail("tune_timeout")
         run.publish()
         run.wait(POLL_S)
-        waited += POLL_S
     run.wait(1.5)
-    if not plan.tune_succeeded(run.ctx.send("tune_report")):
+    if not plan.tune_succeeded(_send_zone(run, "tune_report")):
         raise _SkipZone("tune_failed")
-    run.ctx.send("heater_model", heater=z["heater"])
+    _send_zone(run, "heater_model", heater=z["heater"])
     run.wait(1.0)
     md = plan.model_of(run.read() or run.ctx.model(), z["heater"])
     if md is None:
@@ -363,7 +466,9 @@ def _tune_one(run, i):
 def run_tune(ctx, params):
     run = _start(ctx, plan.plan_tune, params)
     try:
-        _p["risk"].launch(RISK_ID, M("bedcal_risk_tuning", zones=len(run.p["zones"]), temp=int(run.p["temp"])), TOTAL_MAX_S + 120)
+        n = len(run.p["zones"])
+        risk = M("bedcal_risk_tuning_one", temp=int(run.p["temp"])) if n == 1 else M("bedcal_risk_tuning", zones=n, temp=int(run.p["temp"]))
+        _p["risk"].launch(RISK_ID, risk, TOTAL_MAX_S + 120)
         todo = [i for i, z in enumerate(run.p["zones"]) if z["tune"]]
         for n, i in enumerate(todo):
             z = run.p["zones"][i]
